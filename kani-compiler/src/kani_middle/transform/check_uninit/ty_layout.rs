@@ -5,11 +5,13 @@
 
 use std::fmt::Display;
 
-use rustc_public::CrateDefType;
+use rustc_attr_ir::lang_items::LangItem;
+use rustc_middle::ty::TyCtxt;
+use rustc_public::{CrateDefType, rustc_internal};
 use rustc_public::{
     abi::{FieldsShape, Scalar, TagEncoding, ValueRepr, VariantsShape},
     target::{MachineInfo, MachineSize},
-    ty::{AdtKind, RigidTy, Ty, TyKind, UintTy, VariantIdx},
+    ty::{AdtKind, GenericArgKind, RigidTy, Ty, TyKind, UintTy, VariantIdx},
 };
 use rustc_public_bridge::IndexedVal;
 
@@ -104,7 +106,42 @@ impl Display for LayoutComputationError {
     }
 }
 
+/// Returns the type parameter of the specified standard-library wrapper.
+pub(super) fn wrapper_inner(tcx: TyCtxt, ty: Ty, wrapper: LangItem) -> Option<Ty> {
+    if let TyKind::RigidTy(RigidTy::Adt(def, args)) = ty.kind()
+        && tcx.is_lang_item(rustc_internal::internal(tcx, def.def_id()), wrapper)
+        && let Some(GenericArgKind::Type(inner)) = args.0.first()
+    {
+        Some(*inner)
+    } else {
+        None
+    }
+}
+
+/// Recognizes a slot or a flat sequence of slots. Other enclosing types keep their union error.
+pub(super) fn maybe_uninit_storage(tcx: TyCtxt, ty: Ty) -> Option<Ty> {
+    let slot_ty = match ty.kind() {
+        TyKind::RigidTy(RigidTy::Array(slot, _) | RigidTy::Slice(slot)) => slot,
+        _ => ty,
+    };
+    wrapper_inner(tcx, slot_ty, LangItem::MaybeUninit)
+}
+
 impl PointeeInfo {
+    /// Layout for copying storage or writing every byte with a bytewise intrinsic.
+    pub(super) fn for_storage(tcx: TyCtxt, ty: Ty) -> Result<Self, LayoutComputationError> {
+        let inner = maybe_uninit_storage(tcx, ty).unwrap();
+        data_bytes_for_ty(&MachineInfo::target(), inner, 0)?;
+        let layout = if let TyKind::RigidTy(RigidTy::Slice(slot)) = ty.kind() {
+            let size = slot.layout().unwrap().shape().size.bytes();
+            PointeeLayout::Slice { element_layout: vec![true; size] }
+        } else {
+            let size = ty.layout().unwrap().shape().size.bytes();
+            PointeeLayout::Sized { layout: vec![true; size] }
+        };
+        Ok(Self { pointee_ty: ty, layout })
+    }
+
     pub fn from_ty(ty: Ty) -> Result<Self, LayoutComputationError> {
         match ty.kind() {
             TyKind::RigidTy(rigid_ty) => match rigid_ty {

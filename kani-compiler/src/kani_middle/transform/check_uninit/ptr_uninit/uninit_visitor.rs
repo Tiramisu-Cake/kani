@@ -9,12 +9,17 @@ use crate::{
     kani_middle::transform::{
         body::{InsertPosition, MutableBody, SourceInstruction},
         check_uninit::{
-            PointeeInfo, TargetFinder,
-            relevant_instruction::{InitRelevantInstruction, MemoryInitOp},
-            ty_layout::{LayoutComputationError, tys_layout_compatible_to_size},
+            PointeeInfo, PointeeLayout, TargetFinder,
+            relevant_instruction::{InitRelevantInstruction, MemoryInitOp, constant_init_mask},
+            ty_layout::{
+                LayoutComputationError, maybe_uninit_storage, tys_layout_compatible_to_size,
+                wrapper_inner,
+            },
         },
     },
 };
+use rustc_attr_ir::lang_items::LangItem;
+use rustc_middle::ty::TyCtxt;
 use rustc_public::CrateDefType;
 use rustc_public::{
     mir::{
@@ -28,7 +33,8 @@ use rustc_public::{
     ty::{AdtKind, ConstantKind, RigidTy, Ty, TyKind},
 };
 
-pub struct CheckUninitVisitor {
+pub struct CheckUninitVisitor<'tcx> {
+    tcx: TyCtxt<'tcx>,
     locals: Vec<LocalDecl>,
     /// All target instructions in the body.
     targets: Vec<InitRelevantInstruction>,
@@ -36,7 +42,7 @@ pub struct CheckUninitVisitor {
     current_target: InitRelevantInstruction,
 }
 
-impl TargetFinder for CheckUninitVisitor {
+impl TargetFinder for CheckUninitVisitor<'_> {
     fn find_all(mut self, body: &MutableBody) -> Vec<InitRelevantInstruction> {
         self.locals = body.locals().to_vec();
         for (bb_idx, bb) in body.blocks().iter().enumerate() {
@@ -61,13 +67,14 @@ impl TargetFinder for CheckUninitVisitor {
                     .enumerate()
                     .skip(1)
                     .take(body.arg_count())
-                    .filter(|(_, local)| local.ty.kind().is_union())
+                    .filter(|(_, local)| self.transfers_shadow(local.ty))
                     .collect();
                 if !union_args.is_empty() {
                     for (idx, _) in union_args {
                         self.push_target(MemoryInitOp::LoadArgument {
                             operand: Operand::Copy(Place { local: idx, projection: vec![] }),
                             argument_no: idx,
+                            position: InsertPosition::Before,
                         })
                     }
                 }
@@ -78,9 +85,10 @@ impl TargetFinder for CheckUninitVisitor {
     }
 }
 
-impl CheckUninitVisitor {
-    pub fn new() -> Self {
+impl<'tcx> CheckUninitVisitor<'tcx> {
+    pub fn new(tcx: TyCtxt<'tcx>) -> Self {
         Self {
+            tcx,
             locals: vec![],
             targets: vec![],
             current_target: InitRelevantInstruction {
@@ -94,9 +102,247 @@ impl CheckUninitVisitor {
     fn push_target(&mut self, source_op: MemoryInitOp) {
         self.current_target.push_operation(source_op);
     }
+
+    fn transfers_shadow(&self, ty: Ty) -> bool {
+        ty.kind().is_union() || maybe_uninit_storage(self.tcx, ty).is_some()
+    }
+
+    /// Locate the first union on the projection path, including a union at the end.
+    fn enclosing_union(&self, place: &Place) -> Option<Ty> {
+        let mut prefix = Place::from(place.local);
+        for projection in &place.projection {
+            let ty = prefix.ty(&self.locals).unwrap();
+            if ty.kind().is_union() {
+                return Some(ty);
+            }
+            prefix.projection.push(projection.clone());
+        }
+        let ty = prefix.ty(&self.locals).unwrap();
+        ty.kind().is_union().then_some(ty)
+    }
+
+    fn assign_storage_operand(&mut self, place: &Place, operand: &Operand) {
+        if let Some(initialized) = constant_init_mask(operand) {
+            self.push_target(MemoryInitOp::SetStorage {
+                operand: Operand::Copy(place.clone()),
+                initialized,
+                position: InsertPosition::After,
+            });
+        } else if matches!(operand, Operand::Copy(_) | Operand::Move(_)) {
+            // Capture the source and destination addresses before the assignment can overwrite
+            // any part of either place.
+            self.push_target(MemoryInitOp::AssignUnion {
+                lvalue: place.clone(),
+                rvalue: operand.clone(),
+                position: InsertPosition::Before,
+            });
+        } else {
+            self.unsupported_storage_assignment();
+        }
+    }
+
+    fn unsupported_storage_assignment(&mut self) {
+        self.push_target(MemoryInitOp::Unsupported {
+            reason: "Kani does not support this assignment to MaybeUninit storage.".to_string(),
+        });
+    }
+
+    fn assign_storage(&mut self, place: &Place, ty: Ty, rvalue: &Rvalue) {
+        match rvalue {
+            Rvalue::Use(operand, _) => self.assign_storage_operand(place, operand),
+            Rvalue::Aggregate(AggregateKind::Adt(def, _, _, _, Some(field)), _)
+                if def.kind() == AdtKind::Union =>
+            {
+                self.push_target(MemoryInitOp::CreateUnion {
+                    operand: Operand::Copy(place.clone()),
+                    field: *field,
+                });
+            }
+            Rvalue::Aggregate(AggregateKind::Array(_), operands)
+                if place.projection.is_empty()
+                    && operands.iter().all(|operand| match operand {
+                        Operand::Copy(src) | Operand::Move(src) => {
+                            src.local != place.local && src.projection.is_empty()
+                        }
+                        _ => constant_init_mask(operand).is_some(),
+                    }) =>
+            {
+                let len = operands.len().try_into().unwrap();
+                for (index, operand) in operands.iter().enumerate() {
+                    let mut element = place.clone();
+                    element.projection.push(ProjectionElem::ConstantIndex {
+                        offset: index.try_into().unwrap(),
+                        min_length: len,
+                        from_end: false,
+                    });
+                    self.assign_storage_operand(&element, operand);
+                }
+            }
+            Rvalue::Repeat(operand, _) => {
+                if let Some(mask) = constant_init_mask(operand) {
+                    let TyKind::RigidTy(RigidTy::Array(_, len)) = ty.kind() else { unreachable!() };
+                    self.push_target(MemoryInitOp::SetStorage {
+                        operand: Operand::Copy(place.clone()),
+                        initialized: mask
+                            .repeat(len.eval_target_usize().unwrap().try_into().unwrap()),
+                        position: InsertPosition::After,
+                    });
+                } else {
+                    self.unsupported_storage_assignment();
+                }
+            }
+            _ => self.unsupported_storage_assignment(),
+        }
+    }
+
+    /// Match only the transparent conversion from MaybeUninit<T> to T or ManuallyDrop<T>.
+    fn maybe_uninit_transmute(&mut self, operand: &Operand, target: Ty) -> bool {
+        let operand_ty = operand.ty(&self.locals).unwrap();
+        let Some(inner) = wrapper_inner(self.tcx, operand_ty, LangItem::MaybeUninit) else {
+            return false;
+        };
+        if target != inner && wrapper_inner(self.tcx, target, LangItem::ManuallyDrop) != Some(inner)
+        {
+            return false;
+        }
+        let Ok(info) = PointeeInfo::from_ty(inner) else { return false };
+        let PointeeLayout::Sized { layout } = info.layout() else { return false };
+        if matches!(operand, Operand::Copy(_) | Operand::Move(_)) {
+            self.push_target(MemoryInitOp::CheckRefAs {
+                operand: operand.clone(),
+                pointee_ty: inner,
+            });
+        } else if let Some(initialized) = constant_init_mask(operand)
+            && initialized.len() == layout.len()
+        {
+            if layout
+                .iter()
+                .zip(initialized)
+                .any(|(required, initialized)| *required && !initialized)
+            {
+                self.push_target(MemoryInitOp::TriviallyUnsafe {
+                    reason: format!(
+                        "Undefined Behavior: Reading from an uninitialized pointer of type `{inner}`"
+                    ),
+                });
+            }
+        } else {
+            self.push_target(MemoryInitOp::Unsupported {
+                reason:
+                    "Kani cannot determine the initialization state of this MaybeUninit constant."
+                        .to_string(),
+            });
+        }
+        true
+    }
+
+    fn address_of_raw_deref(&self, place: &Place) -> bool {
+        let mut prefix = Place::from(place.local);
+        for projection in &place.projection {
+            if *projection == ProjectionElem::Deref
+                && prefix.ty(&self.locals).unwrap().kind().is_raw_ptr()
+            {
+                return true;
+            }
+            prefix.projection.push(projection.clone());
+        }
+        false
+    }
+
+    fn visit_ordinary_assignment(
+        &mut self,
+        place: &Place,
+        rvalue: &Rvalue,
+        ty: Ty,
+        in_union: bool,
+    ) {
+        // Check whether we are assigning into a dereference (*ptr = _).
+        if let Some(place_without_deref) = try_remove_topmost_deref(place) {
+            // First, check that we are not dereferencing extra pointers along the way
+            // (e.g., **ptr = _). If yes, check whether these pointers are initialized.
+            let mut place_to_add_projections =
+                Place { local: place_without_deref.local, projection: vec![] };
+            for projection_elem in place_without_deref.projection.iter() {
+                // If the projection is Deref and the current type is raw pointer, check
+                // if it points to initialized memory.
+                if *projection_elem == ProjectionElem::Deref
+                    && let TyKind::RigidTy(RigidTy::RawPtr(..)) =
+                        place_to_add_projections.ty(&self.locals).unwrap().kind()
+                {
+                    self.push_target(MemoryInitOp::Check {
+                        operand: Operand::Copy(place_to_add_projections.clone()),
+                    });
+                };
+                place_to_add_projections.projection.push(projection_elem.clone());
+            }
+            if place_without_deref.ty(&self.locals).unwrap().kind().is_raw_ptr() {
+                self.push_target(MemoryInitOp::Set {
+                    operand: Operand::Copy(place_without_deref),
+                    value: true,
+                    position: InsertPosition::After,
+                });
+            }
+        }
+        // Check whether Rvalue creates a new initialized pointer previously not captured inside shadow memory.
+        if ty.kind().is_raw_ptr()
+            && let Rvalue::AddressOf(_, addressed) = rvalue
+            && !self.address_of_raw_deref(addressed)
+            && !self.enclosing_union(addressed).is_some_and(|union| {
+                wrapper_inner(self.tcx, union, LangItem::MaybeUninit).is_some()
+            })
+            && maybe_uninit_storage(self.tcx, addressed.ty(&self.locals).unwrap()).is_none()
+        {
+            self.push_target(MemoryInitOp::Set {
+                operand: Operand::Copy(place.clone()),
+                value: true,
+                position: InsertPosition::After,
+            });
+        }
+
+        // Need to copy some information about union initialization, since lvalue is
+        // either a union or a field inside a union.
+        if in_union {
+            match rvalue {
+                Rvalue::Use(operand, _) => {
+                    // This is a union-to-union assignment, so we need to copy the
+                    // initialization state.
+                    if place.ty(&self.locals).unwrap().kind().is_union() {
+                        self.push_target(MemoryInitOp::AssignUnion {
+                            lvalue: place.clone(),
+                            rvalue: operand.clone(),
+                            position: InsertPosition::After,
+                        });
+                    } else {
+                        // This is assignment to a field of a union.
+                        self.push_target(MemoryInitOp::SetRef {
+                            operand: Operand::Copy(place.clone()),
+                            value: true,
+                            position: InsertPosition::After,
+                        });
+                    }
+                }
+                Rvalue::Aggregate(AggregateKind::Adt(adt_def, _, _, _, union_field), _) => {
+                    // Create a union from scratch as an aggregate. We handle it here because we
+                    // need to know which field is getting assigned.
+                    if adt_def.kind() == AdtKind::Union {
+                        self.push_target(MemoryInitOp::CreateUnion {
+                            operand: Operand::Copy(place.clone()),
+                            field: union_field.unwrap(), // Safe to unwrap because we know this is a union.
+                        });
+                    }
+                }
+                // TODO: add support for Rvalue::Cast, etc.
+                _ => self.push_target(MemoryInitOp::Unsupported {
+                    reason:
+                        "Performing a union assignment with a non-supported construct as an Rvalue"
+                            .to_string(),
+                }),
+            }
+        }
+    }
 }
 
-impl MirVisitor for CheckUninitVisitor {
+impl MirVisitor for CheckUninitVisitor<'_> {
     fn visit_statement(&mut self, stmt: &Statement, location: Location) {
         // Leave it as an exhaustive match to be notified when a new kind is added.
         match &stmt.kind {
@@ -114,112 +360,30 @@ impl MirVisitor for CheckUninitVisitor {
                 // First check rvalue.
                 self.visit_rvalue(rvalue, location);
 
-                // Preemptively check if we do not support computing the layout of a type because of
-                // inner union fields. This allows to inject `assert!(false)` early.
-                if let Err(reason @ LayoutComputationError::UnionAsField(_)) =
-                    PointeeInfo::from_ty(place.ty(&self.locals).unwrap())
+                let ty = place.ty(&self.locals).unwrap();
+                let union = self.enclosing_union(place);
+                let in_maybe_uninit = union
+                    .is_some_and(|ty| wrapper_inner(self.tcx, ty, LangItem::MaybeUninit).is_some());
+
+                // Reject nested unions before the generic shadow update can treat them as values.
+                if maybe_uninit_storage(self.tcx, ty).is_some() {
+                    self.assign_storage(place, ty, rvalue);
+                } else if let Err(reason @ LayoutComputationError::UnionAsField(_)) =
+                    PointeeInfo::from_ty(ty)
                 {
                     self.push_target(MemoryInitOp::Unsupported {
                         reason: format!(
-                            "Checking memory initialization of type {} is not supported. {}",
-                            place.ty(&self.locals).unwrap(),
-                            reason
+                            "Checking memory initialization of type {ty} is not supported. {reason}"
                         ),
                     });
-                    return;
-                }
-
-                // Check whether we are assigning into a dereference (*ptr = _).
-                if let Some(place_without_deref) = try_remove_topmost_deref(place) {
-                    // First, check that we are not dereferencing extra pointers along the way
-                    // (e.g., **ptr = _). If yes, check whether these pointers are initialized.
-                    let mut place_to_add_projections =
-                        Place { local: place_without_deref.local, projection: vec![] };
-                    for projection_elem in place_without_deref.projection.iter() {
-                        // If the projection is Deref and the current type is raw pointer, check
-                        // if it points to initialized memory.
-                        if *projection_elem == ProjectionElem::Deref
-                            && let TyKind::RigidTy(RigidTy::RawPtr(..)) =
-                                place_to_add_projections.ty(&self.locals).unwrap().kind()
-                        {
-                            self.push_target(MemoryInitOp::Check {
-                                operand: Operand::Copy(place_to_add_projections.clone()),
-                            });
-                        };
-                        place_to_add_projections.projection.push(projection_elem.clone());
-                    }
-                    if place_without_deref.ty(&self.locals).unwrap().kind().is_raw_ptr() {
-                        self.push_target(MemoryInitOp::Set {
-                            operand: Operand::Copy(place_without_deref),
-                            value: true,
-                            position: InsertPosition::After,
-                        });
-                    }
-                }
-                // Check whether Rvalue creates a new initialized pointer previously not captured inside shadow memory.
-                if place.ty(&self.locals).unwrap().kind().is_raw_ptr()
-                    && let Rvalue::AddressOf(..) = rvalue
-                {
-                    self.push_target(MemoryInitOp::Set {
+                } else if in_maybe_uninit {
+                    self.push_target(MemoryInitOp::SetRef {
                         operand: Operand::Copy(place.clone()),
                         value: true,
                         position: InsertPosition::After,
                     });
-                }
-
-                // TODO: add support for ADTs which could have unions as subfields. Currently,
-                // if a union as a subfield is detected, `assert!(false)` will be injected from
-                // the type layout code.
-                let is_inside_union = {
-                    let mut place_to_add_projections =
-                        Place { local: place.local, projection: vec![] };
-                    let mut contains_union =
-                        place_to_add_projections.ty(&self.locals).unwrap().kind().is_union();
-                    for projection_elem in place.projection.iter() {
-                        if place_to_add_projections.ty(&self.locals).unwrap().kind().is_union() {
-                            contains_union = true;
-                            break;
-                        }
-                        place_to_add_projections.projection.push(projection_elem.clone());
-                    }
-                    contains_union
-                };
-
-                // Need to copy some information about union initialization, since lvalue is
-                // either a union or a field inside a union.
-                if is_inside_union {
-                    match rvalue {
-                        Rvalue::Use(operand, _) => {
-                            // This is a union-to-union assignment, so we need to copy the
-                            // initialization state.
-                            if place.ty(&self.locals).unwrap().kind().is_union() {
-                                self.push_target(MemoryInitOp::AssignUnion {
-                                    lvalue: place.clone(),
-                                    rvalue: operand.clone(),
-                                });
-                            } else {
-                                // This is assignment to a field of a union.
-                                self.push_target(MemoryInitOp::SetRef {
-                                    operand: Operand::Copy(place.clone()),
-                                    value: true,
-                                    position: InsertPosition::After,
-                                });
-                            }
-                        }
-                        Rvalue::Aggregate(AggregateKind::Adt(adt_def, _, _, _, union_field), _) => {
-                            // Create a union from scratch as an aggregate. We handle it here because we
-                            // need to know which field is getting assigned.
-                            if adt_def.kind() == AdtKind::Union {
-                                self.push_target(MemoryInitOp::CreateUnion {
-                                    operand: Operand::Copy(place.clone()),
-                                    field: union_field.unwrap(), // Safe to unwrap because we know this is a union.
-                                });
-                            }
-                        }
-                        // TODO: add support for Rvalue::Cast, etc.
-                        _ => self
-                            .push_target(MemoryInitOp::Unsupported { reason: "Performing a union assignment with a non-supported construct as an Rvalue".to_string() }),
-                    }
+                } else {
+                    self.visit_ordinary_assignment(place, rvalue, ty, union.is_some());
                 }
             }
             StatementKind::FakeRead(_, _)
@@ -270,6 +434,21 @@ impl MirVisitor for CheckUninitVisitor {
                         return;
                     }
                 };
+                let destination_ty = destination.ty(&self.locals).unwrap();
+                if maybe_uninit_storage(self.tcx, destination_ty).is_some() {
+                    if instance.kind == InstanceKind::Item && instance.has_body() {
+                        self.push_target(MemoryInitOp::LoadArgument {
+                            operand: Operand::Copy(destination.clone()),
+                            argument_no: 0,
+                            position: InsertPosition::After,
+                        });
+                    } else {
+                        self.push_target(MemoryInitOp::Unsupported {
+                            reason: "Kani does not support MaybeUninit return values from calls without a MIR body."
+                                .to_string(),
+                        });
+                    }
+                }
                 match instance.kind {
                     InstanceKind::Intrinsic => {
                         match Intrinsic::from_instance(&instance) {
@@ -321,6 +500,17 @@ impl MirVisitor for CheckUninitVisitor {
                                     from: args[1].clone(),
                                     to: args[0].clone(),
                                     count: args[2].clone(),
+                                });
+                            }
+                            Intrinsic::TypedSwap
+                                if let TyKind::RigidTy(RigidTy::RawPtr(ty, _)) =
+                                    args[0].ty(&self.locals).unwrap().kind()
+                                    && maybe_uninit_storage(self.tcx, ty).is_some() =>
+                            {
+                                self.push_target(MemoryInitOp::Unsupported {
+                                    reason:
+                                        "Kani does not support typed_swap of MaybeUninit storage."
+                                            .to_string(),
                                 });
                             }
                             Intrinsic::TypedSwap => {
@@ -384,7 +574,9 @@ impl MirVisitor for CheckUninitVisitor {
                             let union_args: Vec<_> = args
                                 .iter()
                                 .enumerate()
-                                .filter(|(_, arg)| arg.ty(&self.locals).unwrap().kind().is_union())
+                                .filter(|(_, arg)| {
+                                    self.transfers_shadow(arg.ty(&self.locals).unwrap())
+                                })
                                 .collect();
                             if !union_args.is_empty() {
                                 for (idx, operand) in union_args {
@@ -431,11 +623,21 @@ impl MirVisitor for CheckUninitVisitor {
                     });
                 }
             }
+            TerminatorKind::Return => {
+                let return_place = Place::from(0);
+                if maybe_uninit_storage(self.tcx, return_place.ty(&self.locals).unwrap()).is_some()
+                {
+                    self.push_target(MemoryInitOp::StoreArgument {
+                        operand: Operand::Copy(return_place),
+                        argument_no: 0,
+                    });
+                }
+                self.super_terminator(term, location);
+            }
             TerminatorKind::Goto { .. }
             | TerminatorKind::SwitchInt { .. }
             | TerminatorKind::Resume
             | TerminatorKind::Abort
-            | TerminatorKind::Return
             | TerminatorKind::Unreachable
             | TerminatorKind::Assert { .. }
             | TerminatorKind::InlineAsm { .. } => self.super_terminator(term, location),
@@ -458,12 +660,11 @@ impl MirVisitor for CheckUninitVisitor {
                     }
                 }
                 ProjectionElem::Field(_, _) => {
-                    if intermediate_place.ty(&self.locals).unwrap().kind().is_union()
-                        && !ptx.is_mutating()
-                    {
-                        let contains_deref_projection =
-                            { place.projection.contains(&ProjectionElem::Deref) };
-                        if contains_deref_projection {
+                    let union_ty = intermediate_place.ty(&self.locals).unwrap();
+                    if union_ty.kind().is_union() && !ptx.is_mutating() {
+                        if wrapper_inner(self.tcx, union_ty, LangItem::MaybeUninit).is_none()
+                            && place.projection.contains(&ProjectionElem::Deref)
+                        {
                             // We do not currently support having a deref projection in the same
                             // place as union field access.
                             self.push_target(MemoryInitOp::Unsupported {
@@ -509,6 +710,31 @@ impl MirVisitor for CheckUninitVisitor {
     }
 
     fn visit_rvalue(&mut self, rvalue: &Rvalue, location: Location) {
+        if let Rvalue::AddressOf(_, place) = rvalue
+            && let Some(deref) = place.projection.iter().rposition(|p| *p == ProjectionElem::Deref)
+        {
+            // Forming an address does not read the final pointee. A pointer loaded while
+            // computing that address still needs the ordinary read checks.
+            let pointer =
+                Place { local: place.local, projection: place.projection[..deref].to_vec() };
+            self.visit_operand(&Operand::Copy(pointer), location);
+            return;
+        }
+        if let Rvalue::AddressOf(_, place) = rvalue
+            && self.enclosing_union(place).is_some_and(|union| {
+                wrapper_inner(self.tcx, union, LangItem::MaybeUninit).is_some()
+            })
+        {
+            // A raw address into the value field of a local slot also leaves shadow unchanged.
+            return;
+        }
+        if let Rvalue::Ref(_, _, place) = rvalue
+            && let Some(union) = self.enclosing_union(place)
+            && wrapper_inner(self.tcx, union, LangItem::MaybeUninit).is_some()
+        {
+            self.push_target(MemoryInitOp::CheckRef { operand: Operand::Copy(place.clone()) });
+            return;
+        }
         if let Rvalue::Cast(cast_kind, operand, ty) = rvalue {
             match cast_kind {
                 CastKind::PointerCoercion(PointerCoercion::Unsize) => {
@@ -522,7 +748,9 @@ impl MirVisitor for CheckUninitVisitor {
                 }
                 CastKind::Transmute => {
                     let operand_ty = operand.ty(&self.locals).unwrap();
-                    if !tys_layout_compatible_to_size(&operand_ty, ty) {
+                    if self.maybe_uninit_transmute(operand, *ty) {
+                        // Initialization was checked against the destination's data bytes.
+                    } else if !tys_layout_compatible_to_size(&operand_ty, ty) {
                         // If transmuting between two types of incompatible layouts, padding
                         // bytes are exposed, which is UB.
                         self.push_target(MemoryInitOp::TriviallyUnsafe {

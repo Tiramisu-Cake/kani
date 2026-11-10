@@ -116,12 +116,14 @@ macro_rules! kani_mem_init {
                     let should_reset: bool = super::any();
                     if should_reset {
                         self.tracked_object_id = to_obj;
-                        self.tracked_offset += to_offset - from_offset;
+                        self.tracked_offset = to_offset + (self.tracked_offset - from_offset);
                         // Note that this preserves the value.
+                        return;
                     }
-                } else {
-                    self.bless::<LAYOUT_SIZE>(to_ptr, 1);
                 }
+                // If this path did not follow the source byte, do not retain the old state of
+                // overwritten destination bytes. Their new state is checked on the source path.
+                self.bless::<LAYOUT_SIZE>(to_ptr, num_elts);
             }
 
             /// Set currently tracked memory initialization state to `true` if `ptr` points to the
@@ -374,8 +376,8 @@ macro_rules! kani_mem_init {
         #[kanitool::fn_marker = "StoreArgumentModel"]
         fn store_argument<const LAYOUT_SIZE: usize, T>(from: *const T, selected_argument: usize) {
             let (from_ptr, _) = from.to_raw_parts();
-            let should_store: bool = super::any();
-            if should_store {
+            // A return has exactly one value to transfer. Arguments compete for the buffer.
+            if selected_argument == 0 || super::any() {
                 unsafe {
                     ARGUMENT_BUFFER = Some(ArgumentBuffer {
                         selected_argument,
