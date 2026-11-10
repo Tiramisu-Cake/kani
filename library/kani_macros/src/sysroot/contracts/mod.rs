@@ -514,9 +514,11 @@
 
 use proc_macro::TokenStream;
 use proc_macro2::{Ident, Span, TokenStream as TokenStream2};
-use quote::quote;
+use quote::{ToTokens, quote};
 use strum_macros::Display;
-use syn::{Error, Expr, ExprClosure, ItemFn, TraitItemFn, parse_macro_input, parse_quote};
+use syn::{
+    Error, Expr, ExprClosure, ImplItemFn, ItemFn, TraitItemFn, parse_macro_input, parse_quote,
+};
 
 mod assert;
 mod bootstrap;
@@ -594,13 +596,52 @@ enum ContractFunctionState {
     Untouched,
 }
 
+/// A function body and its optional specialization qualifier.
+///
+/// Contract helpers operate on `ItemFn`, while `ImplItemFn` also preserves the
+/// `default` token needed on the outer method through stacked expansions.
+#[derive(Clone)]
+struct ContractFunction {
+    defaultness: Option<syn::Token![default]>,
+    item: ItemFn,
+}
+
+impl syn::parse::Parse for ContractFunction {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let ImplItemFn { attrs, vis, defaultness, sig, block } = input.parse()?;
+        Ok(Self { defaultness, item: ItemFn { attrs, vis, sig, block: Box::new(block) } })
+    }
+}
+
+impl std::ops::Deref for ContractFunction {
+    type Target = ItemFn;
+
+    fn deref(&self) -> &Self::Target {
+        &self.item
+    }
+}
+
+impl std::ops::DerefMut for ContractFunction {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.item
+    }
+}
+
+impl ToTokens for ContractFunction {
+    fn to_tokens(&self, tokens: &mut TokenStream2) {
+        let ItemFn { attrs, vis, sig, block } = self.item.clone();
+        ImplItemFn { attrs, vis, defaultness: self.defaultness, sig, block: *block }
+            .to_tokens(tokens);
+    }
+}
+
 /// The information needed to generate the bodies of check and replacement
 /// functions that integrate the conditions from this contract attribute.
 struct ContractConditionsHandler<'a> {
     /// Information specific to the type of contract attribute we're expanding.
     condition_type: ContractConditionsData,
     /// Body of the function this attribute was found on.
-    annotated_fn: &'a ItemFn,
+    annotated_fn: &'a ContractFunction,
     /// An unparsed, unmodified copy of `attr`, used in the error messages.
     attr_copy: TokenStream2,
     /// The stream to which we should write the generated code.
@@ -687,7 +728,7 @@ fn contract_main(
         return Error::new(Span::call_site(), error_msg).into_compile_error().into();
     }
     let attr_copy = TokenStream2::from(attr.clone());
-    let mut item_fn = parse_macro_input!(item as ItemFn);
+    let mut item_fn = parse_macro_input!(item as ContractFunction);
     let function_state = ContractFunctionState::from_attributes(&item_fn.attrs);
     let handler = match ContractConditionsHandler::new(contract_typ, attr, &mut item_fn, attr_copy)
     {

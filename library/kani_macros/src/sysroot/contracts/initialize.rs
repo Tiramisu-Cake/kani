@@ -5,10 +5,9 @@
 
 use proc_macro::{Diagnostic, TokenStream};
 use proc_macro2::TokenStream as TokenStream2;
-use syn::ItemFn;
 
 use super::{
-    ContractConditionsData, ContractConditionsHandler, ContractConditionsType,
+    ContractConditionsData, ContractConditionsHandler, ContractConditionsType, ContractFunction,
     ContractFunctionState,
     helpers::{chunks_by, is_token_stream_2_comma, matches_path},
 };
@@ -53,7 +52,7 @@ impl<'a> ContractConditionsHandler<'a> {
     pub fn new(
         contract_typ: ContractConditionsType,
         attr: TokenStream,
-        annotated_fn: &'a mut ItemFn,
+        annotated_fn: &'a mut ContractFunction,
         attr_copy: TokenStream2,
     ) -> Result<Self, syn::Error> {
         let mut output = TokenStream2::new();
