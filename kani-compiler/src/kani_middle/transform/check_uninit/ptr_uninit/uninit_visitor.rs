@@ -355,8 +355,15 @@ impl MirVisitor for CheckUninitVisitor {
                             }
                         }
                     }
-                    InstanceKind::Item => {
-                        if instance.is_foreign_item() {
+                    InstanceKind::Item | InstanceKind::Shim => {
+                        // Bodyful shims are instrumented like other MIR callees, including
+                        // entry loads for union arguments. Do not reject drop/closure glue
+                        // merely because it is a shim, but guard shims with no body to follow.
+                        if matches!(instance.kind, InstanceKind::Shim) && !instance.has_body() {
+                            self.push_target(MemoryInitOp::Unsupported {
+                                reason: unsupported_call_reason("calls to bodyless Shim instances"),
+                            });
+                        } else if instance.is_foreign_item() {
                             match instance.name().as_str() {
                                 "alloc::alloc::__rust_alloc" | "alloc::alloc::__rust_realloc" => {
                                     /* Memory is uninitialized, nothing to do here. */
@@ -402,7 +409,7 @@ impl MirVisitor for CheckUninitVisitor {
                             reason: unsupported_call_reason("trait object method calls"),
                         });
                     }
-                    InstanceKind::Shim | InstanceKind::LlvmIntrinsic => {
+                    InstanceKind::LlvmIntrinsic => {
                         self.push_target(MemoryInitOp::Unsupported {
                             reason: unsupported_call_reason(&format!(
                                 "calls to {:?} instances",
