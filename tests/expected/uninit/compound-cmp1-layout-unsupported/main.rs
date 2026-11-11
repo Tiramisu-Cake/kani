@@ -45,19 +45,19 @@ fn arbitrary_union_product_is_unsupported() {
         slots: [MaybeUninit::new(2), MaybeUninit::uninit()],
         union: U { word: 3 },
     };
-    std::hint::black_box(value);
+    std::hint::black_box(std::ptr::addr_of!(value));
 }
 
 #[kani::proof]
 fn storage_enum_is_unsupported() {
     let value = StorageEnum::Full([MaybeUninit::new(5), MaybeUninit::uninit()]);
-    std::hint::black_box(value);
+    std::hint::black_box(std::ptr::addr_of!(value));
 }
 
 #[kani::proof]
 fn nested_maybe_uninit_is_unsupported() {
     let value = NestedStorage(MaybeUninit::uninit());
-    std::hint::black_box(value);
+    std::hint::black_box(std::ptr::addr_of!(value));
 }
 
 #[kani::proof]
@@ -67,7 +67,7 @@ fn nested_union_product_is_unsupported() {
         slots: [MaybeUninit::new(11), MaybeUninit::uninit()],
         nested: NestedUnionField { union: InnerUnion { value: 13 } },
     };
-    std::hint::black_box(value);
+    std::hint::black_box(std::ptr::addr_of!(value));
 }
 
 #[derive(Clone, Copy)]
@@ -84,5 +84,5 @@ fn indirect_whole_product_write_is_unsupported() {
     unsafe {
         *address = src;
     }
-    std::hint::black_box(dst);
+    std::hint::black_box(std::ptr::addr_of!(dst));
 }

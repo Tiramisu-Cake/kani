@@ -10,4 +10,6 @@ Verification failed for - padding_byte_stays_uninitialized_after_typed_copy
 Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type `u8`
 VERIFICATION:- FAILED
 Verification failed for - padding_stays_uninitialized_after_call_return
-Complete - 0 successfully verified harnesses, 4 failures, 4 total.
+Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type `Pad`
+Verification failed for - ordinary_operand_aggregate_preserves_typed_source_checks
+Complete - 0 successfully verified harnesses, 5 failures, 5 total.

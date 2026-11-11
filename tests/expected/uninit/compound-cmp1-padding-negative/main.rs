@@ -41,7 +41,11 @@ fn partial_ordinary_field_cannot_be_read_as_whole_product_after_copy() {
     }
     kani::cover!(true);
     let copy = source;
-    std::hint::black_box(copy);
+    #[inline(never)]
+    fn consume(value: C<Pad>) -> u8 {
+        value.marker.byte
+    }
+    std::hint::black_box(consume(copy));
 }
 
 #[kani::proof]
@@ -85,4 +89,18 @@ fn padding_stays_uninitialized_after_call_return() {
     kani::cover!(true);
     let padding = unsafe { ptr::addr_of!(returned.marker).cast::<u8>().add(1).read() };
     std::hint::black_box(padding);
+}
+
+#[kani::proof]
+fn ordinary_operand_aggregate_preserves_typed_source_checks() {
+    let mut marker = Pad { byte: 31, word: 37 };
+    unsafe {
+        let padding = ptr::addr_of!(marker).cast::<u8>().add(1);
+        let ordinary = ptr::addr_of_mut!(marker.word).cast::<u8>();
+        ptr::copy_nonoverlapping(padding, ordinary, 1);
+    }
+    let slots = [MaybeUninit::new(41), MaybeUninit::new(43)];
+    kani::cover!(true);
+    let value = C { marker, slots };
+    std::hint::black_box(value.marker.word);
 }
