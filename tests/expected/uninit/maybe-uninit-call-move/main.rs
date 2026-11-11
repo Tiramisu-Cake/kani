@@ -24,6 +24,8 @@ unsafe fn read_payload(pointer: *const MaybeUninit<u8>) -> u8 {
     unsafe { (*pointer).assume_init() }
 }
 
+// Kani requires panic=abort. Runtime/optimized MIR must not retain unwind edges;
+// panic checks in callees still fail before reaching an unreachable unwind action.
 #[custom_mir(dialect = "runtime", phase = "optimized")]
 unsafe fn move_call(source: MaybeUninit<u8>) -> (u8, u8) {
     mir! {
@@ -34,11 +36,11 @@ unsafe fn move_call(source: MaybeUninit<u8>) -> (u8, u8) {
 
         {
             pointer = std::ptr::addr_of!(source);
-            Call(callee = consume(Move(source)), ReturnTo(after_call), UnwindContinue())
+            Call(callee = consume(Move(source)), ReturnTo(after_call), UnwindUnreachable())
         }
 
         after_call = {
-            Call(observed = read_payload(pointer), ReturnTo(done), UnwindContinue())
+            Call(observed = read_payload(pointer), ReturnTo(done), UnwindUnreachable())
         }
 
         done = {
@@ -56,7 +58,7 @@ unsafe fn move_uninitialized_payload(source: MaybeUninit<u8>) -> u8 {
         let callee: u8;
 
         {
-            Call(callee = consume(Move(source)), ReturnTo(done), UnwindContinue())
+            Call(callee = consume(Move(source)), ReturnTo(done), UnwindUnreachable())
         }
 
         done = {
@@ -73,7 +75,7 @@ unsafe fn move_initialized_callee_only(source: MaybeUninit<u8>) -> u8 {
         let callee: u8;
 
         {
-            Call(callee = consume(Move(source)), ReturnTo(done), UnwindContinue())
+            Call(callee = consume(Move(source)), ReturnTo(done), UnwindUnreachable())
         }
 
         done = {
@@ -93,11 +95,11 @@ unsafe fn move_call_writes_parameter(source: MaybeUninit<u8>) -> (u8, u8) {
 
         {
             pointer = std::ptr::addr_of!(source);
-            Call(callee = consume_and_write(Move(source)), ReturnTo(after_call), UnwindContinue())
+            Call(callee = consume_and_write(Move(source)), ReturnTo(after_call), UnwindUnreachable())
         }
 
         after_call = {
-            Call(observed = read_payload(pointer), ReturnTo(done), UnwindContinue())
+            Call(observed = read_payload(pointer), ReturnTo(done), UnwindUnreachable())
         }
 
         done = {
@@ -119,11 +121,11 @@ unsafe fn copy_call(source: MaybeUninit<u8>) -> (u8, u8) {
         {
             pointer = std::ptr::addr_of!(source);
             // The bare place is Operand::Copy; the custom MIR source is Copy.
-            Call(callee = consume(source), ReturnTo(after_call), UnwindContinue())
+            Call(callee = consume(source), ReturnTo(after_call), UnwindUnreachable())
         }
 
         after_call = {
-            Call(observed = read_payload(pointer), ReturnTo(done), UnwindContinue())
+            Call(observed = read_payload(pointer), ReturnTo(done), UnwindUnreachable())
         }
 
         done = {
@@ -144,11 +146,11 @@ unsafe fn copy_call_writes_parameter(source: MaybeUninit<u8>) -> (u8, u8) {
 
         {
             pointer = std::ptr::addr_of!(source);
-            Call(callee = consume_and_write(source), ReturnTo(after_call), UnwindContinue())
+            Call(callee = consume_and_write(source), ReturnTo(after_call), UnwindUnreachable())
         }
 
         after_call = {
-            Call(observed = read_payload(pointer), ReturnTo(done), UnwindContinue())
+            Call(observed = read_payload(pointer), ReturnTo(done), UnwindUnreachable())
         }
 
         done = {
@@ -194,15 +196,15 @@ unsafe fn padded_move_call(source: MaybeUninit<Padded>) -> (u8, u8) {
 
         {
             pointer = std::ptr::addr_of_mut!(source);
-            Call(pointer = initialize_padded(pointer), ReturnTo(after_initialize), UnwindContinue())
+            Call(pointer = initialize_padded(pointer), ReturnTo(after_initialize), UnwindUnreachable())
         }
 
         after_initialize = {
-            Call(callee = consume_padded(Move(source)), ReturnTo(after_call), UnwindContinue())
+            Call(callee = consume_padded(Move(source)), ReturnTo(after_call), UnwindUnreachable())
         }
 
         after_call = {
-            Call(padding = read_padded_padding(pointer), ReturnTo(done), UnwindContinue())
+            Call(padding = read_padded_padding(pointer), ReturnTo(done), UnwindUnreachable())
         }
 
         done = {
@@ -223,15 +225,15 @@ unsafe fn padded_copy_call(source: MaybeUninit<Padded>) -> (u8, u8) {
 
         {
             pointer = std::ptr::addr_of_mut!(source);
-            Call(pointer = initialize_padded(pointer), ReturnTo(after_initialize), UnwindContinue())
+            Call(pointer = initialize_padded(pointer), ReturnTo(after_initialize), UnwindUnreachable())
         }
 
         after_initialize = {
-            Call(callee = consume_padded(source), ReturnTo(after_call), UnwindContinue())
+            Call(callee = consume_padded(source), ReturnTo(after_call), UnwindUnreachable())
         }
 
         after_call = {
-            Call(padding = read_padded_padding(pointer), ReturnTo(done), UnwindContinue())
+            Call(padding = read_padded_padding(pointer), ReturnTo(done), UnwindUnreachable())
         }
 
         done = {
@@ -329,11 +331,11 @@ unsafe fn union_move_call(source: Byte) -> (u8, u8) {
 
         {
             pointer = std::ptr::addr_of!(source.byte);
-            Call(callee = consume_union(Move(source)), ReturnTo(after_call), UnwindContinue())
+            Call(callee = consume_union(Move(source)), ReturnTo(after_call), UnwindUnreachable())
         }
 
         after_call = {
-            Call(observed = read_union(pointer), ReturnTo(done), UnwindContinue())
+            Call(observed = read_union(pointer), ReturnTo(done), UnwindUnreachable())
         }
 
         done = {
@@ -354,11 +356,11 @@ unsafe fn union_copy_call(source: Byte) -> (u8, u8) {
 
         {
             pointer = std::ptr::addr_of!(source.byte);
-            Call(callee = consume_union(source), ReturnTo(after_call), UnwindContinue())
+            Call(callee = consume_union(source), ReturnTo(after_call), UnwindUnreachable())
         }
 
         after_call = {
-            Call(observed = read_union(pointer), ReturnTo(done), UnwindContinue())
+            Call(observed = read_union(pointer), ReturnTo(done), UnwindUnreachable())
         }
 
         done = {

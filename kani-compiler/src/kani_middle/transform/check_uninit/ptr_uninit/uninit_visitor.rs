@@ -70,7 +70,9 @@ impl TargetFinder for CheckUninitVisitor<'_> {
                     .take(body.arg_count())
                     .filter(|(_, local)| self.transfers_shadow(local.ty))
                     .collect();
-                if !union_args.is_empty() || self.transfers_shadow(body.locals()[0].ty) {
+                if self.instance.kind != InstanceKind::Intrinsic
+                    && (!union_args.is_empty() || self.transfers_shadow(body.locals()[0].ty))
+                {
                     if has_transfer_protocol(self.instance) {
                         for (idx, _) in &union_args {
                             self.push_target(MemoryInitOp::LoadArgument {
@@ -498,18 +500,15 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                         return;
                     }
                 };
-                // Forget consumes its argument without reading or returning any bytes; it
-                // already has an explicit no-effect model below. Other bodyless transfers
-                // need an actual shadow model, not an unpaired argument-buffer store.
-                let modeled_consumption = instance.kind == InstanceKind::Intrinsic
-                    && matches!(Intrinsic::from_instance(&instance), Intrinsic::Forget);
+                // Intrinsics use their explicit models below, including forget/black_box.
+                // Only ordinary calls need a paired argument/return protocol.
                 let paired = has_transfer_protocol(instance);
                 let destination_ty = destination.ty(&self.locals).unwrap();
                 let shadow_args =
                     args.iter().any(|arg| self.transfers_shadow(arg.ty(&self.locals).unwrap()));
-                if !paired
-                    && ((!modeled_consumption && shadow_args)
-                        || self.transfers_shadow(destination_ty))
+                if instance.kind != InstanceKind::Intrinsic
+                    && !paired
+                    && (shadow_args || self.transfers_shadow(destination_ty))
                 {
                     self.push_target(MemoryInitOp::Unsupported {
                         reason: "Kani does not support shadow transfers without a paired argument/return protocol."

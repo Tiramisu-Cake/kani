@@ -510,16 +510,17 @@ macro_rules! kani_mem_init {
                 assert!(MEM_INIT_STATE.argument_buffer_active, "missing shadow transfer protocol");
                 assert!(MEM_INIT_STATE.argument_buffer_signature == signature);
                 assert!(MEM_INIT_STATE.argument_buffer_count == argument_count);
-                assert!(MEM_INIT_STATE.argument_buffer_written == argument_count.max(1));
                 assert!(MEM_INIT_STATE.argument_buffer_remaining > 0);
                 if selected_argument == 0 {
                     assert!(argument_count == 0);
+                    assert!(MEM_INIT_STATE.argument_buffer_written == 1);
                     assert!(
                         MEM_INIT_STATE.argument_buffer_selected_argument == 0,
                         "missing shadow return"
                     );
                 } else {
                     assert!(argument_count > 0);
+                    assert!(MEM_INIT_STATE.argument_buffer_written == argument_count);
                     assert!(MEM_INIT_STATE.argument_buffer_last_loaded < selected_argument);
                     MEM_INIT_STATE.argument_buffer_last_loaded = selected_argument;
                 }
