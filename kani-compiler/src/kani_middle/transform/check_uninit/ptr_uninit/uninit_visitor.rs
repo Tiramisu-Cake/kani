@@ -12,7 +12,8 @@ use crate::{
             PointeeInfo, PointeeLayout, TargetFinder,
             relevant_instruction::{InitRelevantInstruction, MemoryInitOp, constant_init_mask},
             ty_layout::{
-                LayoutComputationError, tys_layout_compatible_to_size, union_storage, wrapper_inner,
+                LayoutComputationError, maybe_uninit_storage, tys_layout_compatible_to_size,
+                union_storage, wrapper_inner,
             },
         },
     },
@@ -74,13 +75,29 @@ impl TargetFinder for CheckUninitVisitor<'_> {
                 }
             };
             if bb_idx == 0 {
+                // Validate by-value formals and the return place even when their values are
+                // never assigned or transferred in the body. Flat MaybeUninit storage keeps
+                // its dedicated validation path in `for_storage`.
+                for local in body.locals().iter().take(body.arg_count() + 1) {
+                    if let Some(reason) = self.union_as_field_error(local.ty) {
+                        self.push_target(MemoryInitOp::Unsupported {
+                            reason: format!(
+                                "Checking memory initialization of type {} is not supported. {reason}",
+                                local.ty
+                            ),
+                        });
+                    }
+                }
                 let union_args: Vec<_> = body
                     .locals()
                     .iter()
                     .enumerate()
                     .skip(1)
                     .take(body.arg_count())
-                    .filter(|(_, local)| self.transfers_shadow(local.ty))
+                    .filter(|(_, local)| {
+                        self.transfers_shadow(local.ty)
+                            && self.union_as_field_error(local.ty).is_none()
+                    })
                     .collect();
                 if !union_args.is_empty() {
                     for (idx, _) in union_args {
@@ -118,6 +135,18 @@ impl<'tcx> CheckUninitVisitor<'tcx> {
 
     fn transfers_shadow(&self, ty: Ty) -> bool {
         union_storage(self.tcx, ty)
+    }
+
+    /// Fail closed on G2 nested-union layouts, while letting flat MaybeUninit storage use its
+    /// dedicated `for_storage` validation path.
+    fn union_as_field_error(&self, ty: Ty) -> Option<LayoutComputationError> {
+        if maybe_uninit_storage(self.tcx, ty).is_some() {
+            return None;
+        }
+        match PointeeInfo::from_ty(ty) {
+            Err(reason @ LayoutComputationError::UnionAsField(_)) => Some(reason),
+            _ => None,
+        }
     }
 
     /// Whether a call argument can let the callee access storage whose byte shadow we track.
@@ -549,6 +578,18 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                     }
                 };
                 let instance_name = instance.name();
+                if let Some((ty, reason)) = args.iter().find_map(|arg| {
+                    let ty = arg.ty(&self.locals).unwrap();
+                    self.union_as_field_error(ty).map(|reason| (ty, reason))
+                }) {
+                    self.push_target(MemoryInitOp::Unsupported {
+                        reason: format!(
+                            "Checking memory initialization of type {ty} is not supported. {reason}"
+                        ),
+                    });
+                    self.targets.push(self.current_target.clone());
+                    return;
+                }
                 if instance.kind == InstanceKind::Intrinsic
                     && instance.intrinsic_name().as_deref() == Some("select_unpredictable")
                     && args.iter().any(|arg| self.transfers_shadow(arg.ty(&self.locals).unwrap()))
@@ -565,6 +606,21 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                 // need an actual shadow model, not an unpaired argument-buffer store.
                 let modeled_consumption = instance.kind == InstanceKind::Intrinsic
                     && matches!(Intrinsic::from_instance(&instance), Intrinsic::Forget);
+                if modeled_consumption {
+                    for arg in args {
+                        if let Operand::Move(source) = arg {
+                            let ty = arg.ty(&self.locals).unwrap();
+                            if self.transfers_shadow(ty) {
+                                let size = ty.layout().unwrap().shape().size;
+                                self.push_target(MemoryInitOp::SetStorage {
+                                    operand: Operand::Copy(source.clone()),
+                                    initialized: vec![false; size],
+                                    position: InsertPosition::Before,
+                                });
+                            }
+                        }
+                    }
+                }
                 let modeled_foreign_memory_effect = matches!(
                     instance_name.as_str(),
                     "alloc::alloc::__rust_alloc"
