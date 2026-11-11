@@ -239,6 +239,14 @@ fat_pointer_field_value_uninit_rust.safety_check.\
 	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `*const [u8]`"
 
 Summary:
+zst_array_typed_transfer_padding_c.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u8`"
+
+zst_array_typed_transfer_padding_rust.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u8`"
+
 Verification failed for - unwritten_c
 Verification failed for - unwritten_rust
 Verification failed for - narrow_then_wide_c
@@ -299,4 +307,6 @@ Verification failed for - pointer_field_value_uninit_c
 Verification failed for - pointer_field_value_uninit_rust
 Verification failed for - fat_pointer_field_value_uninit_c
 Verification failed for - fat_pointer_field_value_uninit_rust
-Complete - 0 successfully verified harnesses, 60 failures, 60 total.
+Verification failed for - zst_array_typed_transfer_padding_c
+Verification failed for - zst_array_typed_transfer_padding_rust
+Complete - 0 successfully verified harnesses, 62 failures, 62 total.
