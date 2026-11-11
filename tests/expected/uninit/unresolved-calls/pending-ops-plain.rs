@@ -25,6 +25,16 @@ unsafe fn indirect(f: fn(u8) -> u8, pointer: *const u8) -> u8 {
 
 #[kani::proof]
 fn check() {
-    let value = std::mem::MaybeUninit::<u8>::uninit();
-    let _ = unsafe { indirect(identity, value.as_ptr()) };
+    // Raw byte storage avoids the unsupported raw-pointer/union interaction.
+    let layout = std::alloc::Layout::new::<[u8; 2]>();
+    let pointer = unsafe { std::alloc::alloc(layout) };
+    if pointer.is_null() {
+        return;
+    }
+    unsafe {
+        *pointer = 7;
+        // The second byte remains uninitialized until the Call operand reads it.
+        let _ = indirect(identity, pointer.add(1));
+        std::alloc::dealloc(pointer, layout);
+    }
 }
