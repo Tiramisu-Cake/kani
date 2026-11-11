@@ -159,6 +159,89 @@ unsafe fn copy_call_writes_parameter(source: MaybeUninit<u8>) -> (u8, u8) {
     }
 }
 
+#[repr(C)]
+#[derive(Clone, Copy)]
+struct Padded {
+    tag: u8,
+    value: u32,
+}
+
+#[inline(never)]
+unsafe fn initialize_padded(pointer: *mut MaybeUninit<Padded>) -> *mut MaybeUninit<Padded> {
+    unsafe {
+        pointer.cast::<u8>().write_bytes(0x5A, std::mem::size_of::<Padded>());
+    }
+    pointer
+}
+
+#[inline(never)]
+fn consume_padded(value: MaybeUninit<Padded>) -> u8 {
+    unsafe { (*value.as_ptr()).tag }
+}
+
+#[inline(never)]
+unsafe fn read_padded_padding(pointer: *mut MaybeUninit<Padded>) -> u8 {
+    unsafe { std::ptr::read_volatile(pointer.cast::<u8>().add(1)) }
+}
+
+#[custom_mir(dialect = "runtime", phase = "optimized")]
+unsafe fn padded_move_call(source: MaybeUninit<Padded>) -> (u8, u8) {
+    mir! {
+        type RET = (u8, u8);
+        let pointer: *mut MaybeUninit<Padded>;
+        let callee: u8;
+        let padding: u8;
+
+        {
+            pointer = std::ptr::addr_of_mut!(source);
+            Call(pointer = initialize_padded(pointer), ReturnTo(after_initialize), UnwindContinue())
+        }
+
+        after_initialize = {
+            Call(callee = consume_padded(Move(source)), ReturnTo(after_call), UnwindContinue())
+        }
+
+        after_call = {
+            Call(padding = read_padded_padding(pointer), ReturnTo(done), UnwindContinue())
+        }
+
+        done = {
+            RET.0 = callee;
+            RET.1 = padding;
+            Return()
+        }
+    }
+}
+
+#[custom_mir(dialect = "runtime", phase = "optimized")]
+unsafe fn padded_copy_call(source: MaybeUninit<Padded>) -> (u8, u8) {
+    mir! {
+        type RET = (u8, u8);
+        let pointer: *mut MaybeUninit<Padded>;
+        let callee: u8;
+        let padding: u8;
+
+        {
+            pointer = std::ptr::addr_of_mut!(source);
+            Call(pointer = initialize_padded(pointer), ReturnTo(after_initialize), UnwindContinue())
+        }
+
+        after_initialize = {
+            Call(callee = consume_padded(source), ReturnTo(after_call), UnwindContinue())
+        }
+
+        after_call = {
+            Call(padding = read_padded_padding(pointer), ReturnTo(done), UnwindContinue())
+        }
+
+        done = {
+            RET.0 = callee;
+            RET.1 = padding;
+            Return()
+        }
+    }
+}
+
 #[kani::proof]
 fn in_place_move_reads_initialized_callee_then_uninit_source() {
     let (callee, source) = unsafe { move_call(MaybeUninit::new(0x51)) };
@@ -218,6 +301,12 @@ fn ordinary_by_value_temporary_preserves_original_source() {
 #[derive(Clone, Copy)]
 union Byte {
     byte: u8,
+    empty: (),
+}
+
+#[inline(never)]
+fn union_roundtrip(value: Byte) -> Byte {
+    value
 }
 
 #[inline(never)]
@@ -292,4 +381,37 @@ fn union_in_place_copy_preserves_source() {
     let (callee, source) = unsafe { union_copy_call(Byte { byte: 0x51 }) };
     assert_eq!(callee, 0x51);
     assert_eq!(source, 0x51);
+}
+
+#[kani::proof]
+fn union_normal_return_preserves_initialized_byte() {
+    let value = union_roundtrip(Byte { byte: 0x51 });
+    assert_eq!(unsafe { value.byte }, 0x51);
+}
+
+#[kani::proof]
+fn union_normal_return_preserves_uninitialized_byte() {
+    let value = union_roundtrip(Byte { empty: () });
+    let _read = unsafe { value.byte };
+}
+
+fn assert_padded_layout() {
+    assert_eq!(std::mem::size_of::<Padded>(), 8);
+    assert_eq!(std::mem::offset_of!(Padded, value), 4);
+}
+
+#[kani::proof]
+fn padded_custom_move_deinitializes_source_padding() {
+    assert_padded_layout();
+    let (tag, padding) = unsafe { padded_move_call(MaybeUninit::uninit()) };
+    assert_eq!(tag, 0x5A);
+    assert_eq!(padding, 0x5A);
+}
+
+#[kani::proof]
+fn padded_custom_copy_preserves_source_padding() {
+    assert_padded_layout();
+    let (tag, padding) = unsafe { padded_copy_call(MaybeUninit::uninit()) };
+    assert_eq!(tag, 0x5A);
+    assert_eq!(padding, 0x5A);
 }
