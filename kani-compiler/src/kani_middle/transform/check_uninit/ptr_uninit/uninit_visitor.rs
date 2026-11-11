@@ -542,6 +542,14 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                             | Intrinsic::AtomicXsub => {
                                 self.push_target(MemoryInitOp::Check { operand: args[0].clone() });
                             }
+                            Intrinsic::RawEq => {
+                                // References only guarantee initialized data, while raw_eq
+                                // reads every byte, including padding and union storage.
+                                self.push_target(MemoryInitOp::Unsupported {
+                                    reason: "Kani does not support checking memory initialization of raw_eq, which reads all bytes through references."
+                                        .to_string(),
+                                });
+                            }
                             Intrinsic::CompareBytes => {
                                 self.push_target(MemoryInitOp::CheckSliceChunk {
                                     operand: args[0].clone(),
@@ -823,6 +831,17 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                         // union-field checks. Delayed UB still checks affected typed locals.
                         // Only the layout rejection is bypassed; assign_storage installs T's
                         // data mask once, including false padding bytes.
+                    } else if let (
+                        TyKind::RigidTy(RigidTy::Array(from, from_len)),
+                        TyKind::RigidTy(RigidTy::Array(to, to_len)),
+                    ) = (operand_ty.kind(), ty.kind())
+                        && from_len == to_len
+                        && wrapper_inner(self.tcx, from, LangItem::MaybeUninit) == Some(to)
+                    {
+                        self.push_target(MemoryInitOp::Unsupported {
+                            reason: "Kani does not support checking memory initialization of transmute from [MaybeUninit<T>; N] to [T; N]."
+                                .to_string(),
+                        });
                     } else if self.maybe_uninit_transmute(operand, *ty) {
                         // Initialization was checked against the destination's data bytes.
                     } else if !tys_layout_compatible_to_size(&operand_ty, ty) {
@@ -928,7 +947,6 @@ fn can_skip_intrinsic(intrinsic: Intrinsic) -> bool {
         | Intrinsic::PowF64
         | Intrinsic::PowIF32
         | Intrinsic::PowIF64
-        | Intrinsic::RawEq
         | Intrinsic::RotateLeft
         | Intrinsic::RotateRight
         | Intrinsic::RoundF32

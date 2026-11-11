@@ -322,7 +322,8 @@ fn data_bytes_for_ty(
                                     let tag_data_bytes =
                                         vec![DataBytes { offset: current_offset, size: tag_size }];
 
-                                    // Retrieve data bytes for the fields.
+                                    // Compare variant layouts relative to the enum. Absolute
+                                    // offsets could be clipped by the enum-sized masks below.
                                     let mut fields_data_bytes = vec![];
                                     // Iterate over all variants for the enum.
                                     for (index, variant) in variants.iter().enumerate() {
@@ -335,7 +336,7 @@ fn data_bytes_for_ty(
                                                 &mut data_bytes_for_ty(
                                                     machine_info,
                                                     field_ty,
-                                                    field_offset + current_offset,
+                                                    field_offset,
                                                 )?,
                                             );
                                         }
@@ -365,6 +366,10 @@ fn data_bytes_for_ty(
                                         let mut total_data_bytes = tag_data_bytes;
                                         let mut field_data_bytes =
                                             fields_data_bytes.first().unwrap().clone();
+                                        // Compose the selected local layout exactly once.
+                                        for data_bytes in &mut field_data_bytes {
+                                            data_bytes.offset += current_offset;
+                                        }
                                         total_data_bytes.append(&mut field_data_bytes);
                                         Ok(total_data_bytes)
                                     } else {
@@ -398,9 +403,7 @@ fn data_bytes_for_ty(
                 }
                 RigidTy::Pat(base_ty, ..) => {
                     // This is similar to a structure with one field and with niche defined.
-                    let mut pat_data_bytes = vec![];
-                    pat_data_bytes.append(&mut data_bytes_for_ty(machine_info, *base_ty, 0)?);
-                    Ok(pat_data_bytes)
+                    data_bytes_for_ty(machine_info, *base_ty, current_offset)
                 }
                 RigidTy::Tuple(tys) => {
                     let mut tuple_data_bytes = vec![];
