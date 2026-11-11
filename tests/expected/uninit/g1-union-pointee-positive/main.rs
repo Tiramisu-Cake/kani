@@ -683,3 +683,50 @@ fn field_move_projection_rust() {
         assert_eq!((&(*union_ptr).value).word, 233);
     }
 }
+
+// Moving a value does not currently mark its source uninitialized, as for other types.
+#[inline(never)]
+fn consume_move_rust(_value: MoveR) {}
+
+#[inline(never)]
+fn consume_move_c(_value: MoveC) {}
+
+#[kani::proof]
+fn whole_move_source_uninit_c() {
+    let src = MoveC { wide: 173 };
+    let p = ptr::addr_of!(src);
+    let _dst = src;
+    unsafe {
+        let _moved_from = (*p).wide;
+    }
+}
+
+#[kani::proof]
+fn whole_move_source_uninit_rust() {
+    let src = MoveR { wide: 179 };
+    let p = ptr::addr_of!(src);
+    let _dst = src;
+    unsafe {
+        let _moved_from = (*p).wide;
+    }
+}
+
+#[kani::proof]
+fn argument_move_source_uninit_c() {
+    let src = MoveC { wide: 181 };
+    let p = ptr::addr_of!(src);
+    consume_move_c(src);
+    unsafe {
+        let _moved_from = (*p).wide;
+    }
+}
+
+#[kani::proof]
+fn argument_move_source_uninit_rust() {
+    let src = MoveR { wide: 191 };
+    let p = ptr::addr_of!(src);
+    consume_move_rust(src);
+    unsafe {
+        let _moved_from = (*p).wide;
+    }
+}

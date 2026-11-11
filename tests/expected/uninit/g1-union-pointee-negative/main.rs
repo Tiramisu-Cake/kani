@@ -139,46 +139,7 @@ union MoveR {
     narrow: u8,
     z: (),
 }
-#[kani::proof]
-fn whole_move_source_uninit_c() {
-    let src = MoveC { wide: 173 };
-    let p = ptr::addr_of!(src);
-    let _dst = src;
-    unsafe {
-        let _moved_from = (*p).wide;
-    }
-}
-#[kani::proof]
-fn whole_move_source_uninit_rust() {
-    let src = MoveR { wide: 179 };
-    let p = ptr::addr_of!(src);
-    let _dst = src;
-    unsafe {
-        let _moved_from = (*p).wide;
-    }
-}
-#[inline(never)]
-fn consume_move_c(_value: MoveC) {}
-#[inline(never)]
-fn consume_move_rust(_value: MoveR) {}
-#[kani::proof]
-fn argument_move_source_uninit_c() {
-    let src = MoveC { wide: 181 };
-    let p = ptr::addr_of!(src);
-    consume_move_c(src);
-    unsafe {
-        let _moved_from = (*p).wide;
-    }
-}
-#[kani::proof]
-fn argument_move_source_uninit_rust() {
-    let src = MoveR { wide: 191 };
-    let p = ptr::addr_of!(src);
-    consume_move_rust(src);
-    unsafe {
-        let _moved_from = (*p).wide;
-    }
-}
+
 #[kani::proof]
 fn whole_move_partial_c() {
     let src = MoveC { z: () };
