@@ -30,6 +30,7 @@ mod uninit_visitor;
 /// pointers.
 #[derive(Debug, Clone)]
 pub struct UninitPass {
+    pub c_ffi_enabled: bool,
     pub safety_check_type: CheckType,
     pub unsupported_check_type: CheckType,
     pub mem_init_fn_cache: HashMap<KaniFunction, FnDef>,
@@ -71,7 +72,7 @@ impl TransformPass for UninitPass {
             self.safety_check_type.clone(),
             self.unsupported_check_type.clone(),
             &mut self.mem_init_fn_cache,
-            CheckUninitVisitor::new(tcx),
+            CheckUninitVisitor::new(tcx, self.c_ffi_enabled),
         );
 
         (changed || instrumentation_added, body)
