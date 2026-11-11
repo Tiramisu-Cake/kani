@@ -42,7 +42,6 @@ macro_rules! kani_mem_init {
             pub argument_buffer_saved_object_id: usize,
             pub argument_buffer_saved_offset: usize,
             pub argument_buffer_layout_size: usize,
-            pub argument_buffer_moved: bool,
         }
 
         impl MemoryInitializationState {
@@ -58,7 +57,6 @@ macro_rules! kani_mem_init {
                     argument_buffer_saved_object_id: 0,
                     argument_buffer_saved_offset: 0,
                     argument_buffer_layout_size: 0,
-                    argument_buffer_moved: false,
                 }
             }
 
@@ -124,27 +122,6 @@ macro_rules! kani_mem_init {
                     && self.tracked_offset < offset + LAYOUT_SIZE
                 {
                     self.value &= layout[self.tracked_offset - offset];
-                }
-            }
-
-            /// A MIR Move deinitializes source-only bytes; the destination wins on overlap.
-            /// Identities are captured before a move/return, without reading expired pointers.
-            #[kanitool::disable_checks(pointer)]
-            pub fn clear_moved_source<const LAYOUT_SIZE: usize>(
-                &mut self,
-                from_obj: usize,
-                from_offset: usize,
-                to_obj: usize,
-                to_offset: usize,
-            ) {
-                if self.tracked_object_id == from_obj
-                    && self.tracked_offset >= from_offset
-                    && self.tracked_offset < from_offset + LAYOUT_SIZE
-                    && !(self.tracked_object_id == to_obj
-                        && self.tracked_offset >= to_offset
-                        && self.tracked_offset < to_offset + LAYOUT_SIZE)
-                {
-                    self.value = false;
                 }
             }
 
@@ -438,7 +415,6 @@ macro_rules! kani_mem_init {
             from: *const T,
             to: *const T,
             preserve: Layout<LAYOUT_SIZE>,
-            is_move: bool,
         ) {
             if LAYOUT_SIZE == 0 {
                 return;
@@ -446,14 +422,6 @@ macro_rules! kani_mem_init {
             copy_init_state::<LAYOUT_SIZE, T>(from, to, 1);
             unsafe {
                 MEM_INIT_STATE.retain(to as *const u8, preserve);
-                if is_move {
-                    MEM_INIT_STATE.clear_moved_source::<LAYOUT_SIZE>(
-                        super::mem::pointer_object(from),
-                        super::mem::pointer_offset(from),
-                        super::mem::pointer_object(to),
-                        super::mem::pointer_offset(to),
-                    );
-                }
             }
         }
 
@@ -461,11 +429,7 @@ macro_rules! kani_mem_init {
         /// buffer.
         #[kanitool::disable_checks(pointer)]
         #[kanitool::fn_marker = "StoreArgumentModel"]
-        fn store_argument<const LAYOUT_SIZE: usize, T>(
-            from: *const T,
-            selected_argument: usize,
-            is_move: bool,
-        ) {
+        fn store_argument<const LAYOUT_SIZE: usize, T>(from: *const T, selected_argument: usize) {
             let (from_ptr, _) = from.to_raw_parts();
             let saved_object_id = super::mem::pointer_object(from_ptr);
             let saved_offset = super::mem::pointer_offset(from_ptr);
@@ -476,7 +440,6 @@ macro_rules! kani_mem_init {
                     MEM_INIT_STATE.argument_buffer_saved_object_id = saved_object_id;
                     MEM_INIT_STATE.argument_buffer_saved_offset = saved_offset;
                     MEM_INIT_STATE.argument_buffer_layout_size = LAYOUT_SIZE;
-                    MEM_INIT_STATE.argument_buffer_moved = is_move;
                     MEM_INIT_STATE.argument_buffer_active = true;
                 }
             }
@@ -503,7 +466,6 @@ macro_rules! kani_mem_init {
                 let buffer_saved_object_id =
                     unsafe { MEM_INIT_STATE.argument_buffer_saved_object_id };
                 let buffer_saved_offset = unsafe { MEM_INIT_STATE.argument_buffer_saved_offset };
-                let is_move = unsafe { MEM_INIT_STATE.argument_buffer_moved };
                 let to_object_id = super::mem::pointer_object(to_ptr);
                 let to_offset = super::mem::pointer_offset(to_ptr);
                 unsafe {
@@ -516,14 +478,6 @@ macro_rules! kani_mem_init {
                     );
                     MEM_INIT_STATE.argument_buffer_active = false;
                     MEM_INIT_STATE.retain(to_ptr as *const u8, preserve);
-                    if is_move {
-                        MEM_INIT_STATE.clear_moved_source::<LAYOUT_SIZE>(
-                            buffer_saved_object_id,
-                            buffer_saved_offset,
-                            to_object_id,
-                            to_offset,
-                        );
-                    }
                 }
                 return;
             }

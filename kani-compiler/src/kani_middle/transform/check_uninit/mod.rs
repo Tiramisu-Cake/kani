@@ -706,13 +706,6 @@ impl<'a, 'tcx> UninitInstrumenter<'a, 'tcx> {
                 &pointee_info.transfer_mask(),
             ));
         }
-        if let MemoryInitOp::StoreArgument { operand, .. } = &operation {
-            args.push(Operand::Constant(ConstOperand {
-                span: source.span(body.blocks()),
-                user_ty: None,
-                const_: MirConst::from_bool(matches!(operand, Operand::Move(_))),
-            }));
-        }
         let terminator = Terminator {
             kind: TerminatorKind::Call {
                 func: Operand::Copy(Place::from(body.new_local(
@@ -760,19 +753,7 @@ impl<'a, 'tcx> UninitInstrumenter<'a, 'tcx> {
                     source.span(body.blocks()),
                     Mutability::Not,
                 ))),
-                args: vec![
-                    from,
-                    to,
-                    mask,
-                    Operand::Constant(ConstOperand {
-                        span: source.span(body.blocks()),
-                        user_ty: None,
-                        const_: MirConst::from_bool(matches!(
-                            &operation,
-                            MemoryInitOp::AssignUnion { rvalue: Operand::Move(_), .. }
-                        )),
-                    }),
-                ],
+                args: vec![from, to, mask],
                 destination: ret_place.clone(),
                 target: Some(0), // this will be overriden in add_bb
                 unwind: UnwindAction::Terminate,
