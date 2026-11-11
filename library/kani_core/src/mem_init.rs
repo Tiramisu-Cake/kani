@@ -391,6 +391,9 @@ macro_rules! kani_mem_init {
             to: *const T,
             layout: Layout<LAYOUT_SIZE>,
         ) {
+            if LAYOUT_SIZE == 0 {
+                return;
+            }
             let (from_ptr, _) = from.to_raw_parts();
             let (to_ptr, _) = to.to_raw_parts();
             unsafe {
