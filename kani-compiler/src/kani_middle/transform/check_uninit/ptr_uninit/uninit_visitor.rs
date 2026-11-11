@@ -35,6 +35,7 @@ use rustc_public::{
 
 pub struct CheckUninitVisitor<'tcx> {
     tcx: TyCtxt<'tcx>,
+    c_ffi_enabled: bool,
     locals: Vec<LocalDecl>,
     /// All target instructions in the body.
     targets: Vec<InitRelevantInstruction>,
@@ -116,9 +117,10 @@ impl TargetFinder for CheckUninitVisitor<'_> {
 }
 
 impl<'tcx> CheckUninitVisitor<'tcx> {
-    pub fn new(tcx: TyCtxt<'tcx>) -> Self {
+    pub fn new(tcx: TyCtxt<'tcx>, c_ffi_enabled: bool) -> Self {
         Self {
             tcx,
+            c_ffi_enabled,
             locals: vec![],
             targets: vec![],
             current_target: InitRelevantInstruction {
@@ -627,15 +629,24 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                         | "alloc::alloc::__rust_realloc"
                         | "alloc::alloc::__rust_alloc_zeroed"
                         | "alloc::alloc::__rust_dealloc"
+                        | "alloc::alloc::__rust_no_alloc_shim_is_unstable_v2"
                 );
                 let has_unmodeled_memory_args = args.iter().any(|arg| {
                     let ty = arg.ty(&self.locals).unwrap();
                     self.touches_shadow(ty) || self.pointer_or_reference(ty)
                 });
+                let destination_ty = destination.ty(&self.locals).unwrap();
+                // With C-FFI enabled, foreign code can also reach union storage through
+                // globals or escaped pointers, even without memory-carrying arguments.
+                // Otherwise the backend rejects unmodeled foreign calls; the allocator
+                // shim above has an explicit no-effect implementation in kani_lib.c.
+                let may_touch_shadow = has_unmodeled_memory_args
+                    || self.transfers_shadow(destination_ty)
+                    || (instance.is_foreign_item() && self.c_ffi_enabled);
                 if instance.kind == InstanceKind::Item
                     && !modeled_foreign_memory_effect
-                    && (instance.is_foreign_item()
-                        || (!instance.has_body() && has_unmodeled_memory_args))
+                    && may_touch_shadow
+                    && (instance.is_foreign_item() || !instance.has_body())
                 {
                     self.push_target(MemoryInitOp::Unsupported {
                         reason: "Kani does not support foreign mutation of union storage without an effect model."
@@ -645,7 +656,6 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                     self.targets.push(self.current_target.clone());
                     return;
                 }
-                let destination_ty = destination.ty(&self.locals).unwrap();
                 if self.transfers_shadow(destination_ty) && instance.kind == InstanceKind::Item {
                     if instance.has_body() {
                         self.push_target(MemoryInitOp::LoadArgument {
@@ -803,6 +813,9 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                     InstanceKind::Item => {
                         if instance.is_foreign_item() {
                             match instance.name().as_str() {
+                                "alloc::alloc::__rust_no_alloc_shim_is_unstable_v2" => {
+                                    /* The allocator linkage shim has no memory effects. */
+                                }
                                 "alloc::alloc::__rust_alloc" | "alloc::alloc::__rust_realloc" => {
                                     /* Memory is uninitialized, nothing to do here. */
                                 }

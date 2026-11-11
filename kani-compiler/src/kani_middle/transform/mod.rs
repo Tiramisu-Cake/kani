@@ -136,6 +136,7 @@ impl BodyTransformation {
         transformer.add_pass(
             queries,
             UninitPass {
+                c_ffi_enabled: queries.args().unstable_features.contains(&"c-ffi".to_string()),
                 // Since this uses demonic non-determinism under the hood, should not assume the assertion.
                 safety_check_type: CheckType::new_safety_check_assert_no_assume(queries),
                 unsupported_check_type: unsupported_check_type.clone(),
