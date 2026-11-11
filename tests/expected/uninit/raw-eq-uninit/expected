@@ -1,3 +1,5 @@
+Checking harness raw_eq_initialized_array_references...
+VERIFICATION:- SUCCESSFUL
 Checking harness raw_eq_initialized_arrays...
 VERIFICATION:- SUCCESSFUL
 Checking harness raw_eq_initialized_scalars...
@@ -5,17 +7,17 @@ VERIFICATION:- SUCCESSFUL
 Checking harness raw_eq_initialized_storage...
 VERIFICATION:- SUCCESSFUL
 Checking harness raw_eq_left_uninitialized_byte...
-Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type `*const [u8; 3]`
+Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type `[u8; 3]`
 VERIFICATION:- FAILED
 Checking harness raw_eq_padding_is_uninitialized...
-Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type `*const [u8; 12]`
+Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type `[u8; 12]`
 VERIFICATION:- FAILED
 Checking harness raw_eq_right_uninitialized_byte...
-Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type `*const [u8; 3]`
+Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type `[u8; 3]`
 VERIFICATION:- FAILED
 Checking harness raw_eq_zero_sized...
 VERIFICATION:- SUCCESSFUL
 Verification failed for - raw_eq_left_uninitialized_byte
 Verification failed for - raw_eq_padding_is_uninitialized
 Verification failed for - raw_eq_right_uninitialized_byte
-Complete - 4 successfully verified harnesses, 3 failures, 7 total.
+Complete - 5 successfully verified harnesses, 3 failures, 8 total.
