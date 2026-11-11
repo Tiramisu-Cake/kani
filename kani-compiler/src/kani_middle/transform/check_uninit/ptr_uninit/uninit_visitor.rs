@@ -260,14 +260,15 @@ impl MirVisitor for CheckUninitVisitor {
         }
         // Leave it as an exhaustive match to be notified when a new kind is added.
         match &term.kind {
-            TerminatorKind::Call { func, args, destination, .. } => {
+            TerminatorKind::Call { func, args, destination, .. } => 'call: {
                 self.super_terminator(term, location);
                 let instance = match try_resolve_instance(&self.locals, func) {
                     Ok(instance) => instance,
                     Err(reason) => {
-                        self.super_terminator(term, location);
                         self.push_target(MemoryInitOp::Unsupported { reason });
-                        return;
+                        // Keep entry loads and operations collected while visiting the call.
+                        // The common terminator epilogue must publish this target, even on error.
+                        break 'call;
                     }
                 };
                 match instance.kind {
@@ -396,7 +397,19 @@ impl MirVisitor for CheckUninitVisitor {
                             }
                         }
                     }
-                    _ => {}
+                    InstanceKind::Virtual { .. } => {
+                        self.push_target(MemoryInitOp::Unsupported {
+                            reason: unsupported_call_reason("trait object method calls"),
+                        });
+                    }
+                    InstanceKind::Shim | InstanceKind::LlvmIntrinsic => {
+                        self.push_target(MemoryInitOp::Unsupported {
+                            reason: unsupported_call_reason(&format!(
+                                "calls to {:?} instances",
+                                instance.kind
+                            )),
+                        });
+                    }
                 }
             }
             TerminatorKind::Drop { place, .. } => {
@@ -708,11 +721,18 @@ fn try_remove_topmost_deref(place: &Place) -> Option<Place> {
 fn try_resolve_instance(locals: &[LocalDecl], func: &Operand) -> Result<Instance, String> {
     let ty = func.ty(locals).unwrap();
     match ty.kind() {
-        TyKind::RigidTy(RigidTy::FnDef(def, args)) => Ok(Instance::resolve(def, &args).unwrap()),
-        _ => Err(format!(
-            "Kani was not able to resolve the instance of the function operand `{ty:?}`. Currently, memory initialization checks in presence of function pointers and vtable calls are not supported. For more information about planned support, see https://github.com/model-checking/kani/issues/3300."
-        )),
+        TyKind::RigidTy(RigidTy::FnDef(def, args)) => Instance::resolve(def, &args).map_err(|err| {
+            format!("Kani could not resolve function item `{ty:?}` for memory initialization checks: {err:?}.")
+        }),
+        _ => Err(unsupported_call_reason("calls through function pointers")),
     }
+}
+
+/// Describe a call whose memory effects cannot be tracked by the uninitialized-memory passes.
+fn unsupported_call_reason(kind: &str) -> String {
+    format!(
+        "Kani does not support memory initialization checks across {kind}. For more information about planned support, see https://github.com/model-checking/kani/issues/3300."
+    )
 }
 
 /// The pointer argument of an allocation shim, as a raw pointer.

@@ -345,8 +345,9 @@ impl<'tcx> Analysis<'tcx> for PointsToAnalysis<'_, 'tcx> {
 
 /// Why the analysis cannot follow a call to a callee of type `func_ty`, if it cannot: the callee of
 /// a call through a function pointer or a vtable is not known statically. Callers that rely on the
-/// analysis must guard such calls with an unsupported check.
-pub fn unsupported_call(func_ty: StableTy) -> Option<String> {
+/// analysis must guard such calls with an unsupported check. The local uninitialized-memory
+/// visitor owns that check, independently of whether delayed-UB analysis has any targets.
+fn unsupported_call(func_ty: StableTy) -> Option<String> {
     let reason = match func_ty.kind() {
         StableTyKind::RigidTy(StableRigidTy::FnDef(def, args)) => {
             match StableInstance::resolve(def, &args) {
