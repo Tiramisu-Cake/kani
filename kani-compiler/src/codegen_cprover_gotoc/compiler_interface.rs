@@ -115,7 +115,7 @@ impl GotocCodegenBackend {
         );
 
         // Retrieve all instances from the currently codegened items.
-        let instances = items
+        let instances: Vec<Instance> = items
             .iter()
             .filter_map(|item| match item {
                 MonoItem::Fn(instance) => Some(*instance),
