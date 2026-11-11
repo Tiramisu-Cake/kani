@@ -20,6 +20,7 @@ struct Nested {
 }
 
 #[kani::proof]
+#[kani::unwind(17)]
 fn nested_enum_equal_layouts_preserve_data() {
     assert_eq!(mem::size_of::<Same>(), 8);
     assert_eq!(mem::offset_of!(Nested, value), 16);
@@ -34,7 +35,11 @@ fn nested_enum_equal_layouts_preserve_data() {
     }
     let destination = source;
     unsafe {
-        assert_eq!((*destination.as_ptr()).prefix, [9; 16]);
+        // Array equality specializes to raw_eq, which has an explicit Unsupported
+        // boundary. Compare each byte so this stays a positive layout control.
+        for index in 0..16 {
+            assert_eq!((*destination.as_ptr()).prefix[index], 9);
+        }
         match ptr::addr_of!((*destination.as_ptr()).value).read() {
             Same::A(actual) => {
                 assert!(!second);
