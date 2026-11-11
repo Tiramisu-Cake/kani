@@ -65,12 +65,13 @@ impl TransformPass for UninitPass {
 
         // Call a helper that performs the actual instrumentation.
         let (instrumentation_added, body) = UninitInstrumenter::run(
+            tcx,
             new_body.into(),
             instance,
             self.safety_check_type.clone(),
             self.unsupported_check_type.clone(),
             &mut self.mem_init_fn_cache,
-            CheckUninitVisitor::new(),
+            CheckUninitVisitor::new(tcx),
         );
 
         (changed || instrumentation_added, body)

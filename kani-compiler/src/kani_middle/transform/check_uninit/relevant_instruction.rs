@@ -12,7 +12,7 @@ use rustc_public::{
         CastKind, FieldIdx, Mutability, Operand, Place, RawPtrKind, Rvalue, Statement,
         StatementKind,
     },
-    ty::{RigidTy, Ty},
+    ty::{ConstantKind, RigidTy, Ty},
 };
 use strum_macros::AsRefStr;
 
@@ -37,9 +37,13 @@ pub enum MemoryInitOp {
     /// Set memory initialization of data bytes in a memory region starting from the reference to
     /// `operand` and of length `sizeof(operand)` bytes.
     CheckRef { operand: Operand },
+    /// Check the destination type's data bytes at the address of a transmute source.
+    CheckRefAs { operand: Operand, pointee_ty: Ty },
     /// Set memory initialization of data bytes in a memory region starting from the reference to
     /// `operand` and of length `sizeof(operand)` bytes.
     SetRef { operand: Operand, value: bool, position: InsertPosition },
+    /// Replace the state of every byte in storage assigned from a MIR constant.
+    SetStorage { operand: Operand, initialized: Vec<bool>, position: InsertPosition },
     /// Unsupported memory initialization operation.
     Unsupported { reason: String },
     /// Operation that trivially accesses uninitialized memory, results in injecting `assert!(false)`.
@@ -47,14 +51,12 @@ pub enum MemoryInitOp {
     /// Copy memory initialization state over to another operand.
     Copy { from: Operand, to: Operand, count: Operand },
     /// Copy memory initialization state over from one union variable to another.
-    AssignUnion { lvalue: Place, rvalue: Operand },
+    AssignUnion { lvalue: Place, rvalue: Operand, position: InsertPosition },
     /// Create a union from scratch with a given field index and store it in the provided operand.
     CreateUnion { operand: Operand, field: FieldIdx },
-    /// Load argument containing a union from the argument buffer together if the argument number
-    /// provided matches.
-    LoadArgument { operand: Operand, argument_no: usize },
-    /// Store argument containing a union into the argument buffer together with the argument number
-    /// provided.
+    /// Load a union from the argument buffer. Index zero is reserved for the return place.
+    LoadArgument { operand: Operand, argument_no: usize, position: InsertPosition },
+    /// Store a union into the argument buffer. Index zero is reserved for the return place.
     StoreArgument { operand: Operand, argument_no: usize },
 }
 
@@ -76,8 +78,13 @@ impl MemoryInitOp {
             MemoryInitOp::CheckAs { operand, pointee_ty } => {
                 mk_cast(operand, *pointee_ty, body, statements, source)
             }
+            MemoryInitOp::CheckRefAs { operand, pointee_ty } => {
+                let address = mk_ref(operand, body, statements, source);
+                mk_cast(&address, *pointee_ty, body, statements, source)
+            }
             MemoryInitOp::CheckRef { operand, .. }
             | MemoryInitOp::SetRef { operand, .. }
+            | MemoryInitOp::SetStorage { operand, .. }
             | MemoryInitOp::CreateUnion { operand, .. }
             | MemoryInitOp::LoadArgument { operand, .. }
             | MemoryInitOp::StoreArgument { operand, .. } => {
@@ -108,7 +115,7 @@ impl MemoryInitOp {
         source: &mut SourceInstruction,
     ) -> (Operand, Operand) {
         match self {
-            MemoryInitOp::AssignUnion { lvalue, rvalue } => {
+            MemoryInitOp::AssignUnion { lvalue, rvalue, .. } => {
                 let lvalue_as_operand = Operand::Copy(lvalue.clone());
                 (
                     mk_ref(rvalue, body, statements, source),
@@ -125,8 +132,12 @@ impl MemoryInitOp {
             | MemoryInitOp::Set { operand, .. }
             | MemoryInitOp::CheckSliceChunk { operand, .. }
             | MemoryInitOp::SetSliceChunk { operand, .. } => operand.ty(body.locals()).unwrap(),
-            MemoryInitOp::CheckAs { pointee_ty, .. } => Ty::new_ptr(*pointee_ty, Mutability::Not),
+            MemoryInitOp::CheckAs { pointee_ty, .. }
+            | MemoryInitOp::CheckRefAs { pointee_ty, .. } => {
+                Ty::new_ptr(*pointee_ty, Mutability::Not)
+            }
             MemoryInitOp::SetRef { operand, .. }
+            | MemoryInitOp::SetStorage { operand, .. }
             | MemoryInitOp::CheckRef { operand, .. }
             | MemoryInitOp::CreateUnion { operand, .. }
             | MemoryInitOp::LoadArgument { operand, .. }
@@ -174,7 +185,9 @@ impl MemoryInitOp {
             | MemoryInitOp::CheckAs { .. }
             | MemoryInitOp::Set { .. }
             | MemoryInitOp::CheckRef { .. }
+            | MemoryInitOp::CheckRefAs { .. }
             | MemoryInitOp::SetRef { .. }
+            | MemoryInitOp::SetStorage { .. }
             | MemoryInitOp::CreateUnion { .. }
             | MemoryInitOp::AssignUnion { .. }
             | MemoryInitOp::Unsupported { .. }
@@ -189,11 +202,12 @@ impl MemoryInitOp {
             MemoryInitOp::Set { value, .. }
             | MemoryInitOp::SetSliceChunk { value, .. }
             | MemoryInitOp::SetRef { value, .. } => *value,
-            MemoryInitOp::CreateUnion { .. } => true,
+            MemoryInitOp::CreateUnion { .. } | MemoryInitOp::SetStorage { .. } => true,
             MemoryInitOp::Check { .. }
             | MemoryInitOp::CheckAs { .. }
             | MemoryInitOp::CheckSliceChunk { .. }
             | MemoryInitOp::CheckRef { .. }
+            | MemoryInitOp::CheckRefAs { .. }
             | MemoryInitOp::Unsupported { .. }
             | MemoryInitOp::TriviallyUnsafe { .. }
             | MemoryInitOp::Copy { .. }
@@ -210,9 +224,11 @@ impl MemoryInitOp {
             | MemoryInitOp::CheckAs { .. }
             | MemoryInitOp::CheckSliceChunk { .. }
             | MemoryInitOp::CheckRef { .. }
+            | MemoryInitOp::CheckRefAs { .. }
             | MemoryInitOp::Set { .. }
             | MemoryInitOp::SetSliceChunk { .. }
             | MemoryInitOp::SetRef { .. }
+            | MemoryInitOp::SetStorage { .. }
             | MemoryInitOp::Unsupported { .. }
             | MemoryInitOp::TriviallyUnsafe { .. }
             | MemoryInitOp::Copy { .. }
@@ -226,18 +242,19 @@ impl MemoryInitOp {
         match self {
             MemoryInitOp::Set { position, .. }
             | MemoryInitOp::SetSliceChunk { position, .. }
-            | MemoryInitOp::SetRef { position, .. } => *position,
+            | MemoryInitOp::SetRef { position, .. }
+            | MemoryInitOp::SetStorage { position, .. }
+            | MemoryInitOp::AssignUnion { position, .. }
+            | MemoryInitOp::LoadArgument { position, .. } => *position,
             MemoryInitOp::Check { .. }
             | MemoryInitOp::CheckAs { .. }
             | MemoryInitOp::CheckSliceChunk { .. }
             | MemoryInitOp::CheckRef { .. }
+            | MemoryInitOp::CheckRefAs { .. }
             | MemoryInitOp::Unsupported { .. }
             | MemoryInitOp::TriviallyUnsafe { .. }
-            | MemoryInitOp::StoreArgument { .. }
-            | MemoryInitOp::LoadArgument { .. } => InsertPosition::Before,
-            MemoryInitOp::Copy { .. }
-            | MemoryInitOp::AssignUnion { .. }
-            | MemoryInitOp::CreateUnion { .. } => InsertPosition::After,
+            | MemoryInitOp::StoreArgument { .. } => InsertPosition::Before,
+            MemoryInitOp::Copy { .. } | MemoryInitOp::CreateUnion { .. } => InsertPosition::After,
         }
     }
 
@@ -269,6 +286,16 @@ impl InitRelevantInstruction {
             InsertPosition::Before => self.before_instruction.push(source_op),
             InsertPosition::After => self.after_instruction.push(source_op),
         }
+    }
+}
+
+/// The initialized byte mask of a fully evaluated MIR constant.
+pub(super) fn constant_init_mask(operand: &Operand) -> Option<Vec<bool>> {
+    let Operand::Constant(constant) = operand else { return None };
+    match constant.const_.kind() {
+        ConstantKind::Allocated(alloc) => Some(alloc.bytes.iter().map(Option::is_some).collect()),
+        ConstantKind::ZeroSized => Some(vec![]),
+        _ => None,
     }
 }
 

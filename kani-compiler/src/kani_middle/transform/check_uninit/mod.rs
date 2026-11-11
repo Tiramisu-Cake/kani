@@ -8,7 +8,8 @@ use crate::kani_middle::nonnull_pointee;
 use crate::kani_middle::transform::body::{
     CheckType, InsertPosition, MutableBody, SourceInstruction, synthetic_source_info,
 };
-use relevant_instruction::{InitRelevantInstruction, MemoryInitOp};
+use relevant_instruction::{InitRelevantInstruction, MemoryInitOp, constant_init_mask};
+use rustc_middle::ty::TyCtxt;
 use rustc_public::{
     mir::{
         AggregateKind, BasicBlock, Body, ConstOperand, Mutability, Operand, Place, Rvalue,
@@ -17,6 +18,7 @@ use rustc_public::{
     ty::{FnDef, GenericArgKind, GenericArgs, MirConst, RigidTy, Ty, TyConst, TyKind, UintTy},
 };
 use std::collections::HashMap;
+use ty_layout::maybe_uninit_storage;
 
 use crate::kani_middle::kani_functions::{KaniFunction, KaniModel};
 pub use delayed_ub::DelayedUbPass;
@@ -88,16 +90,18 @@ const SKIPPED_ITEMS: &[KaniFunction] = &[
 ];
 
 /// Instruments the code with checks for uninitialized memory, agnostic to the source of targets.
-pub struct UninitInstrumenter<'a> {
+pub struct UninitInstrumenter<'a, 'tcx> {
+    tcx: TyCtxt<'tcx>,
     safety_check_type: CheckType,
     unsupported_check_type: CheckType,
     /// Used to cache FnDef lookups of injected memory initialization functions.
     mem_init_fn_cache: &'a mut HashMap<KaniFunction, FnDef>,
 }
 
-impl<'a> UninitInstrumenter<'a> {
+impl<'a, 'tcx> UninitInstrumenter<'a, 'tcx> {
     /// Create the instrumenter and run it with the given parameters.
     pub(crate) fn run(
+        tcx: TyCtxt<'tcx>,
         body: Body,
         instance: Instance,
         safety_check_type: CheckType,
@@ -106,7 +110,7 @@ impl<'a> UninitInstrumenter<'a> {
         target_finder: impl TargetFinder,
     ) -> (bool, Body) {
         let mut instrumenter =
-            Self { safety_check_type, unsupported_check_type, mem_init_fn_cache };
+            Self { tcx, safety_check_type, unsupported_check_type, mem_init_fn_cache };
         let body = MutableBody::from(body);
         let (changed, new_body) = instrumenter.instrument(body, instance, target_finder);
         (changed, new_body.into())
@@ -154,8 +158,38 @@ impl<'a> UninitInstrumenter<'a> {
         &mut self,
         body: &mut MutableBody,
         source: &mut SourceInstruction,
-        operation: MemoryInitOp,
+        mut operation: MemoryInitOp,
     ) {
+        if let MemoryInitOp::StoreArgument { operand, .. } = &mut operation
+            && matches!(operand, Operand::Constant(_))
+            && maybe_uninit_storage(self.tcx, operand.ty(body.locals()).unwrap()).is_some()
+        {
+            let Some(initialized) = constant_init_mask(operand) else {
+                self.inject_unsupported_check(
+                    body,
+                    source,
+                    InsertPosition::Before,
+                    "Kani cannot determine the initialization state of this MaybeUninit argument.",
+                );
+                return;
+            };
+            let local = body.insert_assignment(
+                Rvalue::Use(operand.clone(), WithRetag::No),
+                source,
+                InsertPosition::Before,
+            );
+            *operand = Operand::Copy(Place::from(local));
+            self.build_check_for_operation(
+                body,
+                source,
+                MemoryInitOp::SetStorage {
+                    operand: operand.clone(),
+                    initialized,
+                    position: InsertPosition::Before,
+                },
+            );
+        }
+
         if let MemoryInitOp::Unsupported { reason } = &operation {
             self.inject_unsupported_check(body, source, operation.position(), reason);
             return;
@@ -181,7 +215,35 @@ impl<'a> UninitInstrumenter<'a> {
                     )
                 };
             // Calculate pointee layout for byte-by-byte memory initialization checks.
-            match PointeeInfo::from_ty(pointee_ty) {
+            let layout = if maybe_uninit_storage(self.tcx, pointee_ty).is_some() {
+                match &operation {
+                    // Reading a slot or slice of slots does not require initialized data.
+                    MemoryInitOp::Check { .. }
+                    | MemoryInitOp::CheckRef { .. }
+                    | MemoryInitOp::CheckAs { .. }
+                    | MemoryInitOp::CheckSliceChunk { .. } => {
+                        match PointeeInfo::for_storage(self.tcx, pointee_ty) {
+                            Ok(_) => return,
+                            Err(reason) => Err(reason),
+                        }
+                    }
+                    // The pointer visitor handles writes to this storage, including transfers.
+                    // A generic set from delayed UB instrumentation would erase that state.
+                    MemoryInitOp::SetRef { .. } => return,
+                    MemoryInitOp::SetStorage { .. }
+                    | MemoryInitOp::Copy { .. }
+                    | MemoryInitOp::AssignUnion { .. }
+                    | MemoryInitOp::StoreArgument { .. }
+                    | MemoryInitOp::LoadArgument { .. }
+                    | MemoryInitOp::SetSliceChunk { .. } => {
+                        PointeeInfo::for_storage(self.tcx, pointee_ty)
+                    }
+                    _ => PointeeInfo::from_ty(pointee_ty),
+                }
+            } else {
+                PointeeInfo::from_ty(pointee_ty)
+            };
+            match layout {
                 Ok(type_info) => type_info,
                 Err(reason) => {
                     let reason = format!(
@@ -197,13 +259,15 @@ impl<'a> UninitInstrumenter<'a> {
             MemoryInitOp::CheckSliceChunk { .. }
             | MemoryInitOp::Check { .. }
             | MemoryInitOp::CheckAs { .. }
-            | MemoryInitOp::CheckRef { .. } => {
+            | MemoryInitOp::CheckRef { .. }
+            | MemoryInitOp::CheckRefAs { .. } => {
                 self.build_get_and_check(body, source, operation, pointee_info)
             }
             MemoryInitOp::SetSliceChunk { .. }
             | MemoryInitOp::Set { .. }
             | MemoryInitOp::SetRef { .. }
-            | MemoryInitOp::CreateUnion { .. } => {
+            | MemoryInitOp::CreateUnion { .. }
+            | MemoryInitOp::SetStorage { .. } => {
                 self.build_set(body, source, operation, pointee_info)
             }
             MemoryInitOp::Copy { .. } => self.build_copy(body, source, operation, pointee_info),
@@ -244,7 +308,8 @@ impl<'a> UninitInstrumenter<'a> {
                 let (diagnostic, args) = match &operation {
                     MemoryInitOp::Check { .. }
                     | MemoryInitOp::CheckAs { .. }
-                    | MemoryInitOp::CheckRef { .. } => {
+                    | MemoryInitOp::CheckRef { .. }
+                    | MemoryInitOp::CheckRefAs { .. } => {
                         let diagnostic = KANI_IS_PTR_INITIALIZED;
                         let args = vec![ptr_operand.clone(), layout_operand];
                         (diagnostic, args)
@@ -334,6 +399,7 @@ impl<'a> UninitInstrumenter<'a> {
             MemoryInitOp::Check { operand }
             | MemoryInitOp::CheckSliceChunk { operand, .. }
             | MemoryInitOp::CheckRef { operand } => operand.ty(body.locals()).unwrap(),
+            MemoryInitOp::CheckRefAs { pointee_ty, .. } => *pointee_ty,
             MemoryInitOp::CheckAs { .. } => operation.operand_ty(body),
             _ => unreachable!(),
         };
@@ -369,11 +435,19 @@ impl<'a> UninitInstrumenter<'a> {
         let value = operation.expect_value();
         let terminator = match pointee_info.layout() {
             PointeeLayout::Sized { layout } => {
+                let layout = if let MemoryInitOp::SetStorage { initialized, .. } = &operation {
+                    assert_eq!(layout.len(), initialized.len());
+                    initialized
+                } else {
+                    layout
+                };
                 let layout_operand = mk_layout_operand(body, &mut statements, source, layout);
                 // Depending on whether writing to the known number of elements in the slice, need to
                 // pass is as an argument.
                 let (diagnostic, args) = match &operation {
-                    MemoryInitOp::Set { .. } | MemoryInitOp::SetRef { .. } => {
+                    MemoryInitOp::Set { .. }
+                    | MemoryInitOp::SetRef { .. }
+                    | MemoryInitOp::SetStorage { .. } => {
                         let diagnostic = KANI_SET_PTR_INITIALIZED;
                         let args = vec![
                             ptr_operand,
@@ -490,7 +564,17 @@ impl<'a> UninitInstrumenter<'a> {
                         return;
                     }
                 };
-                let layout = &field_layouts[union_field];
+                let field_layout = &field_layouts[union_field];
+                let mut storage_layout;
+                let layout = if maybe_uninit_storage(self.tcx, *pointee_info.ty()).is_some() {
+                    // An empty aggregate replaces the entire slot, even when its field is ().
+                    let size = pointee_info.ty().layout().unwrap().shape().size.bytes();
+                    storage_layout = field_layout.clone();
+                    storage_layout.resize(size, false);
+                    &storage_layout
+                } else {
+                    field_layout
+                };
                 let layout_operand = mk_layout_operand(body, &mut statements, source, layout);
                 let diagnostic = KANI_SET_PTR_INITIALIZED;
                 let args = vec![
