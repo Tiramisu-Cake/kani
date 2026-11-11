@@ -9,6 +9,6 @@ include!("../g1-union-pointee-unsupported/types.inc");
 #[kani::proof]
 fn reject_forget_union_array() {
     unsafe {
-        std::intrinsics::forget([U { wide: 1 }; 0]);
+        std::intrinsics::forget([U { wide: 1 }; 1]);
     }
 }

@@ -254,30 +254,6 @@ fat_pointer_field_value_uninit_rust.safety_check.\
 	 - Status: FAILURE\
 	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `*const [u8]`"
 
-field_move_constructor_source_uninit_c.safety_check.\
-	 - Status: FAILURE\
-	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u32`"
-
-field_move_constructor_source_uninit_rust.safety_check.\
-	 - Status: FAILURE\
-	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u32`"
-
-field_move_projection_source_uninit_c.safety_check.\
-	 - Status: FAILURE\
-	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u32`"
-
-field_move_projection_source_uninit_rust.safety_check.\
-	 - Status: FAILURE\
-	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u32`"
-
-intrinsic_forget_move_source_uninit_c.safety_check.\
-	 - Status: FAILURE\
-	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u32`"
-
-intrinsic_forget_move_source_uninit_rust.safety_check.\
-	 - Status: FAILURE\
-	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u32`"
-
 Summary:
 Verification failed for - unwritten_c
 Verification failed for - unwritten_rust
@@ -343,10 +319,4 @@ Verification failed for - pointer_field_value_uninit_c
 Verification failed for - pointer_field_value_uninit_rust
 Verification failed for - fat_pointer_field_value_uninit_c
 Verification failed for - fat_pointer_field_value_uninit_rust
-Verification failed for - field_move_constructor_source_uninit_c
-Verification failed for - field_move_constructor_source_uninit_rust
-Verification failed for - field_move_projection_source_uninit_c
-Verification failed for - field_move_projection_source_uninit_rust
-Verification failed for - intrinsic_forget_move_source_uninit_c
-Verification failed for - intrinsic_forget_move_source_uninit_rust
-Complete - 0 successfully verified harnesses, 70 failures, 70 total.
+Complete - 0 successfully verified harnesses, 64 failures, 64 total.
