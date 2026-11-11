@@ -1,6 +1,0 @@
-SUCCESS\
-attempt to add with overflow
-SUCCESS\
-attempt to add with overflow
-SUCCESS\
-assertion failed: num + 10 == y

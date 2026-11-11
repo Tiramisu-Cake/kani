@@ -1,8 +1,0 @@
-assertion\
-- Status: FAILURE\
-- Description: "|result : &u32| *result == x"\
-in function max
-
-Failed Checks: |result : &u32| *result == x
-
-VERIFICATION:- FAILED

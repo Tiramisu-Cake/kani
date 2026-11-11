@@ -1,2 +1,0 @@
-found `#[kani::loop_decreases]` without `-Z loop-contracts`. The decreases clause will be ignored.
-VERIFICATION:- SUCCESSFUL

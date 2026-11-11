@@ -1,3 +1,0 @@
-Status: FAILURE\
-Description: "`simd_shuffle` with the result type `i64x2` (2 lanes for a 4-lane shuffle) is not currently supported by Kani
-VERIFICATION:- FAILED

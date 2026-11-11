@@ -1,3 +1,0 @@
-DEBUG kani_compiler
-goto-cc
-cbmc

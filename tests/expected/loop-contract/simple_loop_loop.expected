@@ -1,6 +1,0 @@
-main.loop_invariant_base.1\
-	 - Status: SUCCESS\
-	 - Description: "Check invariant before entry for loop main.0"\
-in function main
-
-VERIFICATION:- SUCCESSFUL

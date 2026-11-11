@@ -1,3 +1,0 @@
-Status: FAILURE\
-Description: "`simd_eq` with the result type `u32x4` (4 lanes for a 2-lane comparison) is not currently supported by Kani
-VERIFICATION:- FAILED

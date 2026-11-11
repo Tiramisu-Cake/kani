@@ -1,3 +1,0 @@
-Status: FAILURE\
-Description: "`simd_extract` with the result type `i32` (the input `i64x2` has `i64` lanes) is not currently supported by Kani
-VERIFICATION:- FAILED

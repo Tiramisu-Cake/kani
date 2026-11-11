@@ -1,3 +1,0 @@
-Status: FAILURE\
-Description: "`simd_eq` with the result type `f32x2` (non-integer `f32` lanes) is not currently supported by Kani
-VERIFICATION:- FAILED

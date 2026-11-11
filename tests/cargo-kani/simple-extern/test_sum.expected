@@ -1,2 +1,0 @@
-SUCCESS\
-assertion rust_add1(x) == x + 1

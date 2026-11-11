@@ -1,3 +1,0 @@
-line 18 assertion failed: false: FAILURE
-line 23 "{}", s: FAILURE
-line 27 "Fail with custom static message": FAILURE

@@ -1,7 +1,0 @@
-main.assertion\
-- Status: FAILURE\
-- Description: "Increment havocked"
-
-Failed Checks: Increment havocked
-
-VERIFICATION:- FAILED

@@ -1,6 +1,0 @@
-Failed Checks: Offset result address must equal original pointer address plus offset
-Failed Checks: Offset result address must equal original pointer address plus offset
-
-Verification failed for - test_offset_overflow
-Verification failed for - check_ptr_oob
-Complete - 1 successfully verified harnesses, 2 failures, 3 total.

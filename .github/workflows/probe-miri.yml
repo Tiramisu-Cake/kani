@@ -1,0 +1,39 @@
+# CI-only: dump MIR and run Miri for standalone probe binaries under probes/ on the pinned nightly.
+name: Probe MIR Miri
+on:
+  push:
+    branches:
+      - 'probe-ci/**'
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    env:
+      TC: nightly-2026-10-23
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install pinned nightly with Miri
+        run: |
+          rustup toolchain install "$TC" --profile minimal --component miri,rust-src
+          cargo +"$TC" miri setup
+      - name: MIR dumps
+        working-directory: probes
+        run: |
+          for f in src/bin/*.rs; do
+            echo "::group::MIR $(basename "$f" .rs)"
+            rustc +"$TC" --edition 2021 -Zunpretty=mir "$f" -o /dev/null || echo "MIR-DUMP-FAILED $f"
+            echo "::endgroup::"
+          done
+      - name: Miri
+        working-directory: probes
+        run: |
+          for f in src/bin/*.rs; do
+            b=$(basename "$f" .rs)
+            echo "::group::MIRI $b"
+            if cargo +"$TC" miri run --quiet --bin "$b"; then echo "MIRI-RESULT $b OK"; else echo "MIRI-RESULT $b ERROR"; fi
+            echo "::endgroup::"
+          done

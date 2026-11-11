@@ -1,9 +1,0 @@
-# Copyright Kani Contributors
-# SPDX-License-Identifier: Apache-2.0 OR MIT
-[workspace]
-
-members = [
-   "crate1",
-   "crate2",
-   "crate2/nested_crate",
-]

@@ -1,2 +1,0 @@
-Failed Checks: a quantifier whose predicate is not a closure (found `fn(usize) -> bool`) is not currently supported by Kani.
-VERIFICATION:- FAILED

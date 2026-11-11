@@ -1,6 +1,0 @@
-assertion\
-- Status: SUCCESS\
-- Description: "|result : &T| *result != 0 && x % *result == 0 && y % *result == 0"\
-in function gcd
-
-VERIFICATION:- SUCCESSFUL

@@ -1,6 +1,0 @@
-# Copyright Kani Contributors
-# SPDX-License-Identifier: Apache-2.0 OR MIT
-
-[toolchain]
-channel = "nightly-2026-10-23"
-components = ["llvm-tools", "rustc-dev", "rust-src", "rustfmt"]

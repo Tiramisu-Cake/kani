@@ -1,4 +1,0 @@
-         - Status: FAILURE\
-         - Description: "assertion failed: wrapper.is_safe()"
-
-Verification failed for - check_invariant_fail

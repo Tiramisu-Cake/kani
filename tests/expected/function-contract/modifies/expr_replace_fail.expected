@@ -1,7 +1,0 @@
-main.assertion\
-- Status: FAILURE\
-- Description: ""Increment""
-
-Failed Checks: "Increment"
-
-VERIFICATION:- FAILED

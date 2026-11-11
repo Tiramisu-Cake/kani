@@ -1,4 +1,0 @@
-SUCCESS\
-assertion failed: foo() == None
-SUCCESS\
-assertion failed: foo() == y

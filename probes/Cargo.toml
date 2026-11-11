@@ -1,0 +1,10 @@
+[package]
+name = "kani3300-b2-probes"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+
+# Isolate this diagnostic crate from the enclosing Rust source workspace.
+[workspace]

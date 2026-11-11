@@ -1,5 +1,0 @@
-Status: SUCCESS\
-Description: "assertion failed: c < char::MAX"\
-in function check_vec
-
-VERIFICATION:- SUCCESSFUL

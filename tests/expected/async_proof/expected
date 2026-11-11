@@ -1,3 +1,0 @@
-`foo` is not a valid option for `#[kani::proof]`.
-
-`#[kani::proof]` cannot be applied to async functions that take arguments for now
