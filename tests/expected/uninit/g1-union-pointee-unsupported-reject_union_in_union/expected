@@ -1,0 +1,5 @@
+reject_union_in_union.unsupported_construct.\
+	 - Status: FAILURE\
+Cannot determine layout for a type that contains union of type U as a field.
+Verification failed for - reject_union_in_union
+Complete - 0 successfully verified harnesses, 1 failures, 1 total.

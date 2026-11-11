@@ -1,0 +1,5 @@
+reject_variant_padding.unsupported_construct.\
+	 - Status: FAILURE\
+Cannot determine layout for an Enum of type DifferentPadding, as it has multiple variants that have different padding.
+Verification failed for - reject_variant_padding
+Complete - 0 successfully verified harnesses, 1 failures, 1 total.

@@ -1,0 +1,5 @@
+reject_niche_enum.unsupported_construct.\
+	 - Status: FAILURE\
+Cannot determine layout for an Enum with niche encoding of type Niche
+Verification failed for - reject_niche_enum
+Complete - 0 successfully verified harnesses, 1 failures, 1 total.

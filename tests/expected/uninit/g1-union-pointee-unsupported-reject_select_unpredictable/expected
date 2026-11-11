@@ -1,0 +1,5 @@
+reject_select_unpredictable.unsupported_construct.\
+	 - Status: FAILURE\
+Kani does not support select_unpredictable of union storage.
+Verification failed for - reject_select_unpredictable
+Complete - 0 successfully verified harnesses, 1 failures, 1 total.

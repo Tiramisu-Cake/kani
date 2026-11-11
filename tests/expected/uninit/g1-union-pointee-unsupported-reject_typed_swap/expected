@@ -1,0 +1,5 @@
+reject_typed_swap.unsupported_construct.\
+	 - Status: FAILURE\
+Kani does not support typed_swap of union storage.
+Verification failed for - reject_typed_swap
+Complete - 0 successfully verified harnesses, 1 failures, 1 total.

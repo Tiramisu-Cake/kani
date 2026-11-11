@@ -1,0 +1,352 @@
+unwritten_c.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u32`"
+
+unwritten_rust.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u32`"
+
+narrow_then_wide_c.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u32`"
+
+narrow_then_wide_rust.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u32`"
+
+whole_copy_partial_assign_c.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u32`"
+
+whole_copy_partial_assign_rust.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u32`"
+
+whole_copy_partial_ptr_read_c.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u32`"
+
+whole_copy_partial_ptr_read_rust.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u32`"
+
+whole_move_source_uninit_c.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u32`"
+
+whole_move_source_uninit_rust.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u32`"
+
+argument_move_source_uninit_c.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u32`"
+
+argument_move_source_uninit_rust.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u32`"
+
+whole_move_partial_c.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u32`"
+
+whole_move_partial_rust.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u32`"
+
+whole_copy_partial_nonoverlap_c.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u32`"
+
+whole_copy_partial_nonoverlap_rust.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u32`"
+
+whole_copy_partial_overlapping_c.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u8`"
+
+whole_copy_partial_overlapping_rust.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u8`"
+
+whole_reset_c.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u32`"
+
+whole_reset_rust.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u32`"
+
+whole_reset_alias_c.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u32`"
+
+whole_reset_alias_rust.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u32`"
+
+argument_return_partial_c.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u32`"
+
+argument_return_partial_rust.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u32`"
+
+argument_return_partial_reused_c.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u32`"
+
+argument_return_partial_reused_rust.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u32`"
+
+argument_return_partial_mixed_size_c.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u32`"
+
+argument_return_partial_mixed_size_rust.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u32`"
+
+padded_byte_c.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u8`"
+
+padded_byte_rust.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u8`"
+
+padded_typed_transfer_padding_c.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u8`"
+
+padded_typed_transfer_padding_rust.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u8`"
+
+padded_argument_return_padding_c.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u8`"
+
+padded_argument_return_padding_rust.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u8`"
+
+array_field_unwritten_c.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u16`"
+
+array_field_unwritten_rust.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u16`"
+
+array_padded_byte_c.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u8`"
+
+array_padded_byte_rust.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u8`"
+
+array_padded_elements_byte_c.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u8`"
+
+array_padded_elements_byte_rust.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u8`"
+
+zst_whole_reset_c.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u32`"
+
+zst_whole_reset_rust.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u32`"
+
+align_tail_typed_copy_c.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u8`"
+
+align_tail_typed_copy_rust.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u8`"
+
+align_tail_argument_return_c.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u8`"
+
+align_tail_argument_return_rust.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u8`"
+
+align_tail_reset_c.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u8`"
+
+align_tail_reset_rust.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u8`"
+
+address_no_bless_c.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u32`"
+
+address_no_bless_rust.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u32`"
+
+pointer_pointee_uninit_c.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u32`"
+
+pointer_pointee_uninit_rust.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u32`"
+
+pointer_compound_read_uninit_c.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `*mut u32`"
+
+pointer_compound_read_uninit_rust.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `*mut u32`"
+
+pointer_compound_store_uninit_c.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `*mut u32`"
+
+pointer_compound_store_uninit_rust.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `*mut u32`"
+
+pointer_compound_read_after_reset_c.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `*mut u32`"
+
+pointer_compound_read_after_reset_rust.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `*mut u32`"
+
+pointer_delayed_partial_c.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u32`"
+
+pointer_delayed_partial_rust.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u32`"
+
+pointer_field_value_uninit_c.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `*mut u32`"
+
+pointer_field_value_uninit_rust.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `*mut u32`"
+
+fat_pointer_field_value_uninit_c.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `*const [u8]`"
+
+fat_pointer_field_value_uninit_rust.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `*const [u8]`"
+
+field_move_constructor_source_uninit_c.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u32`"
+
+field_move_constructor_source_uninit_rust.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u32`"
+
+field_move_projection_source_uninit_c.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u32`"
+
+field_move_projection_source_uninit_rust.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u32`"
+
+intrinsic_forget_move_source_uninit_c.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u32`"
+
+intrinsic_forget_move_source_uninit_rust.safety_check.\
+	 - Status: FAILURE\
+	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u32`"
+
+Summary:
+Verification failed for - unwritten_c
+Verification failed for - unwritten_rust
+Verification failed for - narrow_then_wide_c
+Verification failed for - narrow_then_wide_rust
+Verification failed for - whole_copy_partial_assign_c
+Verification failed for - whole_copy_partial_assign_rust
+Verification failed for - whole_copy_partial_ptr_read_c
+Verification failed for - whole_copy_partial_ptr_read_rust
+Verification failed for - whole_move_source_uninit_c
+Verification failed for - whole_move_source_uninit_rust
+Verification failed for - argument_move_source_uninit_c
+Verification failed for - argument_move_source_uninit_rust
+Verification failed for - whole_move_partial_c
+Verification failed for - whole_move_partial_rust
+Verification failed for - whole_copy_partial_nonoverlap_c
+Verification failed for - whole_copy_partial_nonoverlap_rust
+Verification failed for - whole_copy_partial_overlapping_c
+Verification failed for - whole_copy_partial_overlapping_rust
+Verification failed for - whole_reset_c
+Verification failed for - whole_reset_rust
+Verification failed for - whole_reset_alias_c
+Verification failed for - whole_reset_alias_rust
+Verification failed for - argument_return_partial_c
+Verification failed for - argument_return_partial_rust
+Verification failed for - argument_return_partial_reused_c
+Verification failed for - argument_return_partial_reused_rust
+Verification failed for - argument_return_partial_mixed_size_c
+Verification failed for - argument_return_partial_mixed_size_rust
+Verification failed for - padded_byte_c
+Verification failed for - padded_byte_rust
+Verification failed for - padded_typed_transfer_padding_c
+Verification failed for - padded_typed_transfer_padding_rust
+Verification failed for - padded_argument_return_padding_c
+Verification failed for - padded_argument_return_padding_rust
+Verification failed for - array_field_unwritten_c
+Verification failed for - array_field_unwritten_rust
+Verification failed for - array_padded_byte_c
+Verification failed for - array_padded_byte_rust
+Verification failed for - array_padded_elements_byte_c
+Verification failed for - array_padded_elements_byte_rust
+Verification failed for - zst_whole_reset_c
+Verification failed for - zst_whole_reset_rust
+Verification failed for - align_tail_typed_copy_c
+Verification failed for - align_tail_typed_copy_rust
+Verification failed for - align_tail_argument_return_c
+Verification failed for - align_tail_argument_return_rust
+Verification failed for - align_tail_reset_c
+Verification failed for - align_tail_reset_rust
+Verification failed for - address_no_bless_c
+Verification failed for - address_no_bless_rust
+Verification failed for - pointer_pointee_uninit_c
+Verification failed for - pointer_pointee_uninit_rust
+Verification failed for - pointer_compound_read_uninit_c
+Verification failed for - pointer_compound_read_uninit_rust
+Verification failed for - pointer_compound_store_uninit_c
+Verification failed for - pointer_compound_store_uninit_rust
+Verification failed for - pointer_compound_read_after_reset_c
+Verification failed for - pointer_compound_read_after_reset_rust
+Verification failed for - pointer_delayed_partial_c
+Verification failed for - pointer_delayed_partial_rust
+Verification failed for - pointer_field_value_uninit_c
+Verification failed for - pointer_field_value_uninit_rust
+Verification failed for - fat_pointer_field_value_uninit_c
+Verification failed for - fat_pointer_field_value_uninit_rust
+Verification failed for - field_move_constructor_source_uninit_c
+Verification failed for - field_move_constructor_source_uninit_rust
+Verification failed for - field_move_projection_source_uninit_c
+Verification failed for - field_move_projection_source_uninit_rust
+Verification failed for - intrinsic_forget_move_source_uninit_c
+Verification failed for - intrinsic_forget_move_source_uninit_rust
+Complete - 0 successfully verified harnesses, 70 failures, 70 total.
