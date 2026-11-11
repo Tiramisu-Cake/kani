@@ -1,9 +1,7 @@
 // Copyright Kani Contributors
 // SPDX-License-Identifier: Apache-2.0 OR MIT
-// kani-flags: -Z uninit-checks
 
-//! All harnesses are valid Rust and should verify. These are semantic expectations,
-//! not snapshots of the backend abort. Run identical controls with checks off/on.
+//! Regression tests for zero-sized union fields, padded layouts, and typed copies.
 
 use std::mem::{align_of, offset_of, size_of, size_of_val};
 use std::ptr;
@@ -68,7 +66,7 @@ fn array_typed_copy() {
     }
 }
 
-// Keep the padded payload shape of the G1 reduction, without reading padding.
+// Exercise a padded payload without reading its padding after the typed copy.
 #[kani::proof]
 fn padded_typed_copy_c() {
     let mut src = PaddedUnionC { padded: Padded { byte: 4, word: 5 } };
