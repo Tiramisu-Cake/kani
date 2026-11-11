@@ -1,4 +1,4 @@
-reject_manuallydrop_union.unsupported_construct.\
+std::mem::ManuallyDrop::<U>::new.unsupported_construct.1\
 	 - Status: FAILURE\
 Cannot determine layout for a type that contains union of type U as a field.
 Verification failed for - reject_manuallydrop_union

@@ -734,8 +734,8 @@ fn field_move_constructor_source_uninit_c() {
     let source = ManuallyDrop::new(NonCopyWord { word: 193 });
     let source_word = ptr::addr_of!(source).cast::<u32>();
     let union = NonCopyFieldC { value: source };
-    std::mem::forget(union);
     unsafe {
+        std::intrinsics::forget(union);
         let _moved_from = *source_word;
     }
 }
@@ -744,8 +744,8 @@ fn field_move_constructor_source_uninit_rust() {
     let source = ManuallyDrop::new(NonCopyWord { word: 197 });
     let source_word = ptr::addr_of!(source).cast::<u32>();
     let union = NonCopyFieldR { value: source };
-    std::mem::forget(union);
     unsafe {
+        std::intrinsics::forget(union);
         let _moved_from = *source_word;
     }
 }
@@ -757,7 +757,7 @@ fn field_move_projection_source_uninit_c() {
     let union_ptr = &mut union as *mut NonCopyFieldC;
     unsafe {
         (*union_ptr).value = source;
-        std::mem::forget(union);
+        std::intrinsics::forget(union);
         let _moved_from = *source_word;
     }
 }
@@ -769,7 +769,7 @@ fn field_move_projection_source_uninit_rust() {
     let union_ptr = &mut union as *mut NonCopyFieldR;
     unsafe {
         (*union_ptr).value = source;
-        std::mem::forget(union);
+        std::intrinsics::forget(union);
         let _moved_from = *source_word;
     }
 }
