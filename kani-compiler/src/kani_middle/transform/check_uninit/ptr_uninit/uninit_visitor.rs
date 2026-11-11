@@ -149,6 +149,18 @@ impl<'tcx> CheckUninitVisitor<'tcx> {
 
     fn assign_storage(&mut self, place: &Place, ty: Ty, rvalue: &Rvalue) {
         match rvalue {
+            Rvalue::Cast(CastKind::Transmute, operand, target)
+                if let Some(initialized) = self.typed_storage_mask(operand, *target) =>
+            {
+                // visit_rvalue preserves the typed source checks. A typed move
+                // can discard padding, so only T's data bytes are initialized in the slot.
+                // This is the sole destination update: do not run the generic union setter.
+                self.push_target(MemoryInitOp::SetStorage {
+                    operand: Operand::Copy(place.clone()),
+                    initialized,
+                    position: InsertPosition::After,
+                });
+            }
             Rvalue::Use(operand, _) => self.assign_storage_operand(place, operand),
             Rvalue::Aggregate(AggregateKind::Adt(def, _, _, _, Some(field)), _)
                 if def.kind() == AdtKind::Union =>
@@ -211,6 +223,29 @@ impl<'tcx> CheckUninitVisitor<'tcx> {
             }
             _ => self.unsupported_storage_assignment(),
         }
+    }
+
+    /// Match only T -> MaybeUninit<T> or [T; N] -> [MaybeUninit<T>; N].
+    /// Both the cast visitor and assignment handler use this exact predicate and mask.
+    fn typed_storage_mask(&self, operand: &Operand, target: Ty) -> Option<Vec<bool>> {
+        let source = operand.ty(&self.locals).ok()?;
+        let matches = wrapper_inner(self.tcx, target, LangItem::MaybeUninit) == Some(source)
+            || match (source.kind(), target.kind()) {
+                (
+                    TyKind::RigidTy(RigidTy::Array(from, from_len)),
+                    TyKind::RigidTy(RigidTy::Array(to, to_len)),
+                ) => {
+                    from_len == to_len
+                        && wrapper_inner(self.tcx, to, LangItem::MaybeUninit) == Some(from)
+                }
+                _ => false,
+            };
+        if !matches || source.layout().ok()?.shape().size != target.layout().ok()?.shape().size {
+            return None;
+        }
+        let info = PointeeInfo::from_ty(source).ok()?;
+        let PointeeLayout::Sized { layout } = info.layout() else { return None };
+        Some(layout.clone())
     }
 
     /// Match only the transparent conversion from MaybeUninit<T> to T or ManuallyDrop<T>.
@@ -452,6 +487,23 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                         return;
                     }
                 };
+                // Forget consumes its argument without reading or returning any bytes; it
+                // already has an explicit no-effect model below. Other bodyless transfers
+                // need an actual shadow model, not an unpaired argument-buffer store.
+                let modeled_consumption = instance.kind == InstanceKind::Intrinsic
+                    && matches!(Intrinsic::from_instance(&instance), Intrinsic::Forget);
+                if !instance.has_body()
+                    && !modeled_consumption
+                    && args.iter().any(|arg| self.transfers_shadow(arg.ty(&self.locals).unwrap()))
+                {
+                    self.push_target(MemoryInitOp::Unsupported {
+                        reason: "Kani does not support shadow-carrying arguments to calls without a MIR body."
+                            .to_string(),
+                    });
+                    // In particular, do not leave an unconsumed store for the next call.
+                    self.targets.push(self.current_target.clone());
+                    return;
+                }
                 let destination_ty = destination.ty(&self.locals).unwrap();
                 if maybe_uninit_storage(self.tcx, destination_ty).is_some() {
                     if instance.kind == InstanceKind::Item && instance.has_body() {
@@ -766,7 +818,12 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                 }
                 CastKind::Transmute => {
                     let operand_ty = operand.ty(&self.locals).unwrap();
-                    if self.maybe_uninit_transmute(operand, *ty) {
+                    if self.typed_storage_mask(operand, *ty).is_some() {
+                        // The ordinary operand traversal below retains raw-dereference and
+                        // union-field checks. Delayed UB still checks affected typed locals.
+                        // Only the layout rejection is bypassed; assign_storage installs T's
+                        // data mask once, including false padding bytes.
+                    } else if self.maybe_uninit_transmute(operand, *ty) {
                         // Initialization was checked against the destination's data bytes.
                     } else if !tys_layout_compatible_to_size(&operand_ty, ty) {
                         // If transmuting between two types of incompatible layouts, padding

@@ -1,0 +1,7 @@
+assigns\
+- Status: FAILURE\
+- Description: "Check that *outside is assignable"
+
+Failed Checks: Check that *outside is assignable
+
+VERIFICATION:- FAILED

@@ -1,0 +1,4 @@
+	 - Status: FAILURE\
+	 - Description: "Kani does not support shadow-carrying arguments to calls without a MIR body."
+VERIFICATION:- FAILED
+Complete - 0 successfully verified harnesses, 1 failures, 1 total.
