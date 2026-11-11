@@ -6,13 +6,22 @@
 use std::mem::MaybeUninit;
 use std::ptr;
 #[repr(C)]
-struct Pad { byte: u8, word: u32 }
+struct Pad {
+    byte: u8,
+    word: u32,
+}
 #[inline(never)]
-fn consume(value: Pad) -> u32 { value.word }
+fn consume(value: Pad) -> u32 {
+    value.word
+}
 #[inline(never)]
 fn poison_in_callee(mut value: Pad) -> u32 {
     unsafe {
-        ptr::copy_nonoverlapping((&value as *const Pad).cast::<u8>().add(1), ptr::addr_of_mut!(value.word).cast::<u8>(), 1);
+        ptr::copy_nonoverlapping(
+            (&value as *const Pad).cast::<u8>().add(1),
+            ptr::addr_of_mut!(value.word).cast::<u8>(),
+            1,
+        );
     }
     kani::cover!(true);
     value.word
@@ -21,7 +30,11 @@ fn poison_in_callee(mut value: Pad) -> u32 {
 fn ordinary_parameter_seed_does_not_hide_caller_poison() {
     let mut value = Pad { byte: 7, word: 11 };
     unsafe {
-        ptr::copy_nonoverlapping((&value as *const Pad).cast::<u8>().add(1), ptr::addr_of_mut!(value.word).cast::<u8>(), 1);
+        ptr::copy_nonoverlapping(
+            (&value as *const Pad).cast::<u8>().add(1),
+            ptr::addr_of_mut!(value.word).cast::<u8>(),
+            1,
+        );
     }
     kani::cover!(true);
     std::hint::black_box(consume(value));
@@ -31,7 +44,9 @@ fn ordinary_parameter_seed_does_not_hide_callee_poison() {
     std::hint::black_box(poison_in_callee(Pad { byte: 7, word: 11 }));
 }
 #[inline(never)]
-unsafe fn read_pointee(pointer: *const u32) -> u32 { unsafe { *pointer } }
+unsafe fn read_pointee(pointer: *const u32) -> u32 {
+    unsafe { *pointer }
+}
 #[kani::proof]
 fn pointer_parameter_seed_does_not_initialize_pointee() {
     let value = MaybeUninit::<u32>::uninit();
