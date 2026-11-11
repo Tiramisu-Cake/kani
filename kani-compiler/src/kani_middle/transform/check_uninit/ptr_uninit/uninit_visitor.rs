@@ -318,7 +318,7 @@ impl<'tcx> CheckUninitVisitor<'tcx> {
                     }
                     if let Operand::Move(source) = operand {
                         let source_size =
-                            source.ty(&self.locals).unwrap().layout().unwrap().shape().size;
+                            source.ty(&self.locals).unwrap().layout().unwrap().shape().size.bytes();
                         self.push_target(MemoryInitOp::SetStorage {
                             operand: Operand::Copy(source.clone()),
                             initialized: vec![false; source_size],
@@ -611,7 +611,7 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                         if let Operand::Move(source) = arg {
                             let ty = arg.ty(&self.locals).unwrap();
                             if self.transfers_shadow(ty) {
-                                let size = ty.layout().unwrap().shape().size;
+                                let size = ty.layout().unwrap().shape().size.bytes();
                                 self.push_target(MemoryInitOp::SetStorage {
                                     operand: Operand::Copy(source.clone()),
                                     initialized: vec![false; size],
