@@ -40,7 +40,8 @@ fn partial_ordinary_field_cannot_be_read_as_whole_product_after_copy() {
         poison_one_word_byte(&mut source);
     }
     kani::cover!(true);
-    let _copy = source;
+    let copy = source;
+    std::hint::black_box(copy);
 }
 
 #[kani::proof]
@@ -56,7 +57,8 @@ fn partial_ordinary_field_read_remains_checked_after_call_copy() {
     assert_eq!(unsafe { returned.slots[0].assume_init() }, 13);
     assert_eq!(unsafe { returned.slots[1].assume_init() }, 17);
     kani::cover!(true);
-    let _ = returned.marker.word;
+    let word = returned.marker.word;
+    std::hint::black_box(word);
 }
 
 #[kani::proof]
