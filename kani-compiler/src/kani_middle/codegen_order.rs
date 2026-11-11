@@ -16,8 +16,8 @@
 //!
 //! Ordering is intentionally cheap on memory: we run reachability once per harness to obtain the
 //! heuristic rating, but retain only the resulting `usize` rather than the reachable set or call
-//! graph. Reachability is recomputed during codegen (reusing the transformer's warmed body cache),
-//! so peak memory matches codegen of the same unit in its original order.
+//! graph. The ordering transformer is discarded before codegen, which recomputes reachability
+//! with a fresh transformer for each root.
 
 use crate::kani_middle::codegen_units::Harness;
 use crate::kani_middle::reachability::collect_reachable_items;
@@ -48,8 +48,8 @@ impl CodegenHeuristic for MostReachableItems {
 }
 
 /// Return the harnesses of a codegen unit ordered so that the ones the heuristic `H` rates highest
-/// come first. `transformer` must be the (shared) transformer for the harnesses' codegen unit; it
-/// is used to run reachability and its body cache is warmed as a side effect.
+/// come first. `transformer` must use the harnesses' codegen-unit configuration; it is used only
+/// for ordering reachability, and its warmed body cache is discarded before codegen.
 pub fn order_harnesses<'a, H: CodegenHeuristic>(
     harnesses: &'a [Harness],
     tcx: TyCtxt,

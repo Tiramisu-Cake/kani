@@ -488,27 +488,23 @@ impl CodegenBackend for GotocCodegenBackend {
                         if crate::kani_middle::trace::enabled() {
                             crate::kani_middle::trace::unit(unit_index);
                         }
-                        // Generate a new transformer that will be shared for all harnesses within the codegen unit.
-                        // We reset the body cache between units for now because each codegen unit has different
-                        // configurations that affect how we transform the instance body.
-                        let mut shared_unit_transformer =
-                            BodyTransformation::new(&queries, tcx, unit);
-
                         // Codegen the harnesses expected to generate the most code first, so their
                         // (slow) goto-file export runs on a worker thread while the main thread
                         // keeps codegening the rest, rather than stalling on them at the end of
-                        // compilation. Reachability run here to rate the harnesses also warms the
-                        // shared transformer's body cache reused during codegen. See
-                        // `kani_middle::codegen_order`.
+                        // compilation. Use a separate transformer for ordering so its warmed
+                        // bodies and auxiliary maps cannot leak into root-specific codegen.
+                        // See `kani_middle::codegen_order`.
                         //
                         // Only worth the extra reachability pass when there are export workers to
                         // overlap with; without them exports happen synchronously on this thread,
                         // so ordering cannot hide any latency and would only add compile time.
                         let ordered_harnesses = if export_thread_pool.has_workers() {
+                            let mut ordering_transformer =
+                                BodyTransformation::new(&queries, tcx, unit);
                             order_harnesses::<MostReachableItems>(
                                 &unit.harnesses,
                                 tcx,
-                                &mut shared_unit_transformer,
+                                &mut ordering_transformer,
                             )
                         } else {
                             unit.harnesses.iter().collect()
@@ -526,6 +522,10 @@ impl CodegenBackend for GotocCodegenBackend {
                                 );
                             }
                             clear_codegen_cache();
+                            // Global passes mutate cached bodies for this root. Keep the entire
+                            // transformer root-scoped through reachability and GOTO emission,
+                            // including local-pass state and auxiliary loop-contract maps.
+                            let mut root_transformer = BodyTransformation::new(&queries, tcx, unit);
 
                             let model_path = units.harness_model_path(*harness).unwrap();
                             let is_automatic_harness = units.is_automatic_harness(harness);
@@ -539,7 +539,7 @@ impl CodegenBackend for GotocCodegenBackend {
                                 contract_metadata
                                     .map(|def| rustc_internal::internal(tcx, def.def_id())),
                                 template_passes.clone(),
-                                &mut shared_unit_transformer,
+                                &mut root_transformer,
                                 &export_thread_pool,
                             );
                             if min_gcx.has_loop_contracts {
