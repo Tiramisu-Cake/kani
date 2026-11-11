@@ -122,6 +122,15 @@ impl<'tcx> CheckUninitVisitor<'tcx> {
             self.unsupported_product();
             return;
         };
+        if place.projection.contains(&ProjectionElem::Deref) {
+            // The existing pointer pass checks intermediate loaded pointers, but does not
+            // establish shadow initialization of the final address operand itself. Do not
+            // introduce a new whole-product write through such an unvalidated address.
+            self.push_target(MemoryInitOp::Unsupported {
+                reason: "Kani does not support indirect compound storage assignments.".to_string(),
+            });
+            return;
+        }
         match rvalue {
             Rvalue::Use(operand, _) => self.assign_storage_operand(place, operand),
             Rvalue::Aggregate(AggregateKind::Adt(_, _, _, _, None), operands) => {

@@ -10,4 +10,6 @@ Verification failed for - nested_maybe_uninit_is_unsupported
 Failed Checks: Kani does not support this compound storage layout.
 VERIFICATION:- FAILED
 Verification failed for - nested_union_product_is_unsupported
-Complete - 0 successfully verified harnesses, 4 failures, 4 total.
+Failed Checks: Kani does not support indirect compound storage assignments.
+Verification failed for - indirect_whole_product_write_is_unsupported
+Complete - 0 successfully verified harnesses, 5 failures, 5 total.

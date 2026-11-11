@@ -69,3 +69,20 @@ fn nested_union_product_is_unsupported() {
     };
     std::hint::black_box(value);
 }
+
+#[derive(Clone, Copy)]
+struct IndirectProduct {
+    marker: usize,
+    slot: MaybeUninit<usize>,
+}
+
+#[kani::proof]
+fn indirect_whole_product_write_is_unsupported() {
+    let src = IndirectProduct { marker: 17, slot: MaybeUninit::uninit() };
+    let mut dst = IndirectProduct { marker: 19, slot: MaybeUninit::new(23) };
+    let address = std::ptr::addr_of_mut!(dst);
+    unsafe {
+        *address = src;
+    }
+    std::hint::black_box(dst);
+}
