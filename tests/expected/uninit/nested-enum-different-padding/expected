@@ -1,0 +1,4 @@
+Test: nested_enum_different_padding_is_unsupported
+Cannot determine layout for an Enum of type Different, as it has multiple variants that have different padding.
+VERIFICATION:- FAILED
+Complete - 0 successfully verified harnesses, 1 failures, 1 total.
