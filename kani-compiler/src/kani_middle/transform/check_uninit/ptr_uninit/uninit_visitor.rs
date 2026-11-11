@@ -500,15 +500,16 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                         return;
                     }
                 };
-                // Intrinsics use their explicit models below, including forget/black_box.
+                // Intrinsics use their explicit models and value-transfer guard below.
                 // Only ordinary calls need a paired argument/return protocol.
                 let paired = has_transfer_protocol(instance);
                 let destination_ty = destination.ty(&self.locals).unwrap();
+                let shadow_return = self.transfers_shadow(destination_ty);
                 let shadow_args =
                     args.iter().any(|arg| self.transfers_shadow(arg.ty(&self.locals).unwrap()));
                 if instance.kind != InstanceKind::Intrinsic
                     && !paired
-                    && (shadow_args || self.transfers_shadow(destination_ty))
+                    && (shadow_args || shadow_return)
                 {
                     self.push_target(MemoryInitOp::Unsupported {
                         reason: "Kani does not support shadow transfers without a paired argument/return protocol."
@@ -517,7 +518,7 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                     self.targets.push(self.current_target.clone());
                     return;
                 }
-                if paired && self.transfers_shadow(destination_ty) {
+                if paired && shadow_return {
                     self.push_target(MemoryInitOp::LoadArgument {
                         operand: Operand::Copy(destination.clone()),
                         argument_no: 0,
@@ -529,6 +530,16 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                 match instance.kind {
                     InstanceKind::Intrinsic => {
                         match Intrinsic::from_instance(&instance) {
+                            // Forget consumes without reading or returning any payload bytes.
+                            Intrinsic::Forget => {}
+                            // Pointer-effect models below do not transfer by-value shadow
+                            // storage. In particular, skipping black_box would lose its copy
+                            // effect. Reject such values until an explicit model exists.
+                            intrinsic if shadow_args || shadow_return => {
+                                self.push_target(MemoryInitOp::Unsupported {
+                                    reason: format!("Kani does not support shadow-carrying argument or return values of intrinsic `{intrinsic:?}`."),
+                                });
+                            }
                             intrinsic_name if can_skip_intrinsic(intrinsic_name.clone()) => {
                                 /* Intrinsics that can be safely skipped */
                             }
