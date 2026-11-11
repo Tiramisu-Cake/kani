@@ -808,6 +808,7 @@ impl MirVisitor for CheckUninitVisitor<'_> {
     }
 
     fn visit_place(&mut self, place: &Place, ptx: PlaceContext, location: Location) {
+        let mut reads_union_field = false;
         for (idx, elem) in place.projection.iter().enumerate() {
             let intermediate_place =
                 Place { local: place.local, projection: place.projection[..idx].to_vec() };
@@ -828,12 +829,7 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                 ProjectionElem::Field(_, _) => {
                     let union_ty = intermediate_place.ty(&self.locals).unwrap();
                     if union_ty.kind().is_union() && !ptx.is_mutating() {
-                        // Accessing a projected place inside the union requires the projected
-                        // bytes to be initialized. Any pointer dereference in the projection has
-                        // its own pointer-byte check above.
-                        self.push_target(MemoryInitOp::CheckRef {
-                            operand: Operand::Copy(place.clone()),
-                        });
+                        reads_union_field = true;
                     }
                 }
                 ProjectionElem::Index(_)
@@ -844,6 +840,11 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                 ProjectionElem::Downcast(_) => {}
                 ProjectionElem::OpaqueCast(_) => {}
             }
+        }
+        if reads_union_field {
+            // Check the selected projection only after any union-held pointers used to form its
+            // address have had their own bytes checked above.
+            self.push_target(MemoryInitOp::CheckRef { operand: Operand::Copy(place.clone()) });
         }
         self.super_place(place, ptx, location)
     }
