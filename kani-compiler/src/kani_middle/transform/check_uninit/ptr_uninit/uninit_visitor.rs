@@ -148,6 +148,13 @@ impl<'tcx> CheckUninitVisitor<'tcx> {
         ty.kind().is_union().then_some(ty)
     }
 
+    /// True when a raw pointer value is stored in a projection inside a union arm. `Check` on
+    /// this place checks the pointer's pointee; `CheckRef` checks the pointer value's own bytes.
+    fn is_union_field_pointer(&self, place: &Place) -> bool {
+        place.ty(&self.locals).is_ok_and(|ty| ty.kind().is_raw_ptr())
+            && self.enclosing_union(place).is_some()
+    }
+
     fn assign_storage_operand(&mut self, place: &Place, operand: &Operand) {
         if let Some(initialized) = constant_init_mask(operand) {
             self.push_target(MemoryInitOp::SetStorage {
@@ -349,6 +356,11 @@ impl<'tcx> CheckUninitVisitor<'tcx> {
                     && let TyKind::RigidTy(RigidTy::RawPtr(..)) =
                         place_to_add_projections.ty(&self.locals).unwrap().kind()
                 {
+                    if self.is_union_field_pointer(&place_to_add_projections) {
+                        self.push_target(MemoryInitOp::CheckRef {
+                            operand: Operand::Copy(place_to_add_projections.clone()),
+                        });
+                    }
                     self.push_target(MemoryInitOp::Check {
                         operand: Operand::Copy(place_to_add_projections.clone()),
                     });
@@ -356,6 +368,11 @@ impl<'tcx> CheckUninitVisitor<'tcx> {
                 place_to_add_projections.projection.push(projection_elem.clone());
             }
             if place_without_deref.ty(&self.locals).unwrap().kind().is_raw_ptr() {
+                if self.is_union_field_pointer(&place_without_deref) {
+                    self.push_target(MemoryInitOp::CheckRef {
+                        operand: Operand::Copy(place_without_deref.clone()),
+                    });
+                }
                 self.push_target(MemoryInitOp::Set {
                     operand: Operand::Copy(place_without_deref),
                     value: true,
@@ -798,6 +815,11 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                 ProjectionElem::Deref => {
                     let ptr_ty = intermediate_place.ty(&self.locals).unwrap();
                     if ptr_ty.kind().is_raw_ptr() {
+                        if self.is_union_field_pointer(&intermediate_place) {
+                            self.push_target(MemoryInitOp::CheckRef {
+                                operand: Operand::Copy(intermediate_place.clone()),
+                            });
+                        }
                         self.push_target(MemoryInitOp::Check {
                             operand: Operand::Copy(intermediate_place.clone()),
                         });
