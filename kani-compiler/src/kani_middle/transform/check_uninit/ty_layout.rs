@@ -7,7 +7,7 @@ use std::fmt::Display;
 
 use rustc_attr_ir::lang_items::LangItem;
 use rustc_middle::ty::TyCtxt;
-use rustc_public::{CrateDefType, rustc_internal};
+use rustc_public::{CrateDef, CrateDefType, rustc_internal};
 use rustc_public::{
     abi::{FieldsShape, Scalar, TagEncoding, ValueRepr, VariantsShape},
     target::{MachineInfo, MachineSize},
