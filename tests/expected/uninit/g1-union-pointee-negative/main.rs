@@ -40,6 +40,40 @@ union RU {
     ptr: *mut u32,
     fat: *const [u8],
 }
+// None of these arms covers the padding before Padded::word.
+#[repr(C)]
+#[derive(Clone, Copy)]
+union PaddingC {
+    z: (),
+    narrow: u8,
+    padded: ManuallyDrop<Padded>,
+    tuple: ManuallyDrop<(u8, u32)>,
+    padded_pair: [ManuallyDrop<Padded>; 2],
+}
+#[derive(Clone, Copy)]
+union PaddingR {
+    z: (),
+    narrow: u8,
+    padded: ManuallyDrop<Padded>,
+    tuple: ManuallyDrop<(u8, u32)>,
+    padded_pair: [ManuallyDrop<Padded>; 2],
+}
+
+// Isolate the zero-sized array arm that previously caused CBMC to abort.
+#[repr(C)]
+#[derive(Clone, Copy)]
+union ZstPaddingC {
+    z: (),
+    padded: ManuallyDrop<Padded>,
+    zst_array: [(); 2],
+}
+#[derive(Clone, Copy)]
+union ZstPaddingR {
+    z: (),
+    padded: ManuallyDrop<Padded>,
+    zst_array: [(); 2],
+}
+
 #[repr(C, align(8))]
 #[derive(Clone, Copy)]
 union TailC {
@@ -311,44 +345,56 @@ fn padded_byte_rust() {
 }
 #[kani::proof]
 fn padded_typed_transfer_padding_c() {
-    let mut src = CU { padded: ManuallyDrop::new(Padded { byte: 4, word: 5 }) };
-    let mut dst = CU { z: () };
+    let mut src = PaddingC { padded: ManuallyDrop::new(Padded { byte: 4, word: 5 }) };
+    let mut dst = PaddingC { z: () };
     unsafe {
-        ptr::write_bytes((&mut src as *mut CU).cast::<u8>(), 0x5a, std::mem::size_of::<CU>());
+        ptr::write_bytes(
+            (&mut src as *mut PaddingC).cast::<u8>(),
+            0x5a,
+            std::mem::size_of::<PaddingC>(),
+        );
         ptr::write(&mut dst, ptr::read(&src));
-        let p = &dst as *const CU;
+        let p = &dst as *const PaddingC;
         let padding = ptr::addr_of!((&(*p).padded).word).cast::<u8>().sub(1);
         let _padding = *padding;
     }
 }
 #[kani::proof]
 fn padded_typed_transfer_padding_rust() {
-    let mut src = RU { padded: ManuallyDrop::new(Padded { byte: 4, word: 5 }) };
-    let mut dst = RU { z: () };
+    let mut src = PaddingR { padded: ManuallyDrop::new(Padded { byte: 4, word: 5 }) };
+    let mut dst = PaddingR { z: () };
     unsafe {
-        ptr::write_bytes((&mut src as *mut RU).cast::<u8>(), 0x5a, std::mem::size_of::<RU>());
+        ptr::write_bytes(
+            (&mut src as *mut PaddingR).cast::<u8>(),
+            0x5a,
+            std::mem::size_of::<PaddingR>(),
+        );
         ptr::write(&mut dst, ptr::read(&src));
-        let p = &dst as *const RU;
+        let p = &dst as *const PaddingR;
         let padding = ptr::addr_of!((&(*p).padded).word).cast::<u8>().sub(1);
         let _padding = *padding;
     }
 }
 #[inline(never)]
-fn padded_identity_c(x: CU) -> CU {
+fn padded_identity_c(x: PaddingC) -> PaddingC {
     x
 }
 #[inline(never)]
-fn padded_identity_rust(x: RU) -> RU {
+fn padded_identity_rust(x: PaddingR) -> PaddingR {
     x
 }
 #[kani::proof]
 fn padded_argument_return_padding_c() {
-    let mut src = CU { padded: ManuallyDrop::new(Padded { byte: 4, word: 5 }) };
+    let mut src = PaddingC { padded: ManuallyDrop::new(Padded { byte: 4, word: 5 }) };
     unsafe {
-        ptr::write_bytes((&mut src as *mut CU).cast::<u8>(), 0x5a, std::mem::size_of::<CU>());
+        ptr::write_bytes(
+            (&mut src as *mut PaddingC).cast::<u8>(),
+            0x5a,
+            std::mem::size_of::<PaddingC>(),
+        );
     }
     let u = padded_identity_c(src);
-    let p = &u as *const CU;
+    let p = &u as *const PaddingC;
     unsafe {
         let padding = ptr::addr_of!((&(*p).padded).word).cast::<u8>().sub(1);
         let _padding = *padding;
@@ -356,12 +402,16 @@ fn padded_argument_return_padding_c() {
 }
 #[kani::proof]
 fn padded_argument_return_padding_rust() {
-    let mut src = RU { padded: ManuallyDrop::new(Padded { byte: 4, word: 5 }) };
+    let mut src = PaddingR { padded: ManuallyDrop::new(Padded { byte: 4, word: 5 }) };
     unsafe {
-        ptr::write_bytes((&mut src as *mut RU).cast::<u8>(), 0x5a, std::mem::size_of::<RU>());
+        ptr::write_bytes(
+            (&mut src as *mut PaddingR).cast::<u8>(),
+            0x5a,
+            std::mem::size_of::<PaddingR>(),
+        );
     }
     let u = padded_identity_rust(src);
-    let p = &u as *const RU;
+    let p = &u as *const PaddingR;
     unsafe {
         let padding = ptr::addr_of!((&(*p).padded).word).cast::<u8>().sub(1);
         let _padding = *padding;
@@ -674,5 +724,41 @@ fn fat_pointer_field_value_uninit_rust() {
     let u = RU { z: () };
     unsafe {
         let _pointer = (*(&u as *const RU)).fat;
+    }
+}
+
+#[kani::proof]
+fn zst_array_typed_transfer_padding_c() {
+    let mut src = ZstPaddingC { padded: ManuallyDrop::new(Padded { byte: 4, word: 5 }) };
+    let mut dst = ZstPaddingC { z: () };
+    unsafe {
+        ptr::write_bytes(
+            (&mut src as *mut ZstPaddingC).cast::<u8>(),
+            0x5a,
+            std::mem::size_of::<ZstPaddingC>(),
+        );
+        ptr::write(&mut dst, ptr::read(&src));
+        let p = &dst as *const ZstPaddingC;
+        assert_eq!((*p).zst_array[1], ());
+        let padding = ptr::addr_of!((&(*p).padded).word).cast::<u8>().sub(1);
+        let _padding = *padding;
+    }
+}
+
+#[kani::proof]
+fn zst_array_typed_transfer_padding_rust() {
+    let mut src = ZstPaddingR { padded: ManuallyDrop::new(Padded { byte: 4, word: 5 }) };
+    let mut dst = ZstPaddingR { z: () };
+    unsafe {
+        ptr::write_bytes(
+            (&mut src as *mut ZstPaddingR).cast::<u8>(),
+            0x5a,
+            std::mem::size_of::<ZstPaddingR>(),
+        );
+        ptr::write(&mut dst, ptr::read(&src));
+        let p = &dst as *const ZstPaddingR;
+        assert_eq!((*p).zst_array[1], ());
+        let padding = ptr::addr_of!((&(*p).padded).word).cast::<u8>().sub(1);
+        let _padding = *padding;
     }
 }

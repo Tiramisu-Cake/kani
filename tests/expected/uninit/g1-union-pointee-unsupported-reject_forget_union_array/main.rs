@@ -9,6 +9,9 @@ include!("../g1-union-pointee-unsupported/types.inc");
 #[kani::proof]
 fn reject_forget_union_array() {
     unsafe {
-        std::intrinsics::forget([U { wide: 1 }; 1]);
+        let source = [U { wide: 1 }; 1];
+        // Reading the container requires a layout; forget alone has no storage effects.
+        let value = ptr::read(&source as *const [U; 1]);
+        std::intrinsics::forget(value);
     }
 }

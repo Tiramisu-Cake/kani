@@ -42,6 +42,21 @@ union RU {
     fat: *const [u8],
 }
 
+// The wide arm covers Padded's internal padding during typed transfers.
+#[repr(C)]
+#[derive(Clone, Copy)]
+union CoveredPaddingC {
+    z: (),
+    wide: u32,
+    padded: ManuallyDrop<Padded>,
+}
+#[derive(Clone, Copy)]
+union CoveredPaddingR {
+    z: (),
+    wide: u32,
+    padded: ManuallyDrop<Padded>,
+}
+
 #[repr(C, align(8))]
 #[derive(Clone, Copy)]
 union TailC {
@@ -681,5 +696,57 @@ fn field_move_projection_rust() {
     unsafe {
         (*union_ptr).value = source;
         assert_eq!((&(*union_ptr).value).word, 233);
+    }
+}
+
+#[inline(never)]
+fn covered_padding_identity_c(value: CoveredPaddingC) -> CoveredPaddingC {
+    value
+}
+
+#[kani::proof]
+fn wide_covered_padding_transfer_c() {
+    let mut src = CoveredPaddingC { padded: ManuallyDrop::new(Padded { byte: 4, word: 5 }) };
+    let mut dst = CoveredPaddingC { z: () };
+    unsafe {
+        ptr::write_bytes(
+            (&mut src as *mut CoveredPaddingC).cast::<u8>(),
+            0x5a,
+            std::mem::size_of::<CoveredPaddingC>(),
+        );
+        ptr::write(&mut dst, ptr::read(&src));
+        let p = &dst as *const CoveredPaddingC;
+        let padding = ptr::addr_of!((&(*p).padded).word).cast::<u8>().sub(1);
+        assert_eq!(*padding, 0x5a);
+        let returned = covered_padding_identity_c(dst);
+        let p = &returned as *const CoveredPaddingC;
+        let padding = ptr::addr_of!((&(*p).padded).word).cast::<u8>().sub(1);
+        assert_eq!(*padding, 0x5a);
+    }
+}
+
+#[inline(never)]
+fn covered_padding_identity_rust(value: CoveredPaddingR) -> CoveredPaddingR {
+    value
+}
+
+#[kani::proof]
+fn wide_covered_padding_transfer_rust() {
+    let mut src = CoveredPaddingR { padded: ManuallyDrop::new(Padded { byte: 4, word: 5 }) };
+    let mut dst = CoveredPaddingR { z: () };
+    unsafe {
+        ptr::write_bytes(
+            (&mut src as *mut CoveredPaddingR).cast::<u8>(),
+            0x5a,
+            std::mem::size_of::<CoveredPaddingR>(),
+        );
+        ptr::write(&mut dst, ptr::read(&src));
+        let p = &dst as *const CoveredPaddingR;
+        let padding = ptr::addr_of!((&(*p).padded).word).cast::<u8>().sub(1);
+        assert_eq!(*padding, 0x5a);
+        let returned = covered_padding_identity_rust(dst);
+        let p = &returned as *const CoveredPaddingR;
+        let padding = ptr::addr_of!((&(*p).padded).word).cast::<u8>().sub(1);
+        assert_eq!(*padding, 0x5a);
     }
 }
