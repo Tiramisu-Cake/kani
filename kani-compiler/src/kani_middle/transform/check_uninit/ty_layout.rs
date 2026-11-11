@@ -464,7 +464,8 @@ fn fill_product_node(
         return Ok(());
     }
 
-    let Some(RigidTy::Adt(def, args)) = ty.kind().rigid() else {
+    let ty_kind = ty.kind();
+    let Some(RigidTy::Adt(def, args)) = ty_kind.rigid() else {
         return Err(LayoutComputationError::CompoundStorage(ty));
     };
     if def.kind() != AdtKind::Struct {
