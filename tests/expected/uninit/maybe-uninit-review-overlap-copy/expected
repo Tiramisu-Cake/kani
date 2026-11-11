@@ -1,8 +1,7 @@
-overlap_copy_right.safety_check.\
-	 - Status: FAILURE\
-	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u8`"
-overlap_copy_left.safety_check.\
-	 - Status: FAILURE\
-	 - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u8`"
+Checking harness overlap_copy_right...
+Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type `u8`
+VERIFICATION:- FAILED
+Checking harness overlap_copy_left...
+Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type `u8`
 VERIFICATION:- FAILED
 Complete - 0 successfully verified harnesses, 2 failures, 2 total.
