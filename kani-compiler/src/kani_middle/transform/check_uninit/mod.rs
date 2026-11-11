@@ -560,13 +560,14 @@ impl<'a, 'tcx> UninitInstrumenter<'a, 'tcx> {
                 self.inject_unsupported_check(body, source, operation.position(), reason);
                 return;
             }
-            PointeeLayout::Union { field_layouts, storage_size } => {
+            PointeeLayout::Union { field_layouts, field_offsets, storage_size } => {
                 let mut layout = match &operation {
                     MemoryInitOp::CreateUnion { field, .. } => {
-                        // rustc's Union fields shape gives every arm offset zero. Resize to
-                        // size(U), not max(field size): whole construction resets the tail.
-                        let mut mask = field_layouts[*field].clone();
-                        mask.resize(*storage_size, false);
+                        // Full replacement uses rustc's arm offset and size(U), including tail.
+                        let mut mask = vec![false; *storage_size];
+                        let offset = field_offsets[*field];
+                        let data = &field_layouts[*field];
+                        mask[offset..offset + data.len()].copy_from_slice(data);
                         mask
                     }
                     MemoryInitOp::SetStorage { initialized, .. } => {

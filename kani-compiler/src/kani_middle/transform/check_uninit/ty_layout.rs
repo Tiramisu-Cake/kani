@@ -49,7 +49,7 @@ pub enum PointeeLayout {
     /// Layout of slices, *const/mut str is included in this case and treated as *const/mut [u8].
     Slice { element_layout: Layout },
     /// Layout of unions, which are shared storage for multiple fields of potentially different layouts.
-    Union { field_layouts: Vec<Layout>, storage_size: usize },
+    Union { field_layouts: Vec<Layout>, field_offsets: Vec<usize>, storage_size: usize },
     /// Trait objects have an arbitrary layout.
     TraitObject,
 }
@@ -165,12 +165,27 @@ impl PointeeInfo {
                                 .map(|data_chunks| generate_byte_mask(size_in_bytes, data_chunks))
                         })
                         .collect();
+                    let field_layouts: Vec<Layout> = fields?;
+                    let shape = ty.layout().unwrap().shape();
+                    let storage_size = shape.size.bytes();
+                    let field_offsets: Vec<usize> = match shape.fields {
+                        // This rustc shape explicitly denotes shared, zero-offset storage.
+                        FieldsShape::Union(_) => vec![0; field_layouts.len()],
+                        FieldsShape::Arbitrary { offsets } => {
+                            offsets.iter().map(|offset| offset.bytes()).collect()
+                        }
+                        _ => return Err(LayoutComputationError::UnsupportedType(ty)),
+                    };
+                    if field_offsets.len() != field_layouts.len()
+                        || field_offsets.iter().zip(&field_layouts).any(|(offset, field)| {
+                            offset.checked_add(field.len()).is_none_or(|end| end > storage_size)
+                        })
+                    {
+                        return Err(LayoutComputationError::UnsupportedType(ty));
+                    }
                     Ok(PointeeInfo {
                         pointee_ty: ty,
-                        layout: PointeeLayout::Union {
-                            field_layouts: fields?,
-                            storage_size: ty.layout().unwrap().shape().size.bytes(),
-                        },
+                        layout: PointeeLayout::Union { field_layouts, field_offsets, storage_size },
                     })
                 }
                 RigidTy::Str => {
@@ -216,11 +231,10 @@ impl PointeeInfo {
     /// This is a preservation mask, not evidence that any source byte is initialized.
     pub(super) fn transfer_mask(&self) -> Vec<bool> {
         match &self.layout {
-            PointeeLayout::Union { field_layouts, storage_size } => {
+            PointeeLayout::Union { field_layouts, field_offsets, storage_size } => {
                 let mut mask = vec![false; *storage_size];
-                for field in field_layouts {
-                    assert!(field.len() <= *storage_size);
-                    for (byte, data) in mask.iter_mut().zip(field) {
+                for (offset, field) in field_offsets.iter().zip(field_layouts) {
+                    for (byte, data) in mask.iter_mut().skip(*offset).zip(field) {
                         *byte |= *data;
                     }
                 }
