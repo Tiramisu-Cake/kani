@@ -9,8 +9,8 @@ use crate::kani_middle::transform::body::{
 };
 use rustc_public::{
     mir::{
-        CastKind, FieldIdx, Mutability, Operand, Place, RawPtrKind, Rvalue, Statement,
-        StatementKind,
+        CastKind, FieldIdx, Mutability, Operand, Place, ProjectionElem, RawPtrKind, Rvalue,
+        Statement, StatementKind,
     },
     ty::{ConstantKind, RigidTy, Ty},
 };
@@ -314,9 +314,8 @@ pub(super) fn constant_init_mask(operand: &Operand) -> Option<Vec<bool>> {
     }
 }
 
-/// A helper to generate instrumentation for taking a reference to a given operand. Returns the
-/// operand which is a reference and stores all instrumentation in the statements vector passed.
 /// A new local holding `operand`, a raw pointer, cast to `*const pointee_ty`.
+/// Reference places are reborrowed as raw pointers to their pointees, as in `CheckRef`.
 fn mk_cast(
     operand: &Operand,
     pointee_ty: Ty,
@@ -325,12 +324,24 @@ fn mk_cast(
     source: &mut SourceInstruction,
 ) -> Operand {
     let span = source.span(body.blocks());
+    let operand = if operand.ty(body.locals()).unwrap().kind().is_ref()
+        && let Operand::Copy(place) | Operand::Move(place) = operand
+    {
+        // AddressOf does not read the pointee. It also avoids introducing a read of the
+        // reference's storage for the later delayed-UB visitor to instrument. Constants
+        // have no reference place and can be cast directly.
+        let mut pointee = place.clone();
+        pointee.projection.push(ProjectionElem::Deref);
+        mk_ref(&Operand::Copy(pointee), body, statements, source)
+    } else {
+        operand.clone()
+    };
     let ptr_ty = Ty::new_ptr(pointee_ty, Mutability::Not);
     let result = body.new_local(ptr_ty, span, Mutability::Not);
     statements.push(Statement {
         kind: StatementKind::Assign(
             Place::from(result),
-            Rvalue::Cast(CastKind::PtrToPtr, operand.clone(), ptr_ty),
+            Rvalue::Cast(CastKind::PtrToPtr, operand, ptr_ty),
         ),
         source_info: synthetic_source_info(span),
     });

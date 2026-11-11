@@ -19,6 +19,20 @@ fn raw_eq_initialized_arrays() {
     assert!(!unsafe { raw_eq(&left, &right) });
 }
 
+#[inline(never)]
+fn equal_referenced_arrays(left: &[u8; 3], right: &[u8; 3]) -> bool {
+    unsafe { raw_eq(left, right) }
+}
+
+#[kani::proof]
+fn raw_eq_initialized_array_references() {
+    let left: [u8; 3] = kani::any();
+    let mut right = left;
+    assert!(equal_referenced_arrays(&left, &right));
+    right[2] ^= 1;
+    assert!(!equal_referenced_arrays(&left, &right));
+}
+
 #[kani::proof]
 fn raw_eq_initialized_scalars() {
     let left: u32 = kani::any();

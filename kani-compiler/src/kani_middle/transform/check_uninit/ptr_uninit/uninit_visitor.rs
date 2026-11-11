@@ -560,6 +560,7 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                                     // raw_eq reads the whole extent, including padding and union
                                     // storage. A byte array selects every byte without imposing
                                     // the pointee's typed data mask or reading its value.
+                                    // CheckAs reborrows reference places as &raw const *operand.
                                     let bytes_ty = pointee_ty.layout().ok().and_then(|layout| {
                                         Ty::try_new_array(
                                             Ty::unsigned_ty(UintTy::U8),
