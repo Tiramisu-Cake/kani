@@ -1,0 +1,9 @@
+Checking harness bodyless_foreign_argument_and_return_are_unsupported...
+Failed Checks: Kani does not support shadow transfers without a paired argument/return protocol.
+VERIFICATION:- FAILED
+Verification failed for - bodyless_foreign_argument_and_return_are_unsupported
+Checking harness fn_once_shim_argument_and_return_are_unsupported...
+Failed Checks: Kani does not support shadow transfers without a paired argument/return protocol.
+VERIFICATION:- FAILED
+Verification failed for - fn_once_shim_argument_and_return_are_unsupported
+Complete - 0 successfully verified harnesses, 2 failures, 2 total.
