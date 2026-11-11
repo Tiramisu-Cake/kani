@@ -41,6 +41,20 @@ pub struct CheckUninitVisitor<'tcx> {
     current_target: InitRelevantInstruction,
 }
 
+#[derive(Default)]
+struct MoveSourceCollector {
+    places: Vec<Place>,
+}
+
+impl MirVisitor for MoveSourceCollector {
+    fn visit_operand(&mut self, operand: &Operand, location: Location) {
+        if let Operand::Move(place) = operand {
+            self.places.push(place.clone());
+        }
+        self.super_operand(operand, location);
+    }
+}
+
 impl TargetFinder for CheckUninitVisitor<'_> {
     fn find_all(mut self, body: &MutableBody) -> Vec<InitRelevantInstruction> {
         self.locals = body.locals().to_vec();
@@ -127,6 +141,23 @@ impl<'tcx> CheckUninitVisitor<'tcx> {
         }
     }
 
+    /// Mark moved-from non-union fields uninitialized after their source checks and before the
+    /// assignment. Whole-union sources use the paired storage-transfer operation instead.
+    fn clear_move_sources(&mut self, rvalue: &Rvalue, location: Location) {
+        let mut collector = MoveSourceCollector::default();
+        collector.visit_rvalue(rvalue, location);
+        for place in collector.places {
+            if place.ty(&self.locals).unwrap().kind().is_union() {
+                continue;
+            }
+            self.push_target(MemoryInitOp::SetRef {
+                operand: Operand::Copy(place),
+                value: false,
+                position: InsertPosition::Before,
+            });
+        }
+    }
+
     fn union_pointer(&self, operand: &Operand) -> bool {
         matches!(
             operand.ty(&self.locals).ok().map(|ty| ty.kind().clone()),
@@ -181,7 +212,7 @@ impl<'tcx> CheckUninitVisitor<'tcx> {
         });
     }
 
-    fn assign_storage(&mut self, place: &Place, ty: Ty, rvalue: &Rvalue) {
+    fn assign_storage(&mut self, place: &Place, ty: Ty, rvalue: &Rvalue, location: Location) {
         match rvalue {
             Rvalue::Cast(CastKind::Transmute, operand, target)
                 if let Some(initialized) = self.typed_storage_mask(operand, *target) =>
@@ -199,6 +230,7 @@ impl<'tcx> CheckUninitVisitor<'tcx> {
             Rvalue::Aggregate(AggregateKind::Adt(def, _, _, _, Some(field)), _)
                 if def.kind() == AdtKind::Union =>
             {
+                self.clear_move_sources(rvalue, location);
                 self.push_target(MemoryInitOp::CreateUnion {
                     operand: Operand::Copy(place.clone()),
                     field: *field,
@@ -242,6 +274,10 @@ impl<'tcx> CheckUninitVisitor<'tcx> {
                     // Copy its byte state to each slot using the array's static element stride.
                     let TyKind::RigidTy(RigidTy::Array(_, len)) = ty.kind() else { unreachable!() };
                     let len = len.eval_target_usize().unwrap();
+                    let source_operand = match operand {
+                        Operand::Move(source) => Operand::Copy(source.clone()),
+                        _ => operand.clone(),
+                    };
                     for index in 0..len {
                         let mut element = place.clone();
                         element.projection.push(ProjectionElem::ConstantIndex {
@@ -249,7 +285,16 @@ impl<'tcx> CheckUninitVisitor<'tcx> {
                             min_length: len,
                             from_end: false,
                         });
-                        self.assign_storage_operand(&element, operand);
+                        self.assign_storage_operand(&element, &source_operand);
+                    }
+                    if let Operand::Move(source) = operand {
+                        let source_size =
+                            source.ty(&self.locals).unwrap().layout().unwrap().shape().size;
+                        self.push_target(MemoryInitOp::SetStorage {
+                            operand: Operand::Copy(source.clone()),
+                            initialized: vec![false; source_size],
+                            position: InsertPosition::After,
+                        });
                     }
                 } else {
                     self.unsupported_storage_assignment();
@@ -342,6 +387,7 @@ impl<'tcx> CheckUninitVisitor<'tcx> {
         rvalue: &Rvalue,
         ty: Ty,
         in_union: bool,
+        location: Location,
     ) {
         // Check whether we are assigning into a dereference (*ptr = _).
         if let Some(place_without_deref) = try_remove_topmost_deref(place) {
@@ -399,6 +445,7 @@ impl<'tcx> CheckUninitVisitor<'tcx> {
         // preserving bytes outside it. Whole-union assignments are handled through
         // assign_storage above.
         if in_union {
+            self.clear_move_sources(rvalue, location);
             self.push_target(MemoryInitOp::SetRef {
                 operand: Operand::Copy(place.clone()),
                 value: true,
@@ -433,7 +480,7 @@ impl MirVisitor for CheckUninitVisitor<'_> {
 
                 // Reject nested unions before the generic shadow update can treat them as values.
                 if self.transfers_shadow(ty) {
-                    self.assign_storage(place, ty, rvalue);
+                    self.assign_storage(place, ty, rvalue, location);
                 } else if let Err(reason @ LayoutComputationError::UnionAsField(_)) =
                     PointeeInfo::from_ty(ty)
                 {
@@ -443,13 +490,14 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                         ),
                     });
                 } else if in_maybe_uninit {
+                    self.clear_move_sources(rvalue, location);
                     self.push_target(MemoryInitOp::SetRef {
                         operand: Operand::Copy(place.clone()),
                         value: true,
                         position: InsertPosition::After,
                     });
                 } else {
-                    self.visit_ordinary_assignment(place, rvalue, ty, union.is_some());
+                    self.visit_ordinary_assignment(place, rvalue, ty, union.is_some(), location);
                 }
             }
             StatementKind::FakeRead(_, _)
