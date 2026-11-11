@@ -128,6 +128,34 @@ pub(super) fn maybe_uninit_storage(tcx: TyCtxt, ty: Ty) -> Option<Ty> {
 }
 
 impl PointeeInfo {
+    /// Typed slot transfers preserve only payload data, at the rustc stride of each slot.
+    pub(super) fn for_typed_storage(tcx: TyCtxt, ty: Ty) -> Result<Self, LayoutComputationError> {
+        let inner = maybe_uninit_storage(tcx, ty).unwrap();
+        let data_chunks = data_bytes_for_ty(&MachineInfo::target(), inner, 0)?;
+        let layout = match ty.kind() {
+            TyKind::RigidTy(RigidTy::Slice(slot)) => {
+                let stride = slot.layout().unwrap().shape().size.bytes();
+                PointeeLayout::Slice { element_layout: generate_byte_mask(stride, data_chunks) }
+            }
+            TyKind::RigidTy(RigidTy::Array(_, _)) => {
+                let shape = ty.layout().unwrap().shape();
+                let FieldsShape::Array { stride, count } = shape.fields else { unreachable!() };
+                let slot_mask = generate_byte_mask(stride.bytes(), data_chunks);
+                let mut layout = vec![false; shape.size.bytes()];
+                for index in 0..usize::try_from(count).unwrap() {
+                    let offset = index * stride.bytes();
+                    layout[offset..offset + stride.bytes()].copy_from_slice(&slot_mask);
+                }
+                PointeeLayout::Sized { layout }
+            }
+            _ => {
+                let size = ty.layout().unwrap().shape().size.bytes();
+                PointeeLayout::Sized { layout: generate_byte_mask(size, data_chunks) }
+            }
+        };
+        Ok(Self { pointee_ty: ty, layout })
+    }
+
     /// Layout for copying storage or writing every byte with a bytewise intrinsic.
     pub(super) fn for_storage(tcx: TyCtxt, ty: Ty) -> Result<Self, LayoutComputationError> {
         let inner = maybe_uninit_storage(tcx, ty).unwrap();

@@ -107,20 +107,28 @@ macro_rules! kani_mem_init {
                 }
             }
 
-            /// Copy memory initialization state by non-deterministically switching the tracked object and
-            /// adjusting the tracked offset.
+            /// Copy memory initialization state by non-deterministically switching the tracked object
+            /// and adjusting the tracked offset. Only bytes selected by `layout` preserve their state.
             #[kanitool::disable_checks(pointer)]
             pub fn copy<const LAYOUT_SIZE: usize>(
                 &mut self,
                 from_ptr: *const u8,
                 to_ptr: *const u8,
                 num_elts: usize,
+                layout: Layout<LAYOUT_SIZE>,
             ) {
                 let from_obj = super::mem::pointer_object(from_ptr);
                 let from_offset = super::mem::pointer_offset(from_ptr);
                 let to_obj = super::mem::pointer_object(to_ptr);
                 let to_offset = super::mem::pointer_offset(to_ptr);
-                self.copy_by_id::<LAYOUT_SIZE>(from_obj, from_offset, to_obj, to_offset, num_elts);
+                self.copy_by_id::<LAYOUT_SIZE>(
+                    from_obj,
+                    from_offset,
+                    to_obj,
+                    to_offset,
+                    num_elts,
+                    layout,
+                );
             }
 
             /// Copy initialization state using object identities and offsets captured while the
@@ -134,7 +142,11 @@ macro_rules! kani_mem_init {
                 to_obj: usize,
                 to_offset: usize,
                 num_elts: usize,
+                layout: Layout<LAYOUT_SIZE>,
             ) {
+                if LAYOUT_SIZE == 0 {
+                    return;
+                }
                 if self.tracked_object_id == from_obj
                     && self.tracked_offset >= from_offset
                     && self.tracked_offset < from_offset + num_elts * LAYOUT_SIZE
@@ -143,38 +155,18 @@ macro_rules! kani_mem_init {
                     if should_reset {
                         self.tracked_object_id = to_obj;
                         self.tracked_offset = to_offset + (self.tracked_offset - from_offset);
-                        // Note that this preserves the value.
+                        // A preserve mask never initializes a source byte. It discards padding.
+                        self.value &= layout[(self.tracked_offset - to_offset) % LAYOUT_SIZE];
                         return;
                     }
                 }
                 // If this path did not follow the source byte, do not retain the old state of
                 // overwritten destination bytes. Their new state is checked on the source path.
-                self.bless_by_id::<LAYOUT_SIZE>(to_obj, to_offset, num_elts);
-            }
-
-            /// Set currently tracked memory initialization state to `true` if `ptr` points to the
-            /// currently tracked object and the tracked offset lies within `LAYOUT_SIZE * num_elts`
-            /// bytes of `ptr`.
-            #[kanitool::disable_checks(pointer)]
-            pub fn bless<const LAYOUT_SIZE: usize>(&mut self, ptr: *const u8, num_elts: usize) {
-                let obj = super::mem::pointer_object(ptr);
-                let offset = super::mem::pointer_offset(ptr);
-                self.bless_by_id::<LAYOUT_SIZE>(obj, offset, num_elts);
-            }
-
-            /// Bless memory using object identity and offset captured from a live pointer.
-            #[kanitool::disable_checks(pointer)]
-            pub fn bless_by_id<const LAYOUT_SIZE: usize>(
-                &mut self,
-                obj: usize,
-                offset: usize,
-                num_elts: usize,
-            ) {
-                if self.tracked_object_id == obj
-                    && self.tracked_offset >= offset
-                    && self.tracked_offset < offset + num_elts * LAYOUT_SIZE
+                if self.tracked_object_id == to_obj
+                    && self.tracked_offset >= to_offset
+                    && self.tracked_offset < to_offset + num_elts * LAYOUT_SIZE
                 {
-                    self.value = true;
+                    self.value = layout[(self.tracked_offset - to_offset) % LAYOUT_SIZE];
                 }
             }
 
@@ -385,16 +377,30 @@ macro_rules! kani_mem_init {
                     from_ptr as *const u8,
                     to_ptr as *const u8,
                     num_elts,
+                    [true; LAYOUT_SIZE],
                 );
             }
         }
 
-        /// Copy initialization state of `size_of::<T>` bytes from one pointer to the other. Note that in
-        /// this case `LAYOUT_SIZE == size_of::<T>`.
+        /// Transfer one typed value's initialization state, preserving only bytes selected by `layout`.
+        /// In this case `LAYOUT_SIZE == size_of::<T>`.
         #[kanitool::disable_checks(pointer)]
         #[kanitool::fn_marker = "CopyInitStateSingleModel"]
-        fn copy_init_state_single<const LAYOUT_SIZE: usize, T>(from: *const T, to: *const T) {
-            copy_init_state::<LAYOUT_SIZE, T>(from, to, 1);
+        fn copy_init_state_single<const LAYOUT_SIZE: usize, T>(
+            from: *const T,
+            to: *const T,
+            layout: Layout<LAYOUT_SIZE>,
+        ) {
+            let (from_ptr, _) = from.to_raw_parts();
+            let (to_ptr, _) = to.to_raw_parts();
+            unsafe {
+                MEM_INIT_STATE.copy::<LAYOUT_SIZE>(
+                    from_ptr as *const u8,
+                    to_ptr as *const u8,
+                    1,
+                    layout,
+                );
+            }
         }
 
         /// Non-deterministically store information about currently tracked argument in the argument
@@ -419,11 +425,16 @@ macro_rules! kani_mem_init {
 
         /// Load information from the argument buffer (if the argument position matches) via copying
         /// the memory initialization information from an address in the caller to an address in the
-        /// callee. Otherwise, mark that the argument as initialized, as it will be checked by
-        /// another non-deterministic branch. Reset the argument buffer after loading from it.
+        /// callee, discarding padding according to `layout`. Otherwise, mark only the argument's
+        /// data bytes initialized, as their state is checked by another non-deterministic branch.
+        /// Reset the argument buffer after loading from it.
         #[kanitool::disable_checks(pointer)]
         #[kanitool::fn_marker = "LoadArgumentModel"]
-        fn load_argument<const LAYOUT_SIZE: usize, T>(to: *const T, selected_argument: usize) {
+        fn load_argument<const LAYOUT_SIZE: usize, T>(
+            to: *const T,
+            selected_argument: usize,
+            layout: Layout<LAYOUT_SIZE>,
+        ) {
             let (to_ptr, _) = to.to_raw_parts();
             if unsafe {
                 MEM_INIT_STATE.argument_buffer_active
@@ -443,13 +454,14 @@ macro_rules! kani_mem_init {
                         to_object_id,
                         to_offset,
                         1,
+                        layout,
                     );
                     MEM_INIT_STATE.argument_buffer_active = false;
                 }
                 return;
             }
             unsafe {
-                MEM_INIT_STATE.bless::<LAYOUT_SIZE>(to_ptr as *const u8, 1);
+                MEM_INIT_STATE.set::<LAYOUT_SIZE>(to_ptr as *const u8, layout, true);
             }
         }
     };

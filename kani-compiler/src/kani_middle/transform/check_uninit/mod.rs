@@ -231,11 +231,12 @@ impl<'a, 'tcx> UninitInstrumenter<'a, 'tcx> {
                     // A generic set from delayed UB instrumentation would erase that state.
                     MemoryInitOp::SetRef { .. } => return,
                     MemoryInitOp::SetStorage { .. }
-                    | MemoryInitOp::Copy { .. }
                     | MemoryInitOp::AssignUnion { .. }
                     | MemoryInitOp::StoreArgument { .. }
-                    | MemoryInitOp::LoadArgument { .. }
-                    | MemoryInitOp::SetSliceChunk { .. } => {
+                    | MemoryInitOp::LoadArgument { .. } => {
+                        PointeeInfo::for_typed_storage(self.tcx, pointee_ty)
+                    }
+                    MemoryInitOp::Copy { .. } | MemoryInitOp::SetSliceChunk { .. } => {
                         PointeeInfo::for_storage(self.tcx, pointee_ty)
                     }
                     _ => PointeeInfo::from_ty(pointee_ty),
@@ -435,9 +436,15 @@ impl<'a, 'tcx> UninitInstrumenter<'a, 'tcx> {
         let value = operation.expect_value();
         let terminator = match pointee_info.layout() {
             PointeeLayout::Sized { layout } => {
+                let initialized_mask;
                 let layout = if let MemoryInitOp::SetStorage { initialized, .. } = &operation {
                     assert_eq!(layout.len(), initialized.len());
-                    initialized
+                    initialized_mask = initialized
+                        .iter()
+                        .zip(layout)
+                        .map(|(initialized, data)| *initialized && *data)
+                        .collect::<Vec<_>>();
+                    &initialized_mask
                 } else {
                     layout
                 };
@@ -669,6 +676,20 @@ impl<'a, 'tcx> UninitInstrumenter<'a, 'tcx> {
         );
         let operand = operation.mk_operand(body, &mut statements, source);
         let argument_no = operation.expect_argument_no();
+        let mut args = vec![
+            operand,
+            Operand::Constant(ConstOperand {
+                span: source.span(body.blocks()),
+                user_ty: None,
+                const_: MirConst::try_from_uint(argument_no as u128, UintTy::Usize).unwrap(),
+            }),
+        ];
+        // Stores only capture live source identities. The receiving side applies the typed mask,
+        // including for normal returns, after transferring the saved source state.
+        if matches!(operation, MemoryInitOp::LoadArgument { .. }) {
+            let layout = transfer_mask(pointee_info.layout());
+            args.push(mk_layout_operand(body, &mut statements, source, &layout));
+        }
         let terminator = Terminator {
             kind: TerminatorKind::Call {
                 func: Operand::Copy(Place::from(body.new_local(
@@ -676,15 +697,7 @@ impl<'a, 'tcx> UninitInstrumenter<'a, 'tcx> {
                     source.span(body.blocks()),
                     Mutability::Not,
                 ))),
-                args: vec![
-                    operand,
-                    Operand::Constant(ConstOperand {
-                        span: source.span(body.blocks()),
-                        user_ty: None,
-                        const_: MirConst::try_from_uint(argument_no as u128, UintTy::Usize)
-                            .unwrap(),
-                    }),
-                ],
+                args,
                 destination: ret_place.clone(),
                 target: Some(0), // this will be overriden in add_bb
                 unwind: UnwindAction::Terminate,
@@ -716,6 +729,8 @@ impl<'a, 'tcx> UninitInstrumenter<'a, 'tcx> {
             *pointee_info.ty(),
         );
         let (from, to) = operation.expect_assign_union_operands(body, &mut statements, source);
+        let layout = transfer_mask(pointee_info.layout());
+        let layout_operand = mk_layout_operand(body, &mut statements, source, &layout);
         let terminator = Terminator {
             kind: TerminatorKind::Call {
                 func: Operand::Copy(Place::from(body.new_local(
@@ -723,7 +738,7 @@ impl<'a, 'tcx> UninitInstrumenter<'a, 'tcx> {
                     source.span(body.blocks()),
                     Mutability::Not,
                 ))),
-                args: vec![from, to],
+                args: vec![from, to, layout_operand],
                 destination: ret_place.clone(),
                 target: Some(0), // this will be overriden in add_bb
                 unwind: UnwindAction::Terminate,
@@ -763,6 +778,17 @@ impl<'a, 'tcx> UninitInstrumenter<'a, 'tcx> {
         reason: &str,
     ) {
         body.insert_check(&self.unsupported_check_type, source, position, None, reason);
+    }
+}
+
+/// Keep the existing whole-storage policy for ordinary unions. MaybeUninit transfers use the
+/// payload mask computed by `for_typed_storage` instead.
+fn transfer_mask(layout: &PointeeLayout) -> Vec<bool> {
+    match layout {
+        PointeeLayout::Sized { layout } => layout.clone(),
+        PointeeLayout::Slice { element_layout } => element_layout.clone(),
+        PointeeLayout::Union { .. } => vec![true; layout.maybe_size().unwrap()],
+        PointeeLayout::TraitObject => unreachable!("Cannot transfer an arbitrary layout"),
     }
 }
 
