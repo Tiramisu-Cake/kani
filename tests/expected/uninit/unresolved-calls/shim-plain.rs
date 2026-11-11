@@ -11,7 +11,7 @@ fn identity(value: u8) -> u8 {
 
 #[inline(never)]
 fn indirect(f: fn(u8) -> u8) -> u8 {
-    // Explicit Fn::call on a function pointer resolves to a FnPtrShim.
+    // Follow the bodyful FnPtrShim; its inner function-pointer call must be rejected.
     std::ops::Fn::call(&f, (42,))
 }
 

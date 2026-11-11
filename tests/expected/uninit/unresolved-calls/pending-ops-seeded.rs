@@ -1,7 +1,7 @@
 // Copyright Kani Contributors
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 // kani-flags: -Z uninit-checks
-// compile-flags: -D warnings
+// compile-flags: --edition 2021 -D warnings
 
 #![feature(core_intrinsics, custom_mir)]
 #![allow(internal_features)]
