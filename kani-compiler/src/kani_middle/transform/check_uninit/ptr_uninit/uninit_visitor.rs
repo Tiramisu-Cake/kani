@@ -12,8 +12,8 @@ use crate::{
             PointeeInfo, PointeeLayout, TargetFinder,
             relevant_instruction::{InitRelevantInstruction, MemoryInitOp, constant_init_mask},
             ty_layout::{
-                LayoutComputationError, maybe_uninit_storage, tys_layout_compatible_to_size,
-                wrapper_inner,
+                LayoutComputationError, contains_storage, maybe_uninit_storage, product_layout,
+                tys_layout_compatible_to_size, wrapper_inner,
             },
         },
     },
@@ -104,7 +104,97 @@ impl<'tcx> CheckUninitVisitor<'tcx> {
     }
 
     fn transfers_shadow(&self, ty: Ty) -> bool {
-        ty.kind().is_union() || maybe_uninit_storage(self.tcx, ty).is_some()
+        ty.kind().is_union() || contains_storage(self.tcx, ty)
+    }
+
+    fn unsupported_product(&mut self) {
+        self.push_target(MemoryInitOp::Unsupported {
+            reason: "Kani does not support this compound storage layout.".to_string(),
+        });
+    }
+
+    /// All operands have already been materialized by MIR. Fieldwise shadow updates are
+    /// permitted only when the destination is disjoint from every source for the entire
+    /// sequence. Local projections without Deref stay within their root allocation; different
+    /// such roots are disjoint. Indirect or same-root aggregates fail before any shadow write.
+    fn assign_product(&mut self, place: &Place, ty: Ty, rvalue: &Rvalue) {
+        let Ok(Some(product)) = product_layout(self.tcx, ty) else {
+            self.unsupported_product();
+            return;
+        };
+        match rvalue {
+            Rvalue::Use(operand, _) => self.assign_storage_operand(place, operand),
+            Rvalue::Aggregate(AggregateKind::Adt(_, _, _, _, None), operands) => {
+                let TyKind::RigidTy(RigidTy::Adt(def, args)) = ty.kind() else { unreachable!() };
+                let fields = def.variants_iter().next().unwrap().fields();
+                let direct = |place: &Place| {
+                    place.projection.iter().all(|elem| {
+                        matches!(
+                            elem,
+                            ProjectionElem::Field(..) | ProjectionElem::ConstantIndex { .. }
+                        )
+                    })
+                };
+                if fields.len() != operands.len()
+                    || !direct(place)
+                    || operands.iter().any(|operand| match operand {
+                        Operand::Copy(src) | Operand::Move(src) => {
+                            src.local == place.local || !direct(src)
+                        }
+                        Operand::Constant(_) => false,
+                        Operand::RuntimeChecks(_) => true,
+                    })
+                {
+                    // Different pointer locals, in particular, do not prove disjoint pointees.
+                    self.push_target(MemoryInitOp::Unsupported {
+                        reason: "Kani does not support potentially overlapping compound storage aggregates.".to_string(),
+                    });
+                    return;
+                }
+                // visit_rvalue retains the ordinary source/dereference checks. Product
+                // operands additionally check R in visit_operand. Do not fabricate an
+                // unconditional check on ordinary locals that were never shadow targets.
+                for (idx, (field, operand)) in fields.iter().zip(operands).enumerate() {
+                    let field_ty = field.ty_with_args(&args);
+                    let mut field_place = place.clone();
+                    field_place.projection.push(ProjectionElem::Field(idx, field_ty));
+                    if contains_storage(self.tcx, field_ty) {
+                        self.assign_storage_operand(&field_place, operand);
+                    } else if let Ok(info) = PointeeInfo::from_ty(field_ty)
+                        && let PointeeLayout::Sized { layout } = info.layout()
+                    {
+                        self.push_target(MemoryInitOp::SetStorage {
+                            operand: Operand::Copy(field_place),
+                            initialized: layout.clone(),
+                            position: InsertPosition::Before,
+                        });
+                    } else {
+                        self.unsupported_product();
+                        return;
+                    }
+                }
+            }
+            _ => {
+                self.unsupported_product();
+                return;
+            }
+        }
+        self.push_target(MemoryInitOp::SetPadding {
+            operand: Operand::Copy(place.clone()),
+            padding: product.padding_mask,
+            position: InsertPosition::After,
+        });
+    }
+
+    fn in_product(&self, place: &Place) -> bool {
+        let mut prefix = Place::from(place.local);
+        for elem in &place.projection {
+            if product_layout(self.tcx, prefix.ty(&self.locals).unwrap()).ok().flatten().is_some() {
+                return true;
+            }
+            prefix.projection.push(elem.clone());
+        }
+        false
     }
 
     /// Locate the first union on the projection path, including a union at the end.
@@ -343,7 +433,8 @@ impl<'tcx> CheckUninitVisitor<'tcx> {
             && !self.enclosing_union(addressed).is_some_and(|union| {
                 wrapper_inner(self.tcx, union, LangItem::MaybeUninit).is_some()
             })
-            && maybe_uninit_storage(self.tcx, addressed.ty(&self.locals).unwrap()).is_none()
+            && !contains_storage(self.tcx, addressed.ty(&self.locals).unwrap())
+            && !self.in_product(addressed)
         {
             self.push_target(MemoryInitOp::Set {
                 operand: Operand::Copy(place.clone()),
@@ -419,7 +510,11 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                     .is_some_and(|ty| wrapper_inner(self.tcx, ty, LangItem::MaybeUninit).is_some());
 
                 // Reject nested unions before the generic shadow update can treat them as values.
-                if maybe_uninit_storage(self.tcx, ty).is_some() {
+                if let Err(_) = product_layout(self.tcx, ty) {
+                    self.unsupported_product();
+                } else if product_layout(self.tcx, ty).ok().flatten().is_some() {
+                    self.assign_product(place, ty, rvalue);
+                } else if maybe_uninit_storage(self.tcx, ty).is_some() {
                     self.assign_storage(place, ty, rvalue);
                 } else if let Err(reason @ LayoutComputationError::UnionAsField(_)) =
                     PointeeInfo::from_ty(ty)
@@ -437,6 +532,13 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                     });
                 } else {
                     self.visit_ordinary_assignment(place, rvalue, ty, union.is_some());
+                    if self.in_product(place) && union.is_none() {
+                        self.push_target(MemoryInitOp::SetRef {
+                            operand: Operand::Copy(place.clone()),
+                            value: true,
+                            position: InsertPosition::After,
+                        });
+                    }
                 }
             }
             StatementKind::FakeRead(_, _)
@@ -505,7 +607,7 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                     return;
                 }
                 let destination_ty = destination.ty(&self.locals).unwrap();
-                if maybe_uninit_storage(self.tcx, destination_ty).is_some() {
+                if contains_storage(self.tcx, destination_ty) {
                     if instance.kind == InstanceKind::Item && instance.has_body() {
                         self.push_target(MemoryInitOp::LoadArgument {
                             operand: Operand::Copy(destination.clone()),
@@ -575,7 +677,7 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                             Intrinsic::TypedSwap
                                 if let TyKind::RigidTy(RigidTy::RawPtr(ty, _)) =
                                     args[0].ty(&self.locals).unwrap().kind()
-                                    && maybe_uninit_storage(self.tcx, ty).is_some() =>
+                                    && contains_storage(self.tcx, ty) =>
                             {
                                 self.push_target(MemoryInitOp::Unsupported {
                                     reason:
@@ -665,6 +767,12 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                 self.super_terminator(term, location);
                 let place_ty = place.ty(&self.locals).unwrap();
 
+                if product_layout(self.tcx, place_ty).ok().flatten().is_some() {
+                    self.push_target(MemoryInitOp::CheckRef {
+                        operand: Operand::Copy(place.clone()),
+                    });
+                }
+
                 // When drop is codegen'ed for types that could define their own dropping
                 // behavior, a reference is taken to the place which is later implicitly coerced
                 // to a pointer. Hence, we need to bless this pointer as initialized.
@@ -695,8 +803,7 @@ impl MirVisitor for CheckUninitVisitor<'_> {
             }
             TerminatorKind::Return => {
                 let return_place = Place::from(0);
-                if maybe_uninit_storage(self.tcx, return_place.ty(&self.locals).unwrap()).is_some()
-                {
+                if contains_storage(self.tcx, return_place.ty(&self.locals).unwrap()) {
                     self.push_target(MemoryInitOp::StoreArgument {
                         operand: Operand::Copy(return_place),
                         argument_no: 0,
@@ -760,6 +867,27 @@ impl MirVisitor for CheckUninitVisitor<'_> {
     }
 
     fn visit_operand(&mut self, operand: &Operand, location: Location) {
+        let ty = operand.ty(&self.locals).unwrap();
+        match product_layout(self.tcx, ty) {
+            Ok(Some(product)) => {
+                if matches!(operand, Operand::Copy(_) | Operand::Move(_)) {
+                    self.push_target(MemoryInitOp::CheckRef { operand: operand.clone() });
+                } else if let Some(mask) = constant_init_mask(operand)
+                    && mask.len() == product.size
+                {
+                    if product.read_mask.iter().zip(mask).any(|(r, initialized)| *r && !initialized)
+                    {
+                        self.push_target(MemoryInitOp::TriviallyUnsafe {
+                            reason: format!("Undefined Behavior: Reading from an uninitialized pointer of type `{ty}`"),
+                        });
+                    }
+                } else {
+                    self.unsupported_product();
+                }
+            }
+            Err(_) => self.unsupported_product(),
+            Ok(None) => {}
+        }
         if let Operand::Constant(constant) = operand
             && let ConstantKind::Allocated(allocation) = constant.const_.kind()
         {

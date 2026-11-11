@@ -44,6 +44,8 @@ pub enum MemoryInitOp {
     SetRef { operand: Operand, value: bool, position: InsertPosition },
     /// Replace the state of every byte in storage assigned from a MIR constant.
     SetStorage { operand: Operand, initialized: Vec<bool>, position: InsertPosition },
+    /// Clear only exact product padding bytes; preserve ordinary and storage state.
+    SetPadding { operand: Operand, padding: Vec<bool>, position: InsertPosition },
     /// Unsupported memory initialization operation.
     Unsupported { reason: String },
     /// Operation that trivially accesses uninitialized memory, results in injecting `assert!(false)`.
@@ -85,6 +87,7 @@ impl MemoryInitOp {
             MemoryInitOp::CheckRef { operand, .. }
             | MemoryInitOp::SetRef { operand, .. }
             | MemoryInitOp::SetStorage { operand, .. }
+            | MemoryInitOp::SetPadding { operand, .. }
             | MemoryInitOp::CreateUnion { operand, .. }
             | MemoryInitOp::LoadArgument { operand, .. }
             | MemoryInitOp::StoreArgument { operand, .. } => {
@@ -138,6 +141,7 @@ impl MemoryInitOp {
             }
             MemoryInitOp::SetRef { operand, .. }
             | MemoryInitOp::SetStorage { operand, .. }
+            | MemoryInitOp::SetPadding { operand, .. }
             | MemoryInitOp::CheckRef { operand, .. }
             | MemoryInitOp::CreateUnion { operand, .. }
             | MemoryInitOp::LoadArgument { operand, .. }
@@ -188,6 +192,7 @@ impl MemoryInitOp {
             | MemoryInitOp::CheckRefAs { .. }
             | MemoryInitOp::SetRef { .. }
             | MemoryInitOp::SetStorage { .. }
+            | MemoryInitOp::SetPadding { .. }
             | MemoryInitOp::CreateUnion { .. }
             | MemoryInitOp::AssignUnion { .. }
             | MemoryInitOp::Unsupported { .. }
@@ -202,7 +207,9 @@ impl MemoryInitOp {
             MemoryInitOp::Set { value, .. }
             | MemoryInitOp::SetSliceChunk { value, .. }
             | MemoryInitOp::SetRef { value, .. } => *value,
-            MemoryInitOp::CreateUnion { .. } | MemoryInitOp::SetStorage { .. } => true,
+            MemoryInitOp::CreateUnion { .. }
+            | MemoryInitOp::SetStorage { .. }
+            | MemoryInitOp::SetPadding { .. } => true,
             MemoryInitOp::Check { .. }
             | MemoryInitOp::CheckAs { .. }
             | MemoryInitOp::CheckSliceChunk { .. }
@@ -229,6 +236,7 @@ impl MemoryInitOp {
             | MemoryInitOp::SetSliceChunk { .. }
             | MemoryInitOp::SetRef { .. }
             | MemoryInitOp::SetStorage { .. }
+            | MemoryInitOp::SetPadding { .. }
             | MemoryInitOp::Unsupported { .. }
             | MemoryInitOp::TriviallyUnsafe { .. }
             | MemoryInitOp::Copy { .. }
@@ -244,6 +252,7 @@ impl MemoryInitOp {
             | MemoryInitOp::SetSliceChunk { position, .. }
             | MemoryInitOp::SetRef { position, .. }
             | MemoryInitOp::SetStorage { position, .. }
+            | MemoryInitOp::SetPadding { position, .. }
             | MemoryInitOp::AssignUnion { position, .. }
             | MemoryInitOp::LoadArgument { position, .. } => *position,
             MemoryInitOp::Check { .. }

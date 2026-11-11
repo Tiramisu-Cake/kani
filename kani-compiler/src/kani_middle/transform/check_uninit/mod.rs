@@ -12,13 +12,13 @@ use relevant_instruction::{InitRelevantInstruction, MemoryInitOp, constant_init_
 use rustc_middle::ty::TyCtxt;
 use rustc_public::{
     mir::{
-        AggregateKind, BasicBlock, Body, ConstOperand, Mutability, Operand, Place, Rvalue,
+        AggregateKind, BasicBlock, BinOp, Body, ConstOperand, Mutability, Operand, Place, Rvalue,
         Statement, StatementKind, Terminator, TerminatorKind, UnwindAction, mono::Instance,
     },
     ty::{FnDef, GenericArgKind, GenericArgs, MirConst, RigidTy, Ty, TyConst, TyKind, UintTy},
 };
 use std::collections::HashMap;
-use ty_layout::maybe_uninit_storage;
+use ty_layout::{maybe_uninit_storage, product_layout};
 
 use crate::kani_middle::kani_functions::{KaniFunction, KaniModel};
 pub use delayed_ub::DelayedUbPass;
@@ -162,7 +162,11 @@ impl<'a, 'tcx> UninitInstrumenter<'a, 'tcx> {
     ) {
         if let MemoryInitOp::StoreArgument { operand, .. } = &mut operation
             && matches!(operand, Operand::Constant(_))
-            && maybe_uninit_storage(self.tcx, operand.ty(body.locals()).unwrap()).is_some()
+            && (maybe_uninit_storage(self.tcx, operand.ty(body.locals()).unwrap()).is_some()
+                || product_layout(self.tcx, operand.ty(body.locals()).unwrap())
+                    .ok()
+                    .flatten()
+                    .is_some())
         {
             let Some(initialized) = constant_init_mask(operand) else {
                 self.inject_unsupported_check(
@@ -198,6 +202,12 @@ impl<'a, 'tcx> UninitInstrumenter<'a, 'tcx> {
             return;
         };
 
+        if let MemoryInitOp::SetPadding { padding, .. } = &operation {
+            let padding = padding.clone();
+            self.build_product_padding(body, source, operation, &padding);
+            return;
+        }
+
         let pointee_info = {
             // Sanity check: since CBMC memory object primitives only accept pointers, need to
             // ensure the correct type.
@@ -215,7 +225,49 @@ impl<'a, 'tcx> UninitInstrumenter<'a, 'tcx> {
                     )
                 };
             // Calculate pointee layout for byte-by-byte memory initialization checks.
-            let layout = if maybe_uninit_storage(self.tcx, pointee_ty).is_some() {
+            let product = match product_layout(self.tcx, pointee_ty) {
+                Ok(product) => product,
+                Err(reason) => {
+                    self.inject_unsupported_check(
+                        body,
+                        source,
+                        operation.position(),
+                        &reason.to_string(),
+                    );
+                    return;
+                }
+            };
+            let layout = if let Some(product) = product {
+                match &operation {
+                    // A delayed setter and implicit Drop address must not bless storage, or
+                    // overwrite the result of a typed transfer. Ordinary writes are handled at
+                    // their field ranges; typed reads retain the R checks below.
+                    MemoryInitOp::SetRef { operand, position, .. } => {
+                        let padding_op = MemoryInitOp::SetPadding {
+                            operand: operand.clone(),
+                            padding: product.padding_mask.clone(),
+                            position: *position,
+                        };
+                        self.build_product_padding(body, source, padding_op, &product.padding_mask);
+                        return;
+                    }
+                    MemoryInitOp::SetSliceChunk { .. } => {
+                        PointeeInfo::for_product_storage(self.tcx, pointee_ty)
+                    }
+                    MemoryInitOp::Set { .. } => {
+                        // An unmodeled typed/volatile write cannot fabricate S state. Bytewise
+                        // intrinsics through u8 pointers continue to use the ordinary path.
+                        self.inject_unsupported_check(
+                            body,
+                            source,
+                            operation.position(),
+                            "Kani does not support this write to compound storage.",
+                        );
+                        return;
+                    }
+                    _ => PointeeInfo::for_product_read(self.tcx, pointee_ty),
+                }
+            } else if maybe_uninit_storage(self.tcx, pointee_ty).is_some() {
                 match &operation {
                     // Reading a slot or slice of slots does not require initialized data.
                     MemoryInitOp::Check { .. }
@@ -277,10 +329,62 @@ impl<'a, 'tcx> UninitInstrumenter<'a, 'tcx> {
             MemoryInitOp::StoreArgument { .. } | MemoryInitOp::LoadArgument { .. } => {
                 self.build_argument_operation(body, source, operation, pointee_info)
             }
-            MemoryInitOp::Unsupported { .. } | MemoryInitOp::TriviallyUnsafe { .. } => {
+            MemoryInitOp::Unsupported { .. }
+            | MemoryInitOp::TriviallyUnsafe { .. }
+            | MemoryInitOp::SetPadding { .. } => {
                 unreachable!()
             }
         };
+    }
+
+    /// Clear each maximal padding interval using a u8 range. No setter spans R or S.
+    fn build_product_padding(
+        &mut self,
+        body: &mut MutableBody,
+        source: &mut SourceInstruction,
+        operation: MemoryInitOp,
+        padding: &[bool],
+    ) {
+        let position = operation.position();
+        let mut statements = vec![];
+        let address = operation.mk_operand(body, &mut statements, source);
+        for stmt in statements {
+            body.insert_stmt(stmt, source, position);
+        }
+        let u8_ty = Ty::unsigned_ty(UintTy::U8);
+        let byte_ptr = body.insert_ptr_cast(address, u8_ty, Mutability::Not, source, position);
+        let mut start = 0;
+        while start < padding.len() {
+            if !padding[start] {
+                start += 1;
+                continue;
+            }
+            let mut end = start + 1;
+            while end < padding.len() && padding[end] {
+                end += 1;
+            }
+            let span = source.span(body.blocks());
+            let offset = body.new_uint_operand(start as u128, UintTy::Usize, span);
+            let ptr = body.insert_binary_op(
+                BinOp::Offset,
+                Operand::Copy(Place::from(byte_ptr)),
+                offset,
+                source,
+                position,
+            );
+            let count = body.new_uint_operand((end - start) as u128, UintTy::Usize, span);
+            self.build_check_for_operation(
+                body,
+                source,
+                MemoryInitOp::SetSliceChunk {
+                    operand: Operand::Copy(Place::from(ptr)),
+                    count,
+                    value: false,
+                    position,
+                },
+            );
+            start = end;
+        }
     }
 
     /// Inject a load from memory initialization state and an assertion that all non-padding bytes
@@ -692,8 +796,26 @@ impl<'a, 'tcx> UninitInstrumenter<'a, 'tcx> {
             source_info: synthetic_source_info(source.span(body.blocks())),
         };
 
+        // Loading a typed product also drops its target padding; only R/S retain state.
+        let padding_op = if let MemoryInitOp::LoadArgument { operand, position, .. } = &operation
+            && let Ok(Some(product)) = product_layout(self.tcx, *pointee_info.ty())
+        {
+            Some((
+                MemoryInitOp::SetPadding {
+                    operand: operand.clone(),
+                    padding: product.padding_mask.clone(),
+                    position: *position,
+                },
+                product.padding_mask,
+            ))
+        } else {
+            None
+        };
         // Construct the basic block and insert it into the body.
         body.insert_bb(BasicBlock { statements, terminator }, source, operation.position());
+        if let Some((padding_op, mask)) = padding_op {
+            self.build_product_padding(body, source, padding_op, &mask);
+        }
     }
 
     /// Copy memory initialization state from one union variable to another.

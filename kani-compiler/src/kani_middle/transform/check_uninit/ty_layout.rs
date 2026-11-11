@@ -73,6 +73,18 @@ pub struct PointeeInfo {
     layout: PointeeLayout,
 }
 
+/// Byte masks for a sized struct that combines initialized data and uninitialized storage.
+///
+/// `read_mask` is the subset required for an ordinary typed read. `storage_mask` describes
+/// bytes whose initialization state is tracked as storage (including padding inside a
+/// `MaybeUninit<T>` slot). `padding_mask` is the remaining product padding.
+pub(super) struct ProductLayout {
+    pub(super) size: usize,
+    pub(super) read_mask: Vec<bool>,
+    pub(super) storage_mask: Vec<bool>,
+    pub(super) padding_mask: Vec<bool>,
+}
+
 /// Different layout computation errors that could arise from the currently unsupported constructs.
 pub enum LayoutComputationError {
     UnknownUnsizedLayout(Ty),
@@ -80,6 +92,7 @@ pub enum LayoutComputationError {
     EnumWithMultiplePaddingVariants(Ty),
     UnsupportedType(Ty),
     UnionAsField(Ty),
+    CompoundStorage(Ty),
 }
 
 impl Display for LayoutComputationError {
@@ -102,6 +115,9 @@ impl Display for LayoutComputationError {
                 f,
                 "Cannot determine layout for a type that contains union of type {ty} as a field."
             ),
+            LayoutComputationError::CompoundStorage(_) => {
+                write!(f, "Kani does not support this compound storage layout.")
+            }
         }
     }
 }
@@ -140,6 +156,23 @@ impl PointeeInfo {
             PointeeLayout::Sized { layout: vec![true; size] }
         };
         Ok(Self { pointee_ty: ty, layout })
+    }
+
+    /// Layout for ordinary reads of a supported compound storage product.
+    pub(super) fn for_product_read(tcx: TyCtxt, ty: Ty) -> Result<Self, LayoutComputationError> {
+        let product =
+            product_layout(tcx, ty)?.ok_or(LayoutComputationError::CompoundStorage(ty))?;
+        Ok(Self { pointee_ty: ty, layout: PointeeLayout::Sized { layout: product.read_mask } })
+    }
+
+    /// Layout for bytewise operations over the complete extent of a compound storage product.
+    pub(super) fn for_product_storage(tcx: TyCtxt, ty: Ty) -> Result<Self, LayoutComputationError> {
+        let product =
+            product_layout(tcx, ty)?.ok_or(LayoutComputationError::CompoundStorage(ty))?;
+        Ok(Self {
+            pointee_ty: ty,
+            layout: PointeeLayout::Sized { layout: vec![true; product.size] },
+        })
     }
 
     pub fn from_ty(ty: Ty) -> Result<Self, LayoutComputationError> {
@@ -210,6 +243,274 @@ impl PointeeInfo {
     pub fn layout(&self) -> &PointeeLayout {
         &self.layout
     }
+}
+
+/// Compute the separate read, storage, and padding masks for a sized struct product.
+/// Ordinary and flat `MaybeUninit` layouts return `None` so their existing paths remain in use.
+pub(super) fn product_layout(
+    tcx: TyCtxt,
+    ty: Ty,
+) -> Result<Option<ProductLayout>, LayoutComputationError> {
+    if let Some(slot_ty) = maybe_uninit_storage(tcx, ty) {
+        if contains_storage(tcx, slot_ty) {
+            return Err(LayoutComputationError::CompoundStorage(ty));
+        }
+        data_bytes_for_ty(&MachineInfo::target(), slot_ty, 0)
+            .map_err(|_| LayoutComputationError::CompoundStorage(ty))?;
+        return Ok(None);
+    }
+    let has_storage = contains_storage(tcx, ty);
+    if !has_storage {
+        return Ok(None);
+    }
+    validate_storage_shape(tcx, ty, false)?;
+
+    if !matches!(ty.kind().rigid(), Some(RigidTy::Adt(def, _)) if def.kind() == AdtKind::Struct) {
+        return Err(LayoutComputationError::CompoundStorage(ty));
+    }
+    if !ty.layout().unwrap().shape().is_sized() {
+        return Err(LayoutComputationError::CompoundStorage(ty));
+    }
+
+    let size = ty.layout().unwrap().shape().size.bytes();
+    let mut read_mask = vec![false; size];
+    let mut storage_mask = vec![false; size];
+    fill_product_node(tcx, ty, 0, &mut read_mask, &mut storage_mask)?;
+    let padding_mask =
+        (0..size).map(|idx| !read_mask[idx] && !storage_mask[idx]).collect::<Vec<_>>();
+
+    // Validate the partition, including target padding and zero-sized fields. Every byte must
+    // belong to exactly one of R, S, or P, and every marked extent must be in the target object.
+    if read_mask.len() != size
+        || storage_mask.len() != size
+        || padding_mask.len() != size
+        || (0..size).any(|idx| {
+            usize::from(read_mask[idx])
+                + usize::from(storage_mask[idx])
+                + usize::from(padding_mask[idx])
+                != 1
+                || (read_mask[idx] && storage_mask[idx])
+        })
+    {
+        return Err(LayoutComputationError::CompoundStorage(ty));
+    }
+
+    Ok(Some(ProductLayout { size, read_mask, storage_mask, padding_mask }))
+}
+
+/// Find storage recursively through by-value fields. Pointer and reference pointees are not
+/// part of the containing object's layout. A nested `MaybeUninit`, union, or storage enum is
+/// rejected at the point where it would otherwise make the descriptor ambiguous.
+pub(super) fn contains_storage(tcx: TyCtxt, ty: Ty) -> bool {
+    if wrapper_inner(tcx, ty, LangItem::MaybeUninit).is_some() {
+        return true;
+    }
+    if let Some(inner) = wrapper_inner(tcx, ty, LangItem::ManuallyDrop) {
+        return contains_storage(tcx, inner);
+    }
+    match ty.kind().rigid() {
+        Some(RigidTy::RawPtr(..) | RigidTy::Ref(..) | RigidTy::FnPtr(..)) => false,
+        Some(RigidTy::Array(elem, _)) | Some(RigidTy::Slice(elem)) => contains_storage(tcx, *elem),
+        Some(RigidTy::Adt(def, args)) => def.variants().iter().any(|variant| {
+            variant.fields().iter().any(|field| contains_storage(tcx, field.ty_with_args(args)))
+        }),
+        Some(RigidTy::Tuple(tys)) => tys.iter().any(|field| contains_storage(tcx, *field)),
+        _ => false,
+    }
+}
+
+fn validate_storage_shape(
+    tcx: TyCtxt,
+    ty: Ty,
+    inside_maybe_uninit: bool,
+) -> Result<bool, LayoutComputationError> {
+    if wrapper_inner(tcx, ty, LangItem::MaybeUninit).is_some() {
+        let inner = wrapper_inner(tcx, ty, LangItem::MaybeUninit).unwrap();
+        if inside_maybe_uninit || contains_storage(tcx, inner) {
+            return Err(LayoutComputationError::CompoundStorage(ty));
+        }
+        data_bytes_for_ty(&MachineInfo::target(), inner, 0)
+            .map_err(|_| LayoutComputationError::CompoundStorage(ty))?;
+        return Ok(true);
+    }
+    if let Some(inner) = wrapper_inner(tcx, ty, LangItem::ManuallyDrop) {
+        return validate_storage_shape(tcx, inner, inside_maybe_uninit);
+    }
+    match ty.kind().rigid() {
+        Some(RigidTy::RawPtr(..) | RigidTy::Ref(..) | RigidTy::FnPtr(..)) => Ok(false),
+        Some(RigidTy::Array(elem, _)) | Some(RigidTy::Slice(elem)) => {
+            validate_storage_shape(tcx, *elem, inside_maybe_uninit)
+        }
+        Some(RigidTy::Adt(def, args)) => match def.kind() {
+            AdtKind::Struct => {
+                let mut found = false;
+                for field in def.variants_iter().next().unwrap().fields() {
+                    found |=
+                        validate_storage_shape(tcx, field.ty_with_args(args), inside_maybe_uninit)?;
+                }
+                Ok(found)
+            }
+            AdtKind::Enum | AdtKind::Union => {
+                let mut found = false;
+                for variant in def.variants() {
+                    for field in variant.fields() {
+                        found |= validate_storage_shape(
+                            tcx,
+                            field.ty_with_args(args),
+                            inside_maybe_uninit,
+                        )?;
+                    }
+                }
+                if found { Err(LayoutComputationError::CompoundStorage(ty)) } else { Ok(false) }
+            }
+        },
+        Some(RigidTy::Tuple(tys)) => {
+            let mut found = false;
+            for field in tys {
+                found |= validate_storage_shape(tcx, *field, inside_maybe_uninit)?;
+            }
+            if found { Err(LayoutComputationError::CompoundStorage(ty)) } else { Ok(false) }
+        }
+        _ => Ok(false),
+    }
+}
+
+fn mark_range(
+    mask: &mut [bool],
+    offset: usize,
+    size: usize,
+    ty: Ty,
+) -> Result<(), LayoutComputationError> {
+    let Some(end) = offset.checked_add(size) else {
+        return Err(LayoutComputationError::CompoundStorage(ty));
+    };
+    if end > mask.len() {
+        return Err(LayoutComputationError::CompoundStorage(ty));
+    }
+    for byte in &mut mask[offset..end] {
+        if *byte {
+            return Err(LayoutComputationError::CompoundStorage(ty));
+        }
+        *byte = true;
+    }
+    Ok(())
+}
+
+fn fill_product_node(
+    tcx: TyCtxt,
+    ty: Ty,
+    offset: usize,
+    read_mask: &mut [bool],
+    storage_mask: &mut [bool],
+) -> Result<(), LayoutComputationError> {
+    let size = ty.layout().unwrap().shape().size.bytes();
+    if offset.checked_add(size).is_none_or(|end| end > read_mask.len()) {
+        return Err(LayoutComputationError::CompoundStorage(ty));
+    }
+    if wrapper_inner(tcx, ty, LangItem::MaybeUninit).is_some() {
+        let inner = wrapper_inner(tcx, ty, LangItem::MaybeUninit).unwrap();
+        data_bytes_for_ty(&MachineInfo::target(), inner, 0)
+            .map_err(|_| LayoutComputationError::CompoundStorage(ty))?;
+        mark_range(storage_mask, offset, size, ty)?;
+        return Ok(());
+    }
+    if let Some(inner) = wrapper_inner(tcx, ty, LangItem::ManuallyDrop) {
+        return fill_product_node(tcx, inner, offset, read_mask, storage_mask);
+    }
+    if let Some(RigidTy::Array(elem, _)) = ty.kind().rigid()
+        && wrapper_inner(tcx, *elem, LangItem::MaybeUninit).is_some()
+    {
+        let FieldsShape::Array { stride, count } = ty.layout().unwrap().shape().fields else {
+            return Err(LayoutComputationError::CompoundStorage(ty));
+        };
+        let elem_size = elem.layout().unwrap().shape().size.bytes();
+        let count_usize: usize =
+            count.try_into().map_err(|_| LayoutComputationError::CompoundStorage(ty))?;
+        let stride_bytes = stride.bytes();
+        if count_usize > 1 && stride_bytes < elem_size {
+            return Err(LayoutComputationError::CompoundStorage(ty));
+        }
+        if count_usize == 0 {
+            if size != 0 {
+                return Err(LayoutComputationError::CompoundStorage(ty));
+            }
+        } else {
+            let last_start = (count_usize - 1)
+                .checked_mul(stride_bytes)
+                .ok_or(LayoutComputationError::CompoundStorage(ty))?;
+            let total_extent = last_start
+                .checked_add(elem_size)
+                .ok_or(LayoutComputationError::CompoundStorage(ty))?;
+            if total_extent > size {
+                return Err(LayoutComputationError::CompoundStorage(ty));
+            }
+        }
+        for idx in 0..count {
+            let idx: usize =
+                idx.try_into().map_err(|_| LayoutComputationError::CompoundStorage(ty))?;
+            let elem_offset = idx
+                .checked_mul(stride_bytes)
+                .and_then(|delta| offset.checked_add(delta))
+                .ok_or(LayoutComputationError::CompoundStorage(ty))?;
+            let local_end = idx
+                .checked_mul(stride_bytes)
+                .and_then(|start| start.checked_add(elem_size))
+                .ok_or(LayoutComputationError::CompoundStorage(ty))?;
+            if local_end > size {
+                return Err(LayoutComputationError::CompoundStorage(ty));
+            }
+            mark_range(storage_mask, elem_offset, elem_size, ty)?;
+        }
+        return Ok(());
+    }
+
+    let Some(RigidTy::Adt(def, args)) = ty.kind().rigid() else {
+        return Err(LayoutComputationError::CompoundStorage(ty));
+    };
+    if def.kind() != AdtKind::Struct {
+        return Err(LayoutComputationError::CompoundStorage(ty));
+    }
+    let shape = ty.layout().unwrap().shape();
+    let FieldsShape::Arbitrary { ref offsets } = shape.fields else {
+        return Err(LayoutComputationError::CompoundStorage(ty));
+    };
+    let fields = def.variants_iter().next().unwrap().fields();
+    let mut nonzero_field_ranges = Vec::with_capacity(fields.len());
+    for (idx, field) in fields.iter().enumerate() {
+        let field_size = field.ty_with_args(args).layout().unwrap().shape().size.bytes();
+        let field_start = offsets[idx].bytes();
+        let field_end = field_start
+            .checked_add(field_size)
+            .ok_or(LayoutComputationError::CompoundStorage(ty))?;
+        if field_end > size {
+            return Err(LayoutComputationError::CompoundStorage(ty));
+        }
+        if field_size > 0 {
+            if nonzero_field_ranges
+                .iter()
+                .any(|(start, end)| field_start < *end && *start < field_end)
+            {
+                return Err(LayoutComputationError::CompoundStorage(ty));
+            }
+            nonzero_field_ranges.push((field_start, field_end));
+        }
+    }
+    for idx in shape.fields.fields_by_offset_order() {
+        let field_ty = fields[idx].ty_with_args(args);
+        let field_offset = offset
+            .checked_add(offsets[idx].bytes())
+            .ok_or(LayoutComputationError::CompoundStorage(ty))?;
+        if contains_storage(tcx, field_ty) {
+            fill_product_node(tcx, field_ty, field_offset, read_mask, storage_mask)?;
+        } else {
+            let chunks = data_bytes_for_ty(&MachineInfo::target(), field_ty, field_offset)
+                .map_err(|_| LayoutComputationError::CompoundStorage(field_ty))?;
+            for chunk in chunks {
+                mark_range(read_mask, chunk.offset, chunk.size.bytes(), field_ty)?;
+            }
+        }
+    }
+    Ok(())
 }
 
 /// Retrieve a set of data bytes with offsets for a type.
