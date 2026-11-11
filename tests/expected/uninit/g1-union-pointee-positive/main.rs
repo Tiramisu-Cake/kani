@@ -328,27 +328,27 @@ fn padded_argument_return_rust() {
 fn padded_typed_c() {
     let p = Padded { byte: 7, word: 11 };
     let u = CU { padded: ManuallyDrop::new(p) };
-    assert_eq!(unsafe { (*(&u as *const CU)).padded.byte }, 7);
-    assert_eq!(unsafe { (*(&u as *const CU)).padded.word }, 11);
+    assert_eq!(unsafe { (&(*(&u as *const CU)).padded).byte }, 7);
+    assert_eq!(unsafe { (&(*(&u as *const CU)).padded).word }, 11);
 }
 #[kani::proof]
 fn padded_typed_rust() {
     let p = Padded { byte: 13, word: 17 };
     let u = RU { padded: ManuallyDrop::new(p) };
-    assert_eq!(unsafe { (*(&u as *const RU)).padded.byte }, 13);
-    assert_eq!(unsafe { (*(&u as *const RU)).padded.word }, 17);
+    assert_eq!(unsafe { (&(*(&u as *const RU)).padded).byte }, 13);
+    assert_eq!(unsafe { (&(*(&u as *const RU)).padded).word }, 17);
 }
 #[kani::proof]
 fn padded_tuple_typed_c() {
     let u = CU { tuple: ManuallyDrop::new((2, 151)) };
-    assert_eq!(unsafe { (*(&u as *const CU)).tuple.0 }, 2);
-    assert_eq!(unsafe { (*(&u as *const CU)).tuple.1 }, 151);
+    assert_eq!(unsafe { (&(*(&u as *const CU)).tuple).0 }, 2);
+    assert_eq!(unsafe { (&(*(&u as *const CU)).tuple).1 }, 151);
 }
 #[kani::proof]
 fn padded_tuple_typed_rust() {
     let u = RU { tuple: ManuallyDrop::new((3, 157)) };
-    assert_eq!(unsafe { (*(&u as *const RU)).tuple.0 }, 3);
-    assert_eq!(unsafe { (*(&u as *const RU)).tuple.1 }, 157);
+    assert_eq!(unsafe { (&(*(&u as *const RU)).tuple).0 }, 3);
+    assert_eq!(unsafe { (&(*(&u as *const RU)).tuple).1 }, 157);
 }
 #[kani::proof]
 fn padded_typed_copy_c() {
@@ -356,7 +356,7 @@ fn padded_typed_copy_c() {
     let mut dst = CU { z: () };
     unsafe {
         ptr::write(&mut dst, ptr::read(&src));
-        assert_eq!((*(&dst as *const CU)).padded.word, 23);
+        assert_eq!((&(*(&dst as *const CU)).padded).word, 23);
     }
 }
 #[kani::proof]
@@ -365,7 +365,7 @@ fn padded_typed_copy_rust() {
     let mut dst = RU { z: () };
     unsafe {
         ptr::write(&mut dst, ptr::read(&src));
-        assert_eq!((*(&dst as *const RU)).padded.word, 31);
+        assert_eq!((&(*(&dst as *const RU)).padded).word, 31);
     }
 }
 
@@ -383,7 +383,7 @@ fn array_field_rust() {
 fn array_padded_field_c() {
     let a = [Padded { byte: 1, word: 2 }, Padded { byte: 3, word: 5 }];
     let u = CU { padded: ManuallyDrop::new(a[1]) };
-    assert_eq!(unsafe { (*(&u as *const CU)).padded.word }, 5);
+    assert_eq!(unsafe { (&(*(&u as *const CU)).padded).word }, 5);
 }
 #[kani::proof]
 fn array_zst_field_c() {
@@ -403,7 +403,7 @@ fn array_padded_elements_c() {
             ManuallyDrop::new(Padded { byte: 5, word: 7 }),
         ],
     };
-    assert_eq!(unsafe { (*(&u as *const CU)).padded_pair[1].word }, 7);
+    assert_eq!(unsafe { (&(*(&u as *const CU)).padded_pair[1]).word }, 7);
 }
 #[kani::proof]
 fn array_padded_elements_rust() {
@@ -413,7 +413,7 @@ fn array_padded_elements_rust() {
             ManuallyDrop::new(Padded { byte: 17, word: 19 }),
         ],
     };
-    assert_eq!(unsafe { (*(&u as *const RU)).padded_pair[1].word }, 19);
+    assert_eq!(unsafe { (&(*(&u as *const RU)).padded_pair[1]).word }, 19);
 }
 
 #[kani::proof]
@@ -562,7 +562,7 @@ fn pointer_delayed_c() {
     let src = CU { wide: 37 };
     let mut local = 0u32;
     let holder = identity_c(CU { ptr: &mut local });
-    let q = holder.ptr;
+    let q = unsafe { holder.ptr };
     unsafe {
         ptr::copy_nonoverlapping(
             (&src as *const CU).cast::<u8>(),
@@ -577,7 +577,7 @@ fn pointer_delayed_rust() {
     let src = RU { wide: 41 };
     let mut local = 0u32;
     let holder = identity_rust(RU { ptr: &mut local });
-    let q = holder.ptr;
+    let q = unsafe { holder.ptr };
     unsafe {
         ptr::copy_nonoverlapping(
             (&src as *const RU).cast::<u8>(),
@@ -670,7 +670,7 @@ fn field_move_projection_c() {
     let union_ptr = &mut union as *mut NonCopyFieldC;
     unsafe {
         (*union_ptr).value = source;
-        assert_eq!((*union_ptr).value.word, 229);
+        assert_eq!((&(*union_ptr).value).word, 229);
     }
 }
 #[kani::proof]
@@ -680,6 +680,6 @@ fn field_move_projection_rust() {
     let union_ptr = &mut union as *mut NonCopyFieldR;
     unsafe {
         (*union_ptr).value = source;
-        assert_eq!((*union_ptr).value.word, 233);
+        assert_eq!((&(*union_ptr).value).word, 233);
     }
 }

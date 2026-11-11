@@ -335,7 +335,7 @@ fn padded_byte_c() {
     let u = CU { padded: ManuallyDrop::new(Padded { byte: 4, word: 5 }) };
     let p = &u as *const CU;
     unsafe {
-        let padding = ptr::addr_of!((*p).padded.word).cast::<u8>().sub(1);
+        let padding = ptr::addr_of!((&(*p).padded).word).cast::<u8>().sub(1);
         let _padding = *padding;
     }
 }
@@ -344,7 +344,7 @@ fn padded_byte_rust() {
     let u = RU { padded: ManuallyDrop::new(Padded { byte: 4, word: 5 }) };
     let p = &u as *const RU;
     unsafe {
-        let padding = ptr::addr_of!((*p).padded.word).cast::<u8>().sub(1);
+        let padding = ptr::addr_of!((&(*p).padded).word).cast::<u8>().sub(1);
         let _padding = *padding;
     }
 }
@@ -356,7 +356,7 @@ fn padded_typed_transfer_padding_c() {
         ptr::write_bytes((&mut src as *mut CU).cast::<u8>(), 0x5a, std::mem::size_of::<CU>());
         ptr::write(&mut dst, ptr::read(&src));
         let p = &dst as *const CU;
-        let padding = ptr::addr_of!((*p).padded.word).cast::<u8>().sub(1);
+        let padding = ptr::addr_of!((&(*p).padded).word).cast::<u8>().sub(1);
         let _padding = *padding;
     }
 }
@@ -368,7 +368,7 @@ fn padded_typed_transfer_padding_rust() {
         ptr::write_bytes((&mut src as *mut RU).cast::<u8>(), 0x5a, std::mem::size_of::<RU>());
         ptr::write(&mut dst, ptr::read(&src));
         let p = &dst as *const RU;
-        let padding = ptr::addr_of!((*p).padded.word).cast::<u8>().sub(1);
+        let padding = ptr::addr_of!((&(*p).padded).word).cast::<u8>().sub(1);
         let _padding = *padding;
     }
 }
@@ -389,7 +389,7 @@ fn padded_argument_return_padding_c() {
     let u = padded_identity_c(src);
     let p = &u as *const CU;
     unsafe {
-        let padding = ptr::addr_of!((*p).padded.word).cast::<u8>().sub(1);
+        let padding = ptr::addr_of!((&(*p).padded).word).cast::<u8>().sub(1);
         let _padding = *padding;
     }
 }
@@ -402,7 +402,7 @@ fn padded_argument_return_padding_rust() {
     let u = padded_identity_rust(src);
     let p = &u as *const RU;
     unsafe {
-        let padding = ptr::addr_of!((*p).padded.word).cast::<u8>().sub(1);
+        let padding = ptr::addr_of!((&(*p).padded).word).cast::<u8>().sub(1);
         let _padding = *padding;
     }
 }
@@ -449,7 +449,7 @@ fn array_padded_elements_byte_c() {
     };
     let p = &u as *const CU;
     unsafe {
-        let padding = ptr::addr_of!((*p).padded_pair[1].word).cast::<u8>().sub(1);
+        let padding = ptr::addr_of!((&(*p).padded_pair[1]).word).cast::<u8>().sub(1);
         let _padding = *padding;
     }
 }
@@ -463,7 +463,7 @@ fn array_padded_elements_byte_rust() {
     };
     let p = &u as *const RU;
     unsafe {
-        let padding = ptr::addr_of!((*p).padded_pair[1].word).cast::<u8>().sub(1);
+        let padding = ptr::addr_of!((&(*p).padded_pair[1]).word).cast::<u8>().sub(1);
         let _padding = *padding;
     }
 }
@@ -662,7 +662,7 @@ fn pointer_delayed_partial_c() {
     let src = CU { z: () };
     let mut local = 37u32;
     let holder = identity_c(CU { ptr: &mut local });
-    let q = holder.ptr;
+    let q = unsafe { holder.ptr };
     unsafe {
         ptr::copy_nonoverlapping(
             (&src as *const CU).cast::<u8>(),
@@ -677,7 +677,7 @@ fn pointer_delayed_partial_rust() {
     let src = RU { z: () };
     let mut local = 41u32;
     let holder = identity_rust(RU { ptr: &mut local });
-    let q = holder.ptr;
+    let q = unsafe { holder.ptr };
     unsafe {
         ptr::copy_nonoverlapping(
             (&src as *const RU).cast::<u8>(),

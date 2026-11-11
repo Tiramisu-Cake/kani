@@ -10,6 +10,6 @@ fn reject_manuallydrop_union() {
     let wrapper = ManuallyDrop::new(U { wide: 1 });
     let p = &wrapper as *const ManuallyDrop<U>;
     unsafe {
-        let _value = (*p).wide;
+        let _value = (&*p).wide;
     }
 }

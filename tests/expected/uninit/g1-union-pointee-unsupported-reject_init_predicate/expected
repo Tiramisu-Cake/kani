@@ -1,4 +1,4 @@
-reject_init_predicate.unsupported_construct.\
+kani::mem::is_initialized::<U>.unsupported_construct.1\
 	 - Status: FAILURE\
 Kani does not yet support using initialization predicates on unions.
 Verification failed for - reject_init_predicate

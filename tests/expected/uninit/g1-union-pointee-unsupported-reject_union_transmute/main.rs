@@ -5,6 +5,12 @@
 
 include!("../g1-union-pointee-unsupported/types.inc");
 
+#[repr(C, align(8))]
+union TransmuteU {
+    bytes: [u8; 5],
+    word: u32,
+}
+
 #[kani::proof]
 fn reject_union_transmute() {
     let value = TransmuteU { bytes: [5; 5] };
