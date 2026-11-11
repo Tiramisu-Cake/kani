@@ -65,6 +65,7 @@ impl InitialTargetVisitor {
 /// We implement MirVisitor to facilitate target finding, we look for:
 /// - pointer casts where pointees have different padding;
 /// - calls to `copy`-like intrinsics.
+/// - both reference operands of `raw_eq`, which also reads padding bytes.
 impl MirVisitor for InitialTargetVisitor {
     fn visit_rvalue(&mut self, rvalue: &Rvalue, location: Location) {
         if let Rvalue::Cast(kind, operand, ty) = rvalue {
@@ -103,14 +104,18 @@ impl MirVisitor for InitialTargetVisitor {
     }
 
     fn visit_terminator(&mut self, term: &Terminator, location: Location) {
-        // Only calls to the copy intrinsics write to a target here. A call through a function
-        // pointer or a vtable cannot be one (intrinsics cannot be coerced to function pointers),
-        // and whatever its callee writes is collected when visiting the callee's own body.
+        // Copy destinations and raw_eq operands need their prior writes tracked. A call through
+        // a function pointer or a vtable cannot be an intrinsic (intrinsics cannot be coerced to
+        // function pointers); effects in other callees are collected from their own bodies.
         if let TerminatorKind::Call { func, args, .. } = &term.kind
             && let Some(instance) = try_resolve_instance(self.body.locals(), func)
             && instance.kind == InstanceKind::Intrinsic
         {
             match Intrinsic::from_instance(&instance) {
+                Intrinsic::RawEq => {
+                    self.push_operand(&args[0]);
+                    self.push_operand(&args[1]);
+                }
                 Intrinsic::Copy => {
                     // Here, `dst` is the second argument.
                     self.push_operand(&args[1]);

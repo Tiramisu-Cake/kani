@@ -30,7 +30,7 @@ use rustc_public::{
         mono::{Instance, InstanceKind},
         visit::{Location, PlaceContext},
     },
-    ty::{AdtKind, ConstantKind, RigidTy, Ty, TyKind},
+    ty::{AdtKind, ConstantKind, RigidTy, Ty, TyKind, UintTy},
 };
 
 pub struct CheckUninitVisitor<'tcx> {
@@ -543,12 +543,35 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                                 self.push_target(MemoryInitOp::Check { operand: args[0].clone() });
                             }
                             Intrinsic::RawEq => {
-                                // References only guarantee initialized data, while raw_eq
-                                // reads every byte, including padding and union storage.
-                                self.push_target(MemoryInitOp::Unsupported {
-                                    reason: "Kani does not support checking memory initialization of raw_eq, which reads all bytes through references."
-                                        .to_string(),
-                                });
+                                for operand in args {
+                                    let TyKind::RigidTy(RigidTy::Ref(_, pointee_ty, _)) =
+                                        operand.ty(&self.locals).unwrap().kind()
+                                    else {
+                                        unreachable!("raw_eq operands must be references")
+                                    };
+                                    // raw_eq reads the whole extent, including padding and union
+                                    // storage. A byte array selects every byte without imposing
+                                    // the pointee's typed data mask or reading its value.
+                                    let bytes_ty = pointee_ty.layout().ok().and_then(|layout| {
+                                        Ty::try_new_array(
+                                            Ty::unsigned_ty(UintTy::U8),
+                                            layout.shape().size.bytes().try_into().unwrap(),
+                                        )
+                                        .ok()
+                                    });
+                                    if let Some(pointee_ty) = bytes_ty {
+                                        self.push_target(MemoryInitOp::CheckAs {
+                                            operand: operand.clone(),
+                                            pointee_ty,
+                                        });
+                                    } else {
+                                        self.push_target(MemoryInitOp::Unsupported {
+                                            reason: format!(
+                                                "Kani cannot determine the pointee layout for raw_eq of `{pointee_ty}`."
+                                            ),
+                                        });
+                                    }
+                                }
                             }
                             Intrinsic::CompareBytes => {
                                 self.push_target(MemoryInitOp::CheckSliceChunk {
