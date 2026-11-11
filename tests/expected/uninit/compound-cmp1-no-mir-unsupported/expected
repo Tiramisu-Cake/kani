@@ -1,0 +1,4 @@
+Failed Checks: Kani does not support shadow-carrying arguments to calls without a MIR body.
+VERIFICATION:- FAILED
+Verification failed for - bodyless_shadow_carrying_argument_is_unsupported_before_call
+Complete - 0 successfully verified harnesses, 1 failures, 1 total.

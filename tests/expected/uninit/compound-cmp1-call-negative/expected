@@ -1,0 +1,25 @@
+Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type `usize`
+VERIFICATION:- FAILED
+Verification failed for - empty_slot_read_in_caller_after_return
+Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type `usize`
+VERIFICATION:- FAILED
+Verification failed for - first_argument_empty_at_distinct_slot_after_return
+Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type `usize`
+VERIFICATION:- FAILED
+Verification failed for - second_argument_empty_at_distinct_slot_after_return
+Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type `usize`
+VERIFICATION:- FAILED
+Verification failed for - initialized_return_does_not_bless_later_empty_return
+Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type `usize`
+VERIFICATION:- FAILED
+Verification failed for - callee_read_of_nonreturned_second_argument_empty_slot_fails
+Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type `usize`
+VERIFICATION:- FAILED
+Verification failed for - callee_read_of_nonreturned_first_argument_empty_slot_fails
+Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type `usize`
+VERIFICATION:- FAILED
+Verification failed for - caller_reads_original_nonreturned_second_argument_copy
+Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type `usize`
+VERIFICATION:- FAILED
+Verification failed for - caller_reads_original_nonreturned_first_argument_copy
+Complete - 0 successfully verified harnesses, 8 failures, 8 total.

@@ -1,0 +1,10 @@
+Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type `usize`
+VERIFICATION:- FAILED
+Verification failed for - overwrite_full_destination_with_empty_source_copy
+Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type `usize`
+VERIFICATION:- FAILED
+Verification failed for - overwrite_full_destination_with_empty_source_move
+Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type `usize`
+VERIFICATION:- FAILED
+Verification failed for - shifted_empty_source_slot_does_not_reuse_destination_witness
+Complete - 0 successfully verified harnesses, 3 failures, 3 total.

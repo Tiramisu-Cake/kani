@@ -1,0 +1,7 @@
+Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type `usize`
+VERIFICATION:- FAILED
+Verification failed for - empty_source_slot_read
+Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type `usize`
+VERIFICATION:- FAILED
+Verification failed for - empty_copy_destination_slot_read
+Complete - 0 successfully verified harnesses, 2 failures, 2 total.

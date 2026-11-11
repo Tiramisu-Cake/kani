@@ -1,0 +1,13 @@
+Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type `C<Pad>`
+VERIFICATION:- FAILED
+Verification failed for - partial_ordinary_field_cannot_be_read_as_whole_product_after_copy
+Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type `u32`
+VERIFICATION:- FAILED
+Verification failed for - partial_ordinary_field_read_remains_checked_after_call_copy
+Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type `u8`
+VERIFICATION:- FAILED
+Verification failed for - padding_byte_stays_uninitialized_after_typed_copy
+Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type `u8`
+VERIFICATION:- FAILED
+Verification failed for - padding_stays_uninitialized_after_call_return
+Complete - 0 successfully verified harnesses, 4 failures, 4 total.
