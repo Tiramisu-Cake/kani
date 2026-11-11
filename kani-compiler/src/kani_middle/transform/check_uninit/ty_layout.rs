@@ -49,7 +49,7 @@ pub enum PointeeLayout {
     /// Layout of slices, *const/mut str is included in this case and treated as *const/mut [u8].
     Slice { element_layout: Layout },
     /// Layout of unions, which are shared storage for multiple fields of potentially different layouts.
-    Union { field_layouts: Vec<Layout> },
+    Union { field_layouts: Vec<Layout>, storage_size: usize },
     /// Trait objects have an arbitrary layout.
     TraitObject,
 }
@@ -60,9 +60,7 @@ impl PointeeLayout {
         match self {
             PointeeLayout::Sized { layout } => Some(layout.len()),
             PointeeLayout::Slice { element_layout } => Some(element_layout.len()),
-            PointeeLayout::Union { field_layouts } => {
-                Some(field_layouts.iter().map(|field_layout| field_layout.len()).max().unwrap())
-            }
+            PointeeLayout::Union { storage_size, .. } => Some(*storage_size),
             PointeeLayout::TraitObject => None,
         }
     }
@@ -130,8 +128,14 @@ pub(super) fn maybe_uninit_storage(tcx: TyCtxt, ty: Ty) -> Option<Ty> {
 impl PointeeInfo {
     /// Layout for copying storage or writing every byte with a bytewise intrinsic.
     pub(super) fn for_storage(tcx: TyCtxt, ty: Ty) -> Result<Self, LayoutComputationError> {
-        let inner = maybe_uninit_storage(tcx, ty).unwrap();
-        data_bytes_for_ty(&MachineInfo::target(), inner, 0)?;
+        if let Some(inner) = maybe_uninit_storage(tcx, ty) {
+            validate_layout_type(inner, false)?;
+            data_bytes_for_ty(&MachineInfo::target(), inner, 0)?;
+        } else {
+            // A direct union is storage; its by-value children must still be ordinary types.
+            Self::from_ty(ty)?;
+            assert!(ty.kind().is_union());
+        }
         let layout = if let TyKind::RigidTy(RigidTy::Slice(slot)) = ty.kind() {
             let size = slot.layout().unwrap().shape().size.bytes();
             PointeeLayout::Slice { element_layout: vec![true; size] }
@@ -143,6 +147,8 @@ impl PointeeInfo {
     }
 
     pub fn from_ty(ty: Ty) -> Result<Self, LayoutComputationError> {
+        // Validate type structure before ABI shortcuts, including zero-sized and scalar ABIs.
+        validate_layout_type(ty, true)?;
         match ty.kind() {
             TyKind::RigidTy(rigid_ty) => match rigid_ty {
                 RigidTy::Adt(adt_def, args) if adt_def.kind() == AdtKind::Union => {
@@ -161,7 +167,10 @@ impl PointeeInfo {
                         .collect();
                     Ok(PointeeInfo {
                         pointee_ty: ty,
-                        layout: PointeeLayout::Union { field_layouts: fields? },
+                        layout: PointeeLayout::Union {
+                            field_layouts: fields?,
+                            storage_size: ty.layout().unwrap().shape().size.bytes(),
+                        },
                     })
                 }
                 RigidTy::Str => {
@@ -203,12 +212,80 @@ impl PointeeInfo {
         }
     }
 
+    /// Typed union transfers preserve possible data bytes, never uncovered padding/tail.
+    /// This is a preservation mask, not evidence that any source byte is initialized.
+    pub(super) fn transfer_mask(&self) -> Vec<bool> {
+        match &self.layout {
+            PointeeLayout::Union { field_layouts, storage_size } => {
+                let mut mask = vec![false; *storage_size];
+                for field in field_layouts {
+                    assert!(field.len() <= *storage_size);
+                    for (byte, data) in mask.iter_mut().zip(field) {
+                        *byte |= *data;
+                    }
+                }
+                mask
+            }
+            _ => vec![true; self.layout.maybe_size().unwrap()],
+        }
+    }
+
     pub fn ty(&self) -> &Ty {
         &self.pointee_ty
     }
 
     pub fn layout(&self) -> &PointeeLayout {
         &self.layout
+    }
+}
+
+/// Storage classification only. Every use must validate with `from_ty` / `for_storage`.
+pub(super) fn union_storage(tcx: TyCtxt, ty: Ty) -> bool {
+    ty.kind().is_union() || maybe_uninit_storage(tcx, ty).is_some()
+}
+
+/// Reject unsupported structural types before a zero-sized/scalar ABI can hide them.
+fn validate_layout_type(ty: Ty, allow_union: bool) -> Result<(), LayoutComputationError> {
+    match ty.kind().rigid().expect("expected a monomorphized type") {
+        RigidTy::Adt(def, args) => {
+            if def.kind() == AdtKind::Union && !allow_union {
+                return Err(LayoutComputationError::UnionAsField(ty));
+            }
+            for variant in def.variants_iter() {
+                for field in variant.fields() {
+                    validate_layout_type(field.ty_with_args(args), false)?;
+                }
+            }
+            if def.kind() == AdtKind::Enum {
+                // Even [UnsupportedEnum; 0] and scalar-ABI niches retain their guard.
+                if matches!(
+                    ty.layout().unwrap().shape().variants,
+                    VariantsShape::Multiple { tag_encoding: TagEncoding::Niche { .. }, .. }
+                ) {
+                    return Err(LayoutComputationError::EnumWithNicheEncoding(ty));
+                }
+                data_bytes_for_ty(&MachineInfo::target(), ty, 0)?;
+            }
+            Ok(())
+        }
+        RigidTy::Array(element, _) | RigidTy::Slice(element) | RigidTy::Pat(element, _) => {
+            validate_layout_type(*element, false)
+        }
+        RigidTy::Tuple(fields) => {
+            for field in fields {
+                validate_layout_type(*field, false)?;
+            }
+            Ok(())
+        }
+        RigidTy::FnDef(..)
+        | RigidTy::FnPtr(..)
+        | RigidTy::Closure(..)
+        | RigidTy::Coroutine(..)
+        | RigidTy::CoroutineClosure(..)
+        | RigidTy::CoroutineWitness(..)
+        | RigidTy::Foreign(..) => Err(LayoutComputationError::UnsupportedType(ty)),
+        // A pointer is data; do not recurse into the storage of its pointee.
+        _ => Ok(()),
     }
 }
 
@@ -371,7 +448,11 @@ fn data_bytes_for_ty(
                 RigidTy::Pat(base_ty, ..) => {
                     // This is similar to a structure with one field and with niche defined.
                     let mut pat_data_bytes = vec![];
-                    pat_data_bytes.append(&mut data_bytes_for_ty(machine_info, *base_ty, 0)?);
+                    pat_data_bytes.append(&mut data_bytes_for_ty(
+                        machine_info,
+                        *base_ty,
+                        current_offset,
+                    )?);
                     Ok(pat_data_bytes)
                 }
                 RigidTy::Tuple(tys) => {

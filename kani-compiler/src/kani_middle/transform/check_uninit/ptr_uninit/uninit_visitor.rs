@@ -12,8 +12,7 @@ use crate::{
             PointeeInfo, PointeeLayout, TargetFinder,
             relevant_instruction::{InitRelevantInstruction, MemoryInitOp, constant_init_mask},
             ty_layout::{
-                LayoutComputationError, maybe_uninit_storage, tys_layout_compatible_to_size,
-                wrapper_inner,
+                LayoutComputationError, tys_layout_compatible_to_size, union_storage, wrapper_inner,
             },
         },
     },
@@ -104,7 +103,35 @@ impl<'tcx> CheckUninitVisitor<'tcx> {
     }
 
     fn transfers_shadow(&self, ty: Ty) -> bool {
-        ty.kind().is_union() || maybe_uninit_storage(self.tcx, ty).is_some()
+        union_storage(self.tcx, ty)
+    }
+
+    /// Whether a call argument can let the callee access storage whose byte shadow we track.
+    fn touches_shadow(&self, ty: Ty) -> bool {
+        self.transfers_shadow(ty)
+            || match ty.kind() {
+                TyKind::RigidTy(RigidTy::RawPtr(pointee, _))
+                | TyKind::RigidTy(RigidTy::Ref(_, pointee, _)) => self.transfers_shadow(pointee),
+                _ => false,
+            }
+    }
+
+    fn pointer_or_reference(&self, ty: Ty) -> bool {
+        matches!(ty.kind(), TyKind::RigidTy(RigidTy::RawPtr(..) | RigidTy::Ref(..)))
+    }
+
+    fn shadow_pointer(&self, operand: &Operand) -> bool {
+        match operand.ty(&self.locals).ok().map(|ty| ty.kind().clone()) {
+            Some(TyKind::RigidTy(RigidTy::RawPtr(pointee, _))) => self.transfers_shadow(pointee),
+            _ => false,
+        }
+    }
+
+    fn union_pointer(&self, operand: &Operand) -> bool {
+        matches!(
+            operand.ty(&self.locals).ok().map(|ty| ty.kind().clone()),
+            Some(TyKind::RigidTy(RigidTy::RawPtr(pointee, _))) if pointee.kind().is_union()
+        )
     }
 
     /// Locate the first union on the projection path, including a union at the end.
@@ -143,7 +170,7 @@ impl<'tcx> CheckUninitVisitor<'tcx> {
 
     fn unsupported_storage_assignment(&mut self) {
         self.push_target(MemoryInitOp::Unsupported {
-            reason: "Kani does not support this assignment to MaybeUninit storage.".to_string(),
+            reason: "Kani does not support this assignment to tracked storage.".to_string(),
         });
     }
 
@@ -340,10 +367,8 @@ impl<'tcx> CheckUninitVisitor<'tcx> {
         if ty.kind().is_raw_ptr()
             && let Rvalue::AddressOf(_, addressed) = rvalue
             && !self.address_of_raw_deref(addressed)
-            && !self.enclosing_union(addressed).is_some_and(|union| {
-                wrapper_inner(self.tcx, union, LangItem::MaybeUninit).is_some()
-            })
-            && maybe_uninit_storage(self.tcx, addressed.ty(&self.locals).unwrap()).is_none()
+            && self.enclosing_union(addressed).is_none()
+            && !self.transfers_shadow(addressed.ty(&self.locals).unwrap())
         {
             self.push_target(MemoryInitOp::Set {
                 operand: Operand::Copy(place.clone()),
@@ -352,45 +377,16 @@ impl<'tcx> CheckUninitVisitor<'tcx> {
             });
         }
 
-        // Need to copy some information about union initialization, since lvalue is
-        // either a union or a field inside a union.
+        // A projected write changes only the bytes of the projected field. The operation
+        // computes the field's typed data mask, clearing padding inside that field extent while
+        // preserving bytes outside it. Whole-union assignments are handled through
+        // assign_storage above.
         if in_union {
-            match rvalue {
-                Rvalue::Use(operand, _) => {
-                    // This is a union-to-union assignment, so we need to copy the
-                    // initialization state.
-                    if place.ty(&self.locals).unwrap().kind().is_union() {
-                        self.push_target(MemoryInitOp::AssignUnion {
-                            lvalue: place.clone(),
-                            rvalue: operand.clone(),
-                            position: InsertPosition::After,
-                        });
-                    } else {
-                        // This is assignment to a field of a union.
-                        self.push_target(MemoryInitOp::SetRef {
-                            operand: Operand::Copy(place.clone()),
-                            value: true,
-                            position: InsertPosition::After,
-                        });
-                    }
-                }
-                Rvalue::Aggregate(AggregateKind::Adt(adt_def, _, _, _, union_field), _) => {
-                    // Create a union from scratch as an aggregate. We handle it here because we
-                    // need to know which field is getting assigned.
-                    if adt_def.kind() == AdtKind::Union {
-                        self.push_target(MemoryInitOp::CreateUnion {
-                            operand: Operand::Copy(place.clone()),
-                            field: union_field.unwrap(), // Safe to unwrap because we know this is a union.
-                        });
-                    }
-                }
-                // TODO: add support for Rvalue::Cast, etc.
-                _ => self.push_target(MemoryInitOp::Unsupported {
-                    reason:
-                        "Performing a union assignment with a non-supported construct as an Rvalue"
-                            .to_string(),
-                }),
-            }
+            self.push_target(MemoryInitOp::SetRef {
+                operand: Operand::Copy(place.clone()),
+                value: true,
+                position: InsertPosition::After,
+            });
         }
     }
 }
@@ -419,7 +415,7 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                     .is_some_and(|ty| wrapper_inner(self.tcx, ty, LangItem::MaybeUninit).is_some());
 
                 // Reject nested unions before the generic shadow update can treat them as values.
-                if maybe_uninit_storage(self.tcx, ty).is_some() {
+                if self.transfers_shadow(ty) {
                     self.assign_storage(place, ty, rvalue);
                 } else if let Err(reason @ LayoutComputationError::UnionAsField(_)) =
                     PointeeInfo::from_ty(ty)
@@ -482,22 +478,46 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                 let instance = match try_resolve_instance(&self.locals, func) {
                     Ok(instance) => instance,
                     Err(reason) => {
-                        self.super_terminator(term, location);
                         self.push_target(MemoryInitOp::Unsupported { reason });
+                        self.targets.push(self.current_target.clone());
                         return;
                     }
                 };
+                let instance_name = instance.name();
+                if instance.kind == InstanceKind::Intrinsic
+                    && instance_name.ends_with("select_unpredictable")
+                    && args.iter().any(|arg| self.transfers_shadow(arg.ty(&self.locals).unwrap()))
+                {
+                    self.push_target(MemoryInitOp::Unsupported {
+                        reason: "Kani does not support select_unpredictable of union storage."
+                            .to_string(),
+                    });
+                    self.targets.push(self.current_target.clone());
+                    return;
+                }
                 // Forget consumes its argument without reading or returning any bytes; it
                 // already has an explicit no-effect model below. Other bodyless transfers
                 // need an actual shadow model, not an unpaired argument-buffer store.
                 let modeled_consumption = instance.kind == InstanceKind::Intrinsic
                     && matches!(Intrinsic::from_instance(&instance), Intrinsic::Forget);
-                if !instance.has_body()
-                    && !modeled_consumption
-                    && args.iter().any(|arg| self.transfers_shadow(arg.ty(&self.locals).unwrap()))
+                let modeled_foreign_memory_effect = matches!(
+                    instance_name.as_str(),
+                    "alloc::alloc::__rust_alloc"
+                        | "alloc::alloc::__rust_realloc"
+                        | "alloc::alloc::__rust_alloc_zeroed"
+                        | "alloc::alloc::__rust_dealloc"
+                );
+                let has_unmodeled_memory_args = args.iter().any(|arg| {
+                    let ty = arg.ty(&self.locals).unwrap();
+                    self.touches_shadow(ty) || self.pointer_or_reference(ty)
+                });
+                if instance.kind == InstanceKind::Item
+                    && !modeled_foreign_memory_effect
+                    && (instance.is_foreign_item()
+                        || (!instance.has_body() && has_unmodeled_memory_args))
                 {
                     self.push_target(MemoryInitOp::Unsupported {
-                        reason: "Kani does not support shadow-carrying arguments to calls without a MIR body."
+                        reason: "Kani does not support foreign mutation of union storage without an effect model."
                             .to_string(),
                     });
                     // In particular, do not leave an unconsumed store for the next call.
@@ -505,8 +525,8 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                     return;
                 }
                 let destination_ty = destination.ty(&self.locals).unwrap();
-                if maybe_uninit_storage(self.tcx, destination_ty).is_some() {
-                    if instance.kind == InstanceKind::Item && instance.has_body() {
+                if self.transfers_shadow(destination_ty) && instance.kind == InstanceKind::Item {
+                    if instance.has_body() {
                         self.push_target(MemoryInitOp::LoadArgument {
                             operand: Operand::Copy(destination.clone()),
                             argument_no: 0,
@@ -514,10 +534,24 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                         });
                     } else {
                         self.push_target(MemoryInitOp::Unsupported {
-                            reason: "Kani does not support MaybeUninit return values from calls without a MIR body."
+                            reason: "Kani does not support union storage returned from calls without a MIR body."
                                 .to_string(),
                         });
                     }
+                }
+                if instance.kind == InstanceKind::Intrinsic
+                    && !modeled_consumption
+                    && can_skip_intrinsic(Intrinsic::from_instance(&instance))
+                    && (args.iter().any(|arg| self.transfers_shadow(arg.ty(&self.locals).unwrap()))
+                        || self.transfers_shadow(destination_ty))
+                {
+                    self.push_target(MemoryInitOp::Unsupported {
+                        reason:
+                            "Kani does not support unpaired intrinsic transfers of union storage."
+                                .to_string(),
+                    });
+                    self.targets.push(self.current_target.clone());
+                    return;
                 }
                 match instance.kind {
                     InstanceKind::Intrinsic => {
@@ -573,22 +607,53 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                                 });
                             }
                             Intrinsic::TypedSwap
-                                if let TyKind::RigidTy(RigidTy::RawPtr(ty, _)) =
-                                    args[0].ty(&self.locals).unwrap().kind()
-                                    && maybe_uninit_storage(self.tcx, ty).is_some() =>
+                                if args.iter().any(|arg| self.shadow_pointer(arg)) =>
                             {
+                                let kind = if args.iter().any(|arg| self.union_pointer(arg)) {
+                                    "union"
+                                } else {
+                                    "MaybeUninit"
+                                };
                                 self.push_target(MemoryInitOp::Unsupported {
-                                    reason:
-                                        "Kani does not support typed_swap of MaybeUninit storage."
-                                            .to_string(),
+                                    reason: format!(
+                                        "Kani does not support typed_swap of {kind} storage."
+                                    ),
                                 });
                             }
                             Intrinsic::TypedSwap => {
                                 self.push_target(MemoryInitOp::Check { operand: args[0].clone() });
                                 self.push_target(MemoryInitOp::Check { operand: args[1].clone() });
                             }
+                            Intrinsic::VolatileLoad | Intrinsic::UnalignedVolatileLoad
+                                if self.shadow_pointer(&args[0]) =>
+                            {
+                                let kind = if self.union_pointer(&args[0]) {
+                                    "union"
+                                } else {
+                                    "MaybeUninit"
+                                };
+                                self.push_target(MemoryInitOp::Unsupported {
+                                    reason: format!(
+                                        "Kani does not support volatile loads of {kind} storage."
+                                    ),
+                                });
+                            }
                             Intrinsic::VolatileLoad | Intrinsic::UnalignedVolatileLoad => {
                                 self.push_target(MemoryInitOp::Check { operand: args[0].clone() });
+                            }
+                            Intrinsic::VolatileStore | Intrinsic::UnalignedVolatileStore
+                                if self.shadow_pointer(&args[0]) =>
+                            {
+                                let kind = if self.union_pointer(&args[0]) {
+                                    "union"
+                                } else {
+                                    "MaybeUninit"
+                                };
+                                self.push_target(MemoryInitOp::Unsupported {
+                                    reason: format!(
+                                        "Kani does not support volatile stores of {kind} storage."
+                                    ),
+                                });
                             }
                             Intrinsic::VolatileStore | Intrinsic::UnalignedVolatileStore => {
                                 self.push_target(MemoryInitOp::Set {
@@ -668,21 +733,31 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                 // When drop is codegen'ed for types that could define their own dropping
                 // behavior, a reference is taken to the place which is later implicitly coerced
                 // to a pointer. Hence, we need to bless this pointer as initialized.
-                match place
-                    .ty(&self.locals)
-                    .unwrap()
-                    .kind()
-                    .rigid()
-                    .expect("should be working with monomorphized code")
+                if let Err(reason @ LayoutComputationError::UnionAsField(_)) =
+                    PointeeInfo::from_ty(place_ty)
                 {
-                    RigidTy::Adt(..) | RigidTy::Dynamic(_, _) => {
-                        self.push_target(MemoryInitOp::SetRef {
-                            operand: Operand::Copy(place.clone()),
-                            value: true,
-                            position: InsertPosition::Before,
-                        });
+                    self.push_target(MemoryInitOp::Unsupported {
+                        reason: format!(
+                            "Checking memory initialization of type {place_ty} is not supported. {reason}"
+                        ),
+                    });
+                } else {
+                    match place_ty
+                        .kind()
+                        .rigid()
+                        .expect("should be working with monomorphized code")
+                    {
+                        RigidTy::Adt(..) | RigidTy::Dynamic(_, _)
+                            if !place_ty.kind().is_union() =>
+                        {
+                            self.push_target(MemoryInitOp::SetRef {
+                                operand: Operand::Copy(place.clone()),
+                                value: true,
+                                position: InsertPosition::Before,
+                            });
+                        }
+                        _ => {}
                     }
-                    _ => {}
                 }
 
                 if place_ty.kind().is_raw_ptr() {
@@ -695,8 +770,7 @@ impl MirVisitor for CheckUninitVisitor<'_> {
             }
             TerminatorKind::Return => {
                 let return_place = Place::from(0);
-                if maybe_uninit_storage(self.tcx, return_place.ty(&self.locals).unwrap()).is_some()
-                {
+                if self.transfers_shadow(return_place.ty(&self.locals).unwrap()) {
                     self.push_target(MemoryInitOp::StoreArgument {
                         operand: Operand::Copy(return_place),
                         argument_no: 0,
@@ -732,16 +806,9 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                 ProjectionElem::Field(_, _) => {
                     let union_ty = intermediate_place.ty(&self.locals).unwrap();
                     if union_ty.kind().is_union() && !ptx.is_mutating() {
-                        if wrapper_inner(self.tcx, union_ty, LangItem::MaybeUninit).is_none()
-                            && place.projection.contains(&ProjectionElem::Deref)
-                        {
-                            // We do not currently support having a deref projection in the same
-                            // place as union field access.
-                            self.push_target(MemoryInitOp::Unsupported {
-                                reason: "Kani does not yet support performing a dereference on a union field".to_string(),
-                            });
-                        }
-                        // Accessing a place inside the union, need to check if it is initialized.
+                        // Accessing a projected place inside the union requires the projected
+                        // bytes to be initialized. Any pointer dereference in the projection has
+                        // its own pointer-byte check above.
                         self.push_target(MemoryInitOp::CheckRef {
                             operand: Operand::Copy(place.clone()),
                         });
@@ -793,9 +860,10 @@ impl MirVisitor for CheckUninitVisitor<'_> {
         if let Rvalue::AddressOf(_, place) = rvalue
             && self.enclosing_union(place).is_some_and(|union| {
                 wrapper_inner(self.tcx, union, LangItem::MaybeUninit).is_some()
+                    || union.kind().is_union()
             })
         {
-            // A raw address into the value field of a local slot also leaves shadow unchanged.
+            // Taking an address into tracked storage does not read or initialize its payload.
             return;
         }
         if let Rvalue::Ref(_, _, place) = rvalue
@@ -825,6 +893,11 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                         // data mask once, including false padding bytes.
                     } else if self.maybe_uninit_transmute(operand, *ty) {
                         // Initialization was checked against the destination's data bytes.
+                    } else if operand_ty.kind().is_union() || ty.kind().is_union() {
+                        self.push_target(MemoryInitOp::TriviallyUnsafe {
+                            reason: "Transmuting between types of incompatible layouts."
+                                .to_string(),
+                        });
                     } else if !tys_layout_compatible_to_size(&operand_ty, ty) {
                         // If transmuting between two types of incompatible layouts, padding
                         // bytes are exposed, which is UB.

@@ -18,7 +18,7 @@ use rustc_public::{
     ty::{FnDef, GenericArgKind, GenericArgs, MirConst, RigidTy, Ty, TyConst, TyKind, UintTy},
 };
 use std::collections::HashMap;
-use ty_layout::maybe_uninit_storage;
+use ty_layout::{maybe_uninit_storage, union_storage};
 
 use crate::kani_middle::kani_functions::{KaniFunction, KaniModel};
 pub use delayed_ub::DelayedUbPass;
@@ -162,14 +162,14 @@ impl<'a, 'tcx> UninitInstrumenter<'a, 'tcx> {
     ) {
         if let MemoryInitOp::StoreArgument { operand, .. } = &mut operation
             && matches!(operand, Operand::Constant(_))
-            && maybe_uninit_storage(self.tcx, operand.ty(body.locals()).unwrap()).is_some()
+            && union_storage(self.tcx, operand.ty(body.locals()).unwrap())
         {
             let Some(initialized) = constant_init_mask(operand) else {
                 self.inject_unsupported_check(
                     body,
                     source,
                     InsertPosition::Before,
-                    "Kani cannot determine the initialization state of this MaybeUninit argument.",
+                    "Kani cannot determine the initialization state of this union storage argument.",
                 );
                 return;
             };
@@ -215,7 +215,7 @@ impl<'a, 'tcx> UninitInstrumenter<'a, 'tcx> {
                     )
                 };
             // Calculate pointee layout for byte-by-byte memory initialization checks.
-            let layout = if maybe_uninit_storage(self.tcx, pointee_ty).is_some() {
+            let layout = if union_storage(self.tcx, pointee_ty) {
                 match &operation {
                     // Reading a slot or slice of slots does not require initialized data.
                     MemoryInitOp::Check { .. }
@@ -229,14 +229,30 @@ impl<'a, 'tcx> UninitInstrumenter<'a, 'tcx> {
                     }
                     // The pointer visitor handles writes to this storage, including transfers.
                     // A generic set from delayed UB instrumentation would erase that state.
-                    MemoryInitOp::SetRef { .. } => return,
-                    MemoryInitOp::SetStorage { .. }
-                    | MemoryInitOp::Copy { .. }
-                    | MemoryInitOp::AssignUnion { .. }
-                    | MemoryInitOp::StoreArgument { .. }
-                    | MemoryInitOp::LoadArgument { .. }
-                    | MemoryInitOp::SetSliceChunk { .. } => {
+                    MemoryInitOp::SetRef { .. } => {
+                        match PointeeInfo::for_storage(self.tcx, pointee_ty) {
+                            Ok(_) => return,
+                            Err(reason) => Err(reason),
+                        }
+                    }
+                    MemoryInitOp::SetStorage { .. } => {
+                        if maybe_uninit_storage(self.tcx, pointee_ty).is_some() {
+                            PointeeInfo::for_storage(self.tcx, pointee_ty)
+                        } else {
+                            PointeeInfo::from_ty(pointee_ty)
+                        }
+                    }
+                    MemoryInitOp::Copy { .. } | MemoryInitOp::SetSliceChunk { .. } => {
                         PointeeInfo::for_storage(self.tcx, pointee_ty)
+                    }
+                    MemoryInitOp::AssignUnion { .. }
+                    | MemoryInitOp::StoreArgument { .. }
+                    | MemoryInitOp::LoadArgument { .. } => {
+                        if maybe_uninit_storage(self.tcx, pointee_ty).is_some() {
+                            PointeeInfo::for_storage(self.tcx, pointee_ty)
+                        } else {
+                            PointeeInfo::from_ty(pointee_ty)
+                        }
                     }
                     _ => PointeeInfo::from_ty(pointee_ty),
                 }
@@ -381,9 +397,8 @@ impl<'a, 'tcx> UninitInstrumenter<'a, 'tcx> {
                 return;
             }
             PointeeLayout::Union { .. } => {
-                // Here we are reading from a pointer to a union.
-                // TODO: we perhaps need to check that the union at least contains an intersection
-                // of all layouts initialized.
+                // Whole union reads are allowed only through validated storage transfers.
+                // Other union-valued checks retain a fail-closed fallback.
                 let reason = "Interaction between raw pointers and unions is not yet supported.";
                 self.inject_unsupported_check(body, source, operation.position(), reason);
                 return;
@@ -545,37 +560,42 @@ impl<'a, 'tcx> UninitInstrumenter<'a, 'tcx> {
                 self.inject_unsupported_check(body, source, operation.position(), reason);
                 return;
             }
-            PointeeLayout::Union { field_layouts } => {
-                // Writing union data, which could be either creating a union from scratch or
-                // performing some pointer operations with it. If we are creating a union from
-                // scratch, an operation will contain a union field.
-
-                // TODO: If we don't have a union field, we are either creating a pointer to a union
-                // or assigning to one. In the former case, it is safe to return from this function,
-                // since the union must be already tracked (on creation and update). In the latter
-                // case, we should have been using union assignment instead. Nevertheless, this is
-                // currently mitigated by injecting `assert!(false)`.
-                let union_field = match operation.union_field() {
-                    Some(field) => field,
-                    None => {
-                        let reason =
-                            "Interaction between raw pointers and unions is not yet supported.";
-                        self.inject_unsupported_check(body, source, operation.position(), reason);
+            PointeeLayout::Union { field_layouts, storage_size } => {
+                let mut layout = match &operation {
+                    MemoryInitOp::CreateUnion { field, .. } => {
+                        // rustc's Union fields shape gives every arm offset zero. Resize to
+                        // size(U), not max(field size): whole construction resets the tail.
+                        let mut mask = field_layouts[*field].clone();
+                        mask.resize(*storage_size, false);
+                        mask
+                    }
+                    MemoryInitOp::SetStorage { initialized, .. } => {
+                        if initialized.len() != *storage_size {
+                            self.inject_unsupported_check(
+                                body, source, operation.position(),
+                                "Kani cannot determine the initialization state of this union constant.",
+                            );
+                            return;
+                        }
+                        initialized.clone()
+                    }
+                    _ => {
+                        self.inject_unsupported_check(
+                            body,
+                            source,
+                            operation.position(),
+                            "Kani does not support this unmodeled union storage update.",
+                        );
                         return;
                     }
                 };
-                let field_layout = &field_layouts[union_field];
-                let mut storage_layout;
-                let layout = if maybe_uninit_storage(self.tcx, *pointee_info.ty()).is_some() {
-                    // An empty aggregate replaces the entire slot, even when its field is ().
-                    let size = pointee_info.ty().layout().unwrap().shape().size.bytes();
-                    storage_layout = field_layout.clone();
-                    storage_layout.resize(size, false);
-                    &storage_layout
-                } else {
-                    field_layout
-                };
-                let layout_operand = mk_layout_operand(body, &mut statements, source, layout);
+                // Constants are typed transfers too; allocation padding is not a guarantee.
+                if matches!(operation, MemoryInitOp::SetStorage { .. }) {
+                    for (initialized, data) in layout.iter_mut().zip(pointee_info.transfer_mask()) {
+                        *initialized &= data;
+                    }
+                }
+                let layout_operand = mk_layout_operand(body, &mut statements, source, &layout);
                 let diagnostic = KANI_SET_PTR_INITIALIZED;
                 let args = vec![
                     ptr_operand,
@@ -669,6 +689,22 @@ impl<'a, 'tcx> UninitInstrumenter<'a, 'tcx> {
         );
         let operand = operation.mk_operand(body, &mut statements, source);
         let argument_no = operation.expect_argument_no();
+        let mut args = vec![
+            operand,
+            Operand::Constant(ConstOperand {
+                span: source.span(body.blocks()),
+                user_ty: None,
+                const_: MirConst::try_from_uint(argument_no as u128, UintTy::Usize).unwrap(),
+            }),
+        ];
+        if matches!(operation, MemoryInitOp::LoadArgument { .. }) {
+            args.push(mk_layout_operand(
+                body,
+                &mut statements,
+                source,
+                &pointee_info.transfer_mask(),
+            ));
+        }
         let terminator = Terminator {
             kind: TerminatorKind::Call {
                 func: Operand::Copy(Place::from(body.new_local(
@@ -676,15 +712,7 @@ impl<'a, 'tcx> UninitInstrumenter<'a, 'tcx> {
                     source.span(body.blocks()),
                     Mutability::Not,
                 ))),
-                args: vec![
-                    operand,
-                    Operand::Constant(ConstOperand {
-                        span: source.span(body.blocks()),
-                        user_ty: None,
-                        const_: MirConst::try_from_uint(argument_no as u128, UintTy::Usize)
-                            .unwrap(),
-                    }),
-                ],
+                args,
                 destination: ret_place.clone(),
                 target: Some(0), // this will be overriden in add_bb
                 unwind: UnwindAction::Terminate,
@@ -716,6 +744,7 @@ impl<'a, 'tcx> UninitInstrumenter<'a, 'tcx> {
             *pointee_info.ty(),
         );
         let (from, to) = operation.expect_assign_union_operands(body, &mut statements, source);
+        let mask = mk_layout_operand(body, &mut statements, source, &pointee_info.transfer_mask());
         let terminator = Terminator {
             kind: TerminatorKind::Call {
                 func: Operand::Copy(Place::from(body.new_local(
@@ -723,7 +752,7 @@ impl<'a, 'tcx> UninitInstrumenter<'a, 'tcx> {
                     source.span(body.blocks()),
                     Mutability::Not,
                 ))),
-                args: vec![from, to],
+                args: vec![from, to, mask],
                 destination: ret_place.clone(),
                 target: Some(0), // this will be overriden in add_bb
                 unwind: UnwindAction::Terminate,

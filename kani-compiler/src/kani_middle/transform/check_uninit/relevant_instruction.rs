@@ -217,27 +217,6 @@ impl MemoryInitOp {
         }
     }
 
-    pub fn union_field(&self) -> Option<FieldIdx> {
-        match self {
-            MemoryInitOp::CreateUnion { field, .. } => Some(*field),
-            MemoryInitOp::Check { .. }
-            | MemoryInitOp::CheckAs { .. }
-            | MemoryInitOp::CheckSliceChunk { .. }
-            | MemoryInitOp::CheckRef { .. }
-            | MemoryInitOp::CheckRefAs { .. }
-            | MemoryInitOp::Set { .. }
-            | MemoryInitOp::SetSliceChunk { .. }
-            | MemoryInitOp::SetRef { .. }
-            | MemoryInitOp::SetStorage { .. }
-            | MemoryInitOp::Unsupported { .. }
-            | MemoryInitOp::TriviallyUnsafe { .. }
-            | MemoryInitOp::Copy { .. }
-            | MemoryInitOp::AssignUnion { .. }
-            | MemoryInitOp::StoreArgument { .. }
-            | MemoryInitOp::LoadArgument { .. } => None,
-        }
-    }
-
     pub fn position(&self) -> InsertPosition {
         match self {
             MemoryInitOp::Set { position, .. }

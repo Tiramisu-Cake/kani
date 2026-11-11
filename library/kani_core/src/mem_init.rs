@@ -107,6 +107,24 @@ macro_rules! kani_mem_init {
                 }
             }
 
+            /// Intersect the tracked destination state with a typed-transfer preservation mask.
+            /// Unlike `set`, this never changes a false data byte into a true one.
+            #[kanitool::disable_checks(pointer)]
+            pub fn retain<const LAYOUT_SIZE: usize>(
+                &mut self,
+                ptr: *const u8,
+                layout: Layout<LAYOUT_SIZE>,
+            ) {
+                let obj = super::mem::pointer_object(ptr);
+                let offset = super::mem::pointer_offset(ptr);
+                if self.tracked_object_id == obj
+                    && self.tracked_offset >= offset
+                    && self.tracked_offset < offset + LAYOUT_SIZE
+                {
+                    self.value &= layout[self.tracked_offset - offset];
+                }
+            }
+
             /// Copy memory initialization state by non-deterministically switching the tracked object and
             /// adjusting the tracked offset.
             #[kanitool::disable_checks(pointer)]
@@ -393,8 +411,18 @@ macro_rules! kani_mem_init {
         /// this case `LAYOUT_SIZE == size_of::<T>`.
         #[kanitool::disable_checks(pointer)]
         #[kanitool::fn_marker = "CopyInitStateSingleModel"]
-        fn copy_init_state_single<const LAYOUT_SIZE: usize, T>(from: *const T, to: *const T) {
+        fn copy_init_state_single<const LAYOUT_SIZE: usize, T>(
+            from: *const T,
+            to: *const T,
+            preserve: Layout<LAYOUT_SIZE>,
+        ) {
+            if LAYOUT_SIZE == 0 {
+                return;
+            }
             copy_init_state::<LAYOUT_SIZE, T>(from, to, 1);
+            unsafe {
+                MEM_INIT_STATE.retain(to as *const u8, preserve);
+            }
         }
 
         /// Non-deterministically store information about currently tracked argument in the argument
@@ -423,7 +451,11 @@ macro_rules! kani_mem_init {
         /// another non-deterministic branch. Reset the argument buffer after loading from it.
         #[kanitool::disable_checks(pointer)]
         #[kanitool::fn_marker = "LoadArgumentModel"]
-        fn load_argument<const LAYOUT_SIZE: usize, T>(to: *const T, selected_argument: usize) {
+        fn load_argument<const LAYOUT_SIZE: usize, T>(
+            to: *const T,
+            selected_argument: usize,
+            preserve: Layout<LAYOUT_SIZE>,
+        ) {
             let (to_ptr, _) = to.to_raw_parts();
             if unsafe {
                 MEM_INIT_STATE.argument_buffer_active
@@ -445,11 +477,13 @@ macro_rules! kani_mem_init {
                         1,
                     );
                     MEM_INIT_STATE.argument_buffer_active = false;
+                    MEM_INIT_STATE.retain(to_ptr as *const u8, preserve);
                 }
                 return;
             }
             unsafe {
                 MEM_INIT_STATE.bless::<LAYOUT_SIZE>(to_ptr as *const u8, 1);
+                MEM_INIT_STATE.retain(to_ptr as *const u8, preserve);
             }
         }
     };
