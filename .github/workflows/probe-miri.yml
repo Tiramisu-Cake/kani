@@ -25,7 +25,7 @@ jobs:
         run: |
           for f in src/bin/*.rs; do
             echo "::group::MIR $(basename "$f" .rs)"
-            rustc +"$TC" --edition 2021 -Zunpretty=mir "$f" -o /dev/null || echo "MIR-DUMP-FAILED $f"
+            rustc +"$TC" --edition 2021 -Zunpretty=mir "$f" || echo "MIR-DUMP-FAILED $f"
             echo "::endgroup::"
           done
       - name: Miri
@@ -34,6 +34,9 @@ jobs:
           for f in src/bin/*.rs; do
             b=$(basename "$f" .rs)
             echo "::group::MIRI $b"
-            if cargo +"$TC" miri run --quiet --bin "$b"; then echo "MIRI-RESULT $b OK"; else echo "MIRI-RESULT $b ERROR"; fi
+            if cargo +"$TC" miri run --quiet --bin "$b"; then echo "MIRI-RESULT $b OK"; else
+              echo "MIRI-RESULT $b ERROR"
+              if MIRIFLAGS=-Zmiri-disable-stacked-borrows cargo +"$TC" miri run --quiet --bin "$b"; then echo "MIRI-NOSB $b OK"; else echo "MIRI-NOSB $b ERROR"; fi
+            fi
             echo "::endgroup::"
           done
