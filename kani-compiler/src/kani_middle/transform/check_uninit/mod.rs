@@ -145,7 +145,14 @@ impl<'a, 'tcx> UninitInstrumenter<'a, 'tcx> {
             .then(|| crate::kani_middle::trace::clip(instance.name().as_str(), 320));
         if instance_name.as_deref().is_some_and(crate::kani_middle::trace::matches) {
             let instance_name = instance_name.as_deref().unwrap_or_default();
+            let mut zero_ops = 0usize;
             for instruction in &instructions {
+                if instruction.before_instruction.is_empty()
+                    && instruction.after_instruction.is_empty()
+                {
+                    zero_ops += 1;
+                    continue;
+                }
                 let before: Vec<&str> = instruction
                     .before_instruction
                     .iter()
@@ -167,7 +174,7 @@ impl<'a, 'tcx> UninitInstrumenter<'a, 'tcx> {
                         "after": after,
                         "before_count": instruction.before_instruction.len(),
                         "after_count": instruction.after_instruction.len(),
-                        "decision": if instruction.before_instruction.is_empty() && instruction.after_instruction.is_empty() { "zero_ops_selected" } else { "ops_selected" },
+                        "decision": "ops_selected",
                     }),
                 );
                 for (position, operations) in [
@@ -195,6 +202,10 @@ impl<'a, 'tcx> UninitInstrumenter<'a, 'tcx> {
                     }
                 }
             }
+            crate::kani_middle::trace::event(
+                "memory_init_ops_summary",
+                serde_json::json!({"instance": instance_name, "instructions": instructions.len(), "zero_ops": zero_ops, "nonzero_ops": instructions.len() - zero_ops}),
+            );
             if instructions.is_empty() {
                 crate::kani_middle::trace::event(
                     "memory_init_ops",

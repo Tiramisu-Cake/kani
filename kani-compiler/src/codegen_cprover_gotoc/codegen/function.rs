@@ -124,6 +124,13 @@ impl GotocCtx<'_, '_> {
                 heads.extend(self.loop_contract_heads(&body));
                 self.current_fn_mut().loop_decreases_mut().loop_heads = heads;
             }
+            if crate::kani_middle::trace::enabled() {
+                crate::kani_middle::trace::body_consumed(
+                    instance.name().as_str(),
+                    instance.mangled_name().as_str(),
+                    &body,
+                );
+            }
             blocks.into_iter().for_each(|bb| self.codegen_block(bb, &body.blocks[bb]));
             // Report the decreases clauses that were not attached to a loop, e.g. the clause of a
             // loop without a loop invariant.

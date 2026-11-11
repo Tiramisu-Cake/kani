@@ -127,34 +127,6 @@ impl GotocCodegenBackend {
             })
             .collect();
 
-        if crate::kani_middle::trace::enabled()
-            && let [MonoItem::Fn(root)] = starting_items
-        {
-            let root_name = crate::kani_middle::trace::clip(root.name().as_str(), 320);
-            if crate::kani_middle::trace::matches(&root_name) {
-                let len_instances: Vec<serde_json::Value> = instances
-                    .iter()
-                    .filter(|instance| instance.name().as_str().contains("IndexRange::len"))
-                    .take(8)
-                    .map(|instance| serde_json::json!({
-                        "instance": crate::kani_middle::trace::clip(instance.name().as_str(), 320),
-                        "mangled_symbol": crate::kani_middle::trace::clip(instance.mangled_name().as_str(), 320),
-                    }))
-                    .collect();
-                let absent = len_instances.is_empty();
-                crate::kani_middle::trace::event(
-                    "function_presence",
-                    serde_json::json!({
-                        "root": root_name,
-                        "function": "IndexRange::len",
-                        "instances": len_instances,
-                        "absent": absent,
-                        "absence_reason": if absent { "unknown; inlining-or-const-fold-possible" } else { "present" },
-                    }),
-                );
-            }
-        }
-
         // Apply all transformation passes, including global passes.
         let any_pass_modified = global_passes.run_global_passes(
             transformer,
@@ -171,6 +143,36 @@ impl GotocCodegenBackend {
                 || collect_reachable_items(tcx, transformer, starting_items),
                 "codegen reachability analysis (second pass)",
             );
+        }
+
+        if crate::kani_middle::trace::enabled()
+            && let [MonoItem::Fn(root)] = starting_items
+        {
+            let root_name = crate::kani_middle::trace::clip(root.name().as_str(), 320);
+            if crate::kani_middle::trace::matches(&root_name) {
+                let len_instances: Vec<serde_json::Value> = items
+                    .iter()
+                    .filter_map(|item| match item { MonoItem::Fn(instance) => Some(instance), _ => None })
+                    .filter(|instance| instance.name().as_str().contains("IndexRange::len"))
+                    .take(8)
+                    .map(|instance| serde_json::json!({
+                        "instance": crate::kani_middle::trace::clip(instance.name().as_str(), 320),
+                        "mangled_symbol": crate::kani_middle::trace::clip(instance.mangled_name().as_str(), 320),
+                    }))
+                    .collect();
+                let absent = len_instances.is_empty();
+                crate::kani_middle::trace::event(
+                    "goto_function_presence",
+                    serde_json::json!({
+                        "root": root_name,
+                        "function": "IndexRange::len",
+                        "phase": "final_reachable_items_before_emission",
+                        "instances": len_instances,
+                        "absent": absent,
+                        "absence_reason": if absent { "unknown; inlining-or-const-fold-possible" } else { "present" },
+                    }),
+                );
+            }
         }
 
         // Follow rustc naming convention (cx is abbrev for context).
@@ -512,7 +514,17 @@ impl CodegenBackend for GotocCodegenBackend {
                             unit.harnesses.iter().collect()
                         };
 
-                        for harness in ordered_harnesses {
+                        for (ordinal, harness) in ordered_harnesses.into_iter().enumerate() {
+                            if crate::kani_middle::trace::enabled() {
+                                crate::kani_middle::trace::context(
+                                    harness.name().as_str(),
+                                    "codegen",
+                                );
+                                crate::kani_middle::trace::event(
+                                    "codegen_order",
+                                    serde_json::json!({"ordinal": ordinal}),
+                                );
+                            }
                             clear_codegen_cache();
 
                             let model_path = units.harness_model_path(*harness).unwrap();

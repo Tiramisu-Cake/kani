@@ -184,21 +184,11 @@ impl BodyTransformation {
                 let result = pass.transform(tcx, body, instance);
                 modified |= result.0;
                 body = result.1;
-                if trace_enabled && result.0 {
-                    crate::kani_middle::trace::cache_event(
-                        "body_cache_writer",
-                        serde_json::json!({
-                            "instance": name.as_deref().unwrap_or_default(),
-                            "writer": format!("local_pass_{pass_index}"),
-                            "event": "last_writer_at_this_stage",
-                        }),
-                        traced,
-                    );
-                }
-                if traced {
-                    crate::kani_middle::trace::body_snapshot(
+                if traced && result.0 {
+                    crate::kani_middle::trace::body_writer(
                         name.as_deref().unwrap_or_default(),
-                        &format!("local_pass_{pass_index}_after"),
+                        instance.mangled_name().as_str(),
+                        &format!("local_pass_{pass_index}"),
                         &body,
                     );
                 }

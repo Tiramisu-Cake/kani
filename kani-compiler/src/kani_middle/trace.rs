@@ -8,7 +8,6 @@
 
 use serde_json::{Value, json};
 use std::collections::BTreeMap;
-use std::collections::VecDeque;
 use std::fs::{File, OpenOptions, create_dir_all};
 use std::hash::{DefaultHasher, Hasher};
 use std::io::{self, Write};
@@ -22,6 +21,8 @@ const MAX_RECORD_BYTES: usize = 2048;
 // Four compiler processes can each claim one slot. The 24 KiB headroom is reserved for the
 // single bounded marker used when a fifth process arrives, keeping the run below 1 MiB.
 const MAX_INVOCATION_BYTES: usize = 250 * 1024;
+const MAX_STATE_ENTRIES: usize = 64;
+const MAX_STATE_KEY_BYTES: usize = 320;
 const MAX_FILTERS: usize = 20;
 const MAX_FILTER_BYTES: usize = 300;
 
@@ -49,6 +50,9 @@ struct Trace {
     context_root: String,
     context_stage: String,
     context_unit: Option<usize>,
+    body_hashes: BTreeMap<String, String>,
+    last_writers: BTreeMap<String, Value>,
+    unchanged_snapshots: usize,
 }
 
 static TRACE: OnceLock<Mutex<Option<Trace>>> = OnceLock::new();
@@ -153,6 +157,9 @@ impl Trace {
             context_root: String::new(),
             context_stage: "unit_header".to_owned(),
             context_unit: None,
+            body_hashes: BTreeMap::new(),
+            last_writers: BTreeMap::new(),
+            unchanged_snapshots: 0,
         };
         trace.write_record(
             "header",
@@ -234,6 +241,23 @@ impl Trace {
         }
     }
 
+    fn remember_body_hash(&mut self, name: &str, hash: String) {
+        if name.len() <= MAX_STATE_KEY_BYTES
+            && (self.body_hashes.len() < MAX_STATE_ENTRIES || self.body_hashes.contains_key(name))
+        {
+            self.body_hashes.insert(name.to_owned(), hash);
+        } else {
+            self.state_omission("snapshot_state_cap");
+        }
+    }
+
+    fn state_omission(&mut self, category: &str) {
+        *self.omission_counts.entry(category.to_owned()).or_default() += 1;
+        if self.state == "COMPLETE" {
+            self.state = "PARTIAL";
+        }
+    }
+
     fn finish(&mut self) {
         if self.finished || self.file.is_none() {
             self.finished = true;
@@ -255,6 +279,7 @@ impl Trace {
                 "bytes_before_footer": self.bytes,
                 "coverage": self.coverage,
                 "omission_counts": self.omission_counts,
+                "aggregated_unchanged_snapshots": self.unchanged_snapshots,
             }),
             true,
         );
@@ -339,6 +364,10 @@ pub(crate) fn unit(unit: usize) {
     if let Ok(mut guard) = trace().lock()
         && let Some(trace) = guard.as_mut()
     {
+        if trace.context_unit != Some(unit) {
+            trace.body_hashes.clear();
+            trace.last_writers.clear();
+        }
         trace.context_unit = Some(unit);
     }
 }
@@ -375,94 +404,108 @@ pub(crate) fn mark_omission(category: &str, count: usize, oversized: bool) {
     }
 }
 
-/// Stream a MIR dump into a bounded prefix and a lightweight body fingerprint. The public
-/// stable-MIR `Body::dump` API is used directly; no body clone or extra MIR query is made.
+/// Fingerprint the complete dump stream without retaining MIR text. This is diagnostic data,
+/// not a cryptographic identity or a second MIR query.
+fn fingerprint(name: &str, body: &rustc_public::mir::Body) -> Value {
+    struct Sink {
+        hasher: DefaultHasher,
+        bytes: usize,
+    }
+    impl Write for Sink {
+        fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
+            self.hasher.write(bytes);
+            self.bytes = self.bytes.saturating_add(bytes.len());
+            Ok(bytes.len())
+        }
+        fn flush(&mut self) -> io::Result<()> {
+            Ok(())
+        }
+    }
+    let mut sink = Sink { hasher: DefaultHasher::new(), bytes: 0 };
+    let dump_ok = body.dump(&mut sink, name).is_ok();
+    json!({
+        "body_hash": format!("{:016x}", sink.hasher.finish()),
+        "body_hash_algorithm": "std-default-hasher-64",
+        "dump_bytes": sink.bytes,
+        "dump_ok": dump_ok,
+    })
+}
+
 pub(crate) fn body_snapshot(name: &str, stage: &str, body: &rustc_public::mir::Body) {
     if !matches(name) {
         return;
     }
-    let mut sink = DumpSink {
-        hasher: DefaultHasher::new(),
-        prefix: Vec::with_capacity(128),
-        suffix: VecDeque::with_capacity(128),
-        line: Vec::with_capacity(256),
-        selected_lines: Vec::with_capacity(4),
-        selected_lines_omitted: 0,
-        bytes: 0,
-    };
-    let dump_ok = body.dump(&mut sink, name).is_ok();
-    let excerpt_omitted = sink.bytes.saturating_sub(sink.prefix.len() + sink.suffix.len());
-    let selected_lines_omitted = sink.selected_lines_omitted;
-    event(
-        "mir_snapshot",
-        json!({
-            "instance": clip(name, 320),
-            "stage": stage,
-            "body_hash": format!("{:016x}", sink.hasher.finish()),
-            "body_hash_algorithm": "std-default-hasher-64",
-            "dump_bytes": sink.bytes,
-            "dump_truncated": sink.bytes > sink.prefix.len() + sink.suffix.len(),
-            "selected_lines_omitted": selected_lines_omitted,
-            "dump_ok": dump_ok,
-            "mir_prefix": String::from_utf8_lossy(&sink.prefix),
-            "mir_selected_lines": sink.selected_lines.iter().map(|line| String::from_utf8_lossy(line).into_owned()).collect::<Vec<_>>(),
-            "mir_suffix": String::from_utf8_lossy(&sink.suffix.iter().copied().collect::<Vec<_>>()),
-        }),
-    );
-    if excerpt_omitted > 0 {
-        mark_omission("mir_excerpt_bytes", excerpt_omitted, false);
-    }
-    if selected_lines_omitted > 0 {
-        mark_omission("mir_selected_lines", selected_lines_omitted, false);
-    }
-}
-
-struct DumpSink {
-    hasher: DefaultHasher,
-    prefix: Vec<u8>,
-    suffix: VecDeque<u8>,
-    line: Vec<u8>,
-    selected_lines: Vec<Vec<u8>>,
-    selected_lines_omitted: usize,
-    bytes: usize,
-}
-
-impl Write for DumpSink {
-    fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
-        self.hasher.write(bytes);
-        self.bytes = self.bytes.saturating_add(bytes.len());
-        for byte in bytes {
-            if self.prefix.len() < 128 {
-                self.prefix.push(*byte);
+    let mut data = fingerprint(name, body);
+    data["instance"] = json!(clip(name, 320));
+    data["stage"] = json!(stage);
+    if let Ok(mut guard) = trace().lock()
+        && let Some(trace) = guard.as_mut()
+    {
+        let hash = data["body_hash"].as_str().unwrap_or_default().to_owned();
+        if data["dump_ok"] == true && trace.body_hashes.get(name) == Some(&hash) {
+            trace.unchanged_snapshots += 1;
+        } else {
+            if data["dump_ok"] == true {
+                trace.remember_body_hash(name, hash);
             }
-            if self.suffix.len() == 128 {
-                self.suffix.pop_front();
-            }
-            self.suffix.push_back(*byte);
-            if *byte == b'\n' {
-                let line = String::from_utf8_lossy(&self.line).to_ascii_lowercase();
-                if self.selected_lines.len() < 4
-                    && ["indexrange", "len", "constant", "copy", "move", "address_of", "ref("]
-                        .iter()
-                        .any(|needle| line.contains(needle))
-                {
-                    self.selected_lines.push(self.line.iter().copied().take(100).collect());
-                } else if ["indexrange", "len", "constant", "copy", "move", "address_of", "ref("]
-                    .iter()
-                    .any(|needle| line.contains(needle))
-                {
-                    self.selected_lines_omitted += 1;
-                }
-                self.line.clear();
-            } else if self.line.len() < 256 {
-                self.line.push(*byte);
-            }
+            trace.write_record("mir_snapshot", data, false);
         }
-        Ok(bytes.len())
     }
+}
 
-    fn flush(&mut self) -> io::Result<()> {
-        Ok(())
+/// Record a selected writer and keep its context for the actual GOTO consumer.
+pub(crate) fn body_writer(name: &str, symbol: &str, writer: &str, body: &rustc_public::mir::Body) {
+    if !matches(name) {
+        return;
+    }
+    let mut data = fingerprint(name, body);
+    data["instance"] = json!(clip(name, 320));
+    data["mangled_symbol"] = json!(clip(symbol, 320));
+    data["writer"] = json!(writer);
+    if let Ok(mut guard) = trace().lock()
+        && let Some(trace) = guard.as_mut()
+    {
+        data["writer_context"] = json!({
+            "root": trace.context_root, "stage": trace.context_stage, "unit": trace.context_unit,
+        });
+        if symbol.len() <= MAX_STATE_KEY_BYTES
+            && (trace.last_writers.len() < MAX_STATE_ENTRIES
+                || trace.last_writers.contains_key(symbol))
+        {
+            trace.last_writers.insert(
+                symbol.to_owned(),
+                json!({
+                    "writer": data["writer"], "body_hash": data["body_hash"],
+                    "dump_ok": data["dump_ok"], "context": data["writer_context"],
+                }),
+            );
+        } else {
+            trace.state_omission("writer_state_cap");
+        }
+        if data["dump_ok"] == true {
+            trace.remember_body_hash(
+                name,
+                data["body_hash"].as_str().unwrap_or_default().to_owned(),
+            );
+        }
+        trace.write_record("body_cache_writer", data, false);
+    }
+}
+
+/// Observe the very body passed to GOTO block emission; analysis lookups cannot emit this event.
+pub(crate) fn body_consumed(name: &str, symbol: &str, body: &rustc_public::mir::Body) {
+    if !matches(name) {
+        return;
+    }
+    let mut data = fingerprint(name, body);
+    data["instance"] = json!(clip(name, 320));
+    data["mangled_symbol"] = json!(clip(symbol, 320));
+    data["phase"] = json!("before_goto_blocks");
+    if let Ok(mut guard) = trace().lock()
+        && let Some(trace) = guard.as_mut()
+    {
+        data["last_writer"] = trace.last_writers.get(symbol).cloned().unwrap_or(Value::Null);
+        trace.write_record("goto_body_consumed", data, false);
     }
 }
 

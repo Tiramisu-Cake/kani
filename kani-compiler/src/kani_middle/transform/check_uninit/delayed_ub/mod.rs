@@ -165,13 +165,6 @@ impl GlobalPass for DelayedUbPass {
                 let body = transformer.body(tcx, instance);
                 let instance_name = crate::kani_middle::trace::enabled()
                     .then(|| crate::kani_middle::trace::clip(instance.name().as_str(), 320));
-                if let Some(instance_name) = instance_name.as_deref() {
-                    crate::kani_middle::trace::body_snapshot(
-                        instance_name,
-                        "delayed_ub_before",
-                        &body,
-                    );
-                }
                 // Instrument for delayed UB.
                 let target_finder = InstrumentationVisitor::new(
                     &global_points_to_graph,
@@ -188,21 +181,15 @@ impl GlobalPass for DelayedUbPass {
                     &mut self.mem_init_fn_cache,
                     target_finder,
                 );
-                if let Some(instance_name) = instance_name.as_deref() {
-                    crate::kani_middle::trace::body_snapshot(
-                        instance_name,
-                        "delayed_ub_after",
-                        &body,
-                    );
-                }
                 // If some instrumentation has been performed, update the cached body in the local transformer.
                 if instrumentation_added {
                     modified = true;
                     if let Some(name) = instance_name.as_deref() {
-                        crate::kani_middle::trace::cache_event(
-                            "body_cache_writer",
-                            serde_json::json!({"instance": instance_name.as_deref().unwrap_or_default(), "writer": "DelayedUbPass", "event": "last_writer"}),
-                            crate::kani_middle::trace::matches(name),
+                        crate::kani_middle::trace::body_writer(
+                            name,
+                            instance.mangled_name().as_str(),
+                            "DelayedUbPass",
+                            &body,
                         );
                     }
                     transformer.cache.entry(instance).and_modify(|transformation_result| {
