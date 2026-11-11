@@ -54,10 +54,18 @@ pub enum MemoryInitOp {
     AssignUnion { lvalue: Place, rvalue: Operand, position: InsertPosition },
     /// Create a union from scratch with a given field index and store it in the provided operand.
     CreateUnion { operand: Operand, field: FieldIdx },
-    /// Load a union from the argument buffer. Index zero is reserved for the return place.
-    LoadArgument { operand: Operand, argument_no: usize, position: InsertPosition },
-    /// Store a union into the argument buffer. Index zero is reserved for the return place.
-    StoreArgument { operand: Operand, argument_no: usize },
+    /// Start a fresh argument protocol for a particular monomorphized function item.
+    BeginArgumentTransfer { function: Ty, argument_count: usize },
+    /// Load shadow storage. Index zero is the mandatory normal return.
+    LoadArgument {
+        operand: Operand,
+        argument_no: usize,
+        function: Ty,
+        argument_count: usize,
+        position: InsertPosition,
+    },
+    /// Snapshot a live source witness before any in-place call operand is deinitialized.
+    StoreArgument { operand: Operand, argument_no: usize, function: Ty },
 }
 
 impl MemoryInitOp {
@@ -90,7 +98,8 @@ impl MemoryInitOp {
             | MemoryInitOp::StoreArgument { operand, .. } => {
                 mk_ref(operand, body, statements, source)
             }
-            MemoryInitOp::Copy { .. }
+            MemoryInitOp::BeginArgumentTransfer { .. }
+            | MemoryInitOp::Copy { .. }
             | MemoryInitOp::AssignUnion { .. }
             | MemoryInitOp::Unsupported { .. }
             | MemoryInitOp::TriviallyUnsafe { .. } => {
@@ -149,7 +158,9 @@ impl MemoryInitOp {
                 let rvalue = Rvalue::AddressOf(RawPtrKind::Const, place.clone());
                 rvalue.ty(body.locals()).unwrap()
             }
-            MemoryInitOp::Unsupported { .. } | MemoryInitOp::TriviallyUnsafe { .. } => {
+            MemoryInitOp::BeginArgumentTransfer { .. }
+            | MemoryInitOp::Unsupported { .. }
+            | MemoryInitOp::TriviallyUnsafe { .. } => {
                 unreachable!("operands do not exist for this operation")
             }
             MemoryInitOp::Copy { from, to, .. } => {
@@ -192,6 +203,7 @@ impl MemoryInitOp {
             | MemoryInitOp::AssignUnion { .. }
             | MemoryInitOp::Unsupported { .. }
             | MemoryInitOp::TriviallyUnsafe { .. }
+            | MemoryInitOp::BeginArgumentTransfer { .. }
             | MemoryInitOp::StoreArgument { .. }
             | MemoryInitOp::LoadArgument { .. } => unreachable!(),
         }
@@ -212,6 +224,7 @@ impl MemoryInitOp {
             | MemoryInitOp::TriviallyUnsafe { .. }
             | MemoryInitOp::Copy { .. }
             | MemoryInitOp::AssignUnion { .. }
+            | MemoryInitOp::BeginArgumentTransfer { .. }
             | MemoryInitOp::StoreArgument { .. }
             | MemoryInitOp::LoadArgument { .. } => unreachable!(),
         }
@@ -233,6 +246,7 @@ impl MemoryInitOp {
             | MemoryInitOp::TriviallyUnsafe { .. }
             | MemoryInitOp::Copy { .. }
             | MemoryInitOp::AssignUnion { .. }
+            | MemoryInitOp::BeginArgumentTransfer { .. }
             | MemoryInitOp::StoreArgument { .. }
             | MemoryInitOp::LoadArgument { .. } => None,
         }
@@ -253,6 +267,7 @@ impl MemoryInitOp {
             | MemoryInitOp::CheckRefAs { .. }
             | MemoryInitOp::Unsupported { .. }
             | MemoryInitOp::TriviallyUnsafe { .. }
+            | MemoryInitOp::BeginArgumentTransfer { .. }
             | MemoryInitOp::StoreArgument { .. } => InsertPosition::Before,
             MemoryInitOp::Copy { .. } | MemoryInitOp::CreateUnion { .. } => InsertPosition::After,
         }

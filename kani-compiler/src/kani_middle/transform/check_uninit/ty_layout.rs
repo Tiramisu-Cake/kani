@@ -128,6 +128,17 @@ pub(super) fn maybe_uninit_storage(tcx: TyCtxt, ty: Ty) -> Option<Ty> {
 }
 
 impl PointeeInfo {
+    /// Deinitializing a sized call operand clears its entire storage, regardless of field masks.
+    pub(super) fn for_deinit(ty: Ty) -> Result<Self, LayoutComputationError> {
+        let size = ty
+            .layout()
+            .map_err(|_| LayoutComputationError::UnknownUnsizedLayout(ty))?
+            .shape()
+            .size
+            .bytes();
+        Ok(Self { pointee_ty: ty, layout: PointeeLayout::Sized { layout: vec![true; size] } })
+    }
+
     /// Typed slot transfers preserve only payload data, at the rustc stride of each slot.
     pub(super) fn for_typed_storage(tcx: TyCtxt, ty: Ty) -> Result<Self, LayoutComputationError> {
         let inner = maybe_uninit_storage(tcx, ty).unwrap();

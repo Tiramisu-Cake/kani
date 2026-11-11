@@ -24,6 +24,7 @@ use crate::kani_middle::kani_functions::{KaniFunction, KaniModel};
 pub use delayed_ub::DelayedUbPass;
 pub use ptr_uninit::UninitPass;
 use rustc_public::mir::WithRetag;
+use rustc_public_bridge::IndexedVal;
 pub use ty_layout::{PointeeInfo, PointeeLayout};
 
 mod delayed_ub;
@@ -53,6 +54,8 @@ const KANI_SET_STR_PTR_INITIALIZED: KaniFunction =
 const KANI_COPY_INIT_STATE: KaniFunction = KaniFunction::Model(KaniModel::CopyInitState);
 const KANI_COPY_INIT_STATE_SINGLE: KaniFunction =
     KaniFunction::Model(KaniModel::CopyInitStateSingle);
+const KANI_BEGIN_ARGUMENT_TRANSFER: KaniFunction =
+    KaniFunction::Model(KaniModel::BeginArgumentTransfer);
 const KANI_LOAD_ARGUMENT: KaniFunction = KaniFunction::Model(KaniModel::LoadArgument);
 const KANI_STORE_ARGUMENT: KaniFunction = KaniFunction::Model(KaniModel::StoreArgument);
 // The contract-clause-depth functions access the `CONTRACT_CLAUSE_DEPTH`
@@ -81,6 +84,7 @@ const SKIPPED_ITEMS: &[KaniFunction] = &[
     KANI_SET_STR_PTR_INITIALIZED,
     KANI_COPY_INIT_STATE,
     KANI_COPY_INIT_STATE_SINGLE,
+    KANI_BEGIN_ARGUMENT_TRANSFER,
     KANI_LOAD_ARGUMENT,
     KANI_STORE_ARGUMENT,
     KANI_ENTER_CONTRACT_CLAUSE,
@@ -160,6 +164,28 @@ impl<'a, 'tcx> UninitInstrumenter<'a, 'tcx> {
         source: &mut SourceInstruction,
         mut operation: MemoryInitOp,
     ) {
+        if let MemoryInitOp::BeginArgumentTransfer { function, argument_count } = operation {
+            let span = source.span(body.blocks());
+            let ret_place = Place::from(body.new_local(Ty::new_tuple(&[]), span, Mutability::Not));
+            let instance = Instance::resolve(
+                get_mem_init_fn_def(KANI_BEGIN_ARGUMENT_TRANSFER, self.mem_init_fn_cache),
+                &GenericArgs(vec![]),
+            )
+            .unwrap();
+            // Interned function-item types uniquely identify the monomorphization within this
+            // compiler context. Caller and callee use the same context; this is not a persisted ID.
+            let signature = body.new_uint_operand(function.to_index() as u128, UintTy::Usize, span);
+            let count = body.new_uint_operand(argument_count as u128, UintTy::Usize, span);
+            body.insert_call(
+                &instance,
+                source,
+                InsertPosition::Before,
+                vec![signature, count],
+                ret_place,
+            );
+            return;
+        }
+
         if let MemoryInitOp::StoreArgument { operand, .. } = &mut operation
             && matches!(operand, Operand::Constant(_))
             && maybe_uninit_storage(self.tcx, operand.ty(body.locals()).unwrap()).is_some()
@@ -215,7 +241,11 @@ impl<'a, 'tcx> UninitInstrumenter<'a, 'tcx> {
                     )
                 };
             // Calculate pointee layout for byte-by-byte memory initialization checks.
-            let layout = if maybe_uninit_storage(self.tcx, pointee_ty).is_some() {
+            let layout = if matches!(operation, MemoryInitOp::SetRef { value: false, .. }) {
+                // Deinitialization clears every byte, including union storage and padding;
+                // it does not need an active union field or a typed preserve mask.
+                PointeeInfo::for_deinit(pointee_ty)
+            } else if maybe_uninit_storage(self.tcx, pointee_ty).is_some() {
                 match &operation {
                     // Reading a slot or slice of slots does not require initialized data.
                     MemoryInitOp::Check { .. }
@@ -278,7 +308,9 @@ impl<'a, 'tcx> UninitInstrumenter<'a, 'tcx> {
             MemoryInitOp::StoreArgument { .. } | MemoryInitOp::LoadArgument { .. } => {
                 self.build_argument_operation(body, source, operation, pointee_info)
             }
-            MemoryInitOp::Unsupported { .. } | MemoryInitOp::TriviallyUnsafe { .. } => {
+            MemoryInitOp::BeginArgumentTransfer { .. }
+            | MemoryInitOp::Unsupported { .. }
+            | MemoryInitOp::TriviallyUnsafe { .. } => {
                 unreachable!()
             }
         };
@@ -684,9 +716,23 @@ impl<'a, 'tcx> UninitInstrumenter<'a, 'tcx> {
                 const_: MirConst::try_from_uint(argument_no as u128, UintTy::Usize).unwrap(),
             }),
         ];
-        // Stores only capture live source identities. The receiving side applies the typed mask,
-        // including for normal returns, after transferring the saved source state.
-        if matches!(operation, MemoryInitOp::LoadArgument { .. }) {
+        let function = match &operation {
+            MemoryInitOp::StoreArgument { function, .. }
+            | MemoryInitOp::LoadArgument { function, .. } => *function,
+            _ => unreachable!(),
+        };
+        args.push(body.new_uint_operand(
+            function.to_index() as u128,
+            UintTy::Usize,
+            source.span(body.blocks()),
+        ));
+        // Stores snapshot a live witness; loads apply the typed preserve mask.
+        if let MemoryInitOp::LoadArgument { argument_count, .. } = &operation {
+            args.push(body.new_uint_operand(
+                *argument_count as u128,
+                UintTy::Usize,
+                source.span(body.blocks()),
+            ));
             let layout = transfer_mask(pointee_info.layout());
             args.push(mk_layout_operand(body, &mut statements, source, &layout));
         }

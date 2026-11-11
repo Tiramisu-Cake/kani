@@ -35,6 +35,7 @@ use rustc_public::{
 
 pub struct CheckUninitVisitor<'tcx> {
     tcx: TyCtxt<'tcx>,
+    instance: Instance,
     locals: Vec<LocalDecl>,
     /// All target instructions in the body.
     targets: Vec<InitRelevantInstruction>,
@@ -69,13 +70,22 @@ impl TargetFinder for CheckUninitVisitor<'_> {
                     .take(body.arg_count())
                     .filter(|(_, local)| self.transfers_shadow(local.ty))
                     .collect();
-                if !union_args.is_empty() {
-                    for (idx, _) in union_args {
-                        self.push_target(MemoryInitOp::LoadArgument {
-                            operand: Operand::Copy(Place { local: idx, projection: vec![] }),
-                            argument_no: idx,
-                            position: InsertPosition::Before,
-                        })
+                if !union_args.is_empty() || self.transfers_shadow(body.locals()[0].ty) {
+                    if has_transfer_protocol(self.instance) {
+                        for (idx, _) in &union_args {
+                            self.push_target(MemoryInitOp::LoadArgument {
+                                operand: Operand::Copy(Place::from(*idx)),
+                                argument_no: *idx,
+                                function: self.instance.ty(),
+                                argument_count: union_args.len(),
+                                position: InsertPosition::Before,
+                            });
+                        }
+                    } else {
+                        self.push_target(MemoryInitOp::Unsupported {
+                            reason: "Kani does not support shadow transfers without a paired argument/return protocol."
+                                .to_string(),
+                        });
                     }
                 }
             }
@@ -86,9 +96,10 @@ impl TargetFinder for CheckUninitVisitor<'_> {
 }
 
 impl<'tcx> CheckUninitVisitor<'tcx> {
-    pub fn new(tcx: TyCtxt<'tcx>) -> Self {
+    pub fn new(tcx: TyCtxt<'tcx>, instance: Instance) -> Self {
         Self {
             tcx,
+            instance,
             locals: vec![],
             targets: vec![],
             current_target: InitRelevantInstruction {
@@ -492,32 +503,29 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                 // need an actual shadow model, not an unpaired argument-buffer store.
                 let modeled_consumption = instance.kind == InstanceKind::Intrinsic
                     && matches!(Intrinsic::from_instance(&instance), Intrinsic::Forget);
-                if !instance.has_body()
-                    && !modeled_consumption
-                    && args.iter().any(|arg| self.transfers_shadow(arg.ty(&self.locals).unwrap()))
+                let paired = has_transfer_protocol(instance);
+                let destination_ty = destination.ty(&self.locals).unwrap();
+                let shadow_args =
+                    args.iter().any(|arg| self.transfers_shadow(arg.ty(&self.locals).unwrap()));
+                if !paired
+                    && ((!modeled_consumption && shadow_args)
+                        || self.transfers_shadow(destination_ty))
                 {
                     self.push_target(MemoryInitOp::Unsupported {
-                        reason: "Kani does not support shadow-carrying arguments to calls without a MIR body."
+                        reason: "Kani does not support shadow transfers without a paired argument/return protocol."
                             .to_string(),
                     });
-                    // In particular, do not leave an unconsumed store for the next call.
                     self.targets.push(self.current_target.clone());
                     return;
                 }
-                let destination_ty = destination.ty(&self.locals).unwrap();
-                if maybe_uninit_storage(self.tcx, destination_ty).is_some() {
-                    if instance.kind == InstanceKind::Item && instance.has_body() {
-                        self.push_target(MemoryInitOp::LoadArgument {
-                            operand: Operand::Copy(destination.clone()),
-                            argument_no: 0,
-                            position: InsertPosition::After,
-                        });
-                    } else {
-                        self.push_target(MemoryInitOp::Unsupported {
-                            reason: "Kani does not support MaybeUninit return values from calls without a MIR body."
-                                .to_string(),
-                        });
-                    }
+                if paired && self.transfers_shadow(destination_ty) {
+                    self.push_target(MemoryInitOp::LoadArgument {
+                        operand: Operand::Copy(destination.clone()),
+                        argument_no: 0,
+                        function: instance.ty(),
+                        argument_count: 0,
+                        position: InsertPosition::After,
+                    });
                 }
                 match instance.kind {
                     InstanceKind::Intrinsic => {
@@ -671,7 +679,7 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                                 }
                                 _ => {}
                             }
-                        } else {
+                        } else if paired {
                             let union_args: Vec<_> = args
                                 .iter()
                                 .enumerate()
@@ -680,11 +688,29 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                                 })
                                 .collect();
                             if !union_args.is_empty() {
-                                for (idx, operand) in union_args {
+                                self.push_target(MemoryInitOp::BeginArgumentTransfer {
+                                    function: instance.ty(),
+                                    argument_count: union_args.len(),
+                                });
+                                for (idx, operand) in union_args.iter().copied() {
                                     self.push_target(MemoryInitOp::StoreArgument {
                                         operand: operand.clone(),
-                                        argument_no: idx + 1, // since arguments are 1-indexed
-                                    })
+                                        argument_no: idx + 1,
+                                        function: instance.ty(),
+                                    });
+                                }
+                                // Snapshot ALL argument witnesses before clearing ANY source.
+                                // Assignment moves, Copy operands and forget's intrinsic model
+                                // do not take this path. A usual by-value call moves a temporary,
+                                // so the original address-taken storage retains its state.
+                                for (_, operand) in union_args {
+                                    if let Operand::Move(place) = operand {
+                                        self.push_target(MemoryInitOp::SetRef {
+                                            operand: Operand::Copy(place.clone()),
+                                            value: false,
+                                            position: InsertPosition::Before,
+                                        });
+                                    }
                                 }
                             }
                         }
@@ -726,11 +752,13 @@ impl MirVisitor for CheckUninitVisitor<'_> {
             }
             TerminatorKind::Return => {
                 let return_place = Place::from(0);
-                if maybe_uninit_storage(self.tcx, return_place.ty(&self.locals).unwrap()).is_some()
+                if has_transfer_protocol(self.instance)
+                    && self.transfers_shadow(return_place.ty(&self.locals).unwrap())
                 {
                     self.push_target(MemoryInitOp::StoreArgument {
                         operand: Operand::Copy(return_place),
                         argument_no: 0,
+                        function: self.instance.ty(),
                     });
                 }
                 self.super_terminator(term, location);
@@ -1103,4 +1131,10 @@ fn single_field_ty(ty: Ty) -> Option<Ty> {
         TyKind::RigidTy(RigidTy::Pat(base_ty, _)) => Some(base_ty),
         _ => None,
     }
+}
+
+/// Caller stores and callee loads must agree on exactly the same supported instance domain.
+/// Bodyful shims/intrinsics are not ordinary item calls and have no paired protocol here.
+fn has_transfer_protocol(instance: Instance) -> bool {
+    instance.kind == InstanceKind::Item && !instance.is_foreign_item() && instance.has_body()
 }
