@@ -1,0 +1,10 @@
+Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type `Pad`
+VERIFICATION:- FAILED
+Verification failed for - ordinary_parameter_seed_does_not_hide_caller_poison
+Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type `u32`
+VERIFICATION:- FAILED
+Verification failed for - ordinary_parameter_seed_does_not_hide_callee_poison
+Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type `u32`
+VERIFICATION:- FAILED
+Verification failed for - pointer_parameter_seed_does_not_initialize_pointee
+Complete - 0 successfully verified harnesses, 3 failures, 3 total.

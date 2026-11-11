@@ -9,8 +9,9 @@ use crate::kani_middle::{
     transform::{
         body::{InsertPosition, MutableBody, SourceInstruction},
         check_uninit::{
-            TargetFinder,
+            PointeeInfo, PointeeLayout, TargetFinder,
             relevant_instruction::{InitRelevantInstruction, MemoryInitOp},
+            ty_layout::contains_storage,
         },
     },
 };
@@ -42,10 +43,43 @@ impl TargetFinder for InstrumentationVisitor<'_, '_> {
         self.locals = body.locals().to_vec();
         for (bb_idx, bb) in body.blocks().iter().enumerate() {
             self.current_target = InitRelevantInstruction {
-                source: SourceInstruction::Statement { idx: 0, bb: bb_idx },
+                source: if bb.statements.is_empty() {
+                    SourceInstruction::Terminator { bb: bb_idx }
+                } else {
+                    SourceInstruction::Statement { idx: 0, bb: bb_idx }
+                },
                 before_instruction: vec![],
                 after_instruction: vec![],
             };
+            if bb_idx == 0 {
+                // A typed by-value parameter has fresh stack storage but no MIR assignment.
+                // Its caller retains the ordinary operand checks; seed only parameter bytes
+                // that this analysis may check. In particular this covers an ordinary
+                // IndexRange copied out of IntoIter on the drop path. References/pointers
+                // initialize only their own value bytes, never the referenced storage.
+                for idx in 1..=body.arg_count() {
+                    let ty = self.locals[idx].ty;
+                    let place = Place::from(idx);
+                    let needs_get = self
+                        .points_to
+                        .resolve_place_stable(place.clone(), self.current_instance, self.tcx)
+                        .intersection(self.analysis_targets)
+                        .next()
+                        .is_some();
+                    if needs_get
+                        && !ty.kind().is_union()
+                        && !contains_storage(self.tcx, ty)
+                        && let Ok(info) = PointeeInfo::from_ty(ty)
+                        && let PointeeLayout::Sized { layout } = info.layout()
+                    {
+                        self.push_target(MemoryInitOp::SetStorage {
+                            operand: Operand::Copy(place),
+                            initialized: layout.clone(),
+                            position: InsertPosition::Before,
+                        });
+                    }
+                }
+            }
             self.visit_basic_block(bb);
         }
         self.targets
@@ -96,17 +130,12 @@ impl MirVisitor for InstrumentationVisitor<'_, '_> {
     }
 
     fn visit_terminator(&mut self, term: &Terminator, location: Location) {
-        if let SourceInstruction::Statement { bb, .. } = self.current_target.source {
-            // We don't have to push the previous target, since it already happened in the statement
-            // handling code.
-            self.current_target = InitRelevantInstruction {
-                source: SourceInstruction::Terminator { bb },
-                after_instruction: vec![],
-                before_instruction: vec![],
-            };
-        } else {
-            unreachable!()
-        }
+        // A block can have no statements; retain any entry operations while selecting
+        // its terminator rather than a nonexistent statement at index statements.len().
+        let bb = match self.current_target.source {
+            SourceInstruction::Statement { bb, .. } | SourceInstruction::Terminator { bb } => bb,
+        };
+        self.current_target.source = SourceInstruction::Terminator { bb };
         // The points-to analysis does not follow these calls, so the aliasing it computed is only
         // valid on paths that do not reach them.
         if let TerminatorKind::Call { func, .. } = &term.kind

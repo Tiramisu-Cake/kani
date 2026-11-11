@@ -73,7 +73,9 @@ fn padding_byte_stays_uninitialized_after_typed_copy() {
     assert_eq!(copy.marker.word, 11);
     assert_eq!(unsafe { copy.slots[0].assume_init() }, 13);
     kani::cover!(true);
-    let padding = unsafe { ptr::addr_of!(copy.marker).cast::<u8>().add(1).read() };
+    // Read the padding byte directly: a failure on ptr::read's pointer argument
+    // is not the intended byte-initialization control.
+    let padding = unsafe { *ptr::addr_of!(copy.marker).cast::<u8>().add(1) };
     std::hint::black_box(padding);
 }
 
@@ -87,7 +89,7 @@ fn padding_stays_uninitialized_after_call_return() {
     assert_eq!(returned.marker.byte, 7);
     assert_eq!(returned.marker.word, 11);
     kani::cover!(true);
-    let padding = unsafe { ptr::addr_of!(returned.marker).cast::<u8>().add(1).read() };
+    let padding = unsafe { *ptr::addr_of!(returned.marker).cast::<u8>().add(1) };
     std::hint::black_box(padding);
 }
 
