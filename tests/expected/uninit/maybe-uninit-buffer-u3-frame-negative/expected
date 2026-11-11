@@ -1,7 +1,9 @@
 assigns\
 - Status: FAILURE\
-- Description: "Check that *outside is assignable"
+- Description: "Check that *var_7 is assignable"\
+- Location: tests/expected/uninit/maybe-uninit-buffer-u3-frame-negative/main.rs:22:5 in function frame_target::{closure#2}::{closure#0}
 
-Failed Checks: Check that *outside is assignable
+Failed Checks: Check that *var_7 is assignable\
+ File: "tests/expected/uninit/maybe-uninit-buffer-u3-frame-negative/main.rs", line 22, in frame_target::{closure#2}::{closure#0}
 
 VERIFICATION:- FAILED
