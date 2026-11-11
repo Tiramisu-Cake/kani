@@ -186,6 +186,24 @@ impl<'tcx> CheckUninitVisitor<'tcx> {
         });
     }
 
+    /// Preserve checks on pointer values loaded while computing a write address. The final
+    /// pointee is being written, so its old bytes need not be initialized.
+    fn check_storage_write_address(&mut self, place: &Place) {
+        if let Some(base) = try_remove_topmost_deref(place) {
+            let mut prefix = Place::from(base.local);
+            for elem in &base.projection {
+                if *elem == ProjectionElem::Deref
+                    && prefix.ty(&self.locals).unwrap().kind().is_raw_ptr()
+                {
+                    self.push_target(MemoryInitOp::Check {
+                        operand: Operand::Copy(prefix.clone()),
+                    });
+                }
+                prefix.projection.push(elem.clone());
+            }
+        }
+    }
+
     fn in_product(&self, place: &Place) -> bool {
         let mut prefix = Place::from(place.local);
         for elem in &place.projection {
@@ -509,6 +527,9 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                 let in_maybe_uninit = union
                     .is_some_and(|ty| wrapper_inner(self.tcx, ty, LangItem::MaybeUninit).is_some());
 
+                if contains_storage(self.tcx, ty) {
+                    self.check_storage_write_address(place);
+                }
                 // Reject nested unions before the generic shadow update can treat them as values.
                 if let Err(_) = product_layout(self.tcx, ty) {
                     self.unsupported_product();
