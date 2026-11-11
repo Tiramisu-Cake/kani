@@ -84,3 +84,20 @@ fn array_value_as_used_by_merge_output() {
         assert_eq!(slot.assume_init(), [1, 2, 3, 4]);
     }
 }
+
+#[kani::proof]
+fn volatile_read_after_write() {
+    let value: u8 = kani::any();
+    let mut slot = MaybeUninit::<u8>::uninit();
+    slot.write(value);
+    assert_eq!(unsafe { ptr::read_volatile(slot.as_ptr()) }, value);
+}
+
+#[kani::proof]
+fn pointer_valued_slot_as_used_by_select_unpredictable() {
+    let value: u8 = kani::any();
+    let pointer = ptr::addr_of!(value);
+    let slot = MaybeUninit::new(pointer);
+    let selected = unsafe { slot.assume_init() };
+    assert_eq!(unsafe { *selected }, value);
+}

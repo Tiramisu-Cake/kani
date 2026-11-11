@@ -187,6 +187,24 @@ impl<'tcx> CheckUninitVisitor<'tcx> {
                             .repeat(len.eval_target_usize().unwrap().try_into().unwrap()),
                         position: InsertPosition::After,
                     });
+                } else if place.projection.is_empty()
+                    && let Operand::Copy(source) | Operand::Move(source) = operand
+                    && source.projection.is_empty()
+                    && source.local != place.local
+                {
+                    // MIR may hold a const constructor result in a local before repeating it.
+                    // Copy its byte state to each slot using the array's static element stride.
+                    let TyKind::RigidTy(RigidTy::Array(_, len)) = ty.kind() else { unreachable!() };
+                    let len = len.eval_target_usize().unwrap();
+                    for index in 0..len {
+                        let mut element = place.clone();
+                        element.projection.push(ProjectionElem::ConstantIndex {
+                            offset: index,
+                            min_length: len,
+                            from_end: false,
+                        });
+                        self.assign_storage_operand(&element, operand);
+                    }
                 } else {
                     self.unsupported_storage_assignment();
                 }
