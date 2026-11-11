@@ -150,33 +150,80 @@ impl BodyTransformation {
 
     /// Equivalent to `body()`, but avoids cloning the returned `Body`.
     pub fn body_ref(&mut self, tcx: TyCtxt, instance: Instance) -> &Body {
-        &self
-            .cache
-            .entry(instance)
-            .or_insert_with(|| {
-                // Transform and add to the cache if there's no existing entry.
-                let mut body = instance.body().unwrap_or_else(|| build_missing_body(tcx, instance));
+        let trace_enabled = crate::kani_middle::trace::enabled();
+        let name =
+            trace_enabled.then(|| crate::kani_middle::trace::clip(instance.name().as_str(), 320));
+        let traced = name.as_deref().is_some_and(crate::kani_middle::trace::matches);
+        let cache_hit = trace_enabled && self.cache.contains_key(&instance);
+        if trace_enabled {
+            crate::kani_middle::trace::cache_event(
+                "body_cache",
+                serde_json::json!({
+                    "instance": name.as_deref().unwrap_or_default(),
+                    "mangled_symbol": crate::kani_middle::trace::clip(instance.mangled_name().as_str(), 320),
+                    "event": if cache_hit { "hit" } else { "miss_creator" },
+                }),
+                traced,
+            );
+        }
+        let transformed = self.cache.entry(instance).or_insert_with(|| {
+            // Transform and add to the cache if there's no existing entry.
+            let mut body = instance.body().unwrap_or_else(|| build_missing_body(tcx, instance));
+            if traced {
+                crate::kani_middle::trace::body_snapshot(
+                    name.as_deref().unwrap_or_default(),
+                    "local_before_passes",
+                    &body,
+                );
+            }
 
-                let mut modified = false;
-                for pass in self.stub_passes.iter_mut().chain(self.inst_passes.iter_mut()) {
-                    let result = pass.transform(tcx, body, instance);
-                    modified |= result.0;
-                    body = result.1;
-                    self.generated_loop_modifies.extend(
-                        pass.take_generated_loop_modifies()
-                            .into_iter()
-                            .map(|(register_fn, locals)| ((instance, register_fn), locals)),
-                    );
-                    self.loop_modifies_bindings.extend(
-                        pass.take_loop_modifies_bindings()
-                            .into_iter()
-                            .map(|(binding, register_fn)| ((instance, binding), register_fn)),
+            let mut modified = false;
+            for (pass_index, pass) in
+                self.stub_passes.iter_mut().chain(self.inst_passes.iter_mut()).enumerate()
+            {
+                let result = pass.transform(tcx, body, instance);
+                modified |= result.0;
+                body = result.1;
+                if trace_enabled && result.0 {
+                    crate::kani_middle::trace::cache_event(
+                        "body_cache_writer",
+                        serde_json::json!({
+                            "instance": name.as_deref().unwrap_or_default(),
+                            "writer": format!("local_pass_{pass_index}"),
+                            "event": "last_writer_at_this_stage",
+                        }),
+                        traced,
                     );
                 }
+                if traced {
+                    crate::kani_middle::trace::body_snapshot(
+                        name.as_deref().unwrap_or_default(),
+                        &format!("local_pass_{pass_index}_after"),
+                        &body,
+                    );
+                }
+                self.generated_loop_modifies.extend(
+                    pass.take_generated_loop_modifies()
+                        .into_iter()
+                        .map(|(register_fn, locals)| ((instance, register_fn), locals)),
+                );
+                self.loop_modifies_bindings.extend(
+                    pass.take_loop_modifies_bindings()
+                        .into_iter()
+                        .map(|(binding, register_fn)| ((instance, binding), register_fn)),
+                );
+            }
 
-                TransformationResult(body, modified)
-            })
-            .0
+            TransformationResult(body, modified)
+        });
+        if traced {
+            crate::kani_middle::trace::body_snapshot(
+                name.as_deref().unwrap_or_default(),
+                "cached_body_return",
+                &transformed.0,
+            );
+        }
+        &transformed.0
     }
 
     /// The locals of the transformed body of `instance` that codegen adds to the loop modifies

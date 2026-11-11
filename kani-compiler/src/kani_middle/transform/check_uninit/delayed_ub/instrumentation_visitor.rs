@@ -158,14 +158,19 @@ impl MirVisitor for InstrumentationVisitor<'_, '_> {
     }
 
     fn visit_place(&mut self, place: &Place, ptx: PlaceContext, location: Location) {
+        let trace_name = crate::kani_middle::trace::enabled()
+            .then(|| crate::kani_middle::trace::clip(self.current_instance.name().as_str(), 320));
+        let trace_selected = trace_name.as_deref().is_some_and(crate::kani_middle::trace::matches);
         // In order to check whether we should get-instrument the place, see if it resolves to the
         // analysis target.
-        let needs_get = {
-            self.points_to
-                .resolve_place_stable(place.clone(), self.current_instance, self.tcx)
-                .intersection(self.analysis_targets)
-                .next()
-                .is_some()
+        let (needs_get, get_witness) = {
+            let resolved =
+                self.points_to.resolve_place_stable(place.clone(), self.current_instance, self.tcx);
+            let witness = resolved.intersection(self.analysis_targets).next();
+            (
+                witness.is_some(),
+                if trace_selected { witness.map(crate::kani_middle::trace::debug) } else { None },
+            )
         };
 
         // In order to check whether we should set-instrument the place, we need to figure out if
@@ -194,8 +199,9 @@ impl MirVisitor for InstrumentationVisitor<'_, '_> {
         // if we don't set-instrument `val_2` we will get a false-positive.
         //
         // See `tests/expected/uninit/delayed-ub-overapprox.rs` for a more specific example.
-        let needs_set = {
+        let (needs_set, set_witness) = {
             let mut has_common_ancestor = false;
+            let mut set_witness = None;
             let mut self_ancestors =
                 self.points_to.resolve_place_stable(place.clone(), self.current_instance, self.tcx);
             let mut target_ancestors = self.analysis_targets.clone();
@@ -208,8 +214,12 @@ impl MirVisitor for InstrumentationVisitor<'_, '_> {
             // which is the answer the walk gives on every graph where it terminates.
             let mut visited_pairs = Vec::new();
             while !self_ancestors.is_empty() || !target_ancestors.is_empty() {
-                if self_ancestors.intersection(&target_ancestors).next().is_some() {
+                if let Some(common_ancestor) = self_ancestors.intersection(&target_ancestors).next()
+                {
                     has_common_ancestor = true;
+                    if trace_selected {
+                        set_witness = Some(crate::kani_middle::trace::debug(&common_ancestor));
+                    }
                     break;
                 }
                 let state = (self_ancestors, target_ancestors);
@@ -221,8 +231,27 @@ impl MirVisitor for InstrumentationVisitor<'_, '_> {
                 visited_pairs.push(state);
             }
 
-            has_common_ancestor
+            (has_common_ancestor, set_witness)
         };
+
+        if trace_selected {
+            crate::kani_middle::trace::event(
+                "relevance",
+                serde_json::json!({
+                    "instance": trace_name.as_deref().unwrap_or_default(),
+                    "location": crate::kani_middle::trace::debug(&location),
+                    "place": crate::kani_middle::trace::debug(&place),
+                    "needs_get": needs_get,
+                    "get_witness": get_witness,
+                    "needs_set": needs_set,
+                    "set_witness": set_witness,
+                    "decision": if ptx.is_mutating() && needs_set { "select_set_ref" }
+                        else if !ptx.is_mutating() && needs_get { "select_check_ref" }
+                        else if ptx.is_mutating() { "skip_no_common_ancestor" }
+                        else { "skip_not_target" },
+                }),
+            );
+        }
 
         // If we are mutating the place, initialize it.
         if ptx.is_mutating() && needs_set {

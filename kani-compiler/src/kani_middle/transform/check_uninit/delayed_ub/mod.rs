@@ -73,10 +73,30 @@ impl GlobalPass for DelayedUbPass {
             .iter()
             .flat_map(|instance| {
                 let body = instance.body().unwrap();
-                let mut visitor = InitialTargetVisitor::new(body.clone());
+                let mut visitor = InitialTargetVisitor::new(body.clone(), *instance);
                 visitor.visit_body(&body);
+                let initial_targets = visitor.into_targets();
+                let instance_name = crate::kani_middle::trace::enabled()
+                    .then(|| crate::kani_middle::trace::clip(instance.name().as_str(), 320));
+                if instance_name.as_deref().is_some_and(crate::kani_middle::trace::matches) {
+                    let instance_name = instance_name.as_deref().unwrap_or_default();
+                    for target in initial_targets.iter().take(16) {
+                        let witness = match target {
+                            AnalysisTarget::Place(place) => crate::kani_middle::trace::debug(place),
+                            AnalysisTarget::Static(static_def) => crate::kani_middle::trace::debug(static_def),
+                        };
+                        crate::kani_middle::trace::event(
+                            "target_origin",
+                            serde_json::json!({"instance": instance_name, "witness": witness}),
+                        );
+                    }
+                    crate::kani_middle::trace::event(
+                        "target_origin_summary",
+                        serde_json::json!({"instance": instance_name, "target_count": initial_targets.len(), "witnesses_emitted": initial_targets.len().min(16)}),
+                    );
+                }
                 // Convert all places into the format of aliasing graph for later comparison.
-                visitor.into_targets().into_iter().map(move |analysis_target| match analysis_target
+                initial_targets.into_iter().map(move |analysis_target| match analysis_target
                 {
                     AnalysisTarget::Place(place) => {
                         MemLoc::from_stable_stack_allocation(*instance, place, tcx)
@@ -87,6 +107,16 @@ impl GlobalPass for DelayedUbPass {
                 })
             })
             .collect();
+        if crate::kani_middle::trace::enabled() {
+            crate::kani_middle::trace::event(
+                "analysis_targets",
+                serde_json::json!({
+                    "initial_target_count": targets.len(),
+                    "starting_item_count": starting_items.len(),
+                    "skip_reason": if targets.is_empty() { "no_initial_targets; global_analysis_skipped" } else { "none" },
+                }),
+            );
+        }
 
         // Only perform this analysis if there is something to analyze.
         if !targets.is_empty() {
@@ -112,6 +142,17 @@ impl GlobalPass for DelayedUbPass {
 
             // Since analysis targets are *pointers*, need to get its successors for instrumentation.
             analysis_targets.extend(global_points_to_graph.successors(&targets));
+            if crate::kani_middle::trace::enabled() {
+                crate::kani_middle::trace::event(
+                    "analysis_targets",
+                    serde_json::json!({
+                        "initial_target_count": targets.len(),
+                        "successor_target_count": analysis_targets.len(),
+                        "starting_item_count": starting_items.len(),
+                        "skip_reason": if analysis_targets.is_empty() { "no_target_successors" } else { "none" },
+                    }),
+                );
+            }
 
             // If we are generating MIR, generate the points-to graph as well.
             if tcx.sess.opts.output_types.contains_key(&OutputType::Mir) {
@@ -122,6 +163,15 @@ impl GlobalPass for DelayedUbPass {
             for instance in instances {
                 // Retrieve the body with all local instrumentation passes applied.
                 let body = transformer.body(tcx, instance);
+                let instance_name = crate::kani_middle::trace::enabled()
+                    .then(|| crate::kani_middle::trace::clip(instance.name().as_str(), 320));
+                if let Some(instance_name) = instance_name.as_deref() {
+                    crate::kani_middle::trace::body_snapshot(
+                        instance_name,
+                        "delayed_ub_before",
+                        &body,
+                    );
+                }
                 // Instrument for delayed UB.
                 let target_finder = InstrumentationVisitor::new(
                     &global_points_to_graph,
@@ -138,9 +188,23 @@ impl GlobalPass for DelayedUbPass {
                     &mut self.mem_init_fn_cache,
                     target_finder,
                 );
+                if let Some(instance_name) = instance_name.as_deref() {
+                    crate::kani_middle::trace::body_snapshot(
+                        instance_name,
+                        "delayed_ub_after",
+                        &body,
+                    );
+                }
                 // If some instrumentation has been performed, update the cached body in the local transformer.
                 if instrumentation_added {
                     modified = true;
+                    if let Some(name) = instance_name.as_deref() {
+                        crate::kani_middle::trace::cache_event(
+                            "body_cache_writer",
+                            serde_json::json!({"instance": instance_name.as_deref().unwrap_or_default(), "writer": "DelayedUbPass", "event": "last_writer"}),
+                            crate::kani_middle::trace::matches(name),
+                        );
+                    }
                     transformer.cache.entry(instance).and_modify(|transformation_result| {
                         *transformation_result = TransformationResult(body, true);
                     });

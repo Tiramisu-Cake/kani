@@ -89,6 +89,19 @@ impl GotocCodegenBackend {
         transformer: &mut BodyTransformation,
         thread_pool: &ThreadPool,
     ) -> (MinimalGotocCtx, Vec<MonoItem>, Option<AssignsContract>) {
+        if crate::kani_middle::trace::enabled() {
+            if let Some(MonoItem::Fn(root)) = starting_items.first() {
+                crate::kani_middle::trace::context(root.name().as_str(), "codegen");
+            }
+            crate::kani_middle::trace::event(
+                "codegen_root",
+                serde_json::json!({
+                    "root_count": starting_items.len(),
+                    "roots_preview": starting_items.iter().take(8).map(|item| crate::kani_middle::trace::debug(item)).collect::<Vec<_>>(),
+                    "roots_omitted_count": starting_items.len().saturating_sub(8),
+                }),
+            );
+        }
         // This runs reachability analysis before global passes are applied.
         //
         // Alternatively, we could run reachability only once after the global passes are applied
@@ -113,6 +126,34 @@ impl GotocCodegenBackend {
                 MonoItem::GlobalAsm(_) => None,
             })
             .collect();
+
+        if crate::kani_middle::trace::enabled()
+            && let [MonoItem::Fn(root)] = starting_items
+        {
+            let root_name = crate::kani_middle::trace::clip(root.name().as_str(), 320);
+            if crate::kani_middle::trace::matches(&root_name) {
+                let len_instances: Vec<serde_json::Value> = instances
+                    .iter()
+                    .filter(|instance| instance.name().as_str().contains("IndexRange::len"))
+                    .take(8)
+                    .map(|instance| serde_json::json!({
+                        "instance": crate::kani_middle::trace::clip(instance.name().as_str(), 320),
+                        "mangled_symbol": crate::kani_middle::trace::clip(instance.mangled_name().as_str(), 320),
+                    }))
+                    .collect();
+                let absent = len_instances.is_empty();
+                crate::kani_middle::trace::event(
+                    "function_presence",
+                    serde_json::json!({
+                        "root": root_name,
+                        "function": "IndexRange::len",
+                        "instances": len_instances,
+                        "absent": absent,
+                        "absence_reason": if absent { "unknown; inlining-or-const-fold-possible" } else { "present" },
+                    }),
+                );
+            }
+        }
 
         // Apply all transformation passes, including global passes.
         let any_pass_modified = global_passes.run_global_passes(
@@ -338,6 +379,7 @@ impl CodegenBackend for GotocCodegenBackend {
 
     fn codegen_crate<'tcx>(&self, tcx: TyCtxt<'tcx>) -> Box<dyn Any> {
         let ret_val = rustc_internal::run(tcx, || {
+            let _trace_guard = crate::kani_middle::trace::begin();
             super::utils::init();
 
             // Any changes to queries from this point on is just related to caching information
@@ -403,7 +445,47 @@ impl CodegenBackend for GotocCodegenBackend {
                     let template_passes = GlobalPasses::new(&queries, tcx);
 
                     // Cross-crate collecting of all items that are reachable from the crate harnesses.
-                    for unit in units.iter() {
+                    if crate::kani_middle::trace::configured()
+                        && units.iter().any(|unit| {
+                            unit.harnesses.iter().any(|root| {
+                                crate::kani_middle::trace::matches(root.name().as_str())
+                            })
+                        })
+                    {
+                        crate::kani_middle::trace::activate();
+                        for (unit_index, unit) in units.iter().enumerate() {
+                            crate::kani_middle::trace::event(
+                                "codegen_unit",
+                                serde_json::json!({
+                                    "unit": unit_index, "root_count": unit.harnesses.len(),
+                                    "stub_count": unit.stubs.len(),
+                                }),
+                            );
+                            for (ordinal, root) in unit.harnesses.iter().enumerate() {
+                                crate::kani_middle::trace::event(
+                                    "unit_root",
+                                    serde_json::json!({
+                                        "unit": unit_index, "ordinal": ordinal,
+                                        "root": crate::kani_middle::trace::clip(root.name().as_str(), 320),
+                                    }),
+                                );
+                            }
+                            for (from, to) in &unit.stubs {
+                                crate::kani_middle::trace::event(
+                                    "unit_stub",
+                                    serde_json::json!({
+                                        "unit": unit_index,
+                                        "from": crate::kani_middle::trace::clip(from.name().as_str(), 320),
+                                        "to": crate::kani_middle::trace::clip(to.name().as_str(), 320),
+                                    }),
+                                );
+                            }
+                        }
+                    }
+                    for (unit_index, unit) in units.iter().enumerate() {
+                        if crate::kani_middle::trace::enabled() {
+                            crate::kani_middle::trace::unit(unit_index);
+                        }
                         // Generate a new transformer that will be shared for all harnesses within the codegen unit.
                         // We reset the body cache between units for now because each codegen unit has different
                         // configurations that affect how we transform the instance body.

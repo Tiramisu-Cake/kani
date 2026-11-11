@@ -78,6 +78,7 @@ pub mod provide;
 pub mod reachability;
 pub mod resolve;
 pub mod stubbing;
+pub(crate) mod trace;
 pub mod transform;
 
 /// Check that all crate items are supported and there's no misconfiguration.

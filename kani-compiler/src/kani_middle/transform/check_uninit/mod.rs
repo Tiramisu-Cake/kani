@@ -127,11 +127,82 @@ impl<'a, 'tcx> UninitInstrumenter<'a, 'tcx> {
         // Need to break infinite recursion when memory initialization checks are inserted, so the
         // internal functions responsible for memory initialization are skipped.
         if KaniFunction::try_from(instance).map(|f| SKIPPED_ITEMS.contains(&f)).unwrap_or(false) {
+            if crate::kani_middle::trace::enabled() {
+                let name = crate::kani_middle::trace::clip(instance.name().as_str(), 320);
+                if crate::kani_middle::trace::matches(&name) {
+                    crate::kani_middle::trace::event(
+                        "memory_init_ops",
+                        serde_json::json!({"instance": name, "decision": "skipped", "reason": "internal_mem_init_function_recursion_guard"}),
+                    );
+                }
+            }
             return (false, body);
         }
 
         let orig_len = body.blocks().len();
-        for instruction in target_finder.find_all(&body).into_iter().rev() {
+        let instructions = target_finder.find_all(&body);
+        let instance_name = crate::kani_middle::trace::enabled()
+            .then(|| crate::kani_middle::trace::clip(instance.name().as_str(), 320));
+        if instance_name.as_deref().is_some_and(crate::kani_middle::trace::matches) {
+            let instance_name = instance_name.as_deref().unwrap_or_default();
+            for instruction in &instructions {
+                let before: Vec<&str> = instruction
+                    .before_instruction
+                    .iter()
+                    .take(12)
+                    .map(|op| op.as_ref())
+                    .collect::<Vec<_>>();
+                let after: Vec<&str> = instruction
+                    .after_instruction
+                    .iter()
+                    .take(12)
+                    .map(|op| op.as_ref())
+                    .collect::<Vec<_>>();
+                crate::kani_middle::trace::event(
+                    "memory_init_ops",
+                    serde_json::json!({
+                        "instance": instance_name,
+                        "source": format!("{:?}", instruction.source),
+                        "before": before,
+                        "after": after,
+                        "before_count": instruction.before_instruction.len(),
+                        "after_count": instruction.after_instruction.len(),
+                        "decision": if instruction.before_instruction.is_empty() && instruction.after_instruction.is_empty() { "zero_ops_selected" } else { "ops_selected" },
+                    }),
+                );
+                for (position, operations) in [
+                    ("before", &instruction.before_instruction),
+                    ("after", &instruction.after_instruction),
+                ] {
+                    crate::kani_middle::trace::mark_omission(
+                        "selected_ops_payload",
+                        operations.len().saturating_sub(12),
+                        false,
+                    );
+                    for (ordinal, operation) in operations.iter().take(12).enumerate() {
+                        crate::kani_middle::trace::event(
+                            "memory_init_op",
+                            serde_json::json!({
+                                "instance": instance_name,
+                                "source": format!("{:?}", instruction.source),
+                                "position": position,
+                                "ordinal": ordinal,
+                                "operation": <MemoryInitOp as AsRef<str>>::as_ref(operation),
+                                "details": crate::kani_middle::trace::debug(operation),
+                                "selection_only": true,
+                            }),
+                        );
+                    }
+                }
+            }
+            if instructions.is_empty() {
+                crate::kani_middle::trace::event(
+                    "memory_init_ops",
+                    serde_json::json!({"instance": instance_name, "decision": "zero_instructions", "reason": "body_has_no_visitable_instructions"}),
+                );
+            }
+        }
+        for instruction in instructions.into_iter().rev() {
             let source = instruction.source;
             self.build_check_for_instruction(&mut body, instruction, source);
         }
