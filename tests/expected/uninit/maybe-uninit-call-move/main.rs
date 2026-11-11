@@ -226,20 +226,20 @@ fn consume_union(value: Byte) -> u8 {
 }
 
 #[inline(never)]
-unsafe fn read_union(pointer: *const Byte) -> u8 {
-    unsafe { std::ptr::read_volatile(pointer.cast::<u8>()) }
+unsafe fn read_union(pointer: *const u8) -> u8 {
+    unsafe { std::ptr::read_volatile(pointer) }
 }
 
 #[custom_mir(dialect = "runtime", phase = "optimized")]
 unsafe fn union_move_call(source: Byte) -> (u8, u8) {
     mir! {
         type RET = (u8, u8);
-        let pointer: *const Byte;
+        let pointer: *const u8;
         let callee: u8;
         let observed: u8;
 
         {
-            pointer = std::ptr::addr_of!(source);
+            pointer = std::ptr::addr_of!(source.byte);
             Call(callee = consume_union(Move(source)), ReturnTo(after_call), UnwindContinue())
         }
 
@@ -259,12 +259,12 @@ unsafe fn union_move_call(source: Byte) -> (u8, u8) {
 unsafe fn union_copy_call(source: Byte) -> (u8, u8) {
     mir! {
         type RET = (u8, u8);
-        let pointer: *const Byte;
+        let pointer: *const u8;
         let callee: u8;
         let observed: u8;
 
         {
-            pointer = std::ptr::addr_of!(source);
+            pointer = std::ptr::addr_of!(source.byte);
             Call(callee = consume_union(source), ReturnTo(after_call), UnwindContinue())
         }
 
