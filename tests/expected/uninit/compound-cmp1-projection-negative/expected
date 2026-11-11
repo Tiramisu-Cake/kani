@@ -8,4 +8,6 @@ Verification failed for - drop_impl_read_of_empty_slot_fails
 Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type `usize`
 VERIFICATION:- FAILED
 Verification failed for - dropping_ordinary_field_keeps_empty_manually_dropped_neighbor_empty
-Complete - 1 successfully verified harnesses, 3 failures, 4 total.
+Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type `usize`
+Verification failed for - reset_filled_slot_through_reference_preserves_empty_state
+Complete - 1 successfully verified harnesses, 4 failures, 5 total.

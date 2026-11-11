@@ -96,3 +96,16 @@ fn dropping_ordinary_field_keeps_empty_manually_dropped_neighbor_empty() {
         (*slots)[1].assume_init();
     }
 }
+
+#[kani::proof]
+fn reset_filled_slot_through_reference_preserves_empty_state() {
+    let mut value = C { marker: 41, slots: [MaybeUninit::new(43), MaybeUninit::new(47)] };
+    let mut wrapped = ManuallyDrop::new(&mut value);
+    wrapped.slots[1] = MaybeUninit::uninit();
+    let slice: &[MaybeUninit<usize>] = &wrapped.slots;
+    assert_eq!(unsafe { slice[0].assume_init() }, 43);
+    kani::cover!(true);
+    unsafe {
+        slice[1].assume_init();
+    }
+}
