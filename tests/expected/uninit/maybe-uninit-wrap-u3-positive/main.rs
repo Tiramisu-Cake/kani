@@ -12,6 +12,10 @@ struct Padded {
     value: u64,
 }
 
+// The compiler still injects ghost initialization into this otherwise empty harness.
+#[kani::proof]
+fn empty_harness() {}
+
 #[kani::proof]
 fn scalar_copy() {
     let source: u64 = kani::any();

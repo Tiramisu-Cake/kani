@@ -37,7 +37,11 @@ macro_rules! kani_mem_init {
             pub value: bool,
             /// Union initialization state currently being transferred across a function boundary.
             /// Keep it in the marked state object so DFCC treats it as verifier-private state.
-            pub argument_buffer: Option<ArgumentBuffer>,
+            pub argument_buffer_active: bool,
+            pub argument_buffer_selected_argument: usize,
+            pub argument_buffer_saved_object_id: usize,
+            pub argument_buffer_saved_offset: usize,
+            pub argument_buffer_layout_size: usize,
         }
 
         impl MemoryInitializationState {
@@ -48,7 +52,11 @@ macro_rules! kani_mem_init {
                     tracked_object_id: 0,
                     tracked_offset: 0,
                     value: false,
-                    argument_buffer: None,
+                    argument_buffer_active: false,
+                    argument_buffer_selected_argument: 0,
+                    argument_buffer_saved_object_id: 0,
+                    argument_buffer_saved_offset: 0,
+                    argument_buffer_layout_size: 0,
                 }
             }
 
@@ -228,7 +236,7 @@ macro_rules! kani_mem_init {
                 MEM_INIT_STATE.tracked_object_id = super::any();
                 MEM_INIT_STATE.tracked_offset = super::any();
                 MEM_INIT_STATE.value = false;
-                MEM_INIT_STATE.argument_buffer = None;
+                MEM_INIT_STATE.argument_buffer_active = false;
             }
         }
 
@@ -389,17 +397,6 @@ macro_rules! kani_mem_init {
             copy_init_state::<LAYOUT_SIZE, T>(from, to, 1);
         }
 
-        /// Information about currently tracked argument, used for passing union initialization
-        /// state across function boundaries. This struct is written to by the caller and read from
-        /// by the callee.
-        #[derive(Clone, Copy)]
-        struct ArgumentBuffer {
-            selected_argument: usize,
-            saved_object_id: usize,
-            saved_offset: usize,
-            layout_size: usize,
-        }
-
         /// Non-deterministically store information about currently tracked argument in the argument
         /// buffer.
         #[kanitool::disable_checks(pointer)]
@@ -411,12 +408,11 @@ macro_rules! kani_mem_init {
             // A return has exactly one value to transfer. Arguments compete for the buffer.
             if selected_argument == 0 || super::any() {
                 unsafe {
-                    MEM_INIT_STATE.argument_buffer = Some(ArgumentBuffer {
-                        selected_argument,
-                        saved_object_id,
-                        saved_offset,
-                        layout_size: LAYOUT_SIZE,
-                    })
+                    MEM_INIT_STATE.argument_buffer_selected_argument = selected_argument;
+                    MEM_INIT_STATE.argument_buffer_saved_object_id = saved_object_id;
+                    MEM_INIT_STATE.argument_buffer_saved_offset = saved_offset;
+                    MEM_INIT_STATE.argument_buffer_layout_size = LAYOUT_SIZE;
+                    MEM_INIT_STATE.argument_buffer_active = true;
                 }
             }
         }
@@ -429,23 +425,28 @@ macro_rules! kani_mem_init {
         #[kanitool::fn_marker = "LoadArgumentModel"]
         fn load_argument<const LAYOUT_SIZE: usize, T>(to: *const T, selected_argument: usize) {
             let (to_ptr, _) = to.to_raw_parts();
-            if let Some(buffer) = unsafe { MEM_INIT_STATE.argument_buffer } {
-                if buffer.selected_argument == selected_argument {
-                    assert!(buffer.layout_size == LAYOUT_SIZE);
-                    let to_object_id = super::mem::pointer_object(to_ptr);
-                    let to_offset = super::mem::pointer_offset(to_ptr);
-                    unsafe {
-                        MEM_INIT_STATE.copy_by_id::<LAYOUT_SIZE>(
-                            buffer.saved_object_id,
-                            buffer.saved_offset,
-                            to_object_id,
-                            to_offset,
-                            1,
-                        );
-                        MEM_INIT_STATE.argument_buffer = None;
-                    }
-                    return;
+            if unsafe {
+                MEM_INIT_STATE.argument_buffer_active
+                    && MEM_INIT_STATE.argument_buffer_selected_argument == selected_argument
+            } {
+                let buffer_layout_size = unsafe { MEM_INIT_STATE.argument_buffer_layout_size };
+                assert!(buffer_layout_size == LAYOUT_SIZE);
+                let buffer_saved_object_id =
+                    unsafe { MEM_INIT_STATE.argument_buffer_saved_object_id };
+                let buffer_saved_offset = unsafe { MEM_INIT_STATE.argument_buffer_saved_offset };
+                let to_object_id = super::mem::pointer_object(to_ptr);
+                let to_offset = super::mem::pointer_offset(to_ptr);
+                unsafe {
+                    MEM_INIT_STATE.copy_by_id::<LAYOUT_SIZE>(
+                        buffer_saved_object_id,
+                        buffer_saved_offset,
+                        to_object_id,
+                        to_offset,
+                        1,
+                    );
+                    MEM_INIT_STATE.argument_buffer_active = false;
                 }
+                return;
             }
             unsafe {
                 MEM_INIT_STATE.bless::<LAYOUT_SIZE>(to_ptr as *const u8, 1);
