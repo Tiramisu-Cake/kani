@@ -502,7 +502,7 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                 };
                 let instance_name = instance.name();
                 if instance.kind == InstanceKind::Intrinsic
-                    && instance_name.ends_with("select_unpredictable")
+                    && instance.intrinsic_name().as_deref() == Some("select_unpredictable")
                     && args.iter().any(|arg| self.transfers_shadow(arg.ty(&self.locals).unwrap()))
                 {
                     self.push_target(MemoryInitOp::Unsupported {
