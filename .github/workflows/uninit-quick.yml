@@ -1,0 +1,54 @@
+# Copyright Kani Contributors
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+# CI-only: fast feedback for uninit-checks work. Builds Kani and runs only the suites that use -Z uninit-checks.
+name: M2BS Binding
+on:
+  push:
+    branches:
+      - 'uninit-ci/**'
+  workflow_dispatch:
+
+env:
+  RUST_BACKTRACE: 1
+  KANI_FAIL_ON_UNEXPECTED_DESCRIPTION: "true"
+
+jobs:
+  uninit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout Kani
+        uses: actions/checkout@v6
+
+      - name: Setup Kani Dependencies
+        uses: ./.github/actions/setup
+        with:
+          os: ubuntu-24.04
+
+      - name: Build Kani
+        run: cargo build-dev
+
+      - name: C03 codegen, MIR, properties and trace
+        shell: bash {0}
+        run: |
+          export PATH="$(pwd)/scripts:$PATH"
+          mkdir -p c03 out && cp m2a-cases/ordinary-singleton.rs c03/ && cd c03
+          ( while true; do r=$(ps -C cbmc -o rss= | sort -n | tail -1); if [ -n "$r" ] && [ "$r" -gt 6291456 ]; then echo "WATCHDOG kill cbmc rss=${r}KiB"; pkill -9 cbmc; fi; sleep 2; done ) &
+          RUSTFLAGS="--edition 2021 -D warnings --emit=mir" timeout 300 kani ordinary-singleton.rs --crate-name m2a -Z uninit-checks -Z function-contracts --output-format=regular --harness legal_ordinary_transfer --exact --keep-temps --only-codegen > ../out/codegen.txt 2>&1; echo "codegen exit=$?" | tee -a ../out/exits.txt
+          find . -type f | sort > ../out/files.txt
+          cp *.mir ../out/ 2>/dev/null
+          for g in $(find . -name '*.out' -o -name '*.goto' | grep -v symtab); do echo "GOTO $g" >> ../out/files.txt; done
+          G=$(find . -name '*legal_ordinary_transfer*.out' | grep -v symtab | head -1); echo "goto=$G" >> ../out/exits.txt
+          if [ -n "$G" ]; then timeout 300 cbmc --show-properties --json-ui "$G" > ../out/properties.json 2>&1; echo "props exit=$?" >> ../out/exits.txt; timeout 300 goto-instrument --show-goto-functions "$G" > ../out/goto-functions.txt 2>&1; echo "gotofn exit=$?" >> ../out/exits.txt; fi
+          RUSTFLAGS="--edition 2021 -D warnings" timeout 300 kani ordinary-singleton.rs --crate-name m2a -Z uninit-checks -Z function-contracts --output-format=regular --harness legal_ordinary_transfer --exact -Z unstable-options --cbmc-args --trace > ../out/trace.txt 2>&1; echo "trace exit=$?" >> ../out/exits.txt
+          cd .. && cat out/exits.txt && ls -la out && du -sh out
+
+      - name: Upload binding artifact
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: m2bs-c03
+          path: out/
+          retention-days: 7
