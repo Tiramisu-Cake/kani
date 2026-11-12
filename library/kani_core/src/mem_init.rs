@@ -18,6 +18,10 @@ macro_rules! kani_mem_init {
         #[kanitool::fn_marker = "KaniMemoryInitializationState"]
         static mut MEM_INIT_STATE: MemoryInitializationState = MemoryInitializationState::new();
 
+        /// Private transfer snapshot; DFCC grants writes only to its scalar fields.
+        #[kanitool::fn_marker = "KaniMemoryInitializationArgumentBuffer"]
+        static mut ARGUMENT_BUFFER: ArgumentBuffer = ArgumentBuffer::new();
+
         /// Bytewise mask, representing which bytes of a type are data and which are padding.
         /// For example, for a type like this:
         /// ```
@@ -35,43 +39,48 @@ macro_rules! kani_mem_init {
             pub tracked_object_id: usize,
             pub tracked_offset: usize,
             pub value: bool,
-            /// Shadow initialization state currently being transferred across a function boundary.
-            /// Keep it in the marked state object so DFCC treats it as verifier-private state.
-            pub argument_buffer_active: bool,
-            pub argument_buffer_selected_argument: usize,
-            pub argument_buffer_signature: usize,
-            pub argument_buffer_count: usize,
-            pub argument_buffer_written: usize,
-            pub argument_buffer_remaining: usize,
-            pub argument_buffer_last_stored: usize,
-            pub argument_buffer_last_loaded: usize,
-            pub argument_buffer_has_witness: bool,
-            pub argument_buffer_value: bool,
-            pub argument_buffer_relative_offset: usize,
-            pub argument_buffer_layout_size: usize,
+        }
+
+        /// Source-following snapshot and protocol state, separate from the tracked byte.
+        struct ArgumentBuffer {
+            pub active: bool,
+            pub selected_argument: usize,
+            pub signature: usize,
+            pub count: usize,
+            pub written: usize,
+            pub remaining: usize,
+            pub last_stored: usize,
+            pub last_loaded: usize,
+            pub has_witness: bool,
+            pub value: bool,
+            pub relative_offset: usize,
+            pub layout_size: usize,
+        }
+
+        impl ArgumentBuffer {
+            pub const fn new() -> Self {
+                Self {
+                    active: false,
+                    selected_argument: 0,
+                    signature: 0,
+                    count: 0,
+                    written: 0,
+                    remaining: 0,
+                    last_stored: 0,
+                    last_loaded: 0,
+                    has_witness: false,
+                    value: false,
+                    relative_offset: 0,
+                    layout_size: 0,
+                }
+            }
         }
 
         impl MemoryInitializationState {
             /// This is a dummy initialization function -- the values will be eventually overwritten by a
             /// call to `initialize_memory_initialization_state`.
             pub const fn new() -> Self {
-                Self {
-                    tracked_object_id: 0,
-                    tracked_offset: 0,
-                    value: false,
-                    argument_buffer_active: false,
-                    argument_buffer_selected_argument: 0,
-                    argument_buffer_signature: 0,
-                    argument_buffer_count: 0,
-                    argument_buffer_written: 0,
-                    argument_buffer_remaining: 0,
-                    argument_buffer_last_stored: 0,
-                    argument_buffer_last_loaded: 0,
-                    argument_buffer_has_witness: false,
-                    argument_buffer_value: false,
-                    argument_buffer_relative_offset: 0,
-                    argument_buffer_layout_size: 0,
-                }
+                Self { tracked_object_id: 0, tracked_offset: 0, value: false }
             }
 
             /// Return currently tracked memory initialization state if `ptr` points to the currently
@@ -242,9 +251,9 @@ macro_rules! kani_mem_init {
                 MEM_INIT_STATE.tracked_object_id = super::any();
                 MEM_INIT_STATE.tracked_offset = super::any();
                 MEM_INIT_STATE.value = false;
-                MEM_INIT_STATE.argument_buffer_active = false;
-                MEM_INIT_STATE.argument_buffer_selected_argument = usize::MAX;
-                MEM_INIT_STATE.argument_buffer_has_witness = false;
+                ARGUMENT_BUFFER.active = false;
+                ARGUMENT_BUFFER.selected_argument = usize::MAX;
+                ARGUMENT_BUFFER.has_witness = false;
             }
         }
 
@@ -428,17 +437,17 @@ macro_rules! kani_mem_init {
         #[kanitool::fn_marker = "BeginArgumentTransferModel"]
         fn begin_argument_transfer(signature: usize, argument_count: usize) {
             unsafe {
-                assert!(!MEM_INIT_STATE.argument_buffer_active, "unfinished shadow transfer");
+                assert!(!ARGUMENT_BUFFER.active, "unfinished shadow transfer");
                 assert!(argument_count > 0);
-                MEM_INIT_STATE.argument_buffer_active = true;
-                MEM_INIT_STATE.argument_buffer_signature = signature;
-                MEM_INIT_STATE.argument_buffer_count = argument_count;
-                MEM_INIT_STATE.argument_buffer_written = 0;
-                MEM_INIT_STATE.argument_buffer_remaining = argument_count;
-                MEM_INIT_STATE.argument_buffer_last_stored = 0;
-                MEM_INIT_STATE.argument_buffer_last_loaded = 0;
-                MEM_INIT_STATE.argument_buffer_selected_argument = usize::MAX;
-                MEM_INIT_STATE.argument_buffer_has_witness = false;
+                ARGUMENT_BUFFER.active = true;
+                ARGUMENT_BUFFER.signature = signature;
+                ARGUMENT_BUFFER.count = argument_count;
+                ARGUMENT_BUFFER.written = 0;
+                ARGUMENT_BUFFER.remaining = argument_count;
+                ARGUMENT_BUFFER.last_stored = 0;
+                ARGUMENT_BUFFER.last_loaded = 0;
+                ARGUMENT_BUFFER.selected_argument = usize::MAX;
+                ARGUMENT_BUFFER.has_witness = false;
             }
         }
 
@@ -456,39 +465,32 @@ macro_rules! kani_mem_init {
             let from_offset = super::mem::pointer_offset(from_ptr);
             unsafe {
                 if selected_argument == 0 {
-                    assert!(!MEM_INIT_STATE.argument_buffer_active, "unfinished shadow transfer");
-                    MEM_INIT_STATE.argument_buffer_active = true;
-                    MEM_INIT_STATE.argument_buffer_signature = signature;
-                    MEM_INIT_STATE.argument_buffer_count = 0;
-                    MEM_INIT_STATE.argument_buffer_remaining = 1;
-                    MEM_INIT_STATE.argument_buffer_written = 1;
-                    MEM_INIT_STATE.argument_buffer_last_loaded = 0;
+                    assert!(!ARGUMENT_BUFFER.active, "unfinished shadow transfer");
+                    ARGUMENT_BUFFER.active = true;
+                    ARGUMENT_BUFFER.signature = signature;
+                    ARGUMENT_BUFFER.count = 0;
+                    ARGUMENT_BUFFER.remaining = 1;
+                    ARGUMENT_BUFFER.written = 1;
+                    ARGUMENT_BUFFER.last_loaded = 0;
                 } else {
-                    assert!(
-                        MEM_INIT_STATE.argument_buffer_active,
-                        "missing shadow transfer protocol"
-                    );
-                    assert!(MEM_INIT_STATE.argument_buffer_signature == signature);
-                    assert!(MEM_INIT_STATE.argument_buffer_count > 0);
-                    assert!(
-                        MEM_INIT_STATE.argument_buffer_written
-                            < MEM_INIT_STATE.argument_buffer_count
-                    );
-                    assert!(MEM_INIT_STATE.argument_buffer_last_stored < selected_argument);
-                    MEM_INIT_STATE.argument_buffer_last_stored = selected_argument;
-                    MEM_INIT_STATE.argument_buffer_written += 1;
+                    assert!(ARGUMENT_BUFFER.active, "missing shadow transfer protocol");
+                    assert!(ARGUMENT_BUFFER.signature == signature);
+                    assert!(ARGUMENT_BUFFER.count > 0);
+                    assert!(ARGUMENT_BUFFER.written < ARGUMENT_BUFFER.count);
+                    assert!(ARGUMENT_BUFFER.last_stored < selected_argument);
+                    ARGUMENT_BUFFER.last_stored = selected_argument;
+                    ARGUMENT_BUFFER.written += 1;
                 }
                 // Return zero is mandatory; arguments are a demonic choice, including none.
                 if selected_argument == 0 || super::any() {
-                    MEM_INIT_STATE.argument_buffer_selected_argument = selected_argument;
-                    MEM_INIT_STATE.argument_buffer_layout_size = LAYOUT_SIZE;
-                    MEM_INIT_STATE.argument_buffer_has_witness = MEM_INIT_STATE.tracked_object_id
-                        == from_object
+                    ARGUMENT_BUFFER.selected_argument = selected_argument;
+                    ARGUMENT_BUFFER.layout_size = LAYOUT_SIZE;
+                    ARGUMENT_BUFFER.has_witness = MEM_INIT_STATE.tracked_object_id == from_object
                         && MEM_INIT_STATE.tracked_offset >= from_offset
                         && MEM_INIT_STATE.tracked_offset - from_offset < LAYOUT_SIZE;
-                    MEM_INIT_STATE.argument_buffer_relative_offset =
+                    ARGUMENT_BUFFER.relative_offset =
                         MEM_INIT_STATE.tracked_offset.wrapping_sub(from_offset);
-                    MEM_INIT_STATE.argument_buffer_value = MEM_INIT_STATE.value;
+                    ARGUMENT_BUFFER.value = MEM_INIT_STATE.value;
                 }
             }
         }
@@ -507,44 +509,39 @@ macro_rules! kani_mem_init {
         ) {
             let (to_ptr, _) = to.to_raw_parts();
             unsafe {
-                assert!(MEM_INIT_STATE.argument_buffer_active, "missing shadow transfer protocol");
-                assert!(MEM_INIT_STATE.argument_buffer_signature == signature);
-                assert!(MEM_INIT_STATE.argument_buffer_count == argument_count);
-                assert!(MEM_INIT_STATE.argument_buffer_remaining > 0);
+                assert!(ARGUMENT_BUFFER.active, "missing shadow transfer protocol");
+                assert!(ARGUMENT_BUFFER.signature == signature);
+                assert!(ARGUMENT_BUFFER.count == argument_count);
+                assert!(ARGUMENT_BUFFER.remaining > 0);
                 if selected_argument == 0 {
                     assert!(argument_count == 0);
-                    assert!(MEM_INIT_STATE.argument_buffer_written == 1);
-                    assert!(
-                        MEM_INIT_STATE.argument_buffer_selected_argument == 0,
-                        "missing shadow return"
-                    );
+                    assert!(ARGUMENT_BUFFER.written == 1);
+                    assert!(ARGUMENT_BUFFER.selected_argument == 0, "missing shadow return");
                 } else {
                     assert!(argument_count > 0);
-                    assert!(MEM_INIT_STATE.argument_buffer_written == argument_count);
-                    assert!(MEM_INIT_STATE.argument_buffer_last_loaded < selected_argument);
-                    MEM_INIT_STATE.argument_buffer_last_loaded = selected_argument;
+                    assert!(ARGUMENT_BUFFER.written == argument_count);
+                    assert!(ARGUMENT_BUFFER.last_loaded < selected_argument);
+                    ARGUMENT_BUFFER.last_loaded = selected_argument;
                 }
-                let selected =
-                    MEM_INIT_STATE.argument_buffer_selected_argument == selected_argument;
+                let selected = ARGUMENT_BUFFER.selected_argument == selected_argument;
                 if selected {
-                    assert!(MEM_INIT_STATE.argument_buffer_layout_size == LAYOUT_SIZE);
-                    MEM_INIT_STATE.argument_buffer_selected_argument = usize::MAX;
+                    assert!(ARGUMENT_BUFFER.layout_size == LAYOUT_SIZE);
+                    ARGUMENT_BUFFER.selected_argument = usize::MAX;
                 }
-                if selected && MEM_INIT_STATE.argument_buffer_has_witness && super::any() {
-                    let relative_offset = MEM_INIT_STATE.argument_buffer_relative_offset;
+                if selected && ARGUMENT_BUFFER.has_witness && super::any() {
+                    let relative_offset = ARGUMENT_BUFFER.relative_offset;
                     MEM_INIT_STATE.tracked_object_id = super::mem::pointer_object(to_ptr);
                     MEM_INIT_STATE.tracked_offset =
                         super::mem::pointer_offset(to_ptr) + relative_offset;
-                    MEM_INIT_STATE.value =
-                        MEM_INIT_STATE.argument_buffer_value && layout[relative_offset];
+                    MEM_INIT_STATE.value = ARGUMENT_BUFFER.value && layout[relative_offset];
                 } else {
                     MEM_INIT_STATE.set::<LAYOUT_SIZE>(to_ptr as *const u8, layout, true);
                 }
-                MEM_INIT_STATE.argument_buffer_remaining -= 1;
-                if MEM_INIT_STATE.argument_buffer_remaining == 0 {
-                    assert!(MEM_INIT_STATE.argument_buffer_selected_argument == usize::MAX);
-                    MEM_INIT_STATE.argument_buffer_active = false;
-                    MEM_INIT_STATE.argument_buffer_has_witness = false;
+                ARGUMENT_BUFFER.remaining -= 1;
+                if ARGUMENT_BUFFER.remaining == 0 {
+                    assert!(ARGUMENT_BUFFER.selected_argument == usize::MAX);
+                    ARGUMENT_BUFFER.active = false;
+                    ARGUMENT_BUFFER.has_witness = false;
                 }
             }
         }

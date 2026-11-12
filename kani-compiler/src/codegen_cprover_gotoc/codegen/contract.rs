@@ -6,7 +6,7 @@ use crate::codegen_cprover_gotoc::{
 };
 use crate::kani_middle::attributes::KaniAttributes;
 use cbmc::goto_program::FunctionContract;
-use cbmc::goto_program::{Expr, Lambda, Location};
+use cbmc::goto_program::{Expr, Lambda, Location, Type};
 use kani_metadata::AssignsContract;
 use rustc_hir::def_id::DefId as InternalDefId;
 use rustc_public::CrateDef;
@@ -139,35 +139,65 @@ impl GotocCtx<'_, '_> {
             .typ
             .clone();
 
-        // Find the memory-initialization shadow-memory static. It is tagged with the
-        // `KaniMemoryInitializationState` `fn_marker` (a `#[rustc_diagnostic_item]`
-        // can no longer be applied to statics). Its goto symbol is named after the
-        // static's mangled name, matching `codegen_static`.
+        // Resolve only the two exact verifier-private static identities, matching
+        // declare_static/codegen_static. The transfer snapshot has scalar targets:
+        // no runtime protocol operation writes its whole record or padding.
         let shadow_memory_assign = {
             let mut crates = rustc_public::find_crates("kani");
             if crates.is_empty() {
                 // In case we are using `kani_core`.
                 crates.extend(rustc_public::find_crates("core"));
             }
-            crates
-                .into_iter()
-                .flat_map(|krate| krate.statics())
-                .find(|static_def| {
-                    crate::kani_middle::attributes::fn_marker(*static_def).as_deref()
-                        == Some("KaniMemoryInitializationState")
-                })
-                .map(|static_def| Instance::from(static_def).mangled_name())
-                .and_then(|shadow_memory_table| {
-                    self.symbol_table.lookup(&shadow_memory_table).cloned()
-                })
-                .map(|shadow_memory_symbol| {
-                    vec![Lambda::as_contract_for(
-                        &goto_annotated_fn_typ,
-                        None,
-                        shadow_memory_symbol.to_expr(),
-                    )]
-                })
-                .unwrap_or_default()
+            let statics: Vec<_> = crates.into_iter().flat_map(|krate| krate.statics()).collect();
+            let [main, buffer] =
+                ["KaniMemoryInitializationState", "KaniMemoryInitializationArgumentBuffer"].map(
+                    |marker| {
+                        let mut matching = statics.iter().copied().filter(|static_def| {
+                            crate::kani_middle::attributes::fn_marker(*static_def).as_deref()
+                                == Some(marker)
+                        });
+                        let static_def = matching.next();
+                        assert!(
+                            matching.next().is_none(),
+                            "Expected unique private static marker {marker}"
+                        );
+                        static_def
+                            .map(|def| Instance::from(def).mangled_name())
+                            .and_then(|name| self.symbol_table.lookup(&name).cloned())
+                    },
+                );
+            let uninit_enabled =
+                self.queries.args().ub_check.contains(&crate::args::ExtraChecks::Uninit);
+            if !uninit_enabled && main.is_none() && buffer.is_none() {
+                // Models without uninit instrumentation need neither private object.
+                Vec::new()
+            } else {
+                let main = main.expect("Missing emitted KaniMemoryInitializationState");
+                let buffer =
+                    buffer.expect("Missing emitted KaniMemoryInitializationArgumentBuffer");
+                assert_ne!(main.name, buffer.name, "Private uninit objects must be distinct");
+                let mut assigns =
+                    vec![Lambda::as_contract_for(&goto_annotated_fn_typ, None, main.to_expr())];
+                for (field, expected_type) in [
+                    ("active", Type::c_bool()),
+                    ("selected_argument", Type::size_t()),
+                    ("signature", Type::size_t()),
+                    ("count", Type::size_t()),
+                    ("written", Type::size_t()),
+                    ("remaining", Type::size_t()),
+                    ("last_stored", Type::size_t()),
+                    ("last_loaded", Type::size_t()),
+                    ("has_witness", Type::c_bool()),
+                    ("value", Type::c_bool()),
+                    ("relative_offset", Type::size_t()),
+                    ("layout_size", Type::size_t()),
+                ] {
+                    let target = buffer.to_expr().member(field, &self.symbol_table);
+                    assert_eq!(target.typ(), &expected_type, "Private buffer field {field}");
+                    assigns.push(Lambda::as_contract_for(&goto_annotated_fn_typ, None, target));
+                }
+                assigns
+            }
         };
 
         // The last argument is a tuple with addresses that can be modified.
