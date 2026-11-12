@@ -15,7 +15,10 @@ use std::mem::MaybeUninit;
     raw_eq(&[MaybeUninit::new(7u8); 3], *result)
 })]
 fn promoted_hole() -> &'static [MaybeUninit<u8>; 3] {
-    &[MaybeUninit::uninit(), MaybeUninit::new(7u8), MaybeUninit::new(7u8)]
+    // Evaluate uninit() in a const item, then borrow the immutable constant value.
+    const HOLE: [MaybeUninit<u8>; 3] =
+        [MaybeUninit::uninit(), MaybeUninit::new(7u8), MaybeUninit::new(7u8)];
+    &HOLE
 }
 
 #[kani::proof]
