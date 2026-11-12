@@ -142,7 +142,7 @@ macro_rules! kani_mem_init {
                     let should_reset: bool = super::any();
                     if should_reset {
                         self.tracked_object_id = to_obj;
-                        self.tracked_offset = to_offset + (self.tracked_offset - from_offset);
+                        self.tracked_offset += to_offset - from_offset;
                         // Note that this preserves the value.
                         return;
                     }
