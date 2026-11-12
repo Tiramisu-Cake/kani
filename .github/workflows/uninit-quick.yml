@@ -1,0 +1,35 @@
+# CI-only: run one script-based test on macos-15-intel to compare base and candidate.
+name: Mac Multichareq
+on:
+  push:
+    branches:
+      - 'uninit-ci/**'
+
+jobs:
+  mac:
+    runs-on: macos-15-intel
+    timeout-minutes: 120
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout Kani
+        uses: actions/checkout@v6
+
+      - name: Setup Kani Dependencies
+        uses: ./.github/actions/setup
+        with:
+          os: macos-15-intel
+
+      - name: Build Kani
+        run: cargo build-dev
+
+      - name: Run multichareq test twice
+        shell: bash {0}
+        run: |
+          export PATH="$(pwd)/scripts:$PATH"
+          for i in 1 2; do
+            start=$(date +%s)
+            cargo run -p compiletest --quiet -- --suite script-based-pre --mode exec cargo_autoharness_multichareq_searcher --no-fail-fast --timeout 2400 > out.txt 2>&1; ec=$?
+            echo "ATTEMPT $i exit=$ec seconds=$(( $(date +%s) - start ))"
+            grep -E "test result|FAILED|timed out|Verification Time" out.txt | head -20
+          done
