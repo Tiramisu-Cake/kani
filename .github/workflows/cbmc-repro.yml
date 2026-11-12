@@ -1,0 +1,33 @@
+# CI-only: run CBMC on small C inputs to find a minimal repro.
+name: CBMC Repro
+on:
+  push:
+    branches:
+      - 'uninit-ci/**'
+
+jobs:
+  repro:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout Kani
+        uses: actions/checkout@v6
+
+      - name: Setup Kani Dependencies
+        uses: ./.github/actions/setup
+        with:
+          os: ubuntu-24.04
+
+      - name: Run CBMC
+        shell: bash {0}
+        run: |
+          cbmc --version
+          for f in cbmc-repro/*.c; do
+            echo "::group::$f"
+            timeout 300 cbmc "$f" > out.txt 2>&1; ec=$?
+            grep -E "Invariant|simplify_utils|el_size|VERIFICATION|Reason|\\*\\* |error" out.txt | head -20
+            echo "RESULT $f exit=$ec"
+            echo "::endgroup::"
+          done
