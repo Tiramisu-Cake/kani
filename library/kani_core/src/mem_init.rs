@@ -236,7 +236,6 @@ macro_rules! kani_mem_init {
                 MEM_INIT_STATE.tracked_object_id = super::any();
                 MEM_INIT_STATE.tracked_offset = super::any();
                 MEM_INIT_STATE.value = false;
-                MEM_INIT_STATE.argument_buffer_active = false;
             }
         }
 
@@ -406,7 +405,7 @@ macro_rules! kani_mem_init {
             let saved_object_id = super::mem::pointer_object(from_ptr);
             let saved_offset = super::mem::pointer_offset(from_ptr);
             // A return has exactly one value to transfer. Arguments compete for the buffer.
-            if selected_argument == 0 || super::any() {
+            if super::any() {
                 unsafe {
                     MEM_INIT_STATE.argument_buffer_selected_argument = selected_argument;
                     MEM_INIT_STATE.argument_buffer_saved_object_id = saved_object_id;
