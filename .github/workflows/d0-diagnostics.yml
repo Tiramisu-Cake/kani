@@ -1,0 +1,133 @@
+# Copyright Kani Contributors
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+name: D0 raw_eq diagnostics
+on:
+  push:
+    branches:
+      - 'uninit-ci/**'
+
+permissions:
+  contents: read
+
+env:
+  RUST_BACKTRACE: '1'
+
+jobs:
+  diagnostics:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - name: Checkout CI scripts
+        uses: actions/checkout@v6
+      - name: Initialize artifact directories
+        run: mkdir -p d0-private d0-curated
+      - name: Checkout exact candidate
+        id: candidate_checkout
+        uses: actions/checkout@v6
+        with:
+          ref: 5eec235e3d0eeb99d7e432fcaef3a3135747b789
+          path: candidate
+          fetch-depth: 0
+      - name: Checkout exact baseline
+        id: baseline_checkout
+        if: ${{ !cancelled() }}
+        uses: actions/checkout@v6
+        with:
+          ref: a0a2386001a15fecfe2facc2f6cd87f3dee13b60
+          path: baseline
+          fetch-depth: 0
+      - name: Setup candidate dependencies
+        id: candidate_setup
+        if: ${{ !cancelled() && steps.candidate_checkout.outcome == 'success' }}
+        uses: ./.github/actions/setup
+        with:
+          os: ubuntu-24.04
+          kani_dir: candidate
+      - name: Setup baseline dependencies
+        id: baseline_setup
+        if: ${{ !cancelled() && steps.baseline_checkout.outcome == 'success' }}
+        uses: ./.github/actions/setup
+        with:
+          os: ubuntu-24.04
+          kani_dir: baseline
+      - name: Candidate setup gates and release build
+        id: candidate_build
+        if: ${{ !cancelled() && steps.candidate_setup.outcome == 'success' }}
+        continue-on-error: true
+        run: python3 .github/d0/run.py build candidate candidate d0-private
+      - name: Baseline setup gates and release build
+        id: baseline_build
+        if: ${{ !cancelled() && steps.baseline_setup.outcome == 'success' }}
+        continue-on-error: true
+        run: python3 .github/d0/run.py build baseline baseline d0-private
+      - name: Candidate A B AB BA D
+        id: candidate_cases
+        if: ${{ !cancelled() && steps.candidate_build.outcome == 'success' }}
+        continue-on-error: true
+        run: python3 .github/d0/run.py cases candidate candidate d0-private
+      - name: Baseline A B pair
+        id: baseline_cases
+        if: ${{ !cancelled() && steps.candidate_build.outcome == 'success' && steps.baseline_build.outcome == 'success' }}
+        continue-on-error: true
+        run: python3 .github/d0/run.py cases baseline baseline d0-private
+      - name: Curate reports and preserve all phase outcomes
+        id: curation
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        env:
+          D0_STEP_OUTCOMES: ${{ toJSON(steps) }}
+        run: |
+          python3 -c 'import os,pathlib; pathlib.Path("d0-private/workflow-steps.json").write_text(os.environ["D0_STEP_OUTCOMES"])'
+          cp d0-private/workflow-steps.json d0-curated/workflow-steps.json
+          python3 .github/d0/collect.py d0-private d0-curated
+      - name: Attach infrastructure outcomes and publish summary
+        if: ${{ !cancelled() }}
+        run: |
+          if test -f d0-curated/SUMMARY.md; then
+            cat d0-curated/SUMMARY.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'D0 INCOMPLETE: collector did not produce SUMMARY.md.' > d0-curated/SUMMARY.md
+            cat d0-curated/SUMMARY.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: D0-A curated packet
+        id: curated_upload
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: d0-curated
+          path: d0-curated/
+          retention-days: 7
+          if-no-files-found: error
+      # Access control: repository artifacts have repository-level visibility.
+      # Only the coordinator downloads this packet; D0-A receives d0-curated only.
+      - name: Coordinator private evidence
+        id: private_upload
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: d0-private
+          path: d0-private/
+          retention-days: 7
+          compression-level: 1
+          include-hidden-files: true
+          if-no-files-found: error
+      - name: Infrastructure gate (verification verdicts are in the report)
+        if: ${{ !cancelled() }}
+        env:
+          D0_FINAL_STEPS: ${{ toJSON(steps) }}
+        run: |
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          steps = json.loads(os.environ['D0_FINAL_STEPS'])
+          required = ('candidate_checkout', 'baseline_checkout', 'candidate_setup', 'baseline_setup',
+                      'candidate_build', 'baseline_build', 'candidate_cases', 'baseline_cases',
+                      'curation', 'curated_upload', 'private_upload')
+          failed = [name for name in required if steps.get(name, {}).get('outcome') != 'success']
+          status = json.loads(Path('d0-curated/status.json').read_text())
+          if status.get('curation_exit') != 0:
+              failed.append('curation manifest')
+          if failed:
+              raise SystemExit('D0 infrastructure/curation incomplete: ' + ', '.join(failed))
+          print('D0 collection complete. See original verification and solver exits in d0-curated; no verification PASS claim.')
+          PY
