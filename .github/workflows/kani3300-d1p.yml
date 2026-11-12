@@ -2,16 +2,9 @@
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 name: KANI3300 D1-P diagnostic (no SAT)
 'on':
-  workflow_dispatch:
-    inputs:
-      r1_ci:
-        description: Exact D1-P CI-only commit above R1+skip
-        type: string
-        required: true
-      r6b_ci:
-        description: Exact D1-P CI-only commit above R6-02b
-        type: string
-        required: true
+  push:
+    branches:
+      - 'uninit-ci/d1p-run'
 concurrency:
   group: kani3300-d1p-one-real-cbmc
   cancel-in-progress: false
@@ -25,7 +18,7 @@ jobs:
     - name: Checkout exact CI-only commit
       uses: actions/checkout@v6
       with:
-        ref: ${{ inputs.r1_ci }}
+        ref: 1d0f1d30bfcf8ce64d63716a31a0a9bd3e06c7a0
         fetch-depth: 2
     - name: Identity and allowlist
       id: identity
@@ -83,7 +76,7 @@ jobs:
     - name: Checkout exact CI-only commit
       uses: actions/checkout@v6
       with:
-        ref: ${{ inputs.r6b_ci }}
+        ref: 86f9b171513de7a11eec7587bead1edc6877d950
         fetch-depth: 2
     - name: Identity and allowlist
       id: identity
