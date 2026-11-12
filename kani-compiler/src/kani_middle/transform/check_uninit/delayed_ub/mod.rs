@@ -7,6 +7,7 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 
 use crate::args::ExtraChecks;
+use crate::kani_middle::attributes::KaniAttributes;
 use crate::kani_middle::kani_functions::KaniFunction;
 use crate::kani_middle::{
     points_to::{MemLoc, PointsToGraph, run_points_to_analysis},
@@ -22,8 +23,8 @@ use instrumentation_visitor::InstrumentationVisitor;
 use rustc_middle::ty::TyCtxt;
 use rustc_mir_dataflow::JoinSemiLattice;
 use rustc_public::{
-    mir::MirVisitor,
     mir::mono::{Instance, MonoItem},
+    mir::{MirVisitor, TerminatorKind},
     ty::FnDef,
 };
 use rustc_session::config::OutputType;
@@ -91,6 +92,25 @@ impl GlobalPass for DelayedUbPass {
 
         // Only perform this analysis if there is something to analyze.
         if !targets.is_empty() {
+            // The source register function only panics; the contract pass replaces it with
+            // the closure call. Following the source body loses the generated body's alias
+            // edges, hence its normal-return setters. Use the emitted trampoline, and keep
+            // discarded closures unreachable so analysis cannot re-enter unused contracts.
+            // Other bodies retain the existing analysis path; do not analyze injected checks.
+            let mut body_overrides = HashMap::new();
+            for instance in &instances {
+                let body = transformer.body_ref(tcx, *instance);
+                let is_registration = KaniAttributes::for_instance(tcx, *instance)
+                    .fn_marker()
+                    .is_some_and(|marker| marker.as_str() == "kani_register_contract");
+                let is_discarded_closure = instance.ty().kind().is_closure()
+                    && body.blocks.len() == 1
+                    && body.blocks[0].statements.is_empty()
+                    && matches!(body.blocks[0].terminator.kind, TerminatorKind::Unreachable);
+                if is_registration || is_discarded_closure {
+                    body_overrides.insert(*instance, body.clone());
+                }
+            }
             let mut analysis_targets = HashSet::new();
             let mut global_points_to_graph = PointsToGraph::empty();
             // Analyze aliasing for every harness.
@@ -105,8 +125,12 @@ impl GlobalPass for DelayedUbPass {
                     MonoItem::GlobalAsm(_) => None,
                 };
                 if let Some(instance) = entry_fn {
-                    let body = instance.body().unwrap();
-                    let results = run_points_to_analysis(&body, tcx, instance, call_graph);
+                    let body = body_overrides
+                        .get(&instance)
+                        .cloned()
+                        .unwrap_or_else(|| instance.body().unwrap());
+                    let results =
+                        run_points_to_analysis(&body, tcx, instance, call_graph, &body_overrides);
                     global_points_to_graph.join(&results);
                 }
             }

@@ -1,0 +1,24 @@
+// Copyright Kani Contributors
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+// compile-flags: --edition 2021 -D warnings
+// kani-flags: -Z uninit-checks -Z function-contracts --output-format=regular
+
+#![feature(core_intrinsics)]
+#![allow(internal_features)]
+
+use std::intrinsics::raw_eq;
+use std::mem::MaybeUninit;
+
+// Both references are valid; the first payload read is in the Assert postcondition.
+// Require the right operand's byte check to fail and the initialized companion to pass.
+#[kani::ensures(|result: &&[MaybeUninit<u8>; 3]| unsafe {
+    raw_eq(&[MaybeUninit::new(7u8); 3], *result)
+})]
+fn promoted_hole() -> &'static [MaybeUninit<u8>; 3] {
+    &[MaybeUninit::uninit(), MaybeUninit::new(7u8), MaybeUninit::new(7u8)]
+}
+
+#[kani::proof]
+fn ensures_right_hole() {
+    let _unread = promoted_hole();
+}

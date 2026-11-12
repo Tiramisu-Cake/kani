@@ -47,7 +47,7 @@ use rustc_public::mir::{
 use rustc_public::rustc_internal;
 use rustc_public::ty::{RigidTy as StableRigidTy, Ty as StableTy, TyKind as StableTyKind};
 use rustc_span::Spanned;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 /// Main points-to analysis object.
 struct PointsToAnalysis<'a, 'tcx> {
@@ -58,6 +58,8 @@ struct PointsToAnalysis<'a, 'tcx> {
     /// can resolve call graph edges just by looking at the terminators and erroring if we can't
     /// resolve the callee.
     call_graph: &'a CallGraph,
+    /// Contract registration trampolines and discarded closures must agree with codegen.
+    body_overrides: &'a HashMap<StableInstance, StableBody>,
     /// This graph should contain a subset of the points-to graph reachable from function arguments.
     /// For the entry function it will be empty (as it supposedly does not have any parameters).
     initial_graph: PointsToGraph<'tcx>,
@@ -70,6 +72,7 @@ pub fn run_points_to_analysis<'tcx>(
     tcx: TyCtxt<'tcx>,
     instance: StableInstance,
     call_graph: &CallGraph,
+    body_overrides: &HashMap<StableInstance, StableBody>,
 ) -> PointsToGraph<'tcx> {
     // Dataflow analysis does not yet work with StableMIR, so need to perform backward
     // conversion.
@@ -80,6 +83,7 @@ pub fn run_points_to_analysis<'tcx>(
         tcx,
         internal_instance,
         call_graph,
+        body_overrides,
         PointsToGraph::empty(),
     )
 }
@@ -92,9 +96,10 @@ impl<'a, 'tcx> PointsToAnalysis<'a, 'tcx> {
         tcx: TyCtxt<'tcx>,
         instance: Instance<'tcx>,
         call_graph: &'a CallGraph,
+        body_overrides: &'a HashMap<StableInstance, StableBody>,
         initial_graph: PointsToGraph<'tcx>,
     ) -> PointsToGraph<'tcx> {
-        let analysis = Self { body, tcx, instance, call_graph, initial_graph };
+        let analysis = Self { body, tcx, instance, call_graph, body_overrides, initial_graph };
         // This creates a fixpoint solver using the initial graph, the body, and extra information
         // and solves the dataflow problem, producing the cursor, which contains dataflow state for
         // each instruction in the body.
@@ -443,7 +448,14 @@ impl<'tcx> PointsToAnalysis<'_, 'tcx> {
             let stable_instance = rustc_internal::stable(instance);
             // The shared resolver also queries body(), so absence is guaranteed to have
             // a local Unsupported check. Preserve the graph accumulated before that call.
-            let Some(stable_body) = stable_instance.body() else { return };
+            let Some(stable_body) = self
+                .body_overrides
+                .get(&stable_instance)
+                .cloned()
+                .or_else(|| stable_instance.body())
+            else {
+                return;
+            };
             stable_body.internal_mir(self.tcx)
         };
 
@@ -504,8 +516,14 @@ impl<'tcx> PointsToAnalysis<'_, 'tcx> {
         }
 
         // Run the analysis.
-        let new_result =
-            PointsToAnalysis::run(&new_body, self.tcx, instance, self.call_graph, initial_graph);
+        let new_result = PointsToAnalysis::run(
+            &new_body,
+            self.tcx,
+            instance,
+            self.call_graph,
+            self.body_overrides,
+            initial_graph,
+        );
         // Merge the results into the current state.
         state.join(&new_result);
 
