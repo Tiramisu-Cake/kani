@@ -405,8 +405,8 @@ macro_rules! kani_mem_init {
             let (from_ptr, _) = from.to_raw_parts();
             let saved_object_id = super::mem::pointer_object(from_ptr);
             let saved_offset = super::mem::pointer_offset(from_ptr);
-            // A return has exactly one value to transfer. Arguments compete for the buffer.
-            if selected_argument == 0 || super::any() {
+            // Diagnostic only: let returns compete for the buffer like ordinary arguments.
+            if super::any() {
                 unsafe {
                     MEM_INIT_STATE.argument_buffer_selected_argument = selected_argument;
                     MEM_INIT_STATE.argument_buffer_saved_object_id = saved_object_id;
