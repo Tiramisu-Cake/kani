@@ -155,7 +155,7 @@ pub fn finish() {
         let mut file = OpenOptions::new().write(true).create_new(true).open(path).unwrap();
         let bytes = serde_json::to_vec_pretty(&serde_json::json!({
             "schema": "kani3300-d0/v1", "case": case(), "pid": std::process::id(),
-            "complete_process": true, "counts": counts,
+            "codegen_completed": true, "counts": counts,
             "required_phase_coverage": "CI_MUST_VALIDATE"
         }))
         .unwrap();

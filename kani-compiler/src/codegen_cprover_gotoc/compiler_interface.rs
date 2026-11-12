@@ -452,6 +452,21 @@ impl CodegenBackend for GotocCodegenBackend {
                         // Only worth the extra reachability pass when there are export workers to
                         // overlap with; without them exports happen synchronously on this thread,
                         // so ordering cannot hide any latency and would only add compile time.
+                        if d0::enabled() {
+                            if matches!(d0::case().as_str(), "AB" | "BA" | "D") {
+                                assert!(
+                                    export_thread_pool.has_workers(),
+                                    "D0 paired cases require normal prewarm workers"
+                                );
+                            }
+                            d0::event("prewarm-policy", None, || {
+                                format!(
+                                    "workers={}; roots={}; normal-policy=workers-and-at-least-two-roots",
+                                    export_thread_pool.has_workers(),
+                                    unit.harnesses.len()
+                                )
+                            });
+                        }
                         let mut ordered_harnesses = if export_thread_pool.has_workers() {
                             order_harnesses::<MostReachableItems>(
                                 &unit.harnesses,
