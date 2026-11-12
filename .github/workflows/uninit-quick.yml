@@ -1,0 +1,50 @@
+# Copyright Kani Contributors
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+# CI-only: fast feedback for uninit-checks work. Builds Kani and runs only the suites that use -Z uninit-checks.
+name: M2BR Probe
+on:
+  push:
+    branches:
+      - 'uninit-ci/**'
+  workflow_dispatch:
+
+env:
+  RUST_BACKTRACE: 1
+  KANI_FAIL_ON_UNEXPECTED_DESCRIPTION: "true"
+
+jobs:
+  uninit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout Kani
+        uses: actions/checkout@v6
+
+      - name: Setup Kani Dependencies
+        uses: ./.github/actions/setup
+        with:
+          os: ubuntu-24.04
+
+      - name: Build Kani
+        run: cargo build-dev
+
+      - name: P1 and P2 inventory and solver
+        shell: bash {0}
+        run: |
+          export PATH="$(pwd)/scripts:$PATH"
+          ( while true; do r=$(ps -C cbmc -o rss= | sort -n | tail -1); if [ -n "$r" ] && [ "$r" -gt 6291456 ]; then echo "WATCHDOG kill cbmc rss=${r}KiB"; pkill -9 cbmc; fi; sleep 2; done ) &
+          for x in "P1 scalar-pfc-legal.rs postcondition_reads_initialized_return" "P2 scalar-pfc-hole.rs postcondition_reads_returned_hole"; do
+            set -- $x; mkdir -p probe-$1 && cp m2a-cases/$2 probe-$1/ && cd probe-$1
+            echo "::group::$1 inventory"
+            RUSTFLAGS="--edition 2021 -D warnings" timeout 300 kani $2 --crate-name m2br -Z uninit-checks -Z function-contracts --output-format=regular --harness $3 --exact --keep-temps --only-codegen > cg.txt 2>&1; echo "codegen exit=$?"
+            G=$(find . -name "*$3*.out" | grep -v symtab | head -1); ls -la $G
+            timeout 300 cbmc --show-properties --json-ui "$G" > props.json 2>&1; echo "props exit=$? count=$(grep -c '"name"' props.json)"
+            timeout 300 goto-instrument --count-eloc "$G" 2>&1 | tail -2
+            echo "::endgroup::"
+            echo "::group::$1 solver"
+            RUSTFLAGS="--edition 2021 -D warnings" timeout 300 /usr/bin/time -v kani $2 --crate-name m2br -Z uninit-checks -Z function-contracts --output-format=regular --harness $3 --exact > sv.txt 2>&1; ec=$?
+            grep -E "Failed Checks|^ File|VERIFICATION|Complete -|Maximum resident|Elapsed|WATCHDOG|Generated|size of program|variables|clauses|Runtime" sv.txt | head -30; echo "RESULT $1 exit=$ec"
+            echo "::endgroup::"; cd ..
+          done
