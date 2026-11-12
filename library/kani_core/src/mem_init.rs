@@ -142,14 +142,12 @@ macro_rules! kani_mem_init {
                     let should_reset: bool = super::any();
                     if should_reset {
                         self.tracked_object_id = to_obj;
-                        self.tracked_offset = to_offset + (self.tracked_offset - from_offset);
+                        self.tracked_offset += to_offset - from_offset;
                         // Note that this preserves the value.
-                        return;
                     }
+                } else {
+                    self.bless_by_id::<LAYOUT_SIZE>(to_obj, to_offset, 1);
                 }
-                // If this path did not follow the source byte, do not retain the old state of
-                // overwritten destination bytes. Their new state is checked on the source path.
-                self.bless_by_id::<LAYOUT_SIZE>(to_obj, to_offset, num_elts);
             }
 
             /// Set currently tracked memory initialization state to `true` if `ptr` points to the
