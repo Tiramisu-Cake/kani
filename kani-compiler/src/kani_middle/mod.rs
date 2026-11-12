@@ -69,6 +69,7 @@ pub mod attributes;
 pub mod codegen_order;
 pub mod codegen_units;
 pub mod coercion;
+pub(crate) mod d0_diagnostics;
 mod intrinsics;
 pub mod kani_functions;
 pub mod metadata;

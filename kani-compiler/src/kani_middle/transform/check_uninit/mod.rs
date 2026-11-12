@@ -96,6 +96,7 @@ const SKIPPED_ITEMS: &[KaniFunction] = &[
 /// Instruments the code with checks for uninitialized memory, agnostic to the source of targets.
 pub struct UninitInstrumenter<'a, 'tcx> {
     tcx: TyCtxt<'tcx>,
+    diagnostic_instance: Instance,
     safety_check_type: CheckType,
     unsupported_check_type: CheckType,
     /// Used to cache FnDef lookups of injected memory initialization functions.
@@ -113,8 +114,13 @@ impl<'a, 'tcx> UninitInstrumenter<'a, 'tcx> {
         mem_init_fn_cache: &'a mut HashMap<KaniFunction, FnDef>,
         target_finder: impl TargetFinder,
     ) -> (bool, Body) {
-        let mut instrumenter =
-            Self { tcx, safety_check_type, unsupported_check_type, mem_init_fn_cache };
+        let mut instrumenter = Self {
+            tcx,
+            diagnostic_instance: instance,
+            safety_check_type,
+            unsupported_check_type,
+            mem_init_fn_cache,
+        };
         let body = MutableBody::from(body);
         let (changed, new_body) = instrumenter.instrument(body, instance, target_finder);
         (changed, new_body.into())
@@ -149,6 +155,11 @@ impl<'a, 'tcx> UninitInstrumenter<'a, 'tcx> {
         instruction: InitRelevantInstruction,
         mut source: SourceInstruction,
     ) {
+        crate::kani_middle::d0_diagnostics::event(
+            "source-operations",
+            Some(self.diagnostic_instance),
+            || format!("{instruction:#?}"),
+        );
         for operation in instruction.before_instruction {
             self.build_check_for_operation(body, &mut source, operation);
         }
@@ -159,6 +170,30 @@ impl<'a, 'tcx> UninitInstrumenter<'a, 'tcx> {
 
     /// Inject memory initialization check for an operation.
     fn build_check_for_operation(
+        &mut self,
+        body: &mut MutableBody,
+        source: &mut SourceInstruction,
+        operation: MemoryInitOp,
+    ) {
+        let op_id = crate::kani_middle::d0_diagnostics::record(
+            "shadow-operation",
+            Some(self.diagnostic_instance),
+            || {
+                format!(
+                    "source={source:#?}; operation={operation:#?}; blocks_before={}",
+                    body.blocks().len()
+                )
+            },
+        );
+        self.build_check_for_operation_inner(body, source, operation);
+        crate::kani_middle::d0_diagnostics::event(
+            "shadow-operation-result",
+            Some(self.diagnostic_instance),
+            || format!("op_id={op_id:?}; source_after={source:#?}\n{body:#?}"),
+        );
+    }
+
+    fn build_check_for_operation_inner(
         &mut self,
         body: &mut MutableBody,
         source: &mut SourceInstruction,
@@ -253,13 +288,35 @@ impl<'a, 'tcx> UninitInstrumenter<'a, 'tcx> {
                     | MemoryInitOp::CheckAs { .. }
                     | MemoryInitOp::CheckSliceChunk { .. } => {
                         match PointeeInfo::for_storage(self.tcx, pointee_ty) {
-                            Ok(_) => return,
+                            Ok(_) => {
+                                crate::kani_middle::d0_diagnostics::event(
+                                    "shadow-skip",
+                                    Some(self.diagnostic_instance),
+                                    || {
+                                        format!(
+                                            "source={source:?}; operation={operation:?}; reason=storage-read-exempt"
+                                        )
+                                    },
+                                );
+                                return;
+                            }
                             Err(reason) => Err(reason),
                         }
                     }
                     // The pointer visitor handles writes to this storage, including transfers.
                     // A generic set from delayed UB instrumentation would erase that state.
-                    MemoryInitOp::SetRef { .. } => return,
+                    MemoryInitOp::SetRef { .. } => {
+                        crate::kani_middle::d0_diagnostics::event(
+                            "shadow-skip",
+                            Some(self.diagnostic_instance),
+                            || {
+                                format!(
+                                    "source={source:?}; operation={operation:?}; reason=storage-pointer-visitor-owns-write"
+                                )
+                            },
+                        );
+                        return;
+                    }
                     MemoryInitOp::SetStorage { .. }
                     | MemoryInitOp::AssignUnion { .. }
                     | MemoryInitOp::StoreArgument { .. }
@@ -286,6 +343,17 @@ impl<'a, 'tcx> UninitInstrumenter<'a, 'tcx> {
             }
         };
 
+        crate::kani_middle::d0_diagnostics::event(
+            "shadow-layout",
+            Some(self.diagnostic_instance),
+            || {
+                format!(
+                    "source={source:#?}; operation={operation:#?}; pointee_ty={:?}; layout={:?}",
+                    pointee_info.ty(),
+                    pointee_info.layout()
+                )
+            },
+        );
         match &operation {
             MemoryInitOp::CheckSliceChunk { .. }
             | MemoryInitOp::Check { .. }

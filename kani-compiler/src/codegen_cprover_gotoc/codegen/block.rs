@@ -36,6 +36,11 @@ impl GotocCtx<'_, '_> {
             0 => {
                 let term = &bbd.terminator;
                 let tcode = self.codegen_terminator(term);
+                crate::kani_middle::d0_diagnostics::event(
+                    "goto-terminator",
+                    Some(self.current_fn().instance_stable()),
+                    || format!("bb={bb}; mir={term:#?}\ngoto={tcode:#?}"),
+                );
                 self.current_fn_mut().push_onto_block(tcode.with_label(label));
             }
             _ => {
@@ -49,6 +54,11 @@ impl GotocCtx<'_, '_> {
                 }
                 let term = &bbd.terminator;
                 let tcode = self.codegen_terminator(term);
+                crate::kani_middle::d0_diagnostics::event(
+                    "goto-terminator",
+                    Some(self.current_fn().instance_stable()),
+                    || format!("bb={bb}; mir={term:#?}\ngoto={tcode:#?}"),
+                );
                 self.current_fn_mut().push_onto_block(tcode);
             }
         }

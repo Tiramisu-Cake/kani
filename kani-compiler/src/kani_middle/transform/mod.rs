@@ -17,6 +17,7 @@
 //! For all instrumentation passes, always use exhaustive matches to ensure soundness in case a new
 //! case is added.
 use crate::kani_middle::codegen_units::CodegenUnit;
+use crate::kani_middle::d0_diagnostics as d0;
 use crate::kani_middle::reachability::CallGraph;
 use crate::kani_middle::transform::body::CheckType;
 use crate::kani_middle::transform::check_uninit::{DelayedUbPass, UninitPass};
@@ -150,18 +151,25 @@ impl BodyTransformation {
 
     /// Equivalent to `body()`, but avoids cloning the returned `Body`.
     pub fn body_ref(&mut self, tcx: TyCtxt, instance: Instance) -> &Body {
-        &self
+        let result = &self
             .cache
             .entry(instance)
             .or_insert_with(|| {
                 // Transform and add to the cache if there's no existing entry.
                 let mut body = instance.body().unwrap_or_else(|| build_missing_body(tcx, instance));
 
+                d0::event("mir-original", Some(instance), || format!("{body:#?}"));
                 let mut modified = false;
                 for pass in self.stub_passes.iter_mut().chain(self.inst_passes.iter_mut()) {
+                    d0::event("local-pass-before", Some(instance), || {
+                        format!("pass={pass:?}\n{body:#?}")
+                    });
                     let result = pass.transform(tcx, body, instance);
                     modified |= result.0;
                     body = result.1;
+                    d0::event("local-pass-after", Some(instance), || {
+                        format!("pass={pass:?}\n{body:#?}")
+                    });
                     self.generated_loop_modifies.extend(
                         pass.take_generated_loop_modifies()
                             .into_iter()
@@ -174,9 +182,12 @@ impl BodyTransformation {
                     );
                 }
 
+                d0::event("cache-write-local", Some(instance), || format!("{body:#?}"));
                 TransformationResult(body, modified)
             })
-            .0
+            .0;
+        d0::event("cache-read", Some(instance), || format!("{result:#?}"));
+        result
     }
 
     /// The locals of the transformed body of `instance` that codegen adds to the loop modifies

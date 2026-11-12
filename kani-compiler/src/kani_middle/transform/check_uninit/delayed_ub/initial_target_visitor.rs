@@ -50,7 +50,14 @@ impl InitialTargetVisitor {
                 // Extract the static from the constant.
                 if let ConstantKind::Allocated(allocation) = constant.const_.kind() {
                     for (_, prov) in &allocation.provenance.ptrs {
-                        if let GlobalAlloc::Static(static_def) = GlobalAlloc::from(prov.0) {
+                        let referent = GlobalAlloc::from(prov.0);
+                        crate::kani_middle::d0_diagnostics::event("seed-provenance", None, || {
+                            format!(
+                                "operand={operand:#?}; alloc_id={:?}; referent={referent:#?}; selection=only-Static-is-a-seed",
+                                prov.0
+                            )
+                        });
+                        if let GlobalAlloc::Static(static_def) = referent {
                             self.targets.push(AnalysisTarget::Static(static_def));
                         };
                     }

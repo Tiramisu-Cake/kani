@@ -12,6 +12,7 @@ use crate::kani_middle::attributes::KaniAttributes;
 use crate::kani_middle::check_reachable_items;
 use crate::kani_middle::codegen_order::{MostReachableItems, order_harnesses};
 use crate::kani_middle::codegen_units::{CodegenUnit, CodegenUnits};
+use crate::kani_middle::d0_diagnostics as d0;
 use crate::kani_middle::provide;
 use crate::kani_middle::reachability::{collect_reachable_items, filter_crate_items};
 use crate::kani_middle::transform::{BodyTransformation, GlobalPasses};
@@ -386,6 +387,9 @@ impl CodegenBackend for GotocCodegenBackend {
                 return codegen_results();
             }
 
+            if d0::enabled() {
+                assert_eq!(reachability, ReachabilityType::Harnesses, "D0 requires Harnesses");
+            }
             // Create an empty thread pool. We will set the size later once we
             // concretely know the # of harnesses we need to analyze.
             let mut export_thread_pool = ThreadPool::empty();
@@ -393,6 +397,14 @@ impl CodegenBackend for GotocCodegenBackend {
             match reachability {
                 ReachabilityType::AllFns | ReachabilityType::Harnesses => {
                     let mut units = CodegenUnits::new(&queries, tcx);
+                    if d0::enabled() {
+                        assert_eq!(
+                            reachability,
+                            ReachabilityType::Harnesses,
+                            "D0 requires Harnesses"
+                        );
+                        assert_eq!(units.iter().count(), 1, "D0 requires exactly one unit");
+                    }
                     let mut modifies_instances = vec![];
                     let mut loop_contracts_instances = vec![];
 
@@ -404,6 +416,26 @@ impl CodegenBackend for GotocCodegenBackend {
 
                     // Cross-crate collecting of all items that are reachable from the crate harnesses.
                     for unit in units.iter() {
+                        if d0::enabled() {
+                            let mut roots: Vec<_> = unit
+                                .harnesses
+                                .iter()
+                                .map(|harness| crate::kani_middle::readable_name(*harness))
+                                .collect();
+                            roots.sort();
+                            let mut expected = match d0::case().as_str() {
+                                "A" => vec![d0::A.to_string()],
+                                "B" => vec![d0::B.to_string()],
+                                "AB" | "BA" | "D" => vec![d0::A.to_string(), d0::B.to_string()],
+                                _ => panic!("unknown D0 case"),
+                            };
+                            expected.sort();
+                            assert_eq!(roots, expected, "D0 extra/missing roots");
+                            d0::context("", "unit");
+                            d0::event("unit", None, || {
+                                format!("{unit:#?}; machine_model={:#?}", results.machine_model)
+                            });
+                        }
                         // Generate a new transformer that will be shared for all harnesses within the codegen unit.
                         // We reset the body cache between units for now because each codegen unit has different
                         // configurations that affect how we transform the instance body.
@@ -420,7 +452,7 @@ impl CodegenBackend for GotocCodegenBackend {
                         // Only worth the extra reachability pass when there are export workers to
                         // overlap with; without them exports happen synchronously on this thread,
                         // so ordering cannot hide any latency and would only add compile time.
-                        let ordered_harnesses = if export_thread_pool.has_workers() {
+                        let mut ordered_harnesses = if export_thread_pool.has_workers() {
                             order_harnesses::<MostReachableItems>(
                                 &unit.harnesses,
                                 tcx,
@@ -430,7 +462,31 @@ impl CodegenBackend for GotocCodegenBackend {
                             unit.harnesses.iter().collect()
                         };
 
+                        if d0::enabled() {
+                            d0::context("", "order");
+                            d0::event("normal-order", None, || {
+                                format!(
+                                    "workers={} order={ordered_harnesses:#?}",
+                                    export_thread_pool.has_workers()
+                                )
+                            });
+                            match d0::case().as_str() {
+                                "AB" => ordered_harnesses.sort_by_key(|h| {
+                                    crate::kani_middle::readable_name(**h) != d0::A
+                                }),
+                                "BA" => ordered_harnesses.sort_by_key(|h| {
+                                    crate::kani_middle::readable_name(**h) != d0::B
+                                }),
+                                "A" | "B" | "D" => {}
+                                _ => unreachable!(),
+                            }
+                            d0::event("actual-order", None, || format!("{ordered_harnesses:#?}"));
+                        }
                         for harness in ordered_harnesses {
+                            if d0::enabled() {
+                                d0::context(&harness.mangled_name(), "codegen");
+                                d0::event("harness-begin", None, || format!("{harness:#?}"));
+                            }
                             clear_codegen_cache();
 
                             let model_path = units.harness_model_path(*harness).unwrap();
@@ -497,6 +553,7 @@ impl CodegenBackend for GotocCodegenBackend {
             // Join all the worker threads in the pool to ensure all goto files have been written before
             // moving on to verification.
             export_thread_pool.join_all();
+            d0::finish();
 
             if reachability != ReachabilityType::None {
                 // Print compilation report.

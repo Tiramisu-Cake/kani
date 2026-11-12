@@ -63,8 +63,17 @@ pub fn order_harnesses<'a, H: CodegenHeuristic>(
     let mut rated: Vec<(&Harness, usize)> = harnesses
         .iter()
         .map(|harness| {
+            if crate::kani_middle::d0_diagnostics::enabled() {
+                crate::kani_middle::d0_diagnostics::context(&harness.mangled_name(), "prewarm");
+                crate::kani_middle::d0_diagnostics::event("prewarm-begin", None, || {
+                    format!("{harness:#?}")
+                });
+            }
             let (reachable, _call_graph) =
                 collect_reachable_items(tcx, transformer, &[MonoItem::Fn(*harness)]);
+            crate::kani_middle::d0_diagnostics::event("prewarm-end", None, || {
+                format!("{harness:#?}; reachable={}", reachable.len())
+            });
             (harness, H::rate(&reachable))
         })
         .collect();

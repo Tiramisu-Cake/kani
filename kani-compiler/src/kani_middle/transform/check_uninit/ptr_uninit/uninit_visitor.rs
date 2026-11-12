@@ -561,7 +561,17 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                                 self.push_target(MemoryInitOp::Check { operand: args[0].clone() });
                             }
                             Intrinsic::RawEq => {
-                                for operand in args {
+                                for (operand_index, operand) in args.iter().enumerate() {
+                                    crate::kani_middle::d0_diagnostics::event(
+                                        "raw-eq-operand",
+                                        Some(self.instance),
+                                        || {
+                                            format!(
+                                                "location={location:#?}; index={operand_index}; operand={operand:#?}; type={:?}; term={term:#?}",
+                                                operand.ty(&self.locals)
+                                            )
+                                        },
+                                    );
                                     let TyKind::RigidTy(RigidTy::Ref(_, pointee_ty, _)) =
                                         operand.ty(&self.locals).unwrap().kind()
                                     else {

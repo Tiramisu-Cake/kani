@@ -448,6 +448,11 @@ impl<'tcx, 'r> GotocCtx<'tcx, 'r> {
         loc: Location,
     ) -> Expr {
         debug!(?res_t, ?alloc_id, "codegen_alloc_pointer");
+        crate::kani_middle::d0_diagnostics::event("referent-before-lowering", None, || {
+            format!(
+                "alloc_id={alloc_id:?}; offset={offset:?}; result_type={res_t:#?}; location={loc:#?}"
+            )
+        });
         let base_addr = match GlobalAlloc::from(alloc_id) {
             GlobalAlloc::Function(instance) => {
                 // We want to return the function pointer (not to be confused with function item)
@@ -463,6 +468,9 @@ impl<'tcx, 'r> GotocCtx<'tcx, 'r> {
                 }
             }
             GlobalAlloc::Memory(alloc) => {
+                crate::kani_middle::d0_diagnostics::event("referent-allocation", None, || {
+                    format!("alloc_id={alloc_id:?}; allocation={alloc:#?}")
+                });
                 // Full (mangled) crate name added so that allocations from different
                 // crates do not conflict. The name alone is insufficient because Rust
                 // allows different versions of the same crate to be used.
@@ -481,6 +489,11 @@ impl<'tcx, 'r> GotocCtx<'tcx, 'r> {
             }
             GlobalAlloc::TypeId { ty: _ } => todo!(),
         };
+        crate::kani_middle::d0_diagnostics::event("referent-symbol", None, || {
+            format!(
+                "alloc_id={alloc_id:?}; offset={offset:?}; address={base_addr:#?}; location={loc:#?}"
+            )
+        });
         assert!(res_t.is_pointer() || res_t.is_transparent_type(&self.symbol_table));
         let offset_addr = base_addr
             .cast_to(Type::unsigned_int(8).to_pointer())
@@ -562,6 +575,12 @@ impl<'tcx, 'r> GotocCtx<'tcx, 'r> {
         is_definitely_const: bool,
     ) -> Expr {
         debug!(?name, ?alloc, "codegen_const_allocation");
+        crate::kani_middle::d0_diagnostics::event("allocation-before-lowering", None, || {
+            format!(
+                "allocation={alloc:#?}; requested_name={name:#?}; reuse={:?}; location={loc:#?}; is_definitely_const={is_definitely_const}",
+                self.alloc_map.get(alloc)
+            )
+        });
         let alloc_name = match self.alloc_map.get(alloc) {
             None => {
                 let alloc_name = if let Some(name) = name { name } else { self.next_global_name() };
@@ -578,6 +597,9 @@ impl<'tcx, 'r> GotocCtx<'tcx, 'r> {
             Some(name) => name.clone(),
         };
 
+        crate::kani_middle::d0_diagnostics::event("allocation-symbol", None, || {
+            format!("allocation={alloc:#?}; symbol={alloc_name}")
+        });
         let mem_place = self.symbol_table.lookup(alloc_name).unwrap().to_expr();
         mem_place.address_of()
     }

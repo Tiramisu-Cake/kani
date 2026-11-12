@@ -74,6 +74,11 @@ impl GotocCtx<'_, '_> {
             .with_is_hidden(!self.is_user_variable(&lc))
             .with_is_parameter((lc > 0 && lc <= num_args) && !self.is_zst_stable(ldata.ty));
             let sym_e = sym.to_expr();
+            crate::kani_middle::d0_diagnostics::event(
+                "goto-local",
+                Some(self.current_fn().instance_stable()),
+                || format!("local={lc}; mir_decl={ldata:#?}; goto_symbol={sym:#?}"),
+            );
             self.symbol_table.insert(sym);
 
             // Store the parameter symbols of the function, which will be used for function
@@ -108,6 +113,11 @@ impl GotocCtx<'_, '_> {
                 return;
             }
             let body = self.transformer.body(self.tcx, instance);
+            crate::kani_middle::d0_diagnostics::event(
+                "codegen-consumed-mir",
+                Some(instance),
+                || format!("{body:#?}"),
+            );
             self.set_current_fn(instance, &body);
             self.print_instance(instance, &body);
             self.codegen_function_prelude(&body);
@@ -135,6 +145,9 @@ impl GotocCtx<'_, '_> {
             let loc = self.codegen_span_stable(instance.def.span());
             let stmts = self.current_fn_mut().extract_block();
             let goto_body = Stmt::block(stmts, loc);
+            crate::kani_middle::d0_diagnostics::event("goto-body", Some(instance), || {
+                format!("{goto_body:#?}")
+            });
             self.symbol_table.update_fn_declaration_with_definition(&name, goto_body);
             self.reset_current_fn();
         }

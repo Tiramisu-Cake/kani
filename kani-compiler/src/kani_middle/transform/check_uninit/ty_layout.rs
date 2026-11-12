@@ -43,6 +43,7 @@ fn generate_byte_mask(size_in_bytes: usize, data_chunks: Vec<DataBytes>) -> Vec<
 
 // Depending on whether the type is statically or dynamically sized,
 // the layout of the element or the layout of the actual type is returned.
+#[derive(Debug)]
 pub enum PointeeLayout {
     /// Layout of sized objects.
     Sized { layout: Layout },

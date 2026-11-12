@@ -7,6 +7,7 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 
 use crate::args::ExtraChecks;
+use crate::kani_middle::d0_diagnostics as d0;
 use crate::kani_middle::kani_functions::KaniFunction;
 use crate::kani_middle::{
     points_to::{MemLoc, PointsToGraph, run_points_to_analysis},
@@ -74,20 +75,24 @@ impl GlobalPass for DelayedUbPass {
             .flat_map(|instance| {
                 let body = instance.body().unwrap();
                 let mut visitor = InitialTargetVisitor::new(body.clone());
+                d0::event("seed-body", Some(*instance), || format!("{body:#?}"));
                 visitor.visit_body(&body);
                 // Convert all places into the format of aliasing graph for later comparison.
                 visitor.into_targets().into_iter().map(move |analysis_target| match analysis_target
                 {
                     AnalysisTarget::Place(place) => {
+                        d0::event("seed-place", Some(*instance), || format!("{place:#?}"));
                         MemLoc::from_stable_stack_allocation(*instance, place, tcx)
                     }
                     AnalysisTarget::Static(static_def) => {
+                        d0::event("seed-static", Some(*instance), || format!("{static_def:#?}"));
                         MemLoc::from_stable_static_allocation(static_def, tcx)
                     }
                 })
             })
             .collect();
 
+        d0::event("seeds", None, || format!("{targets:#?}"));
         // Only perform this analysis if there is something to analyze.
         if !targets.is_empty() {
             let mut analysis_targets = HashSet::new();
@@ -106,12 +111,20 @@ impl GlobalPass for DelayedUbPass {
                 if let Some(instance) = entry_fn {
                     let body = instance.body().unwrap();
                     let results = run_points_to_analysis(&body, tcx, instance, call_graph);
+                    d0::event("points-to-root-before-join", None, || {
+                        format!("root={instance:#?}\n{results:#?}")
+                    });
                     global_points_to_graph.join(&results);
                 }
             }
 
             // Since analysis targets are *pointers*, need to get its successors for instrumentation.
             analysis_targets.extend(global_points_to_graph.successors(&targets));
+            d0::event("points-to-joined", None, || {
+                format!(
+                    "graph={global_points_to_graph:#?}\nseeds={targets:#?}\nsuccessors={analysis_targets:#?}"
+                )
+            });
 
             // If we are generating MIR, generate the points-to graph as well.
             if tcx.sess.opts.output_types.contains_key(&OutputType::Mir) {
@@ -122,6 +135,7 @@ impl GlobalPass for DelayedUbPass {
             for instance in instances {
                 // Retrieve the body with all local instrumentation passes applied.
                 let body = transformer.body(tcx, instance);
+                d0::event("delayed-before", Some(instance), || format!("{body:#?}"));
                 // Instrument for delayed UB.
                 let target_finder = InstrumentationVisitor::new(
                     &global_points_to_graph,
@@ -139,9 +153,13 @@ impl GlobalPass for DelayedUbPass {
                     target_finder,
                 );
                 // If some instrumentation has been performed, update the cached body in the local transformer.
+                d0::event("delayed-after", Some(instance), || {
+                    format!("changed={instrumentation_added}\n{body:#?}")
+                });
                 if instrumentation_added {
                     modified = true;
                     transformer.cache.entry(instance).and_modify(|transformation_result| {
+                        d0::event("cache-write-delayed", Some(instance), || format!("{body:#?}"));
                         *transformation_result = TransformationResult(body, true);
                     });
                 }
