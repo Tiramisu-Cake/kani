@@ -11,6 +11,8 @@
 #[allow(clippy::crate_in_macro_def)]
 macro_rules! kani_mem_init {
     ($core:path) => {
+        use $core as kani_mem_init_core;
+
         /// Global object for tracking memory initialization state.
         // `#[rustc_diagnostic_item]` cannot be applied to statics (rust-lang/rust
         // disallows it), so we identify this static via Kani's own `fn_marker` tool
@@ -53,7 +55,8 @@ macro_rules! kani_mem_init {
             pub last_loaded: usize,
             pub has_witness: bool,
             pub value: bool,
-            pub relative_offset: usize,
+            pub saved_base: *const u8,
+            pub saved_byte: *const u8,
             pub layout_size: usize,
         }
 
@@ -70,7 +73,8 @@ macro_rules! kani_mem_init {
                     last_loaded: 0,
                     has_witness: false,
                     value: false,
-                    relative_offset: 0,
+                    saved_base: kani_mem_init_core::ptr::null(),
+                    saved_byte: kani_mem_init_core::ptr::null(),
                     layout_size: 0,
                 }
             }
@@ -485,12 +489,38 @@ macro_rules! kani_mem_init {
                 if selected_argument == 0 || super::any() {
                     ARGUMENT_BUFFER.selected_argument = selected_argument;
                     ARGUMENT_BUFFER.layout_size = LAYOUT_SIZE;
-                    ARGUMENT_BUFFER.has_witness = MEM_INIT_STATE.tracked_object_id == from_object
+                    let has_witness = MEM_INIT_STATE.tracked_object_id == from_object
                         && MEM_INIT_STATE.tracked_offset >= from_offset
                         && MEM_INIT_STATE.tracked_offset - from_offset < LAYOUT_SIZE;
-                    ARGUMENT_BUFFER.relative_offset =
-                        MEM_INIT_STATE.tracked_offset.wrapping_sub(from_offset);
-                    ARGUMENT_BUFFER.value = MEM_INIT_STATE.value;
+                    let captured_value = MEM_INIT_STATE.value;
+                    let (saved_base, saved_byte) = if has_witness {
+                        let relative_offset =
+                            MEM_INIT_STATE.tracked_offset.wrapping_sub(from_offset);
+                        assert!(relative_offset < LAYOUT_SIZE, "shadow carrier store range");
+                        let saved_base = from_ptr.cast::<u8>();
+                        let saved_byte = saved_base.wrapping_add(relative_offset);
+                        // Metadata only: no reference or read of possibly uninitialized data.
+                        assert!(
+                            super::mem::pointer_object(saved_byte)
+                                == super::mem::pointer_object(saved_base),
+                            "shadow carrier store object"
+                        );
+                        let base_offset = super::mem::pointer_offset(saved_base);
+                        let byte_offset = super::mem::pointer_offset(saved_byte);
+                        assert!(base_offset == from_offset, "shadow carrier store base");
+                        assert!(byte_offset >= base_offset, "shadow carrier store offset wrap");
+                        assert!(
+                            byte_offset.wrapping_sub(base_offset) == relative_offset,
+                            "shadow carrier store round trip"
+                        );
+                        (saved_base, saved_byte)
+                    } else {
+                        (kani_mem_init_core::ptr::null(), kani_mem_init_core::ptr::null())
+                    };
+                    ARGUMENT_BUFFER.has_witness = has_witness;
+                    ARGUMENT_BUFFER.saved_base = saved_base;
+                    ARGUMENT_BUFFER.saved_byte = saved_byte;
+                    ARGUMENT_BUFFER.value = captured_value;
                 }
             }
         }
@@ -529,7 +559,19 @@ macro_rules! kani_mem_init {
                     ARGUMENT_BUFFER.selected_argument = usize::MAX;
                 }
                 if selected && ARGUMENT_BUFFER.has_witness && super::any() {
-                    let relative_offset = ARGUMENT_BUFFER.relative_offset;
+                    let saved_base = ARGUMENT_BUFFER.saved_base;
+                    let saved_byte = ARGUMENT_BUFFER.saved_byte;
+                    // The source may be dead. Decode stored bits, never its bytes or shadow.
+                    assert!(
+                        super::mem::pointer_object(saved_byte)
+                            == super::mem::pointer_object(saved_base),
+                        "shadow carrier load object"
+                    );
+                    let base_offset = super::mem::pointer_offset(saved_base);
+                    let byte_offset = super::mem::pointer_offset(saved_byte);
+                    assert!(byte_offset >= base_offset, "shadow carrier load offset wrap");
+                    let relative_offset = byte_offset.wrapping_sub(base_offset);
+                    assert!(relative_offset < LAYOUT_SIZE, "shadow carrier load range");
                     MEM_INIT_STATE.tracked_object_id = super::mem::pointer_object(to_ptr);
                     MEM_INIT_STATE.tracked_offset =
                         super::mem::pointer_offset(to_ptr) + relative_offset;

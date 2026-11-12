@@ -189,7 +189,8 @@ impl GotocCtx<'_, '_> {
                     ("last_loaded", Type::size_t()),
                     ("has_witness", Type::c_bool()),
                     ("value", Type::c_bool()),
-                    ("relative_offset", Type::size_t()),
+                    ("saved_base", Type::unsigned_int(8).to_pointer()),
+                    ("saved_byte", Type::unsigned_int(8).to_pointer()),
                     ("layout_size", Type::size_t()),
                 ] {
                     let target = buffer.to_expr().member(field, &self.symbol_table);
