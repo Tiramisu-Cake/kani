@@ -17,7 +17,8 @@ use rustc_public::{
 use strum_macros::AsRefStr;
 
 /// Memory initialization operations: set or get memory initialization state for a given pointer.
-#[derive(AsRefStr, Clone, Debug, serde::Serialize)]
+#[cfg_attr(feature = "cprover", derive(serde::Serialize))]
+#[derive(AsRefStr, Clone, Debug)]
 pub enum MemoryInitOp {
     /// Check memory initialization of data bytes in a memory region starting from the pointer
     /// `operand` and of length `sizeof(operand)` bytes.
@@ -285,7 +286,8 @@ impl MemoryInitOp {
 /// Represents an instruction in the source code together with all memory initialization checks/sets
 /// that are connected to the memory used in this instruction and whether they should be inserted
 /// before or after the instruction.
-#[derive(Clone, Debug, serde::Serialize)]
+#[cfg_attr(feature = "cprover", derive(serde::Serialize))]
+#[derive(Clone, Debug)]
 pub struct InitRelevantInstruction {
     /// The instruction that affects the state of the memory.
     pub source: SourceInstruction,

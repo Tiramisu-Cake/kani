@@ -35,12 +35,18 @@ thread_local! {
     static OBSERVER: RefCell<Observer> = RefCell::new(Observer::default());
 }
 
+#[cfg(feature = "cprover")]
 pub fn encoded(value: &impl serde::Serialize) -> String {
     serde_json::to_string(value).expect("D0 serialization")
 }
 
+#[cfg(not(feature = "cprover"))]
+pub fn encoded<T: ?Sized>(_value: &T) -> String {
+    unreachable!("D0 diagnostics require the CProver backend")
+}
+
 pub fn enabled() -> bool {
-    std::env::var_os("KANI_D0_DIR").is_some()
+    cfg!(feature = "cprover") && std::env::var_os("KANI_D0_DIR").is_some()
 }
 
 pub fn case() -> String {
