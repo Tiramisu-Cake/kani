@@ -1,0 +1,47 @@
+# Copyright Kani Contributors
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+# CI-only: fast feedback for uninit-checks work. Builds Kani and runs only the suites that use -Z uninit-checks.
+name: M2A Probe
+on:
+  push:
+    branches:
+      - 'uninit-ci/**'
+  workflow_dispatch:
+
+env:
+  RUST_BACKTRACE: 1
+  KANI_FAIL_ON_UNEXPECTED_DESCRIPTION: "true"
+
+jobs:
+  uninit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout Kani
+        uses: actions/checkout@v6
+
+      - name: Setup Kani Dependencies
+        uses: ./.github/actions/setup
+        with:
+          os: ubuntu-24.04
+
+      - name: Build Kani
+        run: cargo build-dev
+
+      - name: M2-A singleton configurations
+        shell: bash {0}
+        run: |
+          export PATH="$(pwd)/scripts:$PATH"
+          ( while true; do r=$(ps -C cbmc -o rss= | sort -n | tail -1); if [ -n "$r" ] && [ "$r" -gt 6291456 ]; then echo "WATCHDOG kill cbmc rss=${r}KiB"; pkill -9 cbmc; fi; sleep 2; done ) &
+          run() { id=$1; shift; echo "::group::$id"; RUSTFLAGS="--edition 2021 -D warnings" timeout 300 /usr/bin/time -v kani "$@" > out.txt 2>&1; ec=$?
+            grep -E "Checking harness|Failed Checks|^ File:|VERIFICATION|Complete -|Maximum resident|Elapsed|WATCHDOG|panicked|error:" out.txt | head -40
+            echo "RESULT $id exit=$ec"; echo "::endgroup::"; echo "RESULT $id exit=$ec" >> summary.txt; }
+          run C03 m2a-cases/ordinary-singleton.rs --crate-name m2a -Z uninit-checks -Z function-contracts --output-format=regular --harness legal_ordinary_transfer --exact
+          run C04 m2a-cases/ordinary-singleton.rs --crate-name m2a -Z uninit-checks -Z function-contracts --no-assert-contracts --output-format=regular --harness legal_ordinary_transfer --exact
+          run C05 m2a-cases/undecorated-singleton.rs --crate-name m2a -Z uninit-checks --output-format=regular --harness legal_ordinary_transfer --exact
+          run C06 m2a-cases/undecorated-singleton.rs --crate-name m2a -Z uninit-checks -Z function-contracts --output-format=regular --harness legal_ordinary_transfer --exact
+          run P1 m2a-cases/scalar-pfc-legal.rs --crate-name m2a -Z uninit-checks -Z function-contracts --output-format=regular
+          run P2 m2a-cases/scalar-pfc-hole.rs --crate-name m2a -Z uninit-checks -Z function-contracts --output-format=regular
+          cat summary.txt
