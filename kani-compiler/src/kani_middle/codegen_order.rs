@@ -66,13 +66,17 @@ pub fn order_harnesses<'a, H: CodegenHeuristic>(
             if crate::kani_middle::d0_diagnostics::enabled() {
                 crate::kani_middle::d0_diagnostics::context(&harness.mangled_name(), "prewarm");
                 crate::kani_middle::d0_diagnostics::event("prewarm-begin", None, || {
-                    format!("{harness:#?}")
+                    crate::kani_middle::d0_diagnostics::encoded(harness)
                 });
             }
             let (reachable, _call_graph) =
                 collect_reachable_items(tcx, transformer, &[MonoItem::Fn(*harness)]);
             crate::kani_middle::d0_diagnostics::event("prewarm-end", None, || {
-                format!("{harness:#?}; reachable={}", reachable.len())
+                format!(
+                    "root={}; reachable={}",
+                    crate::kani_middle::d0_diagnostics::encoded(harness),
+                    reachable.len()
+                )
             });
             (harness, H::rate(&reachable))
         })

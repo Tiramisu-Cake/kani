@@ -432,8 +432,13 @@ impl CodegenBackend for GotocCodegenBackend {
                             expected.sort();
                             assert_eq!(roots, expected, "D0 extra/missing roots");
                             d0::context("", "unit");
+                            assert!(unit.stubs.is_empty(), "D0 fixture must have no stubs");
                             d0::event("unit", None, || {
-                                format!("{unit:#?}; machine_model={:#?}", results.machine_model)
+                                format!(
+                                    "roots={}; stubs=0; machine_model={:#?}",
+                                    d0::encoded(&unit.harnesses),
+                                    results.machine_model
+                                )
                             });
                         }
                         // Generate a new transformer that will be shared for all harnesses within the codegen unit.
@@ -481,8 +486,9 @@ impl CodegenBackend for GotocCodegenBackend {
                             d0::context("", "order");
                             d0::event("normal-order", None, || {
                                 format!(
-                                    "workers={} order={ordered_harnesses:#?}",
-                                    export_thread_pool.has_workers()
+                                    "workers={} order={}",
+                                    export_thread_pool.has_workers(),
+                                    d0::encoded(&ordered_harnesses)
                                 )
                             });
                             match d0::case().as_str() {
@@ -495,12 +501,12 @@ impl CodegenBackend for GotocCodegenBackend {
                                 "A" | "B" | "D" => {}
                                 _ => unreachable!(),
                             }
-                            d0::event("actual-order", None, || format!("{ordered_harnesses:#?}"));
+                            d0::event("actual-order", None, || d0::encoded(&ordered_harnesses));
                         }
                         for harness in ordered_harnesses {
                             if d0::enabled() {
                                 d0::context(&harness.mangled_name(), "codegen");
-                                d0::event("harness-begin", None, || format!("{harness:#?}"));
+                                d0::event("harness-begin", None, || d0::encoded(harness));
                             }
                             clear_codegen_cache();
 

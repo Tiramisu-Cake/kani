@@ -85,7 +85,7 @@ impl GlobalPass for DelayedUbPass {
                         MemLoc::from_stable_stack_allocation(*instance, place, tcx)
                     }
                     AnalysisTarget::Static(static_def) => {
-                        d0::event("seed-static", Some(*instance), || format!("{static_def:#?}"));
+                        d0::event("seed-static", Some(*instance), || d0::encoded(&static_def));
                         MemLoc::from_stable_static_allocation(static_def, tcx)
                     }
                 })
@@ -112,7 +112,7 @@ impl GlobalPass for DelayedUbPass {
                     let body = instance.body().unwrap();
                     let results = run_points_to_analysis(&body, tcx, instance, call_graph);
                     d0::event("points-to-root-before-join", None, || {
-                        format!("root={instance:#?}\n{results:#?}")
+                        format!("root={}\n{results:#?}", d0::encoded(&instance))
                     });
                     global_points_to_graph.join(&results);
                 }
