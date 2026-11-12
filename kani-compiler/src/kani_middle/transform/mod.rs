@@ -158,17 +158,17 @@ impl BodyTransformation {
                 // Transform and add to the cache if there's no existing entry.
                 let mut body = instance.body().unwrap_or_else(|| build_missing_body(tcx, instance));
 
-                d0::event("mir-original", Some(instance), || format!("{body:#?}"));
+                d0::event("mir-original", Some(instance), || d0::encoded(&body));
                 let mut modified = false;
                 for pass in self.stub_passes.iter_mut().chain(self.inst_passes.iter_mut()) {
                     d0::event("local-pass-before", Some(instance), || {
-                        format!("pass={pass:?}\n{body:#?}")
+                        format!("pass={}\n{}", pass.diagnostic_name(), d0::encoded(&body))
                     });
                     let result = pass.transform(tcx, body, instance);
                     modified |= result.0;
                     body = result.1;
                     d0::event("local-pass-after", Some(instance), || {
-                        format!("pass={pass:?}\n{body:#?}")
+                        format!("pass={}\n{}", pass.diagnostic_name(), d0::encoded(&body))
                     });
                     self.generated_loop_modifies.extend(
                         pass.take_generated_loop_modifies()
@@ -182,11 +182,11 @@ impl BodyTransformation {
                     );
                 }
 
-                d0::event("cache-write-local", Some(instance), || format!("{body:#?}"));
+                d0::event("cache-write-local", Some(instance), || d0::encoded(&body));
                 TransformationResult(body, modified)
             })
             .0;
-        d0::event("cache-read", Some(instance), || format!("{result:#?}"));
+        d0::event("cache-read", Some(instance), || d0::encoded(result));
         result
     }
 
@@ -234,6 +234,10 @@ pub(crate) enum TransformationType {
 
 /// A trait to represent transformation passes that can be used to modify the body of a function.
 pub(crate) trait TransformPass: Debug {
+    fn diagnostic_name(&self) -> &'static str {
+        std::any::type_name::<Self>()
+    }
+
     /// The type of transformation that this pass implements.
     fn transformation_type() -> TransformationType
     where

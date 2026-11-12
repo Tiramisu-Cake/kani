@@ -75,13 +75,13 @@ impl GlobalPass for DelayedUbPass {
             .flat_map(|instance| {
                 let body = instance.body().unwrap();
                 let mut visitor = InitialTargetVisitor::new(body.clone());
-                d0::event("seed-body", Some(*instance), || format!("{body:#?}"));
+                d0::event("seed-body", Some(*instance), || d0::encoded(&body));
                 visitor.visit_body(&body);
                 // Convert all places into the format of aliasing graph for later comparison.
                 visitor.into_targets().into_iter().map(move |analysis_target| match analysis_target
                 {
                     AnalysisTarget::Place(place) => {
-                        d0::event("seed-place", Some(*instance), || format!("{place:#?}"));
+                        d0::event("seed-place", Some(*instance), || d0::encoded(&place));
                         MemLoc::from_stable_stack_allocation(*instance, place, tcx)
                     }
                     AnalysisTarget::Static(static_def) => {
@@ -135,7 +135,7 @@ impl GlobalPass for DelayedUbPass {
             for instance in instances {
                 // Retrieve the body with all local instrumentation passes applied.
                 let body = transformer.body(tcx, instance);
-                d0::event("delayed-before", Some(instance), || format!("{body:#?}"));
+                d0::event("delayed-before", Some(instance), || d0::encoded(&body));
                 // Instrument for delayed UB.
                 let target_finder = InstrumentationVisitor::new(
                     &global_points_to_graph,
@@ -154,12 +154,12 @@ impl GlobalPass for DelayedUbPass {
                 );
                 // If some instrumentation has been performed, update the cached body in the local transformer.
                 d0::event("delayed-after", Some(instance), || {
-                    format!("changed={instrumentation_added}\n{body:#?}")
+                    format!("changed={instrumentation_added}\n{}", d0::encoded(&body))
                 });
                 if instrumentation_added {
                     modified = true;
                     transformer.cache.entry(instance).and_modify(|transformation_result| {
-                        d0::event("cache-write-delayed", Some(instance), || format!("{body:#?}"));
+                        d0::event("cache-write-delayed", Some(instance), || d0::encoded(&body));
                         *transformation_result = TransformationResult(body, true);
                     });
                 }

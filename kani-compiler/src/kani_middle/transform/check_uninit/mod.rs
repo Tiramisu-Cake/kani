@@ -158,7 +158,7 @@ impl<'a, 'tcx> UninitInstrumenter<'a, 'tcx> {
         crate::kani_middle::d0_diagnostics::event(
             "source-operations",
             Some(self.diagnostic_instance),
-            || format!("{instruction:#?}"),
+            || crate::kani_middle::d0_diagnostics::encoded(&instruction),
         );
         for operation in instruction.before_instruction {
             self.build_check_for_operation(body, &mut source, operation);
@@ -180,7 +180,8 @@ impl<'a, 'tcx> UninitInstrumenter<'a, 'tcx> {
             Some(self.diagnostic_instance),
             || {
                 format!(
-                    "source={source:#?}; operation={operation:#?}; blocks_before={}",
+                    "source={source:#?}; operation={}; blocks_before={}",
+                    crate::kani_middle::d0_diagnostics::encoded(&operation),
                     body.blocks().len()
                 )
             },
@@ -189,7 +190,12 @@ impl<'a, 'tcx> UninitInstrumenter<'a, 'tcx> {
         crate::kani_middle::d0_diagnostics::event(
             "shadow-operation-result",
             Some(self.diagnostic_instance),
-            || format!("op_id={op_id:?}; source_after={source:#?}\n{body:#?}"),
+            || {
+                format!(
+                    "op_id={op_id:?}; source_after={source:#?}\n{}",
+                    crate::kani_middle::d0_diagnostics::encoded(body)
+                )
+            },
         );
     }
 
@@ -294,7 +300,8 @@ impl<'a, 'tcx> UninitInstrumenter<'a, 'tcx> {
                                     Some(self.diagnostic_instance),
                                     || {
                                         format!(
-                                            "source={source:?}; operation={operation:?}; reason=storage-read-exempt"
+                                            "source={source:?}; operation={}; reason=storage-read-exempt",
+                                            crate::kani_middle::d0_diagnostics::encoded(&operation)
                                         )
                                     },
                                 );
@@ -311,7 +318,8 @@ impl<'a, 'tcx> UninitInstrumenter<'a, 'tcx> {
                             Some(self.diagnostic_instance),
                             || {
                                 format!(
-                                    "source={source:?}; operation={operation:?}; reason=storage-pointer-visitor-owns-write"
+                                    "source={source:?}; operation={}; reason=storage-pointer-visitor-owns-write",
+                                    crate::kani_middle::d0_diagnostics::encoded(&operation)
                                 )
                             },
                         );
@@ -348,8 +356,9 @@ impl<'a, 'tcx> UninitInstrumenter<'a, 'tcx> {
             Some(self.diagnostic_instance),
             || {
                 format!(
-                    "source={source:#?}; operation={operation:#?}; pointee_ty={:?}; layout={:?}",
-                    pointee_info.ty(),
+                    "source={source:#?}; operation={}; pointee_ty_id={}; layout={:?}",
+                    crate::kani_middle::d0_diagnostics::encoded(&operation),
+                    crate::kani_middle::d0_diagnostics::encoded(pointee_info.ty()),
                     pointee_info.layout()
                 )
             },

@@ -39,7 +39,12 @@ impl GotocCtx<'_, '_> {
                 crate::kani_middle::d0_diagnostics::event(
                     "goto-terminator",
                     Some(self.current_fn().instance_stable()),
-                    || format!("bb={bb}; mir={term:#?}\ngoto={tcode:#?}"),
+                    || {
+                        format!(
+                            "bb={bb}; mir={}\ngoto={tcode:#?}",
+                            crate::kani_middle::d0_diagnostics::encoded(term)
+                        )
+                    },
                 );
                 self.current_fn_mut().push_onto_block(tcode.with_label(label));
             }
@@ -57,7 +62,12 @@ impl GotocCtx<'_, '_> {
                 crate::kani_middle::d0_diagnostics::event(
                     "goto-terminator",
                     Some(self.current_fn().instance_stable()),
-                    || format!("bb={bb}; mir={term:#?}\ngoto={tcode:#?}"),
+                    || {
+                        format!(
+                            "bb={bb}; mir={}\ngoto={tcode:#?}",
+                            crate::kani_middle::d0_diagnostics::encoded(term)
+                        )
+                    },
                 );
                 self.current_fn_mut().push_onto_block(tcode);
             }

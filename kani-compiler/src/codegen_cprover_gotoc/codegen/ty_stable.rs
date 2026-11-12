@@ -22,8 +22,17 @@ impl<'tcx, 'r> GotocCtx<'tcx, 'r> {
     }
 
     pub fn codegen_ty_stable(&mut self, ty: Ty) -> Type {
-        cache_entry::<Type>(ty)
-            .or_insert_with(|| self.codegen_ty(rustc_internal::internal(self.tcx, ty)))
+        cache_entry::<Type>(ty).or_insert_with(|| {
+            let internal_ty = rustc_internal::internal(self.tcx, ty);
+            let result = self.codegen_ty(internal_ty);
+            crate::kani_middle::d0_diagnostics::event("type-codegen", None, || {
+                format!(
+                    "stable_ty_id={}; rust_type={internal_ty}; goto={result:#?}",
+                    crate::kani_middle::d0_diagnostics::encoded(&ty)
+                )
+            });
+            result
+        })
     }
 
     pub fn codegen_ty_ref_stable(&mut self, ty: Ty) -> Type {

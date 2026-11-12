@@ -567,8 +567,11 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                                         Some(self.instance),
                                         || {
                                             format!(
-                                                "location={location:#?}; index={operand_index}; operand={operand:#?}; type={:?}; term={term:#?}",
-                                                operand.ty(&self.locals)
+                                                "location={location:#?}; index={operand_index}; operand={}; term={}",
+                                                crate::kani_middle::d0_diagnostics::encoded(
+                                                    operand
+                                                ),
+                                                crate::kani_middle::d0_diagnostics::encoded(term)
                                             )
                                         },
                                     );

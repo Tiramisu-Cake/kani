@@ -77,7 +77,12 @@ impl GotocCtx<'_, '_> {
             crate::kani_middle::d0_diagnostics::event(
                 "goto-local",
                 Some(self.current_fn().instance_stable()),
-                || format!("local={lc}; mir_decl={ldata:#?}; goto_symbol={sym:#?}"),
+                || {
+                    format!(
+                        "local={lc}; mir_decl={}; goto_symbol={sym:#?}",
+                        crate::kani_middle::d0_diagnostics::encoded(&ldata)
+                    )
+                },
             );
             self.symbol_table.insert(sym);
 
@@ -116,7 +121,7 @@ impl GotocCtx<'_, '_> {
             crate::kani_middle::d0_diagnostics::event(
                 "codegen-consumed-mir",
                 Some(instance),
-                || format!("{body:#?}"),
+                || crate::kani_middle::d0_diagnostics::encoded(&body),
             );
             self.set_current_fn(instance, &body);
             self.print_instance(instance, &body);

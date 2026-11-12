@@ -53,8 +53,10 @@ impl InitialTargetVisitor {
                         let referent = GlobalAlloc::from(prov.0);
                         crate::kani_middle::d0_diagnostics::event("seed-provenance", None, || {
                             format!(
-                                "operand={operand:#?}; alloc_id={:?}; referent={referent:#?}; selection=only-Static-is-a-seed",
-                                prov.0
+                                "operand={}; alloc_id={:?}; referent={}; selection=only-Static-is-a-seed",
+                                crate::kani_middle::d0_diagnostics::encoded(operand),
+                                prov.0,
+                                crate::kani_middle::d0_diagnostics::encoded(&referent)
                             )
                         });
                         if let GlobalAlloc::Static(static_def) = referent {

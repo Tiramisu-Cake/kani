@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 //! Default-off observations for the KANI3300 D0 experiment. Never queries/changes MIR.
-//! Payloads are compiler Debug data, not runtime identities or evidence of execution.
+//! MIR snapshots serialize existing indices without expanding Ty::Debug/type queries.
+//! Payloads are compiler data, not runtime identities or evidence of execution.
 
 use crate::kani_middle::readable_name;
 use rustc_public::mir::mono::Instance;
@@ -32,6 +33,10 @@ struct Observer {
 
 thread_local! {
     static OBSERVER: RefCell<Observer> = RefCell::new(Observer::default());
+}
+
+pub fn encoded(value: &impl serde::Serialize) -> String {
+    serde_json::to_string(value).expect("D0 serialization")
 }
 
 pub fn enabled() -> bool {
@@ -117,7 +122,7 @@ pub fn record(
             "sequence": sequence, "stage": stage,
             "instance": instance.map(|instance| instance.name()), "symbol": symbol,
             "payload_fingerprint": body_hash, "cache_writer": writer,
-            "payload_encoding": "rust-debug", "payload": payload,
+            "payload_encoding": "text-with-serde-mir-and-goto-debug", "payload": payload,
             "runtime_binding": "NOT_RUN"
         });
         let bytes = serde_json::to_vec_pretty(&record).unwrap();

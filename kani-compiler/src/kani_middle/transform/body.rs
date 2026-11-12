@@ -22,7 +22,7 @@ pub fn synthetic_source_info(span: Span) -> SourceInfo {
     SourceInfo { span, scope: 0 }
 }
 
-#[derive(Debug)]
+#[derive(Debug, serde::Serialize)]
 /// This structure mimics a Body that can actually be modified.
 pub struct MutableBody {
     blocks: Vec<BasicBlock>,
@@ -50,7 +50,7 @@ pub struct MutableBody {
 }
 
 /// Denotes whether instrumentation should be inserted before or after the statement.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
 pub enum InsertPosition {
     Before,
     After,
@@ -519,7 +519,7 @@ impl CheckType {
 }
 
 /// We store the index of an instruction to avoid borrow checker issues and unnecessary copies.
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, serde::Serialize)]
 pub enum SourceInstruction {
     Statement { idx: usize, bb: BasicBlockIdx },
     Terminator { bb: BasicBlockIdx },

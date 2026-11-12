@@ -197,7 +197,7 @@ impl MirVisitor for InstrumentationVisitor<'_, '_> {
 
         crate::kani_middle::d0_diagnostics::event("relevance", Some(self.current_instance), || {
             format!(
-                "location={location:#?}; place={place:#?}; context={ptx:#?}; needs_get={needs_get}; needs_set={needs_set}; mutating={}; rule=get:resolved-intersection,set:common-ancestor; rejected when corresponding predicate false",
+                "location={location:#?}; place={}; context={ptx:#?}; needs_get={needs_get}; needs_set={needs_set}; mutating={}; rule=get:resolved-intersection,set:common-ancestor; rejected when corresponding predicate false",
                 ptx.is_mutating()
             )
         });
