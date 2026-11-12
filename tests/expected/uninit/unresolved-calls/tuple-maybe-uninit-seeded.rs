@@ -22,15 +22,11 @@ fn seed() {
     assert_eq!(destination, source);
 }
 
-// This source is only a lowering probe. FnOnce's tuple ABI may keep the
-// MaybeUninit argument inside a tuple, so this does not establish that the
-// direct-shadow-argument guard is reached. Required guard coverage needs a
-// compiler-level visitor control if the pinned MIR does not expose it directly.
-// The golden is a provisional direct-shadow guard contract, not established
-// coverage: CI must confirm a direct argument reaches a bodyful Shim, or use
-// the separate compiler-level control specified in the B1I manifest.
+// FnOnce wraps the MaybeUninit argument in a compound tuple.
+// Expect the tuple-layout Unsupported before any direct-shadow Shim guard.
+// This does not cover the direct-shadow-argument guard.
 #[kani::proof]
-fn bodyful_shim_shadow_argument_only_is_unsupported() {
+fn tuple_maybe_uninit_layout_is_unsupported() {
     seed();
     invoke_once(|_value| {}, MaybeUninit::uninit());
 }

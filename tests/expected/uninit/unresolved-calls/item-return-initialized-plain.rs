@@ -13,8 +13,10 @@ where
     function()
 }
 
+// Initialized companion of the Item-return uninit negative.
+// Preserve true initialization state through the same noinline generic call.
 #[kani::proof]
-fn bodyful_shim_shadow_return_only_is_unsupported() {
-    let result = invoke_once(|| MaybeUninit::uninit());
-    let _read = unsafe { result.assume_init() };
+fn item_return_preserves_initialized_value() {
+    let result = invoke_once(|| MaybeUninit::new(7u16));
+    assert_eq!(unsafe { result.assume_init() }, 7);
 }

@@ -1,5 +1,0 @@
-Checking harness bodyful_shim_shadow_argument_only_is_unsupported...
-Failed Checks: Kani does not support shadow transfers without a paired argument/return protocol.
-VERIFICATION:- FAILED
-Verification failed for - bodyful_shim_shadow_argument_only_is_unsupported
-Complete - 0 successfully verified harnesses, 1 failures, 1 total.

@@ -22,8 +22,10 @@ fn seed() {
     assert_eq!(destination, source);
 }
 
+// The closure call was reported as Item in the pinned Quick. Returning false
+// initialization state must preserve the reached assume_init read failure.
 #[kani::proof]
-fn bodyful_shim_shadow_return_only_is_unsupported() {
+fn item_return_preserves_uninitialized_read() {
     seed();
     let result = invoke_once(|| MaybeUninit::uninit());
     let _read = unsafe { result.assume_init() };

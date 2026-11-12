@@ -11,8 +11,8 @@ fn identity(value: u8) -> u8 {
 
 #[inline(never)]
 fn indirect(f: fn(u8) -> u8) -> u8 {
-    // The pinned source call is used to probe Fn-trait Shim lowering. CI must confirm whether
-    // the resolved Shim is bodyless or bodyful before assigning a lowering-specific property.
+    // Fn-trait invocation of a function pointer reaches the FnPtr boundary.
+    // This is not coverage of a bodyless or direct-shadow Shim guard.
     std::ops::Fn::call(&f, (42,))
 }
 
