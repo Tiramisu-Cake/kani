@@ -1,0 +1,44 @@
+# Copyright Kani Contributors
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+# CI-only: fast feedback for uninit-checks work. Builds Kani and runs only the suites that use -Z uninit-checks.
+name: B3R2 Probe
+on:
+  push:
+    branches:
+      - 'uninit-ci/**'
+  workflow_dispatch:
+
+env:
+  RUST_BACKTRACE: 1
+  KANI_FAIL_ON_UNEXPECTED_DESCRIPTION: "true"
+
+jobs:
+  uninit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout Kani
+        uses: actions/checkout@v6
+
+      - name: Setup Kani Dependencies
+        uses: ./.github/actions/setup
+        with:
+          os: ubuntu-24.04
+
+      - name: Build Kani
+        run: cargo build-dev
+
+      - name: Run inputs one at a time
+        run: |
+          export PATH="$(pwd)/scripts:$PATH"
+          for f in tests/expected/zst-union-arm/main.rs tests/expected/zst-union-recursive-arm/main.rs tests/expected/zst-union-recursive-zst-arm/main.rs tests/expected/zst-union-edge-*/main.rs b3r2-probes/*.rs; do
+            echo "::group::$f"
+            timeout 900 kani "$f" --output-format=regular > out.txt 2>&1; ec=$?
+            grep -E "Checking harness|COVER|SATISFIED|UNSATISFIABLE|Failed Checks|VERIFICATION|Complete -|panicked|Invariant check failed|error(\[|:)" out.txt | grep -v "^ *- Status: SUCCESS" | head -60
+            echo "RESULT $f exit=$ec"
+            echo "::endgroup::"
+            echo "RESULT $f exit=$ec" >> summary.txt
+          done
+          cat summary.txt
