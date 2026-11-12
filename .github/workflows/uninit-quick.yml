@@ -1,0 +1,44 @@
+# Copyright Kani Contributors
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+# CI-only: fast feedback for uninit-checks work. Builds Kani and runs only the suites that use -Z uninit-checks.
+name: M2 Memprobe
+on:
+  push:
+    branches:
+      - 'uninit-ci/**'
+  workflow_dispatch:
+
+env:
+  RUST_BACKTRACE: 1
+  KANI_FAIL_ON_UNEXPECTED_DESCRIPTION: "true"
+
+jobs:
+  uninit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout Kani
+        uses: actions/checkout@v6
+
+      - name: Setup Kani Dependencies
+        uses: ./.github/actions/setup
+        with:
+          os: ubuntu-24.04
+
+      - name: Build Kani
+        run: cargo build-dev
+
+      - name: M2 tests one at a time with memory log
+        run: |
+          export PATH="$(pwd)/scripts:$PATH"
+          ( while true; do echo "MEM $(date +%T) $(free -m | awk '/Mem:/{print $3"/"$2" MiB used"}') top: $(ps -eo rss,comm --sort=-rss | sed -n 2,3p | tr '\n' ' ')"; sleep 5; done ) &
+          rc=0
+          for t in out-pointer normal-abort legal-pair postcondition-hole; do
+            extra=""; case $t in legal-pair|postcondition-hole) extra="-Z function-contracts";; esac
+            echo "::group::$t"
+            RUSTFLAGS="--edition 2021 -D warnings" timeout 1200 /usr/bin/time -v kani tests/expected/uninit/transfer-qualification/$t.rs -Z uninit-checks $extra --output-format=regular 2>&1 | grep -E 'VERIFICATION|Failed Checks|Maximum resident|Elapsed|Checking harness|Complete -' || rc=1
+            echo "::endgroup::"
+          done
+          exit $rc
