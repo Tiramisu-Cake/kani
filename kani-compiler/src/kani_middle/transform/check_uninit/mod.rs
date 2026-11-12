@@ -55,6 +55,10 @@ const KANI_COPY_INIT_STATE_SINGLE: KaniFunction =
     KaniFunction::Model(KaniModel::CopyInitStateSingle);
 const KANI_LOAD_ARGUMENT: KaniFunction = KaniFunction::Model(KaniModel::LoadArgument);
 const KANI_STORE_ARGUMENT: KaniFunction = KaniFunction::Model(KaniModel::StoreArgument);
+// Bootstrap only verifier-owned state without instrumenting its own reset writes.
+// The harness-entry call and the initializer's runtime assignments still execute.
+const KANI_INITIALIZE_MEMORY_INITIALIZATION_STATE: KaniFunction =
+    KaniFunction::Model(KaniModel::InitializeMemoryInitializationState);
 // The contract-clause-depth functions access the `CONTRACT_CLAUSE_DEPTH`
 // static. Instrumenting that access would inject memory-initialization shadow
 // writes that CBMC's contract write-set check then flags as illegal side
@@ -83,6 +87,7 @@ const SKIPPED_ITEMS: &[KaniFunction] = &[
     KANI_COPY_INIT_STATE_SINGLE,
     KANI_LOAD_ARGUMENT,
     KANI_STORE_ARGUMENT,
+    KANI_INITIALIZE_MEMORY_INITIALIZATION_STATE,
     KANI_ENTER_CONTRACT_CLAUSE,
     KANI_EXIT_CONTRACT_CLAUSE,
     KANI_IN_CONTRACT_CLAUSE,
