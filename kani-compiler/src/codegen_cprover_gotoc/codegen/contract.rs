@@ -139,35 +139,45 @@ impl GotocCtx<'_, '_> {
             .typ
             .clone();
 
-        // Find the memory-initialization shadow-memory static. It is tagged with the
-        // `KaniMemoryInitializationState` `fn_marker` (a `#[rustc_diagnostic_item]`
-        // can no longer be applied to statics). Its goto symbol is named after the
-        // static's mangled name, matching `codegen_static`.
+        // Register only the two marked verifier-private objects. Their mangled static
+        // identities match declare_static/codegen_static; user memory is not exempted.
         let shadow_memory_assign = {
             let mut crates = rustc_public::find_crates("kani");
             if crates.is_empty() {
                 // In case we are using `kani_core`.
                 crates.extend(rustc_public::find_crates("core"));
             }
-            crates
-                .into_iter()
-                .flat_map(|krate| krate.statics())
-                .find(|static_def| {
+            let statics: Vec<_> = crates.into_iter().flat_map(|krate| krate.statics()).collect();
+            let mut assigns = Vec::new();
+            for marker in
+                ["KaniMemoryInitializationState", "KaniMemoryInitializationArgumentBuffer"]
+            {
+                let mut matching = statics.iter().copied().filter(|static_def| {
                     crate::kani_middle::attributes::fn_marker(*static_def).as_deref()
-                        == Some("KaniMemoryInitializationState")
-                })
-                .map(|static_def| Instance::from(static_def).mangled_name())
-                .and_then(|shadow_memory_table| {
-                    self.symbol_table.lookup(&shadow_memory_table).cloned()
-                })
-                .map(|shadow_memory_symbol| {
-                    vec![Lambda::as_contract_for(
+                        == Some(marker)
+                });
+                let static_def = matching.next();
+                assert!(
+                    matching.next().is_none(),
+                    "Expected unique private static marker {marker}"
+                );
+                if let Some(symbol) = static_def
+                    .map(|def| Instance::from(def).mangled_name())
+                    .and_then(|name| self.symbol_table.lookup(&name).cloned())
+                {
+                    assigns.push(Lambda::as_contract_for(
                         &goto_annotated_fn_typ,
                         None,
-                        shadow_memory_symbol.to_expr(),
-                    )]
-                })
-                .unwrap_or_default()
+                        symbol.to_expr(),
+                    ));
+                }
+            }
+            // No uninit instrumentation may emit neither object; otherwise require both.
+            assert!(
+                assigns.is_empty() || assigns.len() == 2,
+                "Missing private uninit assigns target"
+            );
+            assigns
         };
 
         // The last argument is a tuple with addresses that can be modified.
