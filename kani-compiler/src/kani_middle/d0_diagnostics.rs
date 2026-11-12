@@ -35,9 +35,11 @@ thread_local! {
     static OBSERVER: RefCell<Observer> = RefCell::new(Observer::default());
 }
 
+// rustc_public implements the sysroot serde_core trait. Cargo's trait is a
+// different crate identity even when its API/version happens to match.
 #[cfg(feature = "cprover")]
-pub fn encoded(value: &impl serde::Serialize) -> String {
-    serde_json::to_string(value).expect("D0 serialization")
+pub fn encoded(value: &impl rustc_serde_core::Serialize) -> String {
+    rustc_serde_json::to_string(value).expect("D0 serialization")
 }
 
 #[cfg(not(feature = "cprover"))]
@@ -173,3 +175,59 @@ pub fn finish() {
         file.write_all(&bytes).unwrap();
     }
 }
+
+// These field-only implementations deliberately avoid Debug, type expansion,
+// body reconstruction and compiler queries. Do not use Cargo's derive macro:
+// its generated private paths are tied to Cargo's serde version as well.
+#[cfg(feature = "cprover")]
+macro_rules! serialize_struct {
+    ($ty:ident { $($field:ident),+ $(,)? }) => {
+        impl rustc_serde_core::Serialize for $ty {
+            fn serialize<S: rustc_serde_core::Serializer>(
+                &self,
+                serializer: S,
+            ) -> Result<S::Ok, S::Error> {
+                use rustc_serde_core::ser::SerializeStruct;
+                let mut state = serializer.serialize_struct(
+                    stringify!($ty), [$(stringify!($field)),+].len(),
+                )?;
+                $(state.serialize_field(stringify!($field), &self.$field)?;)+
+                state.end()
+            }
+        }
+    };
+}
+
+#[cfg(feature = "cprover")]
+macro_rules! serialize_enum {
+    ($ty:ident { $($index:literal => $variant:ident $( { $($field:ident),+ } )?),+ $(,)? }) => {
+        impl rustc_serde_core::Serialize for $ty {
+            fn serialize<S: rustc_serde_core::Serializer>(
+                &self,
+                serializer: S,
+            ) -> Result<S::Ok, S::Error> {
+                match self {
+                    $(Self::$variant $( { $($field),+ } )? => {
+                        $crate::kani_middle::d0_diagnostics::serialize_enum!(
+                            @variant serializer, $ty, $index, $variant $( { $($field),+ } )?
+                        )
+                    }),+
+                }
+            }
+        }
+    };
+    (@variant $serializer:ident, $ty:ident, $index:literal, $variant:ident) => {
+        $serializer.serialize_unit_variant(stringify!($ty), $index, stringify!($variant))
+    };
+    (@variant $serializer:ident, $ty:ident, $index:literal, $variant:ident { $($field:ident),+ }) => {{
+        use rustc_serde_core::ser::SerializeStructVariant;
+        let mut state = $serializer.serialize_struct_variant(
+            stringify!($ty), $index, stringify!($variant), [$(stringify!($field)),+].len(),
+        )?;
+        $(state.serialize_field(stringify!($field), $field)?;)+
+        state.end()
+    }};
+}
+
+#[cfg(feature = "cprover")]
+pub(crate) use {serialize_enum, serialize_struct};

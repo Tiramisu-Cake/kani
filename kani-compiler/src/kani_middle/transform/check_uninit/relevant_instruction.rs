@@ -17,7 +17,6 @@ use rustc_public::{
 use strum_macros::AsRefStr;
 
 /// Memory initialization operations: set or get memory initialization state for a given pointer.
-#[cfg_attr(feature = "cprover", derive(serde::Serialize))]
 #[derive(AsRefStr, Clone, Debug)]
 pub enum MemoryInitOp {
     /// Check memory initialization of data bytes in a memory region starting from the pointer
@@ -286,7 +285,6 @@ impl MemoryInitOp {
 /// Represents an instruction in the source code together with all memory initialization checks/sets
 /// that are connected to the memory used in this instruction and whether they should be inserted
 /// before or after the instruction.
-#[cfg_attr(feature = "cprover", derive(serde::Serialize))]
 #[derive(Clone, Debug)]
 pub struct InitRelevantInstruction {
     /// The instruction that affects the state of the memory.
@@ -376,3 +374,31 @@ fn mk_ref(
 
     Operand::Copy(Place { local: ref_local, projection: vec![] })
 }
+
+#[cfg(feature = "cprover")]
+crate::kani_middle::d0_diagnostics::serialize_enum!(MemoryInitOp {
+    0 => Check { operand },
+    1 => CheckAs { operand, pointee_ty },
+    2 => Set { operand, value, position },
+    3 => CheckSliceChunk { operand, count },
+    4 => SetSliceChunk { operand, count, value, position },
+    5 => CheckRef { operand },
+    6 => CheckRefAs { operand, pointee_ty },
+    7 => SetRef { operand, value, position },
+    8 => SetStorage { operand, initialized, position },
+    9 => Unsupported { reason },
+    10 => TriviallyUnsafe { reason },
+    11 => Copy { from, to, count },
+    12 => AssignUnion { lvalue, rvalue, position },
+    13 => CreateUnion { operand, field },
+    14 => BeginArgumentTransfer { function, argument_count },
+    15 => LoadArgument { operand, argument_no, function, argument_count, position },
+    16 => StoreArgument { operand, argument_no, function },
+});
+
+#[cfg(feature = "cprover")]
+crate::kani_middle::d0_diagnostics::serialize_struct!(InitRelevantInstruction {
+    source,
+    before_instruction,
+    after_instruction,
+});

@@ -18,6 +18,14 @@
 // Once the `stable` branch is at 1.86 or later, remove this line, since float_next_up_down is stabilized
 #![cfg_attr(not(version("1.86")), feature(float_next_up_down))]
 #![feature(try_blocks)]
+// Keep Cargo JSON for Kani metadata; D0 MIR serialization must use rustc's
+// matching serde_core/serde_json from the pinned sysroot.
+extern crate kani_serde_json as serde_json;
+#[cfg(feature = "cprover")]
+extern crate serde_core as rustc_serde_core;
+#[cfg(feature = "cprover")]
+extern crate serde_json as rustc_serde_json;
+
 extern crate rustc_abi;
 extern crate rustc_ast;
 extern crate rustc_ast_pretty;

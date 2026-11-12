@@ -22,7 +22,6 @@ pub fn synthetic_source_info(span: Span) -> SourceInfo {
     SourceInfo { span, scope: 0 }
 }
 
-#[cfg_attr(feature = "cprover", derive(serde::Serialize))]
 #[derive(Debug)]
 /// This structure mimics a Body that can actually be modified.
 pub struct MutableBody {
@@ -51,7 +50,6 @@ pub struct MutableBody {
 }
 
 /// Denotes whether instrumentation should be inserted before or after the statement.
-#[cfg_attr(feature = "cprover", derive(serde::Serialize))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum InsertPosition {
     Before,
@@ -521,7 +519,6 @@ impl CheckType {
 }
 
 /// We store the index of an instruction to avoid borrow checker issues and unnecessary copies.
-#[cfg_attr(feature = "cprover", derive(serde::Serialize))]
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum SourceInstruction {
     Statement { idx: usize, bb: BasicBlockIdx },
@@ -685,3 +682,25 @@ fn get_mut_target_ref(terminator: &mut Terminator) -> &mut BasicBlockIdx {
         ),
     }
 }
+
+#[cfg(feature = "cprover")]
+crate::kani_middle::d0_diagnostics::serialize_struct!(MutableBody {
+    blocks,
+    locals,
+    arg_count,
+    var_debug_info,
+    spread_arg,
+    span,
+});
+
+#[cfg(feature = "cprover")]
+crate::kani_middle::d0_diagnostics::serialize_enum!(InsertPosition {
+    0 => Before,
+    1 => After,
+});
+
+#[cfg(feature = "cprover")]
+crate::kani_middle::d0_diagnostics::serialize_enum!(SourceInstruction {
+    0 => Statement { idx, bb },
+    1 => Terminator { bb },
+});
