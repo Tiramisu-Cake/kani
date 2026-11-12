@@ -5,7 +5,6 @@
 
 use crate::{
     intrinsics::Intrinsic,
-    kani_middle::nonnull_pointee,
     kani_middle::transform::{
         body::{InsertPosition, MutableBody, SourceInstruction},
         check_uninit::{
@@ -17,6 +16,7 @@ use crate::{
             },
         },
     },
+    kani_middle::{nonnull_pointee, points_to::resolve_call},
 };
 use rustc_attr_ir::lang_items::LangItem;
 use rustc_middle::ty::TyCtxt;
@@ -490,14 +490,14 @@ impl MirVisitor for CheckUninitVisitor<'_> {
         }
         // Leave it as an exhaustive match to be notified when a new kind is added.
         match &term.kind {
-            TerminatorKind::Call { func, args, destination, .. } => {
+            TerminatorKind::Call { func, args, destination, .. } => 'call: {
                 self.super_terminator(term, location);
                 let instance = match try_resolve_instance(&self.locals, func) {
                     Ok(instance) => instance,
                     Err(reason) => {
-                        self.super_terminator(term, location);
                         self.push_target(MemoryInitOp::Unsupported { reason });
-                        return;
+                        // Flush entry loads, operand reads and this diagnostic exactly once.
+                        break 'call;
                     }
                 };
                 // Intrinsics use their explicit models and value-transfer guard below.
@@ -515,8 +515,7 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                         reason: "Kani does not support shadow transfers without a paired argument/return protocol."
                             .to_string(),
                     });
-                    self.targets.push(self.current_target.clone());
-                    return;
+                    break 'call;
                 }
                 if paired && shadow_return {
                     self.push_target(MemoryInitOp::LoadArgument {
@@ -664,7 +663,9 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                             }
                         }
                     }
-                    InstanceKind::Item => {
+                    InstanceKind::Item | InstanceKind::Shim => {
+                        // Non-shadow MIR-backed shims are followed by points-to and the
+                        // local visitor. Only the unchanged Item predicate grants pairing.
                         if instance.is_foreign_item() {
                             match instance.name().as_str() {
                                 "alloc::alloc::__rust_alloc" | "alloc::alloc::__rust_realloc" => {
@@ -726,7 +727,8 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                             }
                         }
                     }
-                    _ => {}
+                    // The shared resolver rejects these before any call-specific effects.
+                    InstanceKind::Virtual { .. } | InstanceKind::LlvmIntrinsic => unreachable!(),
                 }
             }
             TerminatorKind::Drop { place, .. } => {
@@ -1089,13 +1091,7 @@ fn try_remove_topmost_deref(place: &Place) -> Option<Place> {
 
 /// Try retrieving instance for the given function operand.
 fn try_resolve_instance(locals: &[LocalDecl], func: &Operand) -> Result<Instance, String> {
-    let ty = func.ty(locals).unwrap();
-    match ty.kind() {
-        TyKind::RigidTy(RigidTy::FnDef(def, args)) => Ok(Instance::resolve(def, &args).unwrap()),
-        _ => Err(format!(
-            "Kani was not able to resolve the instance of the function operand `{ty:?}`. Currently, memory initialization checks in presence of function pointers and vtable calls are not supported. For more information about planned support, see https://github.com/model-checking/kani/issues/3300."
-        )),
-    }
+    resolve_call(func.ty(locals).unwrap())
 }
 
 /// The pointer argument of an allocation shim, as a raw pointer.
