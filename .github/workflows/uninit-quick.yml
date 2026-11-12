@@ -1,0 +1,55 @@
+# Copyright Kani Contributors
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+# CI-only: fast feedback for uninit-checks work. Builds Kani and runs only the suites that use -Z uninit-checks.
+name: Uninit Quick
+on:
+  push:
+    branches:
+      - 'uninit-ci/**'
+  workflow_dispatch:
+
+env:
+  RUST_BACKTRACE: 1
+  KANI_FAIL_ON_UNEXPECTED_DESCRIPTION: "true"
+
+jobs:
+  uninit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout Kani
+        uses: actions/checkout@v6
+
+      - name: Setup Kani Dependencies
+        uses: ./.github/actions/setup
+        with:
+          os: ubuntu-24.04
+
+      - name: Format check
+        run: ./scripts/kani-fmt.sh --check
+
+      - name: Build Kani
+        if: ${{ !cancelled() }}
+        run: cargo build-dev
+
+      - name: Clippy (-D warnings)
+        if: ${{ !cancelled() }}
+        run: cargo clippy --workspace --tests -- -D warnings
+
+      - name: Compiler unit tests (immutable_allocations)
+        if: ${{ !cancelled() }}
+        run: cargo test -p kani-compiler -- immutable_allocations
+
+      - name: Uninit suites
+        if: ${{ !cancelled() }}
+        run: |
+          export PATH="$(pwd)/scripts:$PATH"
+          rc=0
+          run() { echo "::group::$*"; cargo run -p compiletest --quiet -- "$@" --no-fail-fast --timeout 2400 || rc=1; echo "::endgroup::"; }
+          run --suite kani --mode kani Uninit Quantifiers
+          run --suite expected --mode expected uninit quantifier-capture arbitrary
+          run --suite ui --mode expected quantifier-safety-checks
+          run --suite script-based-pre --mode exec mem-init-reinstrumentation
+          exit $rc
