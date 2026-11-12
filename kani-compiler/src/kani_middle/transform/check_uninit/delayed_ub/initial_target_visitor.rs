@@ -23,18 +23,20 @@ use rustc_public::{
 pub enum AnalysisTarget {
     Place(Place),
     Static(StaticDef),
+    Anonymous(rustc_public::mir::alloc::AllocId),
 }
 
 /// Visitor that finds initial analysis targets for delayed UB instrumentation. For our purposes,
 /// analysis targets are *pointers* to places reading and writing from which should be tracked.
-pub struct InitialTargetVisitor {
+pub struct InitialTargetVisitor<'tcx> {
     body: Body,
+    tcx: rustc_middle::ty::TyCtxt<'tcx>,
     targets: Vec<AnalysisTarget>,
 }
 
-impl InitialTargetVisitor {
-    pub fn new(body: Body) -> Self {
-        Self { body, targets: vec![] }
+impl<'tcx> InitialTargetVisitor<'tcx> {
+    pub fn new(body: Body, tcx: rustc_middle::ty::TyCtxt<'tcx>) -> Self {
+        Self { body, tcx, targets: vec![] }
     }
 
     pub fn into_targets(self) -> Vec<AnalysisTarget> {
@@ -47,6 +49,12 @@ impl InitialTargetVisitor {
                 self.targets.push(AnalysisTarget::Place(place.clone()));
             }
             Operand::Constant(constant) => {
+                for origin in crate::kani_middle::anonymous_allocations::anonymous_origins(
+                    self.tcx,
+                    &constant.const_,
+                ) {
+                    self.targets.push(AnalysisTarget::Anonymous(origin.key));
+                }
                 // Extract the static from the constant.
                 if let ConstantKind::Allocated(allocation) = constant.const_.kind() {
                     for (_, prov) in &allocation.provenance.ptrs {
@@ -66,7 +74,7 @@ impl InitialTargetVisitor {
 /// - pointer casts where pointees have different padding;
 /// - calls to `copy`-like intrinsics.
 /// - both reference operands of `raw_eq`, which also reads padding bytes.
-impl MirVisitor for InitialTargetVisitor {
+impl MirVisitor for InitialTargetVisitor<'_> {
     fn visit_rvalue(&mut self, rvalue: &Rvalue, location: Location) {
         if let Rvalue::Cast(kind, operand, ty) = rvalue {
             let operand_ty = operand.ty(self.body.locals()).unwrap();

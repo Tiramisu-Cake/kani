@@ -402,12 +402,8 @@ impl<'tcx> PointsToAnalysis<'_, 'tcx> {
                 state.successors(&state.resolve_place(place, self.instance))
             }
             Operand::Constant(const_operand) => {
-                // Constants could point to a static, so need to check for that.
-                if let Some(static_def_id) = const_operand.check_static_ptr(self.tcx) {
-                    HashSet::from([MemLoc::new_static_allocation(static_def_id)])
-                } else {
-                    HashSet::new()
-                }
+                let constant = rustc_internal::stable(const_operand.const_);
+                state.constant_successors(self.tcx, &constant)
             }
             // Runtime-check operands (rust-lang/rust#148766) reference no place or static.
             Operand::RuntimeChecks(..) => HashSet::new(),
@@ -426,12 +422,8 @@ impl<'tcx> PointsToAnalysis<'_, 'tcx> {
                 self.instance,
             ),
             Operand::Constant(const_operand) => {
-                // Constants could point to a static, so need to check for that.
-                if let Some(static_def_id) = const_operand.check_static_ptr(self.tcx) {
-                    HashSet::from([MemLoc::new_static_allocation(static_def_id)])
-                } else {
-                    HashSet::new()
-                }
+                let constant = rustc_internal::stable(const_operand.const_);
+                state.constant_successors(self.tcx, &constant)
             }
             // Runtime-check operands (rust-lang/rust#148766) reference no place or static.
             Operand::RuntimeChecks(..) => HashSet::new(),

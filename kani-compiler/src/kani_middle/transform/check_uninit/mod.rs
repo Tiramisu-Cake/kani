@@ -905,3 +905,18 @@ pub fn resolve_mem_init_fn(fn_def: FnDef, layout_size: usize, associated_type: T
     )
     .unwrap()
 }
+
+/// Immutable origin admission reuses the existing flat MaybeUninit layout boundary. It does
+/// not make ordinary unions or new compound constant layouts eligible for immutable seeding.
+pub(crate) fn immutable_origin_type_supported(tcx: rustc_middle::ty::TyCtxt<'_>, ty: Ty) -> bool {
+    if ty_layout::maybe_uninit_storage(tcx, ty).is_some() {
+        return ty_layout::PointeeInfo::for_storage(tcx, ty).is_ok();
+    }
+    match ty.kind() {
+        TyKind::RigidTy(RigidTy::Array(element, _) | RigidTy::Slice(element)) => {
+            element.kind().is_primitive()
+        }
+        TyKind::RigidTy(RigidTy::Str) => true,
+        kind => kind.is_primitive(),
+    }
+}

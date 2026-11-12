@@ -73,7 +73,7 @@ impl GlobalPass for DelayedUbPass {
             .iter()
             .flat_map(|instance| {
                 let body = instance.body().unwrap();
-                let mut visitor = InitialTargetVisitor::new(body.clone());
+                let mut visitor = InitialTargetVisitor::new(body.clone(), tcx);
                 visitor.visit_body(&body);
                 // Convert all places into the format of aliasing graph for later comparison.
                 visitor.into_targets().into_iter().map(move |analysis_target| match analysis_target
@@ -81,6 +81,7 @@ impl GlobalPass for DelayedUbPass {
                     AnalysisTarget::Place(place) => {
                         MemLoc::from_stable_stack_allocation(*instance, place, tcx)
                     }
+                    AnalysisTarget::Anonymous(key) => MemLoc::Anonymous(key),
                     AnalysisTarget::Static(static_def) => {
                         MemLoc::from_stable_static_allocation(static_def, tcx)
                     }
@@ -112,6 +113,10 @@ impl GlobalPass for DelayedUbPass {
 
             // Since analysis targets are *pointers*, need to get its successors for instrumentation.
             analysis_targets.extend(global_points_to_graph.successors(&targets));
+            // Anonymous constant targets already denote their referent, not a stack pointer.
+            analysis_targets.extend(
+                targets.iter().filter(|target| matches!(target, MemLoc::Anonymous(_))).copied(),
+            );
 
             // If we are generating MIR, generate the points-to graph as well.
             if tcx.sess.opts.output_types.contains_key(&OutputType::Mir) {
