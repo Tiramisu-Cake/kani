@@ -146,10 +146,10 @@ macro_rules! kani_mem_init {
                         // Note that this preserves the value.
                         return;
                     }
+                } else {
+                    // Diagnostic legacy fallback: bless only one nonmatching-source element.
+                    self.bless_by_id::<LAYOUT_SIZE>(to_obj, to_offset, 1);
                 }
-                // If this path did not follow the source byte, do not retain the old state of
-                // overwritten destination bytes. Their new state is checked on the source path.
-                self.bless_by_id::<LAYOUT_SIZE>(to_obj, to_offset, num_elts);
             }
 
             /// Set currently tracked memory initialization state to `true` if `ptr` points to the
