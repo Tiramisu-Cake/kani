@@ -1,0 +1,55 @@
+# Copyright Kani Contributors
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+# CI-only: fast feedback for uninit-checks work. Builds Kani and runs only the suites that use -Z uninit-checks.
+name: M2BS Trace
+on:
+  push:
+    branches:
+      - 'uninit-ci/**'
+  workflow_dispatch:
+
+env:
+  RUST_BACKTRACE: 1
+  KANI_FAIL_ON_UNEXPECTED_DESCRIPTION: "true"
+
+jobs:
+  uninit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout Kani
+        uses: actions/checkout@v6
+
+      - name: Setup Kani Dependencies
+        uses: ./.github/actions/setup
+        with:
+          os: ubuntu-24.04
+
+      - name: Build Kani
+        run: cargo build-dev
+
+      - name: C03 witness trace via direct cbmc
+        shell: bash {0}
+        run: |
+          export PATH="$(pwd)/scripts:$PATH"
+          mkdir -p c03 out && cp m2a-cases/ordinary-singleton.rs c03/ && cd c03
+          RUSTFLAGS="--edition 2021 -D warnings" timeout 300 kani ordinary-singleton.rs --crate-name m2a -Z uninit-checks -Z function-contracts --output-format=regular --harness legal_ordinary_transfer --exact --keep-temps --verbose > ../out/kani-verbose.txt 2>&1; echo "kani exit=$?" | tee -a ../out/exits.txt
+          grep -nE '^\[Kani\] Running: `?cbmc|cbmc .*--' ../out/kani-verbose.txt | head -5 > ../out/cbmc-cmdline.txt
+          cat ../out/cbmc-cmdline.txt
+          CMD=$(grep -oE 'cbmc .*' ../out/cbmc-cmdline.txt | head -1 | sed 's/`$//')
+          CMD=$(echo "$CMD" | sed 's/--json-ui//; s/--slice-formula//')
+          echo "base cmd: $CMD" >> ../out/exits.txt
+          P='<u8 as std::array::equality::SpecArrayEq<u8, 3>>::spec_eq.safety_check.1'
+          timeout 300 $CMD --trace --property "$P" > ../out/witness.txt 2>&1; echo "witness exit=$?" >> ../out/exits.txt
+          timeout 300 $CMD --trace --json-ui --property "$P" > ../out/witness.json 2>&1; echo "witness-json exit=$?" >> ../out/exits.txt
+          cd .. && cat out/exits.txt && ls -la out && du -sh out
+
+      - name: Upload trace artifact
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: m2bs-c03-trace
+          path: out/
+          retention-days: 7
