@@ -8,16 +8,20 @@ the cycle/legal pair is then selected in both CLI selector orders, again in
 fresh processes, with `--jobs 1` and a fresh target/export directory per run.
 
 Run `./test.sh` with the matching Kani binary on `PATH`. Run
-`python3 test_compare.py` for Python-only synthetic checks. The shared immutable
+`python3 test_compare.py` and `python3 test_bindings.py` for Python-only
+synthetic checks. The shared immutable
 JSON export schema validator and the existing exact regular-output parser are
 loaded read-only from `scripts/validate_json_export.py` through the existing
 uninit contract-oracle checker. Existing suites and validators are not changed.
 
 `roots.json` pins the Rust input SHA-256 and intended root/mode/verdict/source
-line map. Every property binding intentionally remains `BINDING_PENDING`: exact
-generated property identities and per-root complete check inventories require
-review of actual exports. The ordinary `./test.sh` path fails closed before
-invoking Kani while any binding is pending. The coordinator's pre-C1 capture
+line map. Six roots have exact `REGRESSION_BOUND` inventories from the reviewed
+isolated R3 capture (run `43504302188`); `binding_evidence` pins its digest. `cycle_root` remains `BINDING_PENDING`: its `all_A_then_B`
+Unsupported/check diagnostic contains unstable internal identity data, so it must
+wait for a new capture after the diagnostic uses the stable message schema recorded
+in the manifest. The pending cycle inventory is not inferred from current runtime
+output. The ordinary `./test.sh` path fails closed before invoking Kani while any
+binding is pending. The coordinator's pre-C1 capture
 path is `./test.sh --collect-unbound --keep-output`; it runs isolated roots,
 then all seven selectors in both orders and the focused cycle/legal pair in
 both orders. It prints and retains `capture.json`, each invocation's
