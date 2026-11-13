@@ -2,6 +2,12 @@
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 """Inspect complete exports; never infer transformed-mode binding or proof credit."""
 
+import re
+from pathlib import Path
+
+
+CYCLE_UNSUPPORTED = "Kani delayed uninitialized-memory analysis detected an interprocedural cycle"
+
 
 def require(condition, message):
     if not condition:
@@ -12,7 +18,44 @@ def names_target(name, target):
     return name == target or name.endswith("::" + target)
 
 
-def observe(data, root, exit_code):
+def cover_records(log):
+    """Read regular-output cover metadata; export inventories remain authoritative."""
+    pattern = re.compile(
+        r'^Check \d+: (?P<id>[^\n]+\.cover\.\d+)\n'
+        r'\t - Status: (?P<status>[A-Z_]+)\n'
+        r'\t - Description: "(?P<description>[^\n]*)"\n'
+        r'\t - Location: (?P<file>[^\n]+):(?P<line>\d+):(?P<column>\d+)'
+        r' in function [^\n]+$', re.MULTILINE)
+    return [match.groupdict() for match in pattern.finditer(log)]
+
+
+def cover_key(prop):
+    return (prop["description"], Path(prop["file"]).name,
+            int(prop["line"]), int(prop["column"]))
+
+
+def covered_paths(covers, records, root):
+    statuses = {"satisfied": "SATISFIED", "unsatisfiable": "UNSATISFIABLE",
+                "unreachable": "UNREACHABLE"}
+    expected = {identifier: status for key, status in statuses.items()
+                for identifier in covers[key]}
+    require(len(expected) == covers["total"], "duplicate cover inventory")
+    require(len(records) == len(expected) and len({p["id"] for p in records}) == len(records),
+            "cover metadata missing or duplicated")
+    require({p["id"]: p["status"] for p in records} == expected, "cover metadata/export drift")
+    groups = {}
+    for prop in records:
+        groups.setdefault(cover_key(prop), []).append(prop)
+    missing = [key for key, copies in groups.items()
+               if not any(p["status"] == "SATISFIED" for p in copies)]
+    for prop in root.get("required_covers", []):
+        key = cover_key(prop)
+        if key not in groups and key not in missing:
+            missing.append(key)
+    return missing
+
+
+def observe(data, root, exit_code, log):
     require(data.get("schema_version") == "0.1.0", "unexpected export schema")
     require(data.get("run_state") == "COMPLETE", "run did not complete")
     require(data.get("outcome", {}).get("kind") == "COMPLETED", "run outcome incomplete")
@@ -79,20 +122,41 @@ def observe(data, root, exit_code):
                             checks_success=checks["success"], covers_total=covers["total"],
                             covers_satisfied=len(covers["satisfied"]))
     require(all(summary[key] == value for key, value in expected_summary.items()), "summary drift")
+    records = cover_records(log)
+    missing_paths = covered_paths(covers, records, root)
     gaps = []
     if any(prop["status"] not in ("SUCCESS", "UNREACHABLE")
            for prop in harness["unsupported_constructs"]):
         gaps.append("UNSUPPORTED_PRESENT: does not establish the intended boundary")
     if any("assignable" in prop["description"] for prop in failed):
         gaps.append("FRAME_FAILURE: lawful prefix requires review")
-    if covers["unsatisfiable"] or covers["unreachable"]:
+    if missing_paths:
         gaps.append("PATH_COVERS_INCOMPLETE: inspect prefix/base/recursive/return binding")
+    expectation = root["expected_result"]
+    require(expectation in ("UNCLAIMED", "SUCCESS", "UNSUPPORTED_INTERPROCEDURAL_CYCLE"),
+            "unknown root expectation")
+    expected_unsupported = expectation == "UNSUPPORTED_INTERPROCEDURAL_CYCLE"
+    expectation_met = None
+    if expected_unsupported:
+        active_unsupported = [p for p in harness["unsupported_constructs"]
+                              if p["status"] not in ("SUCCESS", "UNREACHABLE")]
+        expectation_met = (verdict == "FAILURE" and len(failed) == 1
+                           and active_unsupported == failed
+                           and failed[0]["class"] == "unsupported_construct"
+                           and (failed[0]["description"] == CYCLE_UNSUPPORTED
+                                or failed[0]["description"].startswith(
+                                    CYCLE_UNSUPPORTED + " (repeats active frame ")))
+    elif expectation == "SUCCESS":
+        expectation_met = verdict == "SUCCESS" and not gaps
     return {
         "harness": root["harness"], "intended_mode": mode,
         "completed_outcome": outcome, "failures": failed, "checks": checks, "covers": covers,
         "unsupported_constructs": harness["unsupported_constructs"],
         "metadata_consistent": True, "binding_status": "BINDING_PENDING",
         "boundary_review": "UNREVIEWED", "gaps": gaps,
-        "companion_pass": (verdict == "SUCCESS" and not gaps) if root["companion"] else None,
+        "cover_records": records, "missing_paths": missing_paths,
+        "expected_result": expectation, "expectation_met": expectation_met,
+        "expected_unsupported": expected_unsupported and expectation_met,
+        "companion_pass": expectation_met if root["companion"] and not expected_unsupported else None,
         "mode_qualification": False,
     }

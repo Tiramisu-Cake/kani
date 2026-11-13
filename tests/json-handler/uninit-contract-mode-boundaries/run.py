@@ -52,7 +52,7 @@ def collect(kani, output):
                    "-Z", "function-contracts", "-Z", "stubbing", "-Z", "export-json",
                    "-Z", "unstable-options", "--exact", "--harness", root["harness"],
                    "--harness-timeout", str(manifest["proposed_harness_timeout_s"]),
-                   "--keep-temps", "--export-json", str(export),
+                   "--keep-temps", "--export-json", str(export), "--output-format=regular",
                    "--cbmc-args", "--object-bits", str(manifest["object_bits"])]
         write_json(work / "input.json", {"root": root, "argv": command,
                    "source_sha256": hashlib.sha256(source.read_bytes()).hexdigest()})
@@ -61,13 +61,14 @@ def collect(kani, output):
             with (work / "run.log").open("wb") as log:
                 exit_code = invoke(command, work, log, manifest["proposed_harness_timeout_s"] + 60)
             data = json.loads(export.read_text())
-            observed = observe(data, root, exit_code)
+            observed = observe(data, root, exit_code, (work / "run.log").read_text())
             observed["execution_status"] = "COMPLETED"
             observed["export"] = str(export)
             write_json(work / "observation.json", observed)
             report["roots"].append(observed)
-            if root["companion"] and not observed["companion_pass"]:
-                errors.append(root["harness"] + ": legal companion/prefix did not pass")
+            if observed["expectation_met"] is False:
+                errors.append(root["harness"] + ": expected " + root["expected_result"]
+                              + " was not observed")
         except (OSError, ValueError, KeyError, TypeError, AttributeError, subprocess.TimeoutExpired) as error:
             errors.append(root["harness"] + ": " + str(error))
             report["roots"].append({"harness": root["harness"], "execution_status": "COLLECTION_ERROR",

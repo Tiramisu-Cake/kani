@@ -13,7 +13,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from observe import observe
+from observe import CYCLE_UNSUPPORTED, observe as observe_export
 from run import collect, invoke
 
 ROOTS = json.loads(Path(__file__).with_name("roots.json").read_text())["roots"]
@@ -24,7 +24,7 @@ def export_for(root, verdict="SUCCESS"):
     kind = {"ProofForContract": {"target_fn": target}} if mode.endswith("Check") else "Proof"
     failures = [] if verdict == "SUCCESS" else [dict(id="payload.assertion.1", status="FAILURE",
                 description="synthetic payload check", **{"class": "assertion"})]
-    return dict(schema_version="0.1.0", run_state="COMPLETE", outcome={"kind": "COMPLETED"},
+    data = dict(schema_version="0.1.0", run_state="COMPLETE", outcome={"kind": "COMPLETED"},
                 harness_selection=dict(exact=True, matched_count=1, unmatched_filters=[],
                                        requested_filters=[root["harness"]]),
                 enabled_unstable_features=["uninit-checks", "function-contracts", "stubbing",
@@ -47,6 +47,57 @@ def export_for(root, verdict="SUCCESS"):
                 summary=dict(total=1, successful=int(not failures), failed=int(bool(failures)),
                              checks_total=1, checks_success=int(not failures), covers_total=2,
                              covers_satisfied=2))
+    required = root.get("required_covers", [])
+    if required:
+        covers = data["harnesses"][0]["covers"]
+        covers["total"] = len(required)
+        covers["satisfied"] = [f"body_copy.cover.{i}" for i in range(1, len(required) + 1)]
+        data["harnesses"][0]["n_properties"] = 1 + len(required)
+        data["summary"].update(covers_total=len(required), covers_satisfied=len(required))
+    return data
+
+
+def log_for(data, root):
+    """Synthetic regular output, with independent description/location metadata."""
+    covers = data["harnesses"][0]["covers"]
+    properties = root.get("required_covers") or [
+        dict(description="initialized return consumed", file=root["file"], line=1, column=9),
+        dict(description="uninitialized storage returned", file=root["file"], line=2, column=9)]
+    chunks = []
+    for status in ("satisfied", "unsatisfiable", "unreachable"):
+        for identifier in covers[status]:
+            prop = properties[int(identifier.rsplit(".", 1)[1]) - 1]
+            chunks.append(f'Check {len(chunks) + 1}: {identifier}\n'
+                          f'\t - Status: {status.upper()}\n'
+                          f'\t - Description: "{prop["description"]}"\n'
+                          f'\t - Location: {prop["file"]}:{prop["line"]}:{prop["column"]}'
+                          f' in function arbitrary_contract_copy\n')
+    return "\n".join(chunks)
+
+
+def observe(data, root, exit_code, log=None):
+    return observe_export(data, root, exit_code, log_for(data, root) if log is None else log)
+
+
+def cycle_export(root):
+    data = export_for(root, "FAILURE")
+    harness = data["harnesses"][0]
+    prop = harness["failed_properties"][0]
+    prop.update(description=CYCLE_UNSUPPORTED + " (repeats active frame 1); root/active path: synthetic",
+                **{"class": "unsupported_construct"})
+    harness["unsupported_constructs"] = [copy.deepcopy(prop)]
+    return data
+
+
+
+def add_failure(data, prop):
+    harness = data["harnesses"][0]
+    harness["failed_properties"].append(prop)
+    harness["checks"]["failure"].append(prop["id"])
+    harness["checks"]["total"] += 1
+    harness["n_properties"] += 1
+    harness["n_failed"] += 1
+    data["summary"]["checks_total"] += 1
 
 
 class ObserverTests(unittest.TestCase):
@@ -66,6 +117,68 @@ class ObserverTests(unittest.TestCase):
     def test_companion_failure_is_not_a_pass(self):
         root = ROOTS[1]
         self.assertFalse(observe(export_for(root, "FAILURE"), root, 1)["companion_pass"])
+
+    def test_cycle_boundary_requires_only_the_documented_unsupported(self):
+        for root in (ROOTS[3], ROOTS[4]):
+            with self.subTest(root=root["harness"]):
+                result = observe(cycle_export(root), root, 1)
+                self.assertTrue(result["expectation_met"])
+                self.assertTrue(result["expected_unsupported"])
+                self.assertIsNone(result["companion_pass"])
+                self.assertFalse(result["mode_qualification"])
+                self.assertFalse(observe(export_for(root), root, 0)["expectation_met"])
+                self.assertFalse(observe(export_for(root, "FAILURE"), root, 1)["expectation_met"])
+                for change in ("different_description", "different_class", "missing_unsupported",
+                               "extra_failure", "extra_unsupported", "unsupported_inventory_drift"):
+                    with self.subTest(change=change):
+                        data = cycle_export(root)
+                        harness = data["harnesses"][0]
+                        if change == "different_description":
+                            for prop in harness["failed_properties"] + harness["unsupported_constructs"]:
+                                prop["description"] = "another Unsupported mentioning " + CYCLE_UNSUPPORTED
+                        elif change == "different_class":
+                            for prop in harness["failed_properties"] + harness["unsupported_constructs"]:
+                                prop["class"] = "assertion"
+                        elif change == "missing_unsupported":
+                            harness["unsupported_constructs"] = []
+                        elif change == "unsupported_inventory_drift":
+                            harness["unsupported_constructs"][0]["id"] = "another.unsupported_construct.1"
+                        else:
+                            prop = dict(id="extra.assertion.2", status="FAILURE",
+                                        description="unrelated failure", **{"class": "assertion"})
+                            if change == "extra_unsupported":
+                                prop.update(description="another Unsupported", **{"class": "unsupported_construct"})
+                                harness["unsupported_constructs"].append(copy.deepcopy(prop))
+                            add_failure(data, prop)
+                        self.assertFalse(observe(data, root, 1)["expectation_met"])
+
+    def test_contract_body_covers_count_across_copies(self):
+        root = ROOTS[5]
+        data = export_for(root)
+        harness = data["harnesses"][0]
+        # IDs belong to arbitrary copies; source coordinates identify the same two body covers.
+        harness["covers"]["unreachable"] = ["original_body.cover.3", "original_body.cover.4"]
+        harness["covers"]["total"] += 2
+        harness["n_properties"] += 2
+        data["summary"]["covers_total"] += 2
+        result = observe(data, root, 0)
+        self.assertTrue(result["companion_pass"])
+        self.assertFalse(result["missing_paths"])
+        log = log_for(data, root)
+        for original, replacement in (("base body reached", "unrelated cover"),
+                                      ("recursive.rs:40:9", "recursive.rs:41:9"),
+                                      ("recursive.rs:40:9", "unrelated.rs:40:9"),
+                                      ("recursive.rs:40:9", "recursive.rs:40:10")):
+            with self.subTest(replacement=replacement):
+                self.assertFalse(observe(data, root, 0, log.replace(original, replacement))["companion_pass"])
+        # A satisfied cover elsewhere cannot rescue an unreachable source path.
+        log = log.replace('Location: recursive.rs:40:9 in function',
+                          'Location: recursive.rs:41:9 in function', 1)
+        self.assertFalse(observe(data, root, 0, log)["companion_pass"])
+        for invalid_log in ("", log_for(data, root) * 2,
+                            log_for(data, root).replace("Status: SATISFIED", "Status: UNREACHABLE", 1)):
+            with self.assertRaises(ValueError):
+                observe(data, root, 0, invalid_log)
 
     def test_reject_partial_crash_timeout_and_oom(self):
         root = ROOTS[0]
@@ -154,10 +267,12 @@ class CollectorTests(unittest.TestCase):
             self.assertEqual(command[-3:], ["--cbmc-args", "--object-bits", "12"])
             self.assertLess(command.index("unstable-options"), command.index("--cbmc-args"))
             self.assertEqual(timeout, 180)
-            verdict = "SUCCESS" if root["companion"] else "FAILURE"
+            data = (cycle_export(root) if root["expected_result"] == "UNSUPPORTED_INTERPROCEDURAL_CYCLE"
+                    else export_for(root, "SUCCESS" if root["companion"] else "FAILURE"))
             path = Path(command[command.index("--export-json") + 1])
-            path.write_text(json.dumps(export_for(root, verdict)))
-            return 0 if root["companion"] else 1
+            path.write_text(json.dumps(data))
+            log.write(log_for(data, root).encode())
+            return 0 if data["harnesses"][0]["outcome"]["verdict"] == "SUCCESS" else 1
         with tempfile.TemporaryDirectory() as temporary:
             destination = Path(temporary) / "results"
             result, calls = self.run_collector(destination, fake)
@@ -166,6 +281,40 @@ class CollectorTests(unittest.TestCase):
             self.assertEqual(len(report["roots"]), 6)
             self.assertFalse(report["mode_qualification"])
             self.assertEqual(len(list(destination.glob("*/export.json"))), 6)
+
+    def test_unexpected_cycle_results_fail_collection(self):
+        for victim in ("recursive_check", "recursive_ordinary"):
+            for mutation in ("success", "other_unsupported", "extra_failure", "extra_unsupported"):
+                with self.subTest(victim=victim, mutation=mutation):
+                    def fake(command, work, log, timeout):
+                        root = next(r for r in ROOTS if r["harness"] == work.name)
+                        cycle = root["expected_result"] == "UNSUPPORTED_INTERPROCEDURAL_CYCLE"
+                        data = cycle_export(root) if cycle else export_for(root)
+                        if root["harness"] == victim:
+                            if mutation == "success":
+                                data = export_for(root)
+                            elif mutation == "other_unsupported":
+                                harness = data["harnesses"][0]
+                                for prop in harness["failed_properties"] + harness["unsupported_constructs"]:
+                                    prop["description"] = "another Unsupported"
+                            else:
+                                prop = dict(id="extra.assertion.2", status="FAILURE",
+                                            description="unrelated failure", **{"class": "assertion"})
+                                if mutation == "extra_unsupported":
+                                    prop.update(description="another Unsupported",
+                                                **{"class": "unsupported_construct"})
+                                    data["harnesses"][0]["unsupported_constructs"].append(copy.deepcopy(prop))
+                                add_failure(data, prop)
+                        (work / "export.json").write_text(json.dumps(data))
+                        log.write(log_for(data, root).encode())
+                        return int(data["harnesses"][0]["outcome"]["verdict"] == "FAILURE")
+                    with tempfile.TemporaryDirectory() as temporary:
+                        destination = Path(temporary) / "results"
+                        result, calls = self.run_collector(destination, fake)
+                        self.assertEqual((result, calls), (1, 6))
+                        report = json.loads((destination / "observations.json").read_text())
+                        self.assertEqual(len(report["collection_errors"]), 1)
+                        self.assertTrue(report["collection_errors"][0].startswith(victim + ":"))
 
     def test_build_missing_export_and_timeout_stop_downstream(self):
         for failure in (None, subprocess.TimeoutExpired("synthetic", 180)):

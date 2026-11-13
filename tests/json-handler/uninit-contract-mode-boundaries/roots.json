@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "root_count": 6,
   "unwind": 8,
   "proposed_harness_timeout_s": 120,
@@ -14,7 +14,8 @@
       "companion": false,
       "source_semantics": "legal",
       "observed_outcome": null,
-      "binding_status": "BINDING_PENDING"
+      "binding_status": "BINDING_PENDING",
+      "expected_result": "UNCLAIMED"
     },
     {
       "file": "replace.rs",
@@ -24,7 +25,22 @@
       "companion": true,
       "source_semantics": "legal",
       "observed_outcome": null,
-      "binding_status": "BINDING_PENDING"
+      "binding_status": "BINDING_PENDING",
+      "expected_result": "SUCCESS",
+      "required_covers": [
+        {
+          "description": "initialized return consumed",
+          "file": "replace.rs",
+          "line": 57,
+          "column": 9
+        },
+        {
+          "description": "uninitialized storage returned",
+          "file": "replace.rs",
+          "line": 60,
+          "column": 9
+        }
+      ]
     },
     {
       "file": "replace.rs",
@@ -34,7 +50,22 @@
       "companion": true,
       "source_semantics": "legal",
       "observed_outcome": null,
-      "binding_status": "BINDING_PENDING"
+      "binding_status": "BINDING_PENDING",
+      "expected_result": "SUCCESS",
+      "required_covers": [
+        {
+          "description": "initialized return consumed",
+          "file": "replace.rs",
+          "line": 72,
+          "column": 9
+        },
+        {
+          "description": "uninitialized storage returned",
+          "file": "replace.rs",
+          "line": 75,
+          "column": 9
+        }
+      ]
     },
     {
       "file": "recursive.rs",
@@ -44,7 +75,8 @@
       "companion": false,
       "source_semantics": "legal",
       "observed_outcome": null,
-      "binding_status": "BINDING_PENDING"
+      "binding_status": "BINDING_PENDING",
+      "expected_result": "UNSUPPORTED_INTERPROCEDURAL_CYCLE"
     },
     {
       "file": "recursive.rs",
@@ -54,7 +86,8 @@
       "companion": true,
       "source_semantics": "legal",
       "observed_outcome": null,
-      "binding_status": "BINDING_PENDING"
+      "binding_status": "BINDING_PENDING",
+      "expected_result": "UNSUPPORTED_INTERPROCEDURAL_CYCLE"
     },
     {
       "file": "recursive.rs",
@@ -64,7 +97,34 @@
       "companion": true,
       "source_semantics": "legal",
       "observed_outcome": null,
-      "binding_status": "BINDING_PENDING"
+      "binding_status": "BINDING_PENDING",
+      "expected_result": "SUCCESS",
+      "required_covers": [
+        {
+          "description": "initialized return consumed",
+          "file": "recursive.rs",
+          "line": 85,
+          "column": 9
+        },
+        {
+          "description": "uninitialized storage returned",
+          "file": "recursive.rs",
+          "line": 87,
+          "column": 9
+        },
+        {
+          "description": "base body reached",
+          "file": "recursive.rs",
+          "line": 40,
+          "column": 9
+        },
+        {
+          "description": "unrolled body edge reached",
+          "file": "recursive.rs",
+          "line": 44,
+          "column": 9
+        }
+      ]
     }
   ]
 }
