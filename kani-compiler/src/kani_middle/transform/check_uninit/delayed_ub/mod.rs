@@ -8,9 +8,11 @@ use std::collections::HashSet;
 
 use crate::args::ExtraChecks;
 use crate::kani_middle::attributes::KaniAttributes;
-use crate::kani_middle::kani_functions::KaniFunction;
+use crate::kani_middle::kani_functions::{KaniFunction, KaniModel};
 use crate::kani_middle::{
-    points_to::{MemLoc, PointsToGraph, run_points_to_analysis},
+    points_to::{
+        AnalysisBodyOverride, BodyProvenance, MemLoc, PointsToGraph, run_points_to_analysis,
+    },
     reachability::CallGraph,
     transform::{
         BodyTransformation, GlobalPass, TransformationResult,
@@ -109,7 +111,15 @@ impl GlobalPass for DelayedUbPass {
                     && body.blocks[0].statements.is_empty()
                     && matches!(body.blocks[0].terminator.kind, TerminatorKind::Unreachable);
                 if is_registration || is_discarded_closure {
-                    body_overrides.insert(*instance, body.clone());
+                    let provenance = if is_registration {
+                        let run = self.mem_init_fn_cache[&KaniModel::RunContract.into()];
+                        let origin = Instance::resolve(run, &instance.args()).unwrap();
+                        BodyProvenance::RegistrationOverride(origin)
+                    } else {
+                        BodyProvenance::DiscardedClosureOverride
+                    };
+                    body_overrides
+                        .insert(*instance, AnalysisBodyOverride { body: body.clone(), provenance });
                 }
             }
             let mut analysis_targets = HashSet::new();
@@ -129,7 +139,7 @@ impl GlobalPass for DelayedUbPass {
                 if let Some(instance) = entry_fn {
                     let body = body_overrides
                         .get(&instance)
-                        .cloned()
+                        .map(|selected| selected.body.clone())
                         .unwrap_or_else(|| instance.body().unwrap());
                     match run_points_to_analysis(&body, tcx, instance, call_graph, &body_overrides)
                     {

@@ -49,7 +49,7 @@ use rustc_public::ty::{RigidTy as StableRigidTy, Ty as StableTy, TyKind as Stabl
 use rustc_span::Spanned;
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
-use std::fmt::Debug;
+use std::fmt::{self, Debug};
 
 /// A failed root has no usable points-to graph. Never export an unfinished summary.
 #[derive(Clone, Debug)]
@@ -57,28 +57,76 @@ pub struct PointsToAnalysisError {
     pub reason: String,
 }
 
-/// Body selection is fixed for the lifetime of one root's immutable override map.
-/// Together with the exact Instance (including generic arguments and instance kind),
-/// this identifies the actual analyzed body, not its temporary internal-MIR address.
+/// Diagnostic provenance of the existing immutable override selection. This does
+/// not select an additional body or introduce an analysis fallback.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum BodyProvenance {
+    Source,
+    RegistrationOverride(StableInstance),
+    DiscardedClosureOverride,
+}
+
+#[derive(Clone)]
+pub struct AnalysisBodyOverride {
+    pub body: StableBody,
+    pub provenance: BodyProvenance,
+}
+
+/// Exact Instance and selected snapshot, fixed for one root's immutable map.
+#[derive(Clone, Copy, PartialEq, Eq)]
 struct AnalysisKey<'tcx> {
     instance: Instance<'tcx>,
-    overridden: bool,
+    provenance: BodyProvenance,
+}
+
+impl Debug for AnalysisKey<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let owner = rustc_internal::stable(self.instance);
+        let selected = match self.provenance {
+            BodyProvenance::RegistrationOverride(origin) => origin,
+            BodyProvenance::Source | BodyProvenance::DiscardedClosureOverride => owner,
+        };
+        // Compiler symbols identify full monomorphizations, including generics.
+        // The selected snapshot is (owner symbol, provenance, origin symbol),
+        // not internal_mir's synthetic CRATE_DEF_ID or a temporary allocation.
+        f.debug_struct("AnalysisKey")
+            .field("owner_symbol", &owner.mangled_name())
+            .field("selected_origin_symbol", &selected.mangled_name())
+            .field("provenance", &self.provenance)
+            .field("instance", &self.instance)
+            .finish()
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+struct CallerLocation {
+    location: Location,
+    span: rustc_span::Span,
 }
 
 /// Shared only by the synchronous, nested analyses of ONE entry root. This is an
 /// active stack, not a visited set or an input-independent summary cache.
 struct ActiveCalls<K> {
     stack: Vec<K>,
+    callers: Vec<Option<CallerLocation>>,
     error: Option<PointsToAnalysisError>,
 }
 
 impl<K: Debug + Eq> ActiveCalls<K> {
     fn new() -> Self {
-        Self { stack: Vec::new(), error: None }
+        Self { stack: Vec::new(), callers: Vec::new(), error: None }
     }
 
+    #[cfg(test)]
     fn enter(&mut self, key: K) -> Result<(), PointsToAnalysisError> {
+        self.enter_at(key, None)
+    }
+
+    fn enter_at(
+        &mut self,
+        key: K,
+        caller: Option<CallerLocation>,
+    ) -> Result<(), PointsToAnalysisError> {
         if let Some(error) = &self.error {
             return Err(error.clone());
         }
@@ -86,19 +134,32 @@ impl<K: Debug + Eq> ActiveCalls<K> {
             // Keep the root and the end of the original active path, including the
             // repeated call. Bound the diagnostic, never the analysis depth or key.
             const MAX_FRAMES: usize = 12;
-            const MAX_FRAME_CHARS: usize = 192;
-            let label = |frame: &K| {
-                let text = format!("{frame:?}");
+            const MAX_FRAME_CHARS: usize = 4096;
+            let label = |frame: &K, caller: Option<CallerLocation>| {
+                let text = match caller {
+                    Some(caller) => {
+                        format!("caller={:?} at {:?}; {frame:?}", caller.location, caller.span)
+                    }
+                    None => format!("{frame:?}"),
+                };
                 let prefix: String = text.chars().take(MAX_FRAME_CHARS).collect();
-                if prefix.len() < text.len() { format!("{prefix}...") } else { prefix }
+                if prefix.len() < text.len() {
+                    format!("{prefix}... [frame truncated; {} chars total]", text.chars().count())
+                } else {
+                    prefix
+                }
             };
-            let mut path = vec![label(&self.stack[0])];
+            let mut path = vec![label(&self.stack[0], self.callers[0])];
             let tail_start = self.stack.len().saturating_sub(MAX_FRAMES - 2).max(1);
             if tail_start > 1 {
                 path.push(format!("... {} frames omitted ...", tail_start - 1));
             }
-            path.extend(self.stack[tail_start..].iter().map(label));
-            path.push(label(&key));
+            path.extend(
+                (tail_start..self.stack.len()).map(|idx| {
+                    format!("frame {idx}: {}", label(&self.stack[idx], self.callers[idx]))
+                }),
+            );
+            path.push(format!("repeated: {}", label(&key, caller)));
             let error = PointsToAnalysisError {
                 reason: format!(
                     "Kani delayed uninitialized-memory analysis detected an interprocedural cycle \
@@ -110,11 +171,13 @@ impl<K: Debug + Eq> ActiveCalls<K> {
             return Err(error);
         }
         self.stack.push(key);
+        self.callers.push(caller);
         Ok(())
     }
 
     fn exit(&mut self) -> Result<(), PointsToAnalysisError> {
         self.stack.pop().expect("balanced points-to analysis entry/exit");
+        self.callers.pop().expect("balanced points-to caller metadata");
         match &self.error {
             Some(error) => Err(error.clone()),
             None => Ok(()),
@@ -133,7 +196,7 @@ struct PointsToAnalysis<'a, 'tcx> {
     /// resolve the callee.
     call_graph: &'a CallGraph,
     /// Contract registration trampolines and discarded closures must agree with codegen.
-    body_overrides: &'a HashMap<StableInstance, StableBody>,
+    body_overrides: &'a HashMap<StableInstance, AnalysisBodyOverride>,
     /// This graph should contain a subset of the points-to graph reachable from function arguments.
     /// For the entry function it will be empty (as it supposedly does not have any parameters).
     initial_graph: PointsToGraph<'tcx>,
@@ -146,7 +209,7 @@ pub fn run_points_to_analysis<'tcx>(
     tcx: TyCtxt<'tcx>,
     instance: StableInstance,
     call_graph: &CallGraph,
-    body_overrides: &HashMap<StableInstance, StableBody>,
+    body_overrides: &HashMap<StableInstance, AnalysisBodyOverride>,
 ) -> Result<PointsToGraph<'tcx>, PointsToAnalysisError> {
     // Dataflow analysis does not yet work with StableMIR, so need to perform backward
     // conversion.
@@ -160,6 +223,7 @@ pub fn run_points_to_analysis<'tcx>(
         body_overrides,
         &RefCell::new(ActiveCalls::new()),
         PointsToGraph::empty(),
+        None,
     )
 }
 
@@ -171,15 +235,18 @@ impl<'a, 'tcx> PointsToAnalysis<'a, 'tcx> {
         tcx: TyCtxt<'tcx>,
         instance: Instance<'tcx>,
         call_graph: &'a CallGraph,
-        body_overrides: &'a HashMap<StableInstance, StableBody>,
+        body_overrides: &'a HashMap<StableInstance, AnalysisBodyOverride>,
         active_calls: &'a RefCell<ActiveCalls<AnalysisKey<'tcx>>>,
         initial_graph: PointsToGraph<'tcx>,
+        caller: Option<CallerLocation>,
     ) -> Result<PointsToGraph<'tcx>, PointsToAnalysisError> {
         let key = AnalysisKey {
             instance,
-            overridden: body_overrides.contains_key(&rustc_internal::stable(instance)),
+            provenance: body_overrides
+                .get(&rustc_internal::stable(instance))
+                .map_or(BodyProvenance::Source, |selected| selected.provenance),
         };
-        active_calls.borrow_mut().enter(key)?;
+        active_calls.borrow_mut().enter_at(key, caller)?;
         let analysis =
             Self { body, tcx, instance, call_graph, body_overrides, active_calls, initial_graph };
         // This creates a fixpoint solver using the initial graph, the body, and extra information
@@ -423,7 +490,13 @@ impl<'tcx> Analysis<'tcx> for PointsToAnalysis<'_, 'tcx> {
                         }
                     } else {
                         // Otherwise, handle this as a regular function call.
-                        self.apply_regular_call_effect(state, instance, args, destination);
+                        self.apply_regular_call_effect(
+                            state,
+                            instance,
+                            args,
+                            destination,
+                            location,
+                        );
                     }
                 }
             }
@@ -533,6 +606,7 @@ impl<'tcx> PointsToAnalysis<'_, 'tcx> {
         instance: Instance<'tcx>,
         args: &[Spanned<Operand<'tcx>>],
         destination: &Place<'tcx>,
+        location: Location,
     ) {
         // Here we simply call another function, so need to retrieve internal body for it.
         let new_body = {
@@ -542,7 +616,7 @@ impl<'tcx> PointsToAnalysis<'_, 'tcx> {
             let Some(stable_body) = self
                 .body_overrides
                 .get(&stable_instance)
-                .cloned()
+                .map(|selected| selected.body.clone())
                 .or_else(|| stable_instance.body())
             else {
                 return;
@@ -615,6 +689,10 @@ impl<'tcx> PointsToAnalysis<'_, 'tcx> {
             self.body_overrides,
             self.active_calls,
             initial_graph,
+            Some(CallerLocation {
+                location,
+                span: self.body.basic_blocks[location.block].terminator().source_info.span,
+            }),
         ) else {
             // The shared context carries the error through the dataflow callbacks.
             // In particular, do not join this failed callee's partial graph.
@@ -866,7 +944,9 @@ fn is_identity_aliasing_intrinsic(intrinsic: Intrinsic) -> bool {
 
 #[cfg(test)]
 mod active_call_tests {
-    use super::ActiveCalls;
+    use super::{ActiveCalls, CallerLocation};
+    use rustc_middle::mir::Location;
+    use rustc_span::DUMMY_SP;
 
     #[test]
     fn self_cycle_is_an_error_without_pushing_another_frame() {
@@ -890,13 +970,30 @@ mod active_call_tests {
         assert!(
             error
                 .reason
-                .contains("(\"root\", true) -> (\"A\", true) -> (\"B\", true) -> (\"A\", true)")
+                .contains("(\"root\", true) -> frame 1: (\"A\", true) -> frame 2: (\"B\", true) -> repeated: (\"A\", true)")
         );
         // No ancestor may turn a failed child into a successful partial summary.
         for _ in 0..3 {
             assert_eq!(calls.exit().unwrap_err().reason, error.reason);
         }
         assert!(calls.stack.is_empty());
+    }
+
+    #[test]
+    fn caller_location_is_diagnostic_only_and_survives_repeated_entry() {
+        let mut calls = ActiveCalls::new();
+        calls.enter("root").unwrap();
+        let caller = CallerLocation {
+            location: Location { block: 0usize.into(), statement_index: 3 },
+            span: DUMMY_SP,
+        };
+        let error = calls.enter_at("root", Some(caller)).unwrap_err();
+        assert!(error.reason.contains("repeats active frame 0"));
+        assert!(error.reason.contains("repeated: caller="));
+        assert_eq!(calls.stack.len(), 1);
+        assert_eq!(calls.callers.len(), 1);
+        assert!(calls.exit().is_err());
+        assert!(calls.callers.is_empty());
     }
 
     #[test]
@@ -959,11 +1056,12 @@ mod active_call_tests {
     fn diagnostic_is_bounded_without_limiting_analysis_depth() {
         let mut calls = ActiveCalls::new();
         for i in 0..100 {
-            calls.enter(format!("frame-{i}-{}", "x".repeat(1000))).unwrap();
+            calls.enter(format!("frame-{i}-{}", "x".repeat(10000))).unwrap();
         }
-        let error = calls.enter(format!("frame-50-{}", "x".repeat(1000))).unwrap_err();
-        assert!(error.reason.len() < 3000);
+        let error = calls.enter(format!("frame-50-{}", "x".repeat(10000))).unwrap_err();
+        assert!(error.reason.len() < 51000);
         assert!(error.reason.contains("frames omitted"));
+        assert!(error.reason.contains("frame truncated"));
         assert!(error.reason.contains("repeats active frame 50"));
         for _ in 0..100 {
             assert!(calls.exit().is_err());
