@@ -1,0 +1,123 @@
+# Copyright Kani Contributors
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+name: H1 stock encoding resource matrix
+on:
+  push:
+    branches: [uninit-ci/h1-resource-20261113]
+permissions:
+  contents: read
+concurrency:
+  group: h1-stock-resource
+  cancel-in-progress: false
+jobs:
+  build:
+    if: github.repository == 'Tiramisu-Cake/kani'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 150
+    env:
+      CARGO_BUILD_JOBS: '2'
+    steps:
+      - uses: actions/checkout@v4
+        timeout-minutes: 3
+        with:
+          path: ci-overlay
+          persist-credentials: false
+          set-safe-directory: false
+      - name: Initialize build status
+        run: |
+          mkdir -p evidence/build
+          echo '{"verification":"NOT_RUN","source":"4f64cc617cbe6ebd13e83c07cc62fcf245e0b53c"}' > evidence/build/outcome.json
+      - uses: actions/checkout@v4
+        timeout-minutes: 3
+        with:
+          repository: Tiramisu-Cake/kani
+          ref: 4f64cc617cbe6ebd13e83c07cc62fcf245e0b53c
+          path: source
+          persist-credentials: false
+          set-safe-directory: false
+      - name: Synthetic observer preflight
+        run: python3 ci-overlay/ci/h1/test_runner.py
+      - name: Exact source setup (25 minute cap)
+        run: python3 ci-overlay/ci/h1/runner.py phase evidence/build/setup 1500 6291456 bash ci-overlay/ci/h1/setup.sh source
+      - name: Build exact source once (110 minute cap)
+        working-directory: source
+        run: python3 ../ci-overlay/ci/h1/runner.py phase ../evidence/build/build 6600 6291456 cargo bundle -- h1
+      - name: Bind and package built tools
+        run: |
+          mkdir -p tools
+          tar -xzf source/kani-h1-x86_64-unknown-linux-gnu.tar.gz -C tools
+          python3 ci-overlay/ci/h1/runner.py bundle-identity tools/kani-h1 source
+          cp tools/kani-h1/identity.json evidence/build/tool-identity.json
+          tar -czf h1-tools.tar.gz -C tools kani-h1
+      - uses: actions/upload-artifact@v4
+        timeout-minutes: 3
+        with:
+          name: h1-tools
+          path: h1-tools.tar.gz
+          if-no-files-found: error
+          retention-days: 7
+      - uses: actions/upload-artifact@v4
+        timeout-minutes: 3
+        if: always()
+        with:
+          name: h1-build-receipts
+          path: evidence/build
+          if-no-files-found: error
+          retention-days: 7
+  singleton:
+    needs: build
+    if: always() && github.repository == 'Tiramisu-Cake/kani'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        id: [C12-P1, C12-P2, D10-P1, D10-P2, B14-P1, B14-P2, A16-P1, F12-P1, H16-P1, E8-P1]
+    steps:
+      - uses: actions/checkout@v4
+        timeout-minutes: 3
+        with:
+          path: ci-overlay
+          persist-credentials: false
+          set-safe-directory: false
+      - name: Initialize root-specific NOT_RUN
+        env:
+          CASE_ID: ${{ matrix.id }}
+          BUILD_RESULT: ${{ needs.build.result }}
+        run: |
+          mkdir -p evidence/case
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          Path('evidence/case/outcome.json').write_text(json.dumps(dict(case=os.environ['CASE_ID'], verification='NOT_RUN', build_result=os.environ['BUILD_RESULT'], semantics='UNKNOWN'))+'\n')
+          PY
+      - uses: actions/download-artifact@v4
+        timeout-minutes: 3
+        if: needs.build.result == 'success'
+        with:
+          name: h1-tools
+          path: tools-download
+      - name: Prepare singleton (8 minute cap)
+        timeout-minutes: 9
+        if: needs.build.result == 'success'
+        run: |
+          python3 ci-overlay/ci/h1/runner.py phase evidence/case/setup 480 6291456 bash -euo pipefail -c '
+            mkdir -p tools
+            tar -xzf tools-download/h1-tools.tar.gz -C tools
+            rustup toolchain install nightly-2026-10-23 --profile minimal --component rustc-dev,rust-src,llvm-tools
+          '
+      - name: Normal singleton (300 seconds, no retries)
+        timeout-minutes: 8
+        if: needs.build.result == 'success'
+        env:
+          CASE_ID: ${{ matrix.id }}
+        run: python3 ci-overlay/ci/h1/runner.py case "$CASE_ID" tools/kani-h1 evidence/case
+      - uses: actions/upload-artifact@v4
+        timeout-minutes: 3
+        if: always()
+        with:
+          name: h1-${{ matrix.id }}-receipts
+          path: evidence/case
+          if-no-files-found: error
+          retention-days: 7

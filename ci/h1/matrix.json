@@ -1,0 +1,112 @@
+[
+  {
+    "id": "C12-P1",
+    "root": "P1",
+    "object_bits": 12,
+    "offset_bits": 52,
+    "object_capacity": 4096,
+    "derived_max_allocation_bytes": 2251799813685248,
+    "derived_bound_status": "SOURCE_FORMULA_EXPECTATION; actual backend binding required",
+    "mode": "slice",
+    "derived_bound_source": "CBMC cbmc-6.11.0 820ff0f555b43fb78e0cd9332e498461bd14244b src/util/config.cpp configt::max_malloc_size"
+  },
+  {
+    "id": "C12-P2",
+    "root": "P2",
+    "object_bits": 12,
+    "offset_bits": 52,
+    "object_capacity": 4096,
+    "derived_max_allocation_bytes": 2251799813685248,
+    "derived_bound_status": "SOURCE_FORMULA_EXPECTATION; actual backend binding required",
+    "mode": "slice",
+    "derived_bound_source": "CBMC cbmc-6.11.0 820ff0f555b43fb78e0cd9332e498461bd14244b src/util/config.cpp configt::max_malloc_size"
+  },
+  {
+    "id": "D10-P1",
+    "root": "P1",
+    "object_bits": 10,
+    "offset_bits": 54,
+    "object_capacity": 1024,
+    "derived_max_allocation_bytes": 9007199254740992,
+    "derived_bound_status": "SOURCE_FORMULA_EXPECTATION; actual backend binding required",
+    "mode": "slice",
+    "derived_bound_source": "CBMC cbmc-6.11.0 820ff0f555b43fb78e0cd9332e498461bd14244b src/util/config.cpp configt::max_malloc_size"
+  },
+  {
+    "id": "D10-P2",
+    "root": "P2",
+    "object_bits": 10,
+    "offset_bits": 54,
+    "object_capacity": 1024,
+    "derived_max_allocation_bytes": 9007199254740992,
+    "derived_bound_status": "SOURCE_FORMULA_EXPECTATION; actual backend binding required",
+    "mode": "slice",
+    "derived_bound_source": "CBMC cbmc-6.11.0 820ff0f555b43fb78e0cd9332e498461bd14244b src/util/config.cpp configt::max_malloc_size"
+  },
+  {
+    "id": "B14-P1",
+    "root": "P1",
+    "object_bits": 14,
+    "offset_bits": 50,
+    "object_capacity": 16384,
+    "derived_max_allocation_bytes": 562949953421312,
+    "derived_bound_status": "SOURCE_FORMULA_EXPECTATION; actual backend binding required",
+    "mode": "slice",
+    "derived_bound_source": "CBMC cbmc-6.11.0 820ff0f555b43fb78e0cd9332e498461bd14244b src/util/config.cpp configt::max_malloc_size"
+  },
+  {
+    "id": "B14-P2",
+    "root": "P2",
+    "object_bits": 14,
+    "offset_bits": 50,
+    "object_capacity": 16384,
+    "derived_max_allocation_bytes": 562949953421312,
+    "derived_bound_status": "SOURCE_FORMULA_EXPECTATION; actual backend binding required",
+    "mode": "slice",
+    "derived_bound_source": "CBMC cbmc-6.11.0 820ff0f555b43fb78e0cd9332e498461bd14244b src/util/config.cpp configt::max_malloc_size"
+  },
+  {
+    "id": "A16-P1",
+    "root": "P1",
+    "object_bits": 16,
+    "offset_bits": 48,
+    "object_capacity": 65536,
+    "derived_max_allocation_bytes": 140737488355328,
+    "derived_bound_status": "SOURCE_FORMULA_EXPECTATION; actual backend binding required",
+    "mode": "slice",
+    "derived_bound_source": "CBMC cbmc-6.11.0 820ff0f555b43fb78e0cd9332e498461bd14244b src/util/config.cpp configt::max_malloc_size"
+  },
+  {
+    "id": "F12-P1",
+    "root": "P1",
+    "object_bits": 12,
+    "offset_bits": 52,
+    "object_capacity": 4096,
+    "derived_max_allocation_bytes": 2251799813685248,
+    "derived_bound_status": "SOURCE_FORMULA_EXPECTATION; actual backend binding required",
+    "mode": "no-slice",
+    "derived_bound_source": "CBMC cbmc-6.11.0 820ff0f555b43fb78e0cd9332e498461bd14244b src/util/config.cpp configt::max_malloc_size"
+  },
+  {
+    "id": "H16-P1",
+    "root": "P1",
+    "object_bits": 16,
+    "offset_bits": 48,
+    "object_capacity": 65536,
+    "derived_max_allocation_bytes": 140737488355328,
+    "derived_bound_status": "SOURCE_FORMULA_EXPECTATION; actual backend binding required",
+    "mode": "uf",
+    "derived_bound_source": "CBMC cbmc-6.11.0 820ff0f555b43fb78e0cd9332e498461bd14244b src/util/config.cpp configt::max_malloc_size"
+  },
+  {
+    "id": "E8-P1",
+    "root": "P1",
+    "object_bits": 8,
+    "offset_bits": 56,
+    "object_capacity": 256,
+    "derived_max_allocation_bytes": 36028797018963968,
+    "derived_bound_status": "SOURCE_FORMULA_EXPECTATION; actual backend binding required",
+    "mode": "slice",
+    "derived_bound_source": "CBMC cbmc-6.11.0 820ff0f555b43fb78e0cd9332e498461bd14244b src/util/config.cpp configt::max_malloc_size"
+  }
+]
