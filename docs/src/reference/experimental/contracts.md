@@ -72,13 +72,10 @@ By leveraging the stubbing feature, we can replace the (expensive) `gcd` call wi
 
 ## Limitations
 
-With `-Z uninit-checks`, Part1 support does not currently cover shadow transfers in
-Replace (`#[kani::stub_verified]`) or RecursiveCheck (`#[kani::recursion]` contract checking).
-This claim boundary does not restrict ordinary calls, SimpleCheck or Assert, and does not
-imply that every input in the unclaimed modes fails verification.
-
-A targeted diagnostic for missing private initialization state is deferred to separate work;
-see the [required-state design note](https://github.com/Tiramisu-Cake/verify-rust-std/blob/cee401ec22bd96e2b91733e6e2a275618b55f37e/research/challenge-8/kani-k1/kani3300/marker-modes/REQUIRED-STATE.md).
+With `-Z uninit-checks`, tracking the initialization state of `MaybeUninit` and union
+values passed across a call is not yet supported when the callee is replaced by its
+contract (`#[kani::stub_verified]`) or checked recursively (`#[kani::recursion]`).
+Ordinary calls and `#[kani::proof_for_contract]` checks are not affected.
 
 There is far more to learn about contracts.
 We highly recommend reading our [blog post about contracts](https://model-checking.github.io/kani-verifier-blog/2024/01/29/function-contracts.html) (from which this `gcd` example is taken). We also recommend looking at the `contracts` module in our [documentation](../../crates/index.md).
