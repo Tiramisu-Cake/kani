@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # Copyright Kani Contributors
 # SPDX-License-Identifier: Apache-2.0 OR MIT
-"""Synthetic checks for reviewed manifest bindings and the pending cycle root."""
+"""Synthetic checks for all seven reviewed exact manifest bindings."""
 import copy
 import json
 import unittest
@@ -36,11 +36,30 @@ class BindingManifestTests(unittest.TestCase):
     def setUp(self):
         self.cases = {case["name"]: case for case in MANIFEST["roots"]}
 
-    def test_six_reviewed_roots_have_complete_exact_bindings(self):
+    def bound_cycle(self):
+        case = self.cases["cycle_root"]
+        expected = {
+            "binding": case["binding"],
+            "expected_verdict": case["expected_verdict"],
+            "checks": copy.deepcopy(case["expected_inventory"]),
+            "covers": copy.deepcopy(case.get("expected_covers", [])),
+            "failure_kind": case["expected_failure_kind"],
+            "failed_properties": copy.deepcopy(case["expected_failures"]),
+            "unsupported_constructs": copy.deepcopy(case["expected_unsupported_inventory"]),
+        }
+        actual = observation(case["name"], copy.deepcopy(expected["checks"]),
+                             expected["expected_verdict"], expected["failure_kind"],
+                             copy.deepcopy(expected["failed_properties"]),
+                             copy.deepcopy(expected["unsupported_constructs"]))
+        actual["covers"] = copy.deepcopy(expected["covers"])
+        return actual, expected
+
+    def test_all_seven_reviewed_roots_have_complete_exact_bindings(self):
         bound = [case for case in self.cases.values()
                  if case["binding"] == "REGRESSION_BOUND"]
-        self.assertEqual(len(bound), 6)
+        self.assertEqual(len(bound), 7)
         for case in bound:
+            self.assertNotIn("binding_pending_reason", case)
             self.assertIsInstance(case["expected_inventory"], list)
             self.assertIsInstance(case["expected_failures"], list)
             self.assertIsInstance(case["expected_unsupported_inventory"], list)
@@ -79,34 +98,71 @@ class BindingManifestTests(unittest.TestCase):
         with self.assertRaisesRegex(Rejected, "status/identity drift"):
             check_single(observation(case["name"], damaged), expected)
 
-    def test_cycle_stays_pending_with_stable_message_contract(self):
+    def test_cycle_binding_has_reviewed_r4_stable_message(self):
         case = self.cases["cycle_root"]
-        self.assertEqual(case["binding"], "BINDING_PENDING")
-        reason = case["binding_pending_reason"]
+        self.assertEqual(case["binding"], "REGRESSION_BOUND")
+        self.assertEqual(case["binding_evidence"]["capture_run"], "43506774865")
+        self.assertEqual(case["expected_failure_kind"], "OTHER")
+        self.assertEqual(len(case["expected_failures"]), 1)
+        self.assertEqual(case["expected_failures"], case["expected_unsupported_inventory"])
+        failure = case["expected_failures"][0]
+        self.assertEqual(failure["id"], "cycle_root.unsupported_construct.1")
+        self.assertEqual(failure["status"], "FAILURE")
+        self.assertEqual(failure["class"], "unsupported_construct")
+        self.assertEqual(failure["file"], "tests/json-handler/uninit-part1-composition/mixed.rs")
+        self.assertEqual(failure["line"], "79")
+        self.assertIs(failure["trace_available"], True)
+        message = failure["description"]
         for required in ("Kani delayed uninitialized-memory analysis detected an interprocedural cycle",
-                         "Instance.name()", "trimmed paths", "provenance", "file:line"):
-            self.assertIn(required, reason)
-        for forbidden in ("AnalysisKey", "Instance Debug", "DefId", "internal IDs"):
-            self.assertIn(forbidden, reason)
-        with self.assertRaisesRegex(Rejected, "BINDING_PENDING"):
-            check_single(observation("cycle_root", []), {"binding": case["binding"]})
+                         "cycle_root [provenance=source]", "cycle_relay",
+                         "provenance=registration-override", "origin=kani::internal::run_contract_fn",
+                         "mixed.rs:81", "mixed.rs:75"):
+            self.assertIn(required, message)
+        for forbidden in ("AnalysisKey", "Instance {", "DefId(", "definition: "):
+            self.assertNotIn(forbidden, message)
+
+    def test_exact_cycle_inventory_matches_reviewed_binding(self):
+        actual, expected = self.bound_cycle()
+        self.assertTrue(check_single(actual, expected))
+
+    def test_cycle_missing_or_changed_check_rejected(self):
+        for change in ("missing", "status"):
+            actual, expected = self.bound_cycle()
+            if change == "missing":
+                actual["checks"].pop(0)
+            else:
+                actual["checks"][0]["status"] = "UNREACHABLE"
+            with self.subTest(change=change), self.assertRaisesRegex(Rejected, "status/identity drift"):
+                check_single(actual, expected)
+
+    def test_cycle_failure_metadata_and_kind_drift_rejected(self):
+        for field, value in (("file", "wrong.rs"), ("line", "80"),
+                             ("trace_available", False), ("class", "assertion")):
+            actual, expected = self.bound_cycle()
+            for bucket in ("failed_properties", "unsupported_constructs"):
+                actual[bucket][0][field] = value
+            with self.subTest(field=field), self.assertRaisesRegex(Rejected, "full failure inventory"):
+                check_single(actual, expected)
+        actual, expected = self.bound_cycle()
+        actual["failure_kind"] = "PANICS_ONLY"
+        with self.assertRaisesRegex(Rejected, "failure kind"):
+            check_single(actual, expected)
+
+    def test_cycle_missing_unsupported_inventory_rejected(self):
+        actual, expected = self.bound_cycle()
+        actual["unsupported_constructs"] = []
+        with self.assertRaisesRegex(Rejected, "Unsupported inventory"):
+            check_single(actual, expected)
 
     def test_cycle_diagnostic_drift_is_not_accepted_as_t1b(self):
-        baseline = observation("cycle_root", [])
+        baseline, expected = self.bound_cycle()
         changed = copy.deepcopy(baseline)
-        row = {"id": "cycle_root.unsupported_construct.1", "status": "FAILURE",
-               "description": "stable cycle message", "location": "mixed.rs:79:1 in function cycle_root"}
-        failure = {"id": row["id"], "status": "FAILURE", "description": row["description"],
-                   "class": "unsupported_construct", "file": "mixed.rs", "line": "79",
-                   "trace_available": True}
-        baseline.update(checks=[row], verdict="FAILURE", failure_kind="OTHER",
-                        failed_properties=[failure], unsupported_constructs=[failure], n_failed=1)
-        changed_row = copy.deepcopy(row)
-        changed_row["description"] = "changed cycle diagnostic"
-        changed_failure = dict(failure, description=changed_row["description"])
-        changed.update(checks=[changed_row], verdict="FAILURE", failure_kind="OTHER",
-                        failed_properties=[changed_failure], unsupported_constructs=[changed_failure],
-                        n_failed=1)
+        for bucket in ("checks", "failed_properties", "unsupported_constructs"):
+            for row in changed[bucket]:
+                if row["id"] == "cycle_root.unsupported_construct.1":
+                    row["description"] += " changed cycle diagnostic"
+        with self.assertRaisesRegex(Rejected, "status/identity drift"):
+            check_single(changed, expected)
         self.assertFalse(compare_root(baseline, changed)["accepted"])
 
     def test_shared_t1b_check_can_be_recorded_without_changing_binding(self):

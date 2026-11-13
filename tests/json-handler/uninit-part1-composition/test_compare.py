@@ -500,8 +500,8 @@ class CaptureDiagnosticTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             base = Path(temporary)
             output, errors = io.StringIO(), io.StringIO()
+            manifest = json.loads((mixed_runner.HERE / "roots.json").read_text())
             if bound_manifest:
-                manifest = json.loads((mixed_runner.HERE / "roots.json").read_text())
                 for case in manifest["roots"]:
                     baseline = root(case["name"], [check(case["name"], "FAILURE" if
                                     case["expected_verdict"] == "FAILURE" else "SUCCESS")],
@@ -510,7 +510,10 @@ class CaptureDiagnosticTests(unittest.TestCase):
                                 expected_failure_kind=baseline["failure_kind"],
                                 expected_failures=baseline["failed_properties"],
                                 expected_unsupported_inventory=baseline["unsupported_constructs"])
-                (base / "roots.json").write_text(json.dumps(manifest))
+            else:
+                # Exercise the pending guard independently of committed bindings.
+                manifest["roots"][0]["binding"] = "BINDING_PENDING"
+            (base / "roots.json").write_text(json.dumps(manifest))
 
             def execute(_kani, _manifest, selectors, cases, _parent, run_id):
                 if run_id == fail_run:
@@ -544,7 +547,7 @@ class CaptureDiagnosticTests(unittest.TestCase):
                 return original_write(path, *args, **kwargs)
 
             with mock.patch.object(mixed_runner.tempfile, "mkdtemp", return_value=str(base)), \
-                    mock.patch.object(mixed_runner, "HERE", base if bound_manifest else mixed_runner.HERE), \
+                    mock.patch.object(mixed_runner, "HERE", base), \
                     mock.patch.object(mixed_runner, "execute", side_effect=execute) as invoked, \
                     mock.patch.object(mixed_runner.subprocess, "run") as process, \
                     mock.patch.object(Path, "write_text", write_text), \

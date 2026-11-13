@@ -15,13 +15,16 @@ loaded read-only from `scripts/validate_json_export.py` through the existing
 uninit contract-oracle checker. Existing suites and validators are not changed.
 
 `roots.json` pins the Rust input SHA-256 and intended root/mode/verdict/source
-line map. Six roots have exact `REGRESSION_BOUND` inventories from the reviewed
-isolated R3 capture (run `43504302188`); `binding_evidence` pins its digest. `cycle_root` remains `BINDING_PENDING`: its `all_A_then_B`
-Unsupported/check diagnostic contains unstable internal identity data, so it must
-wait for a new capture after the diagnostic uses the stable message schema recorded
-in the manifest. The pending cycle inventory is not inferred from current runtime
-output. The ordinary `./test.sh` path fails closed before invoking Kani while any
-binding is pending. The coordinator's pre-C1 capture
+line map. All seven roots have exact `REGRESSION_BOUND` inventories. Six use
+reviewed isolated R3 capture run `43504302188` (`binding_evidence` at the manifest
+level); `cycle_root` uses R4 run `43506774865` (its own `binding_evidence`).
+The cycle binding pins every check/status, failure kind, full failed-property
+metadata and exact Unsupported inventory, including the stable readable cycle
+path. All four R4 mixed selections retain that cycle inventory exactly. Evidence
+pins the capture digests and source commits; R4's CI wrapper commit differs from
+the source commit only in workflow files. No output is learned during a run.
+The ordinary `./test.sh` path fails closed before invoking Kani if any binding
+is pending. The coordinator's pre-C1 capture
 path is `./test.sh --collect-unbound --keep-output`; it runs isolated roots,
 then all seven selectors in both orders and the focused cycle/legal pair in
 both orders. It prints and retains `capture.json`, each invocation's
