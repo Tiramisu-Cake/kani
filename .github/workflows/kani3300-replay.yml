@@ -3,7 +3,8 @@
 name: Kani 3300 C1 replay (preparation candidate)
 
 on:
-  workflow_dispatch:
+  push:
+    branches: ['ci/kani3300-replay-c1-w15']
 
 permissions:
   contents: read
