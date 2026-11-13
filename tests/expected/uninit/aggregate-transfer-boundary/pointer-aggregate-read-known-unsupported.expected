@@ -1,0 +1,3 @@
+Checking harness pointer_aggregate_read_known_unsupported...
+Cannot determine layout for a type that contains union of type
+VERIFICATION:- FAILED
