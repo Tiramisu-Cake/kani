@@ -474,9 +474,31 @@ fn data_bytes_for_ty(
                 RigidTy::Closure(_, _) if layout.is_sized() && layout.size.bytes() == 0 => {
                     Ok(vec![])
                 }
+                RigidTy::Closure(_, _) => {
+                    // Use the same monomorphized captures as codegen_ty_closure.
+                    // Leave the internal context before recursing through public types.
+                    let upvar_tys: Vec<Ty> = rustc_middle::ty::tls::with(|tcx| {
+                        let internal_ty = rustc_internal::internal(tcx, ty);
+                        let rustc_middle::ty::Closure(_, args) = internal_ty.kind() else {
+                            unreachable!("Expected a closure type for {ty:?}")
+                        };
+                        args.as_closure().upvar_tys().iter().map(rustc_internal::stable).collect()
+                    });
+                    assert_eq!(upvar_tys.len(), offsets.len());
+                    let mut closure_data_bytes = vec![];
+                    // Field indices name logical captures; offsets and iteration order
+                    // come from the closure's own layout, not a substituted tuple.
+                    for idx in layout.fields.fields_by_offset_order() {
+                        closure_data_bytes.append(&mut data_bytes_for_ty(
+                            machine_info,
+                            upvar_tys[idx],
+                            current_offset + offsets[idx].bytes(),
+                        )?);
+                    }
+                    Ok(closure_data_bytes)
+                }
                 RigidTy::FnDef(_, _)
                 | RigidTy::FnPtr(_)
-                | RigidTy::Closure(_, _)
                 | RigidTy::Coroutine(_, _)
                 | RigidTy::CoroutineClosure(_, _)
                 | RigidTy::CoroutineWitness(_, _)
