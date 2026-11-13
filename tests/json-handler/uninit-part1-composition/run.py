@@ -211,17 +211,12 @@ def observation(data, regular, selectors, case_by_name, receipt):
                         ("description", "class", "file", "line", "trace_available", "status")),
                         f"failed Unsupported metadata mismatch: {name}")
             normalized_unsupported.append({key: CHECKER.normalize(item[key], receipt["build_prefix"])
-                                           if key == "file" else item[key]
                                            for key in ("id", "description", "class", "file", "line",
                                                        "trace_available", "status")})
         require(verdict == case["expected_verdict"], f"unexpected verdict: {name}")
         def normalize_rows(rows):
-            return [{"id": row["id"], "status": row["status"],
-                     "description": row["description"],
-                     "location": CHECKER.normalize(row["location"], receipt["build_prefix"])
-                     if row["location"] else None} for row in rows]
+            return [CHECKER.normalize_property(row, receipt["build_prefix"]) for row in rows]
         normalized_failed = [{key: CHECKER.normalize(item[key], receipt["build_prefix"])
-                              if key == "file" else item[key]
                               for key in ("id", "description", "class", "file", "line",
                                           "trace_available", "status")}
                              for item in failed]

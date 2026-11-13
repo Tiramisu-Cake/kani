@@ -119,6 +119,57 @@ def hole_fixture(case_id, status):
 
 
 class CheckerTests(unittest.TestCase):
+    def test_checkout_relocation_and_unrelated_compiler_warning(self):
+        for source_case in MANIFEST["cases"]:
+            for prefix in ("/root/local-kani", "/home/runner/work/kani/kani/export",
+                           "/tmp/a much deeper/checkout"):
+                data, case, receipt, text = fixture(source_case["id"])
+                h = data["harnesses"][0]
+                h["file"] = prefix + "/" + case["input"]
+                for prop in h["failed_properties"]:
+                    prop["file"] = h["file"]
+                text = text.replace(case["input"], h["file"])
+                receipt.update(build_prefix=prefix, cwd=prefix)
+                text = ("warning: use of an unstable feature\n"
+                        "  = note: requested with `--force-warn unstable-features`\n" + text)
+                with self.subTest(case=case["id"], prefix=prefix):
+                    self.assertEqual(checker.validate(data, case, receipt, text), "PASS")
+
+    def test_external_rust_source_absolute_and_relative_locations(self):
+        canonical = ("rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/"
+                     "library/core/src/ptr/mod.rs")
+        for install in ("/home/runner/.rustup", "/root/.rustup", "/opt/custom-rustup"):
+            for relative in ("../../../", "../../../../"):
+                data, case, receipt, text = fixture()
+                prop = data["harnesses"][0]["failed_properties"][0]
+                old_location = f"{prop['file']}:{prop['line']}:1 in function synthetic"
+                absolute = canonical.replace("rust-toolchain:", install + "/toolchains/").replace(
+                    "/library/", "/lib/rustlib/src/rust/library/")
+                rendered = absolute.replace(install + "/", relative + ".rustup/")
+                prop["file"] = absolute
+                case["binding"]["failures"][0]["file"] = canonical
+                record = {"id": prop["id"], "status": "FAILURE", "description": prop["description"],
+                          "location": canonical + ":14:1 in function synthetic"}
+                case["binding"]["required_regular"] = [record]
+                text = text.replace(old_location, rendered + ":14:1 in function synthetic")
+                with self.subTest(install=install, relative=relative):
+                    self.assertEqual(checker.validate(data, case, receipt, text), "PASS")
+                    for before, after in (("ptr/mod.rs", "mem/mod.rs"), (":14:1", ":15:1"),
+                                          (":14:1", ":14:2"), ("function synthetic", "function other"),
+                                          ("2026-10-23", "2026-10-24")):
+                        with self.subTest(mutation=after), self.assertRaises(checker.Rejected):
+                            checker.validate(data, case, receipt, text.replace(before, after))
+
+    def test_normalization_retains_foreign_paths_and_embedded_coordinates(self):
+        prefix = "/checkout"
+        for value in ("/foreign/checkout/tests/foo.rs", "/checkout-other/tests/foo.rs",
+                      "/unrelated/library/core/src/ptr/mod.rs", "../other/foo.rs"):
+            self.assertEqual(checker.normalize(value, prefix), value)
+        value = "{closure@/checkout/tests/foo.rs:27:17: 27:43} [call at /checkout/tests/foo.rs:81]"
+        expected = "{closure@tests/foo.rs:27:17: 27:43} [call at tests/foo.rs:81]"
+        self.assertEqual(checker.normalize(value, prefix), expected)
+        self.assertEqual(checker.normalize(expected, prefix), expected)
+
     def reject(self, change, case_id="p2", message=None):
         data, case, receipt, text = fixture(case_id)
         replacement = change(data, case, receipt, text)

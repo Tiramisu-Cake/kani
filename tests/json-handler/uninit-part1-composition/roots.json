@@ -100,25 +100,25 @@
         {
           "description": "Undefined Behavior: Reading from an uninitialized pointer of type `*const u8`",
           "id": "std::ptr::read::<u8>.safety_check.1",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {
           "description": "misaligned pointer to reference cast: address must be a multiple of its type's alignment",
           "id": "std::ptr::read::<u8>.safety_check.2",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {
           "description": "dereference failure: pointer invalid",
           "id": "std::ptr::read::<u8>.safety_check.3",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {
           "description": "Undefined Behavior: Reading from an uninitialized pointer of type `u8`",
           "id": "std::ptr::read::<u8>.safety_check.4",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {
@@ -190,37 +190,37 @@
         {
           "description": "dereference failure: pointer NULL",
           "id": "std::ptr::read::<u8>.pointer_dereference.1",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {
           "description": "dereference failure: pointer invalid",
           "id": "std::ptr::read::<u8>.pointer_dereference.2",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {
           "description": "dereference failure: deallocated dynamic object",
           "id": "std::ptr::read::<u8>.pointer_dereference.3",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {
           "description": "dereference failure: dead object",
           "id": "std::ptr::read::<u8>.pointer_dereference.4",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {
           "description": "dereference failure: pointer outside object bounds",
           "id": "std::ptr::read::<u8>.pointer_dereference.5",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {
           "description": "dereference failure: invalid integer address",
           "id": "std::ptr::read::<u8>.pointer_dereference.6",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {
@@ -371,25 +371,25 @@
         {
           "description": "Undefined Behavior: Reading from an uninitialized pointer of type `*const u8`",
           "id": "std::ptr::read::<u8>.safety_check.1",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "FAILURE"
         },
         {
           "description": "misaligned pointer to reference cast: address must be a multiple of its type's alignment",
           "id": "std::ptr::read::<u8>.safety_check.2",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {
           "description": "dereference failure: pointer invalid",
           "id": "std::ptr::read::<u8>.safety_check.3",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {
           "description": "Undefined Behavior: Reading from an uninitialized pointer of type `u8`",
           "id": "std::ptr::read::<u8>.safety_check.4",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "FAILURE"
         },
         {
@@ -431,37 +431,37 @@
         {
           "description": "dereference failure: pointer NULL",
           "id": "std::ptr::read::<u8>.pointer_dereference.1",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {
           "description": "dereference failure: pointer invalid",
           "id": "std::ptr::read::<u8>.pointer_dereference.2",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {
           "description": "dereference failure: deallocated dynamic object",
           "id": "std::ptr::read::<u8>.pointer_dereference.3",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {
           "description": "dereference failure: dead object",
           "id": "std::ptr::read::<u8>.pointer_dereference.4",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {
           "description": "dereference failure: pointer outside object bounds",
           "id": "std::ptr::read::<u8>.pointer_dereference.5",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {
           "description": "dereference failure: invalid integer address",
           "id": "std::ptr::read::<u8>.pointer_dereference.6",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {
@@ -488,7 +488,7 @@
         {
           "class": "safety_check",
           "description": "Undefined Behavior: Reading from an uninitialized pointer of type `*const u8`",
-          "file": "/home/runner/.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs",
+          "file": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs",
           "id": "std::ptr::read::<u8>.safety_check.1",
           "line": "1754",
           "status": "FAILURE",
@@ -497,7 +497,7 @@
         {
           "class": "safety_check",
           "description": "Undefined Behavior: Reading from an uninitialized pointer of type `u8`",
-          "file": "/home/runner/.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs",
+          "file": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs",
           "id": "std::ptr::read::<u8>.safety_check.4",
           "line": "1754",
           "status": "FAILURE",
@@ -691,25 +691,25 @@
         {
           "description": "Undefined Behavior: Reading from an uninitialized pointer of type `*const u8`",
           "id": "std::ptr::read::<u8>.safety_check.1",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {
           "description": "misaligned pointer to reference cast: address must be a multiple of its type's alignment",
           "id": "std::ptr::read::<u8>.safety_check.2",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {
           "description": "dereference failure: pointer invalid",
           "id": "std::ptr::read::<u8>.safety_check.3",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {
           "description": "Undefined Behavior: Reading from an uninitialized pointer of type `u8`",
           "id": "std::ptr::read::<u8>.safety_check.4",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {
@@ -799,7 +799,7 @@
         {
           "description": "attempt to shift left with overflow",
           "id": "std::fmt::Arguments::<'_>::from_str.assertion.1",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/fmt/mod.rs:820:38 in function std::fmt::Arguments::<'_>::from_str",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/fmt/mod.rs:820:38 in function std::fmt::Arguments::<'_>::from_str",
           "status": "UNREACHABLE"
         },
         {
@@ -1014,13 +1014,13 @@
         },
         {
           "description": "misaligned pointer to reference cast: address must be a multiple of its type's alignment",
-          "id": "kani::mem_init::set_ptr_initialized::<0, {closure@/home/runner/work/kani/kani/tests/json-handler/uninit-part1-composition/mixed.rs:27:17: 27:43}>.safety_check.1",
+          "id": "kani::mem_init::set_ptr_initialized::<0, {closure@tests/json-handler/uninit-part1-composition/mixed.rs:27:17: 27:43}>.safety_check.1",
           "location": "library/kani_core/src/mem_init.rs:278:17 in function kani::mem_init::set_ptr_initialized::<0, {closure@tests/json-handler/uninit-part1-composition/mixed.rs:27:17: 27:43}>",
           "status": "SUCCESS"
         },
         {
           "description": "dereference failure: pointer invalid",
-          "id": "kani::mem_init::set_ptr_initialized::<0, {closure@/home/runner/work/kani/kani/tests/json-handler/uninit-part1-composition/mixed.rs:27:17: 27:43}>.safety_check.2",
+          "id": "kani::mem_init::set_ptr_initialized::<0, {closure@tests/json-handler/uninit-part1-composition/mixed.rs:27:17: 27:43}>.safety_check.2",
           "location": "library/kani_core/src/mem_init.rs:278:17 in function kani::mem_init::set_ptr_initialized::<0, {closure@tests/json-handler/uninit-part1-composition/mixed.rs:27:17: 27:43}>",
           "status": "SUCCESS"
         },
@@ -1183,37 +1183,37 @@
         {
           "description": "dereference failure: pointer NULL",
           "id": "std::ptr::read::<u8>.pointer_dereference.1",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {
           "description": "dereference failure: pointer invalid",
           "id": "std::ptr::read::<u8>.pointer_dereference.2",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {
           "description": "dereference failure: deallocated dynamic object",
           "id": "std::ptr::read::<u8>.pointer_dereference.3",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {
           "description": "dereference failure: dead object",
           "id": "std::ptr::read::<u8>.pointer_dereference.4",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {
           "description": "dereference failure: pointer outside object bounds",
           "id": "std::ptr::read::<u8>.pointer_dereference.5",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {
           "description": "dereference failure: invalid integer address",
           "id": "std::ptr::read::<u8>.pointer_dereference.6",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {
@@ -2431,20 +2431,20 @@
         },
         {
           "description": "misaligned pointer to reference cast: address must be a multiple of its type's alignment",
-          "id": "kani::mem_init::set_ptr_initialized::<0, {closure@/home/runner/work/kani/kani/tests/json-handler/uninit-part1-composition/mixed.rs:39:17: 39:43}>.safety_check.1",
+          "id": "kani::mem_init::set_ptr_initialized::<0, {closure@tests/json-handler/uninit-part1-composition/mixed.rs:39:17: 39:43}>.safety_check.1",
           "location": "library/kani_core/src/mem_init.rs:278:17 in function kani::mem_init::set_ptr_initialized::<0, {closure@tests/json-handler/uninit-part1-composition/mixed.rs:39:17: 39:43}>",
           "status": "SUCCESS"
         },
         {
           "description": "dereference failure: pointer invalid",
-          "id": "kani::mem_init::set_ptr_initialized::<0, {closure@/home/runner/work/kani/kani/tests/json-handler/uninit-part1-composition/mixed.rs:39:17: 39:43}>.safety_check.2",
+          "id": "kani::mem_init::set_ptr_initialized::<0, {closure@tests/json-handler/uninit-part1-composition/mixed.rs:39:17: 39:43}>.safety_check.2",
           "location": "library/kani_core/src/mem_init.rs:278:17 in function kani::mem_init::set_ptr_initialized::<0, {closure@tests/json-handler/uninit-part1-composition/mixed.rs:39:17: 39:43}>",
           "status": "SUCCESS"
         },
         {
           "description": "attempt to shift left with overflow",
           "id": "std::fmt::Arguments::<'_>::from_str.assertion.1",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/fmt/mod.rs:820:38 in function std::fmt::Arguments::<'_>::from_str",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/fmt/mod.rs:820:38 in function std::fmt::Arguments::<'_>::from_str",
           "status": "UNREACHABLE"
         },
         {
@@ -2684,25 +2684,25 @@
         {
           "description": "Undefined Behavior: Reading from an uninitialized pointer of type `*const u8`",
           "id": "std::ptr::read::<u8>.safety_check.1",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {
           "description": "misaligned pointer to reference cast: address must be a multiple of its type's alignment",
           "id": "std::ptr::read::<u8>.safety_check.2",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {
           "description": "dereference failure: pointer invalid",
           "id": "std::ptr::read::<u8>.safety_check.3",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {
           "description": "Undefined Behavior: Reading from an uninitialized pointer of type `u8`",
           "id": "std::ptr::read::<u8>.safety_check.4",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {
@@ -2822,37 +2822,37 @@
         {
           "description": "dereference failure: pointer NULL",
           "id": "std::ptr::read::<u8>.pointer_dereference.1",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {
           "description": "dereference failure: pointer invalid",
           "id": "std::ptr::read::<u8>.pointer_dereference.2",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {
           "description": "dereference failure: deallocated dynamic object",
           "id": "std::ptr::read::<u8>.pointer_dereference.3",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {
           "description": "dereference failure: dead object",
           "id": "std::ptr::read::<u8>.pointer_dereference.4",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {
           "description": "dereference failure: pointer outside object bounds",
           "id": "std::ptr::read::<u8>.pointer_dereference.5",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {
           "description": "dereference failure: invalid integer address",
           "id": "std::ptr::read::<u8>.pointer_dereference.6",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {
@@ -3350,13 +3350,13 @@
         },
         {
           "description": "misaligned pointer to reference cast: address must be a multiple of its type's alignment",
-          "id": "kani::mem_init::set_ptr_initialized::<0, {closure@/home/runner/work/kani/kani/tests/json-handler/uninit-part1-composition/mixed.rs:51:17: 51:43}>.safety_check.1",
+          "id": "kani::mem_init::set_ptr_initialized::<0, {closure@tests/json-handler/uninit-part1-composition/mixed.rs:51:17: 51:43}>.safety_check.1",
           "location": "library/kani_core/src/mem_init.rs:278:17 in function kani::mem_init::set_ptr_initialized::<0, {closure@tests/json-handler/uninit-part1-composition/mixed.rs:51:17: 51:43}>",
           "status": "SUCCESS"
         },
         {
           "description": "dereference failure: pointer invalid",
-          "id": "kani::mem_init::set_ptr_initialized::<0, {closure@/home/runner/work/kani/kani/tests/json-handler/uninit-part1-composition/mixed.rs:51:17: 51:43}>.safety_check.2",
+          "id": "kani::mem_init::set_ptr_initialized::<0, {closure@tests/json-handler/uninit-part1-composition/mixed.rs:51:17: 51:43}>.safety_check.2",
           "location": "library/kani_core/src/mem_init.rs:278:17 in function kani::mem_init::set_ptr_initialized::<0, {closure@tests/json-handler/uninit-part1-composition/mixed.rs:51:17: 51:43}>",
           "status": "SUCCESS"
         },
@@ -4059,7 +4059,7 @@
         {
           "description": "attempt to shift left with overflow",
           "id": "std::fmt::Arguments::<'_>::from_str.assertion.1",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/fmt/mod.rs:820:38 in function std::fmt::Arguments::<'_>::from_str",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/fmt/mod.rs:820:38 in function std::fmt::Arguments::<'_>::from_str",
           "status": "UNREACHABLE"
         },
         {
@@ -4083,25 +4083,25 @@
         {
           "description": "Undefined Behavior: Reading from an uninitialized pointer of type `*const u8`",
           "id": "std::ptr::read::<u8>.safety_check.1",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "FAILURE"
         },
         {
           "description": "misaligned pointer to reference cast: address must be a multiple of its type's alignment",
           "id": "std::ptr::read::<u8>.safety_check.2",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {
           "description": "dereference failure: pointer invalid",
           "id": "std::ptr::read::<u8>.safety_check.3",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {
           "description": "Undefined Behavior: Reading from an uninitialized pointer of type `u8`",
           "id": "std::ptr::read::<u8>.safety_check.4",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "FAILURE"
         },
         {
@@ -4221,37 +4221,37 @@
         {
           "description": "dereference failure: pointer NULL",
           "id": "std::ptr::read::<u8>.pointer_dereference.1",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {
           "description": "dereference failure: pointer invalid",
           "id": "std::ptr::read::<u8>.pointer_dereference.2",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {
           "description": "dereference failure: deallocated dynamic object",
           "id": "std::ptr::read::<u8>.pointer_dereference.3",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {
           "description": "dereference failure: dead object",
           "id": "std::ptr::read::<u8>.pointer_dereference.4",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {
           "description": "dereference failure: pointer outside object bounds",
           "id": "std::ptr::read::<u8>.pointer_dereference.5",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {
           "description": "dereference failure: invalid integer address",
           "id": "std::ptr::read::<u8>.pointer_dereference.6",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {
@@ -4689,7 +4689,7 @@
         {
           "class": "safety_check",
           "description": "Undefined Behavior: Reading from an uninitialized pointer of type `*const u8`",
-          "file": "/home/runner/.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs",
+          "file": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs",
           "id": "std::ptr::read::<u8>.safety_check.1",
           "line": "1754",
           "status": "FAILURE",
@@ -4698,7 +4698,7 @@
         {
           "class": "safety_check",
           "description": "Undefined Behavior: Reading from an uninitialized pointer of type `u8`",
-          "file": "/home/runner/.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs",
+          "file": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs",
           "id": "std::ptr::read::<u8>.safety_check.4",
           "line": "1754",
           "status": "FAILURE",
@@ -4748,7 +4748,7 @@
         {
           "description": "Undefined Behavior: Reading from an uninitialized pointer of type `*const u8`",
           "id": "std::ptr::read::<u8>.safety_check.1",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {
@@ -4878,7 +4878,7 @@
           "status": "SUCCESS"
         },
         {
-          "description": "Kani delayed uninitialized-memory analysis detected an interprocedural cycle (repeats active frame 1); root/active path: cycle_root [provenance=source] -> frame 1: cycle_relay [provenance=source] [call at /home/runner/work/kani/kani/tests/json-handler/uninit-part1-composition/mixed.rs:81] -> frame 2: cycle_relay::kani_register_contract::<std::mem::MaybeUninit<u8>, {closure@/home/runner/work/kani/kani/tests/json-handler/uninit-part1-composition/mixed.rs:67:1: 67:30}> [provenance=registration-override; origin=kani::internal::run_contract_fn::<std::mem::MaybeUninit<u8>, {closure@/home/runner/work/kani/kani/tests/json-handler/uninit-part1-composition/mixed.rs:67:1: 67:30}>] [call at /home/runner/work/kani/kani/tests/json-handler/uninit-part1-composition/mixed.rs:67] -> frame 3: cycle_relay::{closure#0} [provenance=source] [call at library/kani_core/src/lib.rs:748] -> frame 4: cycle_relay::{closure#0}::{closure#1} [provenance=source] [call at /home/runner/work/kani/kani/tests/json-handler/uninit-part1-composition/mixed.rs:67] -> frame 5: cycle_relay::{closure#0}::{closure#1}::{closure#1} [provenance=source] [call at /home/runner/work/kani/kani/tests/json-handler/uninit-part1-composition/mixed.rs:67] -> repeated: cycle_relay [provenance=source] [call at /home/runner/work/kani/kani/tests/json-handler/uninit-part1-composition/mixed.rs:75]",
+          "description": "Kani delayed uninitialized-memory analysis detected an interprocedural cycle (repeats active frame 1); root/active path: cycle_root [provenance=source] -> frame 1: cycle_relay [provenance=source] [call at tests/json-handler/uninit-part1-composition/mixed.rs:81] -> frame 2: cycle_relay::kani_register_contract::<std::mem::MaybeUninit<u8>, {closure@tests/json-handler/uninit-part1-composition/mixed.rs:67:1: 67:30}> [provenance=registration-override; origin=kani::internal::run_contract_fn::<std::mem::MaybeUninit<u8>, {closure@tests/json-handler/uninit-part1-composition/mixed.rs:67:1: 67:30}>] [call at tests/json-handler/uninit-part1-composition/mixed.rs:67] -> frame 3: cycle_relay::{closure#0} [provenance=source] [call at library/kani_core/src/lib.rs:748] -> frame 4: cycle_relay::{closure#0}::{closure#1} [provenance=source] [call at tests/json-handler/uninit-part1-composition/mixed.rs:67] -> frame 5: cycle_relay::{closure#0}::{closure#1}::{closure#1} [provenance=source] [call at tests/json-handler/uninit-part1-composition/mixed.rs:67] -> repeated: cycle_relay [provenance=source] [call at tests/json-handler/uninit-part1-composition/mixed.rs:75]",
           "id": "cycle_root.unsupported_construct.1",
           "location": "tests/json-handler/uninit-part1-composition/mixed.rs:79:1 in function cycle_root",
           "status": "FAILURE"
@@ -5690,7 +5690,7 @@
         {
           "description": "attempt to shift left with overflow",
           "id": "std::fmt::Arguments::<'_>::from_str.assertion.1",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/fmt/mod.rs:820:38 in function std::fmt::Arguments::<'_>::from_str",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/fmt/mod.rs:820:38 in function std::fmt::Arguments::<'_>::from_str",
           "status": "UNREACHABLE"
         },
         {
@@ -5936,37 +5936,37 @@
         {
           "description": "dereference failure: pointer NULL",
           "id": "std::ptr::read::<u8>.pointer_dereference.1",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {
           "description": "dereference failure: pointer invalid",
           "id": "std::ptr::read::<u8>.pointer_dereference.2",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {
           "description": "dereference failure: deallocated dynamic object",
           "id": "std::ptr::read::<u8>.pointer_dereference.3",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {
           "description": "dereference failure: dead object",
           "id": "std::ptr::read::<u8>.pointer_dereference.4",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {
           "description": "dereference failure: pointer outside object bounds",
           "id": "std::ptr::read::<u8>.pointer_dereference.5",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {
           "description": "dereference failure: invalid integer address",
           "id": "std::ptr::read::<u8>.pointer_dereference.6",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {
@@ -7024,7 +7024,7 @@
       "expected_failures": [
         {
           "class": "unsupported_construct",
-          "description": "Kani delayed uninitialized-memory analysis detected an interprocedural cycle (repeats active frame 1); root/active path: cycle_root [provenance=source] -> frame 1: cycle_relay [provenance=source] [call at /home/runner/work/kani/kani/tests/json-handler/uninit-part1-composition/mixed.rs:81] -> frame 2: cycle_relay::kani_register_contract::<std::mem::MaybeUninit<u8>, {closure@/home/runner/work/kani/kani/tests/json-handler/uninit-part1-composition/mixed.rs:67:1: 67:30}> [provenance=registration-override; origin=kani::internal::run_contract_fn::<std::mem::MaybeUninit<u8>, {closure@/home/runner/work/kani/kani/tests/json-handler/uninit-part1-composition/mixed.rs:67:1: 67:30}>] [call at /home/runner/work/kani/kani/tests/json-handler/uninit-part1-composition/mixed.rs:67] -> frame 3: cycle_relay::{closure#0} [provenance=source] [call at library/kani_core/src/lib.rs:748] -> frame 4: cycle_relay::{closure#0}::{closure#1} [provenance=source] [call at /home/runner/work/kani/kani/tests/json-handler/uninit-part1-composition/mixed.rs:67] -> frame 5: cycle_relay::{closure#0}::{closure#1}::{closure#1} [provenance=source] [call at /home/runner/work/kani/kani/tests/json-handler/uninit-part1-composition/mixed.rs:67] -> repeated: cycle_relay [provenance=source] [call at /home/runner/work/kani/kani/tests/json-handler/uninit-part1-composition/mixed.rs:75]",
+          "description": "Kani delayed uninitialized-memory analysis detected an interprocedural cycle (repeats active frame 1); root/active path: cycle_root [provenance=source] -> frame 1: cycle_relay [provenance=source] [call at tests/json-handler/uninit-part1-composition/mixed.rs:81] -> frame 2: cycle_relay::kani_register_contract::<std::mem::MaybeUninit<u8>, {closure@tests/json-handler/uninit-part1-composition/mixed.rs:67:1: 67:30}> [provenance=registration-override; origin=kani::internal::run_contract_fn::<std::mem::MaybeUninit<u8>, {closure@tests/json-handler/uninit-part1-composition/mixed.rs:67:1: 67:30}>] [call at tests/json-handler/uninit-part1-composition/mixed.rs:67] -> frame 3: cycle_relay::{closure#0} [provenance=source] [call at library/kani_core/src/lib.rs:748] -> frame 4: cycle_relay::{closure#0}::{closure#1} [provenance=source] [call at tests/json-handler/uninit-part1-composition/mixed.rs:67] -> frame 5: cycle_relay::{closure#0}::{closure#1}::{closure#1} [provenance=source] [call at tests/json-handler/uninit-part1-composition/mixed.rs:67] -> repeated: cycle_relay [provenance=source] [call at tests/json-handler/uninit-part1-composition/mixed.rs:75]",
           "file": "tests/json-handler/uninit-part1-composition/mixed.rs",
           "id": "cycle_root.unsupported_construct.1",
           "line": "79",
@@ -7035,7 +7035,7 @@
       "expected_unsupported_inventory": [
         {
           "class": "unsupported_construct",
-          "description": "Kani delayed uninitialized-memory analysis detected an interprocedural cycle (repeats active frame 1); root/active path: cycle_root [provenance=source] -> frame 1: cycle_relay [provenance=source] [call at /home/runner/work/kani/kani/tests/json-handler/uninit-part1-composition/mixed.rs:81] -> frame 2: cycle_relay::kani_register_contract::<std::mem::MaybeUninit<u8>, {closure@/home/runner/work/kani/kani/tests/json-handler/uninit-part1-composition/mixed.rs:67:1: 67:30}> [provenance=registration-override; origin=kani::internal::run_contract_fn::<std::mem::MaybeUninit<u8>, {closure@/home/runner/work/kani/kani/tests/json-handler/uninit-part1-composition/mixed.rs:67:1: 67:30}>] [call at /home/runner/work/kani/kani/tests/json-handler/uninit-part1-composition/mixed.rs:67] -> frame 3: cycle_relay::{closure#0} [provenance=source] [call at library/kani_core/src/lib.rs:748] -> frame 4: cycle_relay::{closure#0}::{closure#1} [provenance=source] [call at /home/runner/work/kani/kani/tests/json-handler/uninit-part1-composition/mixed.rs:67] -> frame 5: cycle_relay::{closure#0}::{closure#1}::{closure#1} [provenance=source] [call at /home/runner/work/kani/kani/tests/json-handler/uninit-part1-composition/mixed.rs:67] -> repeated: cycle_relay [provenance=source] [call at /home/runner/work/kani/kani/tests/json-handler/uninit-part1-composition/mixed.rs:75]",
+          "description": "Kani delayed uninitialized-memory analysis detected an interprocedural cycle (repeats active frame 1); root/active path: cycle_root [provenance=source] -> frame 1: cycle_relay [provenance=source] [call at tests/json-handler/uninit-part1-composition/mixed.rs:81] -> frame 2: cycle_relay::kani_register_contract::<std::mem::MaybeUninit<u8>, {closure@tests/json-handler/uninit-part1-composition/mixed.rs:67:1: 67:30}> [provenance=registration-override; origin=kani::internal::run_contract_fn::<std::mem::MaybeUninit<u8>, {closure@tests/json-handler/uninit-part1-composition/mixed.rs:67:1: 67:30}>] [call at tests/json-handler/uninit-part1-composition/mixed.rs:67] -> frame 3: cycle_relay::{closure#0} [provenance=source] [call at library/kani_core/src/lib.rs:748] -> frame 4: cycle_relay::{closure#0}::{closure#1} [provenance=source] [call at tests/json-handler/uninit-part1-composition/mixed.rs:67] -> frame 5: cycle_relay::{closure#0}::{closure#1}::{closure#1} [provenance=source] [call at tests/json-handler/uninit-part1-composition/mixed.rs:67] -> repeated: cycle_relay [provenance=source] [call at tests/json-handler/uninit-part1-composition/mixed.rs:75]",
           "file": "tests/json-handler/uninit-part1-composition/mixed.rs",
           "id": "cycle_root.unsupported_construct.1",
           "line": "79",
@@ -7099,25 +7099,25 @@
         {
           "description": "Undefined Behavior: Reading from an uninitialized pointer of type `*const u8`",
           "id": "std::ptr::read::<u8>.safety_check.1",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {
           "description": "misaligned pointer to reference cast: address must be a multiple of its type's alignment",
           "id": "std::ptr::read::<u8>.safety_check.2",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {
           "description": "dereference failure: pointer invalid",
           "id": "std::ptr::read::<u8>.safety_check.3",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {
           "description": "Undefined Behavior: Reading from an uninitialized pointer of type `u8`",
           "id": "std::ptr::read::<u8>.safety_check.4",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {
@@ -7135,7 +7135,7 @@
         {
           "description": "attempt to shift left with overflow",
           "id": "std::fmt::Arguments::<'_>::from_str.assertion.1",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/fmt/mod.rs:820:38 in function std::fmt::Arguments::<'_>::from_str",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/fmt/mod.rs:820:38 in function std::fmt::Arguments::<'_>::from_str",
           "status": "UNREACHABLE"
         },
         {
@@ -7663,37 +7663,37 @@
         {
           "description": "dereference failure: pointer NULL",
           "id": "std::ptr::read::<u8>.pointer_dereference.1",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {
           "description": "dereference failure: pointer invalid",
           "id": "std::ptr::read::<u8>.pointer_dereference.2",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {
           "description": "dereference failure: deallocated dynamic object",
           "id": "std::ptr::read::<u8>.pointer_dereference.3",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {
           "description": "dereference failure: dead object",
           "id": "std::ptr::read::<u8>.pointer_dereference.4",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {
           "description": "dereference failure: pointer outside object bounds",
           "id": "std::ptr::read::<u8>.pointer_dereference.5",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {
           "description": "dereference failure: invalid integer address",
           "id": "std::ptr::read::<u8>.pointer_dereference.6",
-          "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
+          "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>",
           "status": "SUCCESS"
         },
         {

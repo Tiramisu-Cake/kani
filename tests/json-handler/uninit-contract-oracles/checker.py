@@ -43,9 +43,25 @@ def sha256(path):
 
 
 def normalize(value, prefix):
-    # Only the explicitly known checkout prefix. Keep all lines, types,
-    # functions, generated names and rust library paths intact.
-    return value.replace(prefix.rstrip("/") + "/", "") if isinstance(value, str) else value
+    """Remove installation roots, retaining complete source/property identities.
+
+    Rust source is outside the checkout: the regular renderer relativizes it
+    against cwd, while JSON uses an absolute path. Keep its toolchain identity
+    and full library suffix in a separate namespace. Do not collapse arbitrary
+    external paths or strip basename-only suffixes.
+    """
+    if not isinstance(value, str):
+        return value
+    value = re.sub(r"(?<![\w./-])" + re.escape(prefix.rstrip("/") + "/"), "", value)
+    return re.sub(
+        r"(?<![\w./-])(?:/(?:[\w.+-]+/)*|(?:\.\./)+(?:[\w.+-]+/)*)"
+        r"toolchains/([^/\s:]+)/lib/rustlib/src/rust/library/",
+        r"rust-toolchain:\1/library/", value)
+
+
+def normalize_property(prop, prefix):
+    # Source paths also occur inside closure IDs, function names and diagnostics.
+    return {key: normalize(value, prefix) for key, value in prop.items()}
 
 
 def identity(prop, prefix):
@@ -191,7 +207,8 @@ def validate(data, case, receipt, regular, root=ROOT):
     expected = binding["failures"]
     require(isinstance(expected, list), "missing exact failure inventory")
     expected = list(expected)
-    normalized = {p["id"]: {k: normalize(v, prefix) for k, v in p.items()} for p in props}
+    normalized = {normalize(p["id"], prefix): normalize_property(p, prefix) for p in props}
+    require(len(normalized) == len(props), "duplicate normalized regular IDs")
     consequences = binding.get("allowed_consequences", [])
     consequence_ids = [p["failure"]["id"] for p in consequences]
     require(len(consequence_ids) == len(set(consequence_ids)) and

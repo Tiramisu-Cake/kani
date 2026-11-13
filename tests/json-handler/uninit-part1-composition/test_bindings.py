@@ -8,6 +8,7 @@ import unittest
 from pathlib import Path
 
 from compare import Rejected, check_single, compare_root
+from run import CHECKER
 
 
 HERE = Path(__file__).resolve().parent
@@ -66,6 +67,35 @@ class BindingManifestTests(unittest.TestCase):
             self.assertIn(case["expected_failure_kind"],
                           {"ERROR", "NONE", "OTHER", "PANICS_ONLY"})
             self.assertTrue(case["expected_inventory"])
+
+    def test_all_reviewed_inventories_survive_root_and_toolchain_install_relocation(self):
+        for prefix in ("/root/kani", "/home/runner/work/kani/kani/export", "/tmp/deep checkout/a"):
+            for case in self.cases.values():
+                def relocated(rows):
+                    result = []
+                    for row in rows:
+                        moved = {}
+                        for key, value in row.items():
+                            if isinstance(value, str):
+                                value = value.replace("tests/json-handler/", prefix + "/tests/json-handler/")
+                                value = value.replace("rust-toolchain:", "/opt/rust/toolchains/").replace(
+                                    "/library/core/", "/lib/rustlib/src/rust/library/core/")
+                            moved[key] = value
+                        result.append(CHECKER.normalize_property(moved, prefix))
+                    return result
+
+                expected = {"binding": case["binding"], "expected_verdict": case["expected_verdict"],
+                            "checks": case["expected_inventory"], "covers": case.get("expected_covers", []),
+                            "failure_kind": case["expected_failure_kind"],
+                            "failed_properties": case["expected_failures"],
+                            "unsupported_constructs": case["expected_unsupported_inventory"]}
+                actual = observation(case["name"], relocated(expected["checks"]),
+                                     expected["expected_verdict"], expected["failure_kind"],
+                                     relocated(expected["failed_properties"]),
+                                     relocated(expected["unsupported_constructs"]))
+                actual["covers"] = relocated(expected["covers"])
+                with self.subTest(prefix=prefix, root=case["name"]):
+                    self.assertTrue(check_single(actual, expected))
 
     def test_exact_synthetic_root_matches_reviewed_binding(self):
         case = self.cases["immutable_legal"]

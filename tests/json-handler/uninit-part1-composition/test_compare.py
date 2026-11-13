@@ -108,6 +108,70 @@ def observation_fixture():
     return data, log, [case["name"]], {case["name"]: case}, receipt
 
 
+class PortableObservationTests(unittest.TestCase):
+    def fixture(self):
+        data, text, selectors, cases, receipt = observation_fixture()
+        source = "tests/json-handler/uninit-part1-composition/mixed.rs"
+        # Exercise paths embedded in IDs and diagnostics, plus external JSON
+        # failure files and regular source locations, through the real consumer.
+        renamed = "root::{closure@" + source + ":27:17: 27:43}.read.1"
+        diagnostic = ("cycle [call at " + source + ":81] -> {closure@" + source + ":67:1}")
+        toolchain = ("rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/"
+                     "library/core/src/ptr/mod.rs")
+
+        def change(value):
+            if isinstance(value, dict):
+                return {key: change(item) for key, item in value.items()}
+            if isinstance(value, list):
+                return [change(item) for item in value]
+            if isinstance(value, str):
+                return value.replace("root.read.1", renamed).replace("cycle boundary", diagnostic)
+            return value
+
+        data = change(data)
+        text = change(text)
+        data["harnesses"][0]["failed_properties"][0]["file"] = toolchain
+        text = text.replace(source + ":24:1 in function", toolchain + ":24:1 in function")
+        return data, text, selectors, cases, receipt, source
+
+    def test_consumer_relocation_keeps_exact_inventory_and_embedded_identities(self):
+        data, text, selectors, cases, receipt, source = self.fixture()
+        baseline = observation(data, text, selectors, cases, receipt)["roots"][0]
+        expected = dict(baseline, binding="REGRESSION_BOUND", expected_verdict="FAILURE")
+        for prefix, install, relative in (
+                ("/root/kani", "/root/.rustup", "../../"),
+                ("/home/runner/work/kani/kani/export", "/home/runner/.rustup", "../../../../"),
+                ("/tmp/deep checkout/a/b", "/opt/custom-rustup", "../../../../../")):
+            def relocate(value):
+                if isinstance(value, dict):
+                    return {key: relocate(item) for key, item in value.items()}
+                if isinstance(value, list):
+                    return [relocate(item) for item in value]
+                if isinstance(value, str):
+                    return value.replace(source, prefix + "/" + source).replace(
+                        "rust-toolchain:", install + "/toolchains/").replace(
+                        "/library/core/", "/lib/rustlib/src/rust/library/core/")
+                return value
+
+            moved = relocate(data)
+            log = relocate(text).replace(install + "/", relative + ".rustup/")
+            log = "warning: requested with `--force-warn unstable-features`\n" + log
+            moved_receipt = dict(receipt, build_prefix=prefix)
+            with self.subTest(prefix=prefix):
+                actual = observation(moved, log, selectors, cases, moved_receipt)["roots"][0]
+                self.assertEqual(actual, baseline)
+                self.assertTrue(check_single(actual, expected))
+                # Consistent changes to JSON and regular must still fail binding.
+                for before, after in (("ptr/mod.rs", "mem/mod.rs"), (":27:17", ":27:18"),
+                                      ("cycle [call", "other [call"), (":81]", ":82]"),
+                                      ("2026-10-23", "2026-10-24")):
+                    mutated = json.loads(json.dumps(moved).replace(before, after))
+                    mutated_log = log.replace(before, after)
+                    with self.subTest(mutation=after), self.assertRaises(Rejected):
+                        observed = observation(mutated, mutated_log, selectors, cases, moved_receipt)
+                        check_single(observed["roots"][0], expected)
+
+
 class MixedInventoryTests(unittest.TestCase):
     def setUp(self):
         self.legal = root("legal", [check("legal.assertion.1")])

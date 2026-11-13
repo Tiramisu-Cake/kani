@@ -14,6 +14,14 @@ JSON export schema validator and the existing exact regular-output parser are
 loaded read-only from `scripts/validate_json_export.py` through the existing
 uninit contract-oracle checker. Existing suites and validators are not changed.
 
+Property paths are checkout-relative, including paths inside closure IDs and
+cycle diagnostics. External rustup source paths use the checker's
+`rust-toolchain:<toolchain>/library/<source>` namespace, retaining the exact
+toolchain, source suffix and coordinates while removing installation roots and
+relative traversal depth. IDs, descriptions, statuses and all failure metadata
+still compare exactly after this normalization. Warnings outside RESULTS are
+ignored; verification checks and backend configuration remain enforced.
+
 `roots.json` pins the Rust input SHA-256 and intended root/mode/verdict/source
 line map. All seven roots have exact `REGRESSION_BOUND` inventories. Six use
 reviewed isolated R3 capture run `43504302188` (`binding_evidence` at the manifest

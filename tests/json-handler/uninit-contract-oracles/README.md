@@ -28,8 +28,13 @@ keys/IDs, missing/extra failures and unknown statuses, and compares exact failur
 multisets. Useful assertions must be SUCCESS; UNREACHABLE is insufficient.
 Unused service properties may be UNREACHABLE. Unsupported properties may be
 SUCCESS or UNREACHABLE only; a reached Unsupported fails the test and stops the
-lawful-modifies run. Only the exact checkout prefix is normalized; generated
-names and Rust library paths remain exact. Changed identities require a reviewed
+lawful-modifies run. The invocation's exact checkout prefix is removed, including
+paths embedded in closure IDs and diagnostics. External rustup source paths use
+`rust-toolchain:<toolchain>/library/<source>` in both regular and JSON evidence;
+only the installation root and relative traversal depth are removed. Toolchain,
+source suffix, lines, columns, functions, generated names, types and statuses
+remain exact. Compiler warnings outside RESULTS do not enter property identities;
+enabled verification checks and backend flags remain enforced. Changed identities require a reviewed
 manifest update; the runner never learns expectations from its output.
 
 Invocations use the checkout root as cwd so export paths are checkout-relative,

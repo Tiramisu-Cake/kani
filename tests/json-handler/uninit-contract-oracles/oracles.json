@@ -354,7 +354,7 @@
             "id": "std::ptr::read::<u8>.safety_check.1",
             "description": "Undefined Behavior: Reading from an uninitialized pointer of type `*const u8`",
             "class": "safety_check",
-            "file": "/home/runner/.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs",
+            "file": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs",
             "line": "1754",
             "status": "FAILURE"
           },
@@ -362,7 +362,7 @@
             "id": "std::ptr::read::<u8>.safety_check.4",
             "description": "Undefined Behavior: Reading from an uninitialized pointer of type `u8`",
             "class": "safety_check",
-            "file": "/home/runner/.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs",
+            "file": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs",
             "line": "1754",
             "status": "FAILURE"
           }
@@ -391,13 +391,13 @@
             "id": "std::ptr::read::<u8>.safety_check.1",
             "status": "FAILURE",
             "description": "Undefined Behavior: Reading from an uninitialized pointer of type `*const u8`",
-            "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>"
+            "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>"
           },
           {
             "id": "std::ptr::read::<u8>.safety_check.4",
             "status": "FAILURE",
             "description": "Undefined Behavior: Reading from an uninitialized pointer of type `u8`",
-            "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>"
+            "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>"
           }
         ],
         "operations": {
@@ -432,7 +432,7 @@
             "id": "std::ptr::read::<u8>.safety_check.1",
             "description": "Undefined Behavior: Reading from an uninitialized pointer of type `*const u8`",
             "class": "safety_check",
-            "file": "/home/runner/.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs",
+            "file": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs",
             "line": "1754",
             "status": "FAILURE"
           },
@@ -440,7 +440,7 @@
             "id": "std::ptr::read::<u8>.safety_check.4",
             "description": "Undefined Behavior: Reading from an uninitialized pointer of type `u8`",
             "class": "safety_check",
-            "file": "/home/runner/.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs",
+            "file": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs",
             "line": "1754",
             "status": "FAILURE"
           }
@@ -469,13 +469,13 @@
             "id": "std::ptr::read::<u8>.safety_check.1",
             "status": "FAILURE",
             "description": "Undefined Behavior: Reading from an uninitialized pointer of type `*const u8`",
-            "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>"
+            "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>"
           },
           {
             "id": "std::ptr::read::<u8>.safety_check.4",
             "status": "FAILURE",
             "description": "Undefined Behavior: Reading from an uninitialized pointer of type `u8`",
-            "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>"
+            "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>"
           }
         ],
         "operations": {
@@ -568,7 +568,7 @@
             "id": "std::mem::transmute_neo::<std::mem::MaybeUninit<u16>, u16>.safety_check.1",
             "description": "Undefined Behavior: Reading from an uninitialized pointer of type `u16`",
             "class": "safety_check",
-            "file": "/home/runner/.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/mem/mod.rs",
+            "file": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/mem/mod.rs",
             "line": "1279",
             "status": "FAILURE"
           }
@@ -580,7 +580,7 @@
             "id": "std::mem::transmute_neo::<std::mem::MaybeUninit<u16>, u16>.safety_check.1",
             "status": "FAILURE",
             "description": "Undefined Behavior: Reading from an uninitialized pointer of type `u16`",
-            "location": "../../../.rustup/toolchains/nightly-2026-10-23-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/mem/mod.rs:1279:14 in function std::mem::transmute_neo::<std::mem::MaybeUninit<u16>, u16>"
+            "location": "rust-toolchain:nightly-2026-10-23-x86_64-unknown-linux-gnu/library/core/src/mem/mod.rs:1279:14 in function std::mem::transmute_neo::<std::mem::MaybeUninit<u16>, u16>"
           }
         ],
         "operations": {
