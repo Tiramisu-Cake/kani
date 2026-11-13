@@ -22,4 +22,4 @@ jobs:
           cd cbmc-repro
           echo '$ cbmc --version'; cbmc --version
           echo '$ cbmc main.c'; cbmc main.c > out.txt 2>&1; echo "exit=$?"
-          tail -25 out.txt
+          grep -n -m1 -A8 "Invariant check failed" out.txt; echo ---; head -12 out.txt
