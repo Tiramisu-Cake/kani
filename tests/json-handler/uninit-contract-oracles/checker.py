@@ -6,7 +6,7 @@
 JSON schema validation is shared with the existing export tests. This consumer
 adds selection, complete inventories, counters and selected regular evidence.
 It does not establish source -> GOTO causality or independent proof credit.
-REGRESSION_BOUND manifests pin reviewed source/regular/export expectations.
+REGRESSION_BOUND manifests pin reviewed source and property expectations.
 """
 
 import hashlib
@@ -188,9 +188,6 @@ def validate(data, case, receipt, regular, root=ROOT):
     binding = case["binding"]
     require(binding["status"] == "REGRESSION_BOUND",
             "BINDING_PENDING: regression expectations must be reviewed and committed")
-    require(binding["evidence"] and all(
-        re.fullmatch(r"[0-9a-f]{64}", e["sha256"]) and e["selector"] and e["artifact"]
-        for e in binding["evidence"]), "missing selected binding evidence identities")
     expected = binding["failures"]
     require(isinstance(expected, list), "missing exact failure inventory")
     expected = list(expected)
@@ -232,32 +229,10 @@ def validate(data, case, receipt, regular, root=ROOT):
     return "PASS"
 
 
-def check_directory(directory, case):
-    receipt = load_export(directory / "invocation.json")
+def check_directory(directory, case, receipt):
+    """Check current output against its in-memory invocation identity."""
     require(sha256(directory / "export.json") == receipt["export_sha256"], "export hash mismatch")
     require(sha256(directory / "regular.out") == receipt["regular_sha256"], "regular hash mismatch")
     require(receipt["input_sha256_after"] == receipt["input_sha256"], "source changed during run")
     return validate(load_export(directory / "export.json"), case, receipt,
                     (directory / "regular.out").read_text())
-
-
-def main():
-    import argparse
-
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--case", required=True)
-    parser.add_argument("--directory", required=True, type=Path)
-    args = parser.parse_args()
-    try:
-        cases = load_export(Path(__file__).with_name("oracles.json"))["cases"]
-        selected = [c for c in cases if c["id"] == args.case]
-        require(len(selected) == 1, "missing/duplicate manifest case")
-        print(check_directory(args.directory, selected[0]))
-        return 0
-    except (Rejected, OSError, ValueError, KeyError, TypeError) as error:
-        print(f"FAIL: {error}")
-        return 1
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

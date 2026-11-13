@@ -4,7 +4,6 @@
   "unwind": 8,
   "proposed_harness_timeout_s": 120,
   "object_bits": 12,
-  "mode_qualification": false,
   "roots": [
     {
       "file": "replace.rs",
@@ -12,9 +11,6 @@
       "intended_mode": "Replace",
       "target": "passthrough",
       "companion": false,
-      "source_semantics": "legal",
-      "observed_outcome": null,
-      "binding_status": "BINDING_PENDING",
       "expected_result": "UNCLAIMED"
     },
     {
@@ -23,9 +19,6 @@
       "intended_mode": "Assert",
       "target": "passthrough",
       "companion": true,
-      "source_semantics": "legal",
-      "observed_outcome": null,
-      "binding_status": "BINDING_PENDING",
       "expected_result": "SUCCESS",
       "required_covers": [
         {
@@ -48,9 +41,6 @@
       "intended_mode": "SimpleCheck",
       "target": "passthrough",
       "companion": true,
-      "source_semantics": "legal",
-      "observed_outcome": null,
-      "binding_status": "BINDING_PENDING",
       "expected_result": "SUCCESS",
       "required_covers": [
         {
@@ -73,9 +63,6 @@
       "intended_mode": "RecursiveCheck",
       "target": "recursive_transfer",
       "companion": false,
-      "source_semantics": "legal",
-      "observed_outcome": null,
-      "binding_status": "BINDING_PENDING",
       "expected_result": "UNSUPPORTED_INTERPROCEDURAL_CYCLE"
     },
     {
@@ -84,9 +71,6 @@
       "intended_mode": "Assert",
       "target": "recursive_transfer",
       "companion": true,
-      "source_semantics": "legal",
-      "observed_outcome": null,
-      "binding_status": "BINDING_PENDING",
       "expected_result": "UNSUPPORTED_INTERPROCEDURAL_CYCLE"
     },
     {
@@ -95,9 +79,6 @@
       "intended_mode": "SimpleCheck",
       "target": "bounded_transfer",
       "companion": true,
-      "source_semantics": "legal",
-      "observed_outcome": null,
-      "binding_status": "BINDING_PENDING",
       "expected_result": "SUCCESS",
       "required_covers": [
         {

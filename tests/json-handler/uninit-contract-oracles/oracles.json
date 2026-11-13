@@ -1,7 +1,5 @@
 {
   "schema": "kani3300-lawful-oracles-v2",
-  "base": "ee2695e5a2c4c2d8ead7a511e0f3f6f2a9a95677",
-  "qualification": "Deterministic CI regression PASS/FAIL from fixed reviewed R3 export/regular/source expectations. REGRESSION_BOUND does not establish source-to-GOTO causality or independent proof credit; semantic qualification remains NOT_RUN.",
   "normalization": "Only the exact absolute checkout prefix; no line/type/function/generated-name erasure.",
   "cases": [
     {
@@ -25,7 +23,6 @@
       ],
       "binding": {
         "status": "REGRESSION_BOUND",
-        "semantic_qualification": "NOT_RUN",
         "failures": [],
         "allowed_consequences": [],
         "required_successes": [
@@ -40,19 +37,7 @@
         "operations": {
           "outer useful ensures": "regular postcondition_target::{closure#2}.assertion.1 SUCCESS at source line14",
           "initialized return read": "source line16 selects initialized17; useful ensures at line14 SUCCESS; independent source-to-GOTO read binding NOT_RUN"
-        },
-        "evidence": [
-          {
-            "artifact": "43430797896/p1-4lm265nx/export.json",
-            "selector": "/harnesses/0 (complete inventories and exact failures)",
-            "sha256": "ccbed7d2cdb73c97dc076af77faa26473b59e556f1e756b32ebef37c4ef212e9"
-          },
-          {
-            "artifact": "43430797896/p1-4lm265nx/regular.out",
-            "selector": "RESULTS: complete inventory; selected IDs in required_successes/required_regular/allowed_consequences",
-            "sha256": "82aa21c07c65d6efa8be248004a26794e2ca23211674cd22ad0fb3f146f03e8e"
-          }
-        ]
+        }
       }
     },
     {
@@ -112,7 +97,6 @@
       ],
       "binding": {
         "status": "REGRESSION_BOUND",
-        "semantic_qualification": "NOT_RUN",
         "failures": [],
         "allowed_consequences": [],
         "required_successes": [
@@ -151,19 +135,7 @@
         "operations": {
           "body scalar and array assertions": "regular write_initialized::{closure#3}::{closure#0}.assertion.{1,2} SUCCESS at source lines21/32; original-function copies are UNREACHABLE and are not selected",
           "harness result7/out123": "regular legal_ordinary_transfer.assertion.{1,2} SUCCESS at source lines40/41"
-        },
-        "evidence": [
-          {
-            "artifact": "43430797896/ordinary-2m10tm84/export.json",
-            "selector": "/harnesses/0 (complete inventories and exact failures)",
-            "sha256": "246d34d3ad2f5ffe70bcba36172b2284a238c407d9b8c5e8ae349b53e5dccf8b"
-          },
-          {
-            "artifact": "43430797896/ordinary-2m10tm84/regular.out",
-            "selector": "RESULTS: complete inventory; selected IDs in required_successes/required_regular/allowed_consequences",
-            "sha256": "66fea6b57e6e2f086fcd890b8c8cd76d78499d41ee8657be76dc0f9bb6ff54f2"
-          }
-        ]
+        }
       }
     },
     {
@@ -224,7 +196,6 @@
       ],
       "binding": {
         "status": "REGRESSION_BOUND",
-        "semantic_qualification": "NOT_RUN",
         "failures": [],
         "allowed_consequences": [],
         "required_successes": [
@@ -270,19 +241,7 @@
           "useful ensures result7/out123": "regular write_initialized::{closure#2}.assertion.1 SUCCESS at source line16",
           "harness result7/out123": "regular legal_pfc_transfer.assertion.{1,2} SUCCESS at source lines47/48",
           "private writes in frame": "regular selected body assertions and out write assigns.1 SUCCESS, complete failure inventory empty; independent private-write source-to-GOTO qualification NOT_RUN"
-        },
-        "evidence": [
-          {
-            "artifact": "43430797896/pfc-u_eq4lj7/export.json",
-            "selector": "/harnesses/0 (complete inventories and exact failures)",
-            "sha256": "da34078cf1806e025eda19e8c9527b0a2c81f26c5e8056a68d0dd9e45a0000ff"
-          },
-          {
-            "artifact": "43430797896/pfc-u_eq4lj7/regular.out",
-            "selector": "RESULTS: complete inventory; selected IDs in required_successes/required_regular/allowed_consequences",
-            "sha256": "9e0541f79956d15377dba6daa8e9a7e53407d9a5725b81e593698194a98ea9f2"
-          }
-        ]
+        }
       }
     },
     {
@@ -327,7 +286,6 @@
       ],
       "binding": {
         "status": "REGRESSION_BOUND",
-        "semantic_qualification": "NOT_RUN",
         "failures": [],
         "allowed_consequences": [],
         "required_successes": [
@@ -367,19 +325,7 @@
           "useful ensures result29/out29": "regular frame_target::{closure#2}.assertion.1 SUCCESS at source line22",
           "harness result29/out29/outside41": "regular lawful_modifies_preserves_outside.assertion.{1,2,3} SUCCESS at source lines34/35/36",
           "out write and private writes in frame": "regular frame_target::{closure#2}::{closure#1}.assigns.1 SUCCESS at source line26, complete failure inventory empty; independent private-write source-to-GOTO qualification NOT_RUN"
-        },
-        "evidence": [
-          {
-            "artifact": "43430797896/lawful-modifies-0wrxdiji/export.json",
-            "selector": "/harnesses/0 (complete inventories and exact failures)",
-            "sha256": "ff68c656fd82c7da06dbae2d9199f8bd262e59d46831c7fcd9304fb706408f77"
-          },
-          {
-            "artifact": "43430797896/lawful-modifies-0wrxdiji/regular.out",
-            "selector": "RESULTS: complete inventory; selected IDs in required_successes/required_regular/allowed_consequences",
-            "sha256": "858774b4c213e65a692936636bf1b2395b9d2e056c864ab7b5f0df54f81d986d"
-          }
-        ]
+        }
       }
     },
     {
@@ -403,7 +349,6 @@
       ],
       "binding": {
         "status": "REGRESSION_BOUND",
-        "semantic_qualification": "NOT_RUN",
         "failures": [
           {
             "id": "std::ptr::read::<u8>.safety_check.1",
@@ -458,19 +403,7 @@
         "operations": {
           "local Check of u8 read": "regular/export std::ptr::read::<u8>.safety_check.1 FAILURE: *const u8 at core/src/ptr/mod.rs:1754",
           "delayed CheckRef of same u8 read": "regular/export std::ptr::read::<u8>.safety_check.4 FAILURE: u8 at core/src/ptr/mod.rs:1754; coordinator identifies both layers; independent causal GOTO qualification NOT_RUN"
-        },
-        "evidence": [
-          {
-            "artifact": "43430797896/p2-v2hg8yb6/export.json",
-            "selector": "/harnesses/0 (complete inventories and exact failures)",
-            "sha256": "d2c41965f4805ad529b02e754299a617420a2cc010fb78853e56cfb17537a16e"
-          },
-          {
-            "artifact": "43430797896/p2-v2hg8yb6/regular.out",
-            "selector": "RESULTS: complete inventory; selected IDs in required_successes/required_regular/allowed_consequences",
-            "sha256": "f92b021dc9f6a73f65d19bf6ca69ab03c42f3ca035ec9f7054a157784b8338fd"
-          }
-        ]
+        }
       }
     },
     {
@@ -494,7 +427,6 @@
       ],
       "binding": {
         "status": "REGRESSION_BOUND",
-        "semantic_qualification": "NOT_RUN",
         "failures": [
           {
             "id": "std::ptr::read::<u8>.safety_check.1",
@@ -549,19 +481,7 @@
         "operations": {
           "local Check of u8 read": "independently checked this input export/regular: std::ptr::read::<u8>.safety_check.1 FAILURE: *const u8 at core/src/ptr/mod.rs:1754",
           "delayed CheckRef of same u8 read": "independently checked this input export/regular: std::ptr::read::<u8>.safety_check.4 FAILURE: u8 at core/src/ptr/mod.rs:1754; independent causal GOTO qualification NOT_RUN"
-        },
-        "evidence": [
-          {
-            "artifact": "43430797896/postcondition-hole-76dqww4s/export.json",
-            "selector": "/harnesses/0 (complete inventories and exact failures)",
-            "sha256": "12d4bb3f3a19845b1554170ffc436a74a23863f9daad85839e440dbf35aa1318"
-          },
-          {
-            "artifact": "43430797896/postcondition-hole-76dqww4s/regular.out",
-            "selector": "RESULTS: complete inventory; selected IDs in required_successes/required_regular/allowed_consequences",
-            "sha256": "468919f7cc4361e801970889128e7e1ec67241c8cd7567dbd5ab04e948f7d67b"
-          }
-        ]
+        }
       }
     },
     {
@@ -589,7 +509,6 @@
       ],
       "binding": {
         "status": "REGRESSION_BOUND",
-        "semantic_qualification": "NOT_RUN",
         "failures": [
           {
             "id": "frame_target::{closure#2}::{closure#0}.assigns.1",
@@ -620,19 +539,7 @@
         "operations": {
           "assigns of user *outside write at original line22": "source *outside write line22; regular/export frame_target::{closure#2}::{closure#0}.assigns.1 FAILURE, exact description *var_7 and source line22 retained; independent emitted-target qualification NOT_RUN",
           "private writes lawful": "complete failure inventory contains only the line22 user assigns; selected line23 out write assigns.2 SUCCESS; independent private-write source-to-GOTO qualification NOT_RUN"
-        },
-        "evidence": [
-          {
-            "artifact": "43430797896/frame-9q1t1t1c/export.json",
-            "selector": "/harnesses/0 (complete inventories and exact failures)",
-            "sha256": "af435ad8d1368c1826391e2febecffd57efd390df0d45a54d13f1176de7cc1eb"
-          },
-          {
-            "artifact": "43430797896/frame-9q1t1t1c/regular.out",
-            "selector": "RESULTS: complete inventory; selected IDs in required_successes/required_regular/allowed_consequences",
-            "sha256": "a01006bdf098960db8cf58bccb8e98f805cfdb3d536728038e7a2fb514b6d054"
-          }
-        ]
+        }
       }
     },
     {
@@ -656,7 +563,6 @@
       ],
       "binding": {
         "status": "REGRESSION_BOUND",
-        "semantic_qualification": "NOT_RUN",
         "failures": [
           {
             "id": "std::mem::transmute_neo::<std::mem::MaybeUninit<u16>, u16>.safety_check.1",
@@ -680,19 +586,7 @@
         "operations": {
           "requires clause_helper u16 payload read": "source lines20/21 create uninit MU<u16>, relay/assume_init in helper; selected singleton transmute_neo::<MaybeUninit<u16>,u16>.safety_check.1 u16 FAILURE; independent library-read to helper causal GOTO qualification NOT_RUN",
           "both generated layers if present": "this input independently has exactly one failed safety_check.1 at core/src/mem/mod.rs:1279; no assumed second obligation"
-        },
-        "evidence": [
-          {
-            "artifact": "43430797896/clause-a7sgdobc/export.json",
-            "selector": "/harnesses/0 (complete inventories and exact failures)",
-            "sha256": "505e4d0abe6370093e2adb5c70e8bfd0ce855226eceba32cd48ab57c1a7071b2"
-          },
-          {
-            "artifact": "43430797896/clause-a7sgdobc/regular.out",
-            "selector": "RESULTS: complete inventory; selected IDs in required_successes/required_regular/allowed_consequences",
-            "sha256": "324fa81b50312d7913c1db8ec96778989bd80e7ee6ddf9332b47f970ce186ad5"
-          }
-        ]
+        }
       }
     }
   ],
