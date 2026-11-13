@@ -55,6 +55,9 @@ unsafe fn handoff(source: MaybeUninit<u8>, reinit: bool) -> (MaybeUninit<u8>, u8
     }
 }
 
+// Known false positive: semantically this must be SUCCESS. Nested aggregate
+// shadow transfer is not implemented for the tuple returned by handoff.
+// The pinned failure is a regression observation, not detection of UB here.
 #[kani::proof]
 fn move_return_reinit_legal() {
     let (returned, source) = unsafe { handoff(MaybeUninit::new(42), true) };

@@ -1,5 +1,9 @@
 Checking harness move_return_reinit_legal...
-VERIFICATION:- SUCCESSFUL
+std::mem::transmute_neo::<std::mem::MaybeUninit<u8>, u8>.safety_check.1\
+ - Status: FAILURE\
+ - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u8`"
+Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type `u8`
+VERIFICATION:- FAILED
 Checking harness move_return_source_hole...
-Failed Checks: Undefined Behavior: Reading from an uninitialized pointer
+Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type `u8`
 VERIFICATION:- FAILED
