@@ -22,7 +22,7 @@ use rustc_public::mir::{
     visit::Location as MirLocation,
 };
 use rustc_public::ty::{Allocation, GenericArgs, MirConst};
-use rustc_public::{CrateDef, rustc_internal};
+use rustc_public::rustc_internal;
 use std::collections::{BTreeMap, HashMap};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
