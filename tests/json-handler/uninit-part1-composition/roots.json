@@ -1,0 +1,139 @@
+{
+  "schema": "kani3300-mixed-roots-v1",
+  "source": "tests/json-handler/uninit-part1-composition/mixed.rs",
+  "source_sha256": "9aa067f674e9cd27b7b4822795208ff4ca940554e65b6ffe32c316cb0b6e7970",
+  "object_bits": 12,
+  "jobs": 1,
+  "roots": [
+    {
+      "name": "immutable_legal",
+      "mode": "Assert",
+      "target": null,
+      "root_line": 15,
+      "expected_verdict": "SUCCESS",
+      "binding": "BINDING_PENDING",
+      "expected_inventory": null,
+      "expected_failure_kind": null,
+      "expected_failures": null,
+      "expected_unsupported_inventory": null
+    },
+    {
+      "name": "immutable_hole_negative",
+      "mode": "Assert",
+      "target": null,
+      "root_line": 22,
+      "expected_verdict": "FAILURE",
+      "binding": "BINDING_PENDING",
+      "expected_inventory": null,
+      "expected_failure_kind": null,
+      "expected_failures": null,
+      "expected_unsupported_inventory": null
+    },
+    {
+      "name": "ordinary_ensures_legal",
+      "mode": "Assert+ensures",
+      "target": null,
+      "root_line": 33,
+      "expected_verdict": "SUCCESS",
+      "binding": "BINDING_PENDING",
+      "expected_inventory": null,
+      "expected_failure_kind": null,
+      "expected_failures": null,
+      "expected_unsupported_inventory": null
+    },
+    {
+      "name": "pfc_legal",
+      "mode": "PFC",
+      "target": "pfc_contract",
+      "root_line": 46,
+      "expected_verdict": "SUCCESS",
+      "binding": "BINDING_PENDING",
+      "expected_inventory": null,
+      "expected_failure_kind": null,
+      "expected_failures": null,
+      "expected_unsupported_inventory": null
+    },
+    {
+      "name": "pfc_negative",
+      "mode": "PFC",
+      "target": "pfc_negative_contract",
+      "root_line": 58,
+      "expected_verdict": "FAILURE",
+      "binding": "BINDING_PENDING",
+      "expected_inventory": null,
+      "expected_failure_kind": null,
+      "expected_failures": null,
+      "expected_unsupported_inventory": null
+    },
+    {
+      "name": "cycle_root",
+      "mode": "PFC+recursion",
+      "target": "cycle_relay",
+      "root_line": 80,
+      "expected_verdict": "FAILURE",
+      "binding": "BINDING_PENDING",
+      "expected_inventory": null,
+      "expected_failure_kind": null,
+      "expected_failures": null,
+      "expected_unsupported_inventory": null
+    },
+    {
+      "name": "unrelated_legal_after_cycle",
+      "mode": "Assert",
+      "target": null,
+      "root_line": 85,
+      "expected_verdict": "SUCCESS",
+      "binding": "BINDING_PENDING",
+      "expected_inventory": null,
+      "expected_failure_kind": null,
+      "expected_failures": null,
+      "expected_unsupported_inventory": null
+    }
+  ],
+  "orders": [
+    {
+      "id": "all_A_then_B",
+      "selectors": [
+        "immutable_legal",
+        "immutable_hole_negative",
+        "ordinary_ensures_legal",
+        "pfc_legal",
+        "pfc_negative",
+        "cycle_root",
+        "unrelated_legal_after_cycle"
+      ]
+    },
+    {
+      "id": "all_B_then_A",
+      "selectors": [
+        "unrelated_legal_after_cycle",
+        "cycle_root",
+        "pfc_negative",
+        "pfc_legal",
+        "ordinary_ensures_legal",
+        "immutable_hole_negative",
+        "immutable_legal"
+      ]
+    },
+    {
+      "id": "cycle_then_legal",
+      "selectors": [
+        "cycle_root",
+        "unrelated_legal_after_cycle"
+      ]
+    },
+    {
+      "id": "legal_then_cycle",
+      "selectors": [
+        "unrelated_legal_after_cycle",
+        "cycle_root"
+      ]
+    }
+  ],
+  "producer_order_receipt": {
+    "status": "ORDER_UNCONTROLLED",
+    "coordinator_receipt": null,
+    "diagnostic_identity": null,
+    "note": "CLI selector order is not evidence of actual producer/codegen order. No matched A/B or B/A credit until exact producer identities and order are supplied."
+  }
+}
