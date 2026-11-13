@@ -1,0 +1,25 @@
+# CI-only: capture the exact CBMC 6.11.0 output for the bits2expr reproducer.
+name: CBMC 6.11.0 reproducer output
+on:
+  push:
+    branches:
+      - 'uninit-ci/cbmc-6110-repro'
+jobs:
+  repro:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install CBMC 6.11.0 release
+        run: |
+          curl -fsSL -o cbmc.deb https://github.com/diffblue/cbmc/releases/download/cbmc-6.11.0/ubuntu-24.04-cbmc-6.11.0-Linux.deb
+          sudo apt-get install -y ./cbmc.deb
+      - name: Run reproducer
+        shell: bash {0}
+        run: |
+          cd cbmc-repro
+          echo '$ cbmc --version'; cbmc --version
+          echo '$ cbmc main.c'; cbmc main.c > out.txt 2>&1; echo "exit=$?"
+          tail -25 out.txt
