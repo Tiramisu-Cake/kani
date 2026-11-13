@@ -14,13 +14,15 @@ use cbmc::InternedString;
 use cbmc::goto_program::{
     DatatypeComponent, Expr, Location, Stmt, StmtBody, SwitchCase, SymbolValues, Type,
 };
+use rustc_middle::ty::TypingEnv;
 use rustc_public::mir::{
     ConstOperand, MirVisitor, Mutability,
     alloc::AllocId,
-    mono::{Instance, MonoItem},
+    mono::{Instance, MonoItem, StaticDef},
     visit::Location as MirLocation,
 };
 use rustc_public::ty::{Allocation, GenericArgs, MirConst};
+use rustc_public::{CrateDef, rustc_internal};
 use std::collections::{BTreeMap, HashMap};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -38,6 +40,8 @@ pub struct ImmutableAllocations {
     bindings: HashMap<AllocId, InternedString>,
     allocations: HashMap<AllocId, Allocation>,
     symbols: BTreeMap<InternedString, Descriptor>,
+    /// Named statics retain their declared backend type rather than anonymous byte storage.
+    statics: BTreeMap<InternedString, (Allocation, Type)>,
     sealed: bool,
 }
 
@@ -90,6 +94,45 @@ impl GotocCtx<'_, '_> {
             if !origins.contains(&origin) {
                 origins.push(origin);
             }
+        }
+    }
+
+    /// Register only a whole, immutable, relocation-free initializer after static emission.
+    /// Its Option bytes are the source mask, even when emission physically filled holes with zero.
+    pub fn register_immutable_static(&mut self, def: StaticDef, allocation: &Allocation) {
+        if !self.queries.args().ub_check.contains(&ExtraChecks::Uninit) {
+            return;
+        }
+        assert!(!self.immutable_allocations.sealed, "static after immutable registry seal");
+        let ty = def.ty();
+        let internal = rustc_internal::internal(self.tcx, ty);
+        if allocation.mutability != Mutability::Not
+            || !allocation.provenance.ptrs.is_empty()
+            || !crate::kani_middle::transform::immutable_origin_type_supported(self.tcx, ty)
+            || !internal.is_freeze(self.tcx, TypingEnv::fully_monomorphized())
+            || !ty.layout().ok().is_some_and(|layout| {
+                layout.shape().is_sized() && layout.shape().size.bytes() == allocation.bytes.len()
+            })
+        {
+            return;
+        }
+        let name = Instance::from(def).mangled_name();
+        let expected_ty = self.codegen_ty_stable(ty);
+        let symbol = self.symbol_table.lookup(&name).unwrap();
+        if symbol.typ != expected_ty
+            || !symbol.is_static_lifetime
+            || !symbol.is_static_const
+            || symbol.is_extern
+            || symbol.is_thread_local
+        {
+            return;
+        }
+        let origin = (allocation.clone(), expected_ty);
+        if let Some(previous) =
+            self.immutable_allocations.statics.insert(name.clone().into(), origin.clone())
+            && previous != origin
+        {
+            self.tcx.dcx().fatal(format!("immutable static {name} changed during emission"));
         }
     }
 
@@ -173,12 +216,28 @@ impl GotocCtx<'_, '_> {
             .iter()
             .map(|(key, symbol)| (*key, *symbol))
             .collect();
+        for (symbol, (allocation, _)) in self.immutable_allocations.statics.clone() {
+            if self
+                .immutable_allocations
+                .register(symbol, Descriptor::new(allocation, true))
+                .is_err()
+            {
+                self.tcx.dcx().fatal(format!("conflicting immutable static descriptor: {symbol}"));
+            }
+        }
         for (key, symbol) in bindings {
             let allocation = self.immutable_allocations.allocations[&key].clone();
             let source = self.immutable_allocations.origins.get(&key).and_then(|origins| {
                 origins.iter().find(|o| o.allocation == allocation && o.frozen_origin.is_some())
             });
-            let descriptor = Descriptor::new(allocation, source.is_some());
+            // An anonymous cache hit can reuse named storage. Qualification belongs to the
+            // exact allocation, not the alias that happened to request its address first.
+            let static_source = self
+                .immutable_allocations
+                .statics
+                .get(&symbol)
+                .is_some_and(|(original, _)| original == &allocation);
+            let descriptor = Descriptor::new(allocation, source.is_some() || static_source);
             if let Some(source) = source {
                 assert_eq!(descriptor.mask, source.mask, "source mask changed during emission");
             }
@@ -262,20 +321,21 @@ impl GotocCtx<'_, '_> {
                     .dcx()
                     .fatal(format!("immutable masks: extent for {name} exceeds target usize"));
             }
-            // The admitted emitter is exactly one [u8; n] field. Validate the actual returned
-            // symbol, including a cache hit into a previously emitted object.
-            let Type::StructTag(tag) = &symbol.typ else {
-                self.tcx
-                    .dcx()
-                    .fatal(format!("immutable masks: {name} is not byte-exact allocation storage"));
+            // Anonymous storage is exactly one byte-array field. Named storage keeps its
+            // declared type; it was emitted from this exact relocation-free allocation.
+            let layout_matches = if let Some((allocation, expected_ty)) =
+                self.immutable_allocations.statics.get(&name)
+            {
+                allocation == &descriptor.allocation && symbol.typ == *expected_ty
+            } else if let Type::StructTag(tag) = &symbol.typ {
+                matches!(&self.symbol_table.lookup(*tag).unwrap().typ,
+                    Type::Struct { components, .. }
+                    if *components == vec![DatatypeComponent::field("0", Type::unsigned_int(8).array_of(n))])
+            } else {
+                false
             };
-            let Type::Struct { components, .. } = &self.symbol_table.lookup(*tag).unwrap().typ
-            else {
-                self.tcx.dcx().fatal(format!("immutable masks: incomplete layout for {name}"));
-            };
-            let expected = vec![DatatypeComponent::field("0", Type::unsigned_int(8).array_of(n))];
-            if descriptor.layout != vec![(0, n as u64)]
-                || *components != expected
+            if !layout_matches
+                || descriptor.layout != vec![(0, n as u64)]
                 || symbol.typ.sizeof(&self.symbol_table) != n as u64
                 || !symbol.is_static_lifetime
                 || !symbol.is_static_const
