@@ -9,6 +9,20 @@ from pathlib import Path
 CYCLE_UNSUPPORTED = "Kani delayed uninitialized-memory analysis detected an interprocedural cycle"
 
 
+def cycle_diagnostic(description):
+    """Recognize the stable CC4 detail; compiler Debug identities are not an oracle."""
+    return (isinstance(description, str)
+            and re.match(re.escape(CYCLE_UNSUPPORTED)
+                         + r" \(repeats active frame \d+\); root/active path: ", description)
+            is not None
+            and re.search(r"\[provenance=(?:source|discarded-closure-override|"
+                          r"registration-override; origin=[^\n]+?)\]", description) is not None
+            and re.search(r"\[call at [^\n]+:\d+\]", description) is not None
+            and not any(token in description for token in
+                        ("AnalysisKey {", "Instance {", "DefId(", "owner_symbol:",
+                         "selected_origin_symbol:")))
+
+
 def require(condition, message):
     if not condition:
         raise ValueError(message)
@@ -143,9 +157,7 @@ def observe(data, root, exit_code, log):
         expectation_met = (verdict == "FAILURE" and len(failed) == 1
                            and active_unsupported == failed
                            and failed[0]["class"] == "unsupported_construct"
-                           and (failed[0]["description"] == CYCLE_UNSUPPORTED
-                                or failed[0]["description"].startswith(
-                                    CYCLE_UNSUPPORTED + " (repeats active frame ")))
+                           and cycle_diagnostic(failed[0]["description"]))
     elif expectation == "SUCCESS":
         expectation_met = verdict == "SUCCESS" and not gaps
     return {

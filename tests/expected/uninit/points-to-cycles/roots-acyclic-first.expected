@@ -1,2 +1,5 @@
-Kani delayed uninitialized-memory analysis detected an interprocedural cycle
+Kani delayed uninitialized-memory analysis detected an interprocedural cycle (repeats active frame
+root/active path: self_cycle [provenance=source]
+transfer [provenance=source] [call at
+roots-acyclic-first.rs:10]
 Complete - 1 successfully verified harnesses, 1 failures, 2 total.

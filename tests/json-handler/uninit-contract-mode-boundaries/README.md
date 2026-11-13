@@ -23,7 +23,11 @@ identical requires/ensures.
 
 The two recursive failures must be the sole active Unsupported and sole failed
 property, with diagnostic `Kani delayed uninitialized-memory analysis detected an
-interprocedural cycle`, optionally followed by its active-frame/path detail.
+interprocedural cycle` with its active-frame/path detail. Frames use readable
+function names and `provenance=source`, `provenance=registration-override`
+(with a readable origin), or `provenance=discarded-closure-override`. Calls
+include `file:line`; internal `AnalysisKey`, `Instance` and `DefId` Debug
+identities are rejected by the boundary oracle.
 A different Unsupported, extra failure or SUCCESS fails collection. These are
 expected results for the documented
 [delayed-analysis limitation](../../../docs/src/reference/experimental/contracts.md#limitations).

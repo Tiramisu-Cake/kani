@@ -84,13 +84,10 @@ Initialization shadow transfer is also not implemented for by-value aggregates
 containing nested `MaybeUninit` or union slots, including call arguments and
 return values. This differs from passing a supported top-level slot. Such paths
 are not guaranteed to fail closed: they may produce false positives or miss
-uninitialized reads. For example, `move_return_reinit_legal` in
-`tests/expected/uninit/part1-composition/move-return-reinit.rs` repairs the moved
-source and returns an initialized slot inside a tuple, but currently reports an
-uninitialized `u8` read. That result is a known false positive, not evidence of
-undefined behavior in the legal harness. The separate `move-return-top-level.rs`
-companion returns the slot directly and retains both the returned-value and
-repaired-source assertions, together with a negative case without source repair.
+uninitialized reads. For example, repairing a moved source and returning an
+initialized slot inside a tuple may still report an uninitialized read. That
+result is a known false positive, not evidence of undefined behavior. Returning
+the slot directly avoids this nested aggregate boundary.
 
 There is far more to learn about contracts.
 We highly recommend reading our [blog post about contracts](https://model-checking.github.io/kani-verifier-blog/2024/01/29/function-contracts.html) (from which this `gcd` example is taken). We also recommend looking at the `contracts` module in our [documentation](../../crates/index.md).

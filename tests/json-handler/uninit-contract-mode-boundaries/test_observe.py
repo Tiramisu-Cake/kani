@@ -13,7 +13,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from observe import CYCLE_UNSUPPORTED, observe as observe_export
+from observe import CYCLE_UNSUPPORTED, cycle_diagnostic, observe as observe_export
 from run import collect, invoke, main
 
 ROOTS = json.loads(Path(__file__).with_name("roots.json").read_text())["roots"]
@@ -83,7 +83,10 @@ def cycle_export(root):
     data = export_for(root, "FAILURE")
     harness = data["harnesses"][0]
     prop = harness["failed_properties"][0]
-    prop.update(description=CYCLE_UNSUPPORTED + " (repeats active frame 1); root/active path: synthetic",
+    prop.update(description=CYCLE_UNSUPPORTED + " (repeats active frame 1); root/active path: "
+                "synthetic [provenance=source] -> repeated: callee::<u8> "
+                "[provenance=registration-override; origin=callee::register] "
+                "[call at src/cycle.rs:42]",
                 **{"class": "unsupported_construct"})
     harness["unsupported_constructs"] = [copy.deepcopy(prop)]
     return data
@@ -117,6 +120,19 @@ class ObserverTests(unittest.TestCase):
     def test_companion_failure_is_not_a_pass(self):
         root = ROOTS[1]
         self.assertFalse(observe(export_for(root, "FAILURE"), root, 1)["companion_pass"])
+
+    def test_cycle_detail_requires_stable_names_provenance_and_call_site(self):
+        description = cycle_export(ROOTS[3])["harnesses"][0]["failed_properties"][0]["description"]
+        self.assertTrue(cycle_diagnostic(description))
+        for changed in (CYCLE_UNSUPPORTED, description.replace("[call at src/cycle.rs:42]", ""),
+                        description.replace("[provenance=source]", "").replace(
+                            "[provenance=registration-override; origin=callee::register]", ""),
+                        description + " Instance { def: DefId(0:62) }",
+                        description + " AnalysisKey { owner_symbol: internal }"):
+            with self.subTest(description=changed):
+                self.assertFalse(cycle_diagnostic(changed))
+        self.assertTrue(cycle_diagnostic(description.replace(
+            "registration-override; origin=callee::register", "discarded-closure-override")))
 
     def test_cycle_boundary_requires_only_the_documented_unsupported(self):
         for root in (ROOTS[3], ROOTS[4]):
