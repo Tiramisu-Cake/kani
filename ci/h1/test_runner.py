@@ -208,7 +208,7 @@ class Tests(unittest.TestCase):
         guardian.send_signal(signal.SIGTERM)
         guardian.communicate(timeout=5)
         got=json.loads(process_file.read_text())
-        self.assertEqual(got['watchdog'],'EXTERNAL_SIGNAL_'+str(signal.SIGTERM))
+        self.assertEqual(got['watchdog'],'EXTERNAL_SIGNAL_'+str(int(signal.SIGTERM)))
         self.assertEqual(got['state'],'FINISHED')
         self.assertEqual(guardian.returncode,1)
         self.assertEqual(r.group_members(got['pid']),[])
