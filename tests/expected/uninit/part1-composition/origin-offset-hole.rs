@@ -25,7 +25,7 @@ unsafe fn copy_window(source: *const MaybeUninit<u8>, destination: *mut MaybeUni
 
 #[inline(never)]
 unsafe fn compare_window(left: *const MaybeUninit<u8>, right: *const MaybeUninit<u8>) -> bool {
-    unsafe { raw_eq(left.cast::<[MaybeUninit<u8>; 3]>(), right.cast::<[MaybeUninit<u8>; 3]>()) }
+    unsafe { raw_eq(&*left.cast::<[MaybeUninit<u8>; 3]>(), &*right.cast::<[MaybeUninit<u8>; 3]>()) }
 }
 
 #[kani::proof]
