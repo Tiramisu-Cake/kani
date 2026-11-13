@@ -469,6 +469,11 @@ fn data_bytes_for_ty(
                     }
                     _ => unreachable!("RigidTy::RawPtr | RigidTy::Ref with a non-scalar ABI."),
                 }),
+                // A sized closure with a zero-byte environment has no data bytes,
+                // including when it captures only zero-sized values.
+                RigidTy::Closure(_, _) if layout.is_sized() && layout.size.bytes() == 0 => {
+                    Ok(vec![])
+                }
                 RigidTy::FnDef(_, _)
                 | RigidTy::FnPtr(_)
                 | RigidTy::Closure(_, _)
