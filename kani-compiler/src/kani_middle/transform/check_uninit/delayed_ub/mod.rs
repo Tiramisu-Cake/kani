@@ -13,7 +13,8 @@ use crate::kani_middle::{
     points_to::{MemLoc, PointsToGraph, run_points_to_analysis},
     reachability::CallGraph,
     transform::{
-        BodyTransformation, GlobalPass, TransformationResult, body::CheckType,
+        BodyTransformation, GlobalPass, TransformationResult,
+        body::{CheckType, InsertPosition, MutableBody, SourceInstruction},
         check_uninit::UninitInstrumenter,
     },
 };
@@ -113,6 +114,7 @@ impl GlobalPass for DelayedUbPass {
             }
             let mut analysis_targets = HashSet::new();
             let mut global_points_to_graph = PointsToGraph::empty();
+            let mut unsupported_roots = Vec::new();
             // Analyze aliasing for every harness.
             for entry_item in starting_items {
                 // Convert each entry function into instance, if possible.
@@ -129,9 +131,13 @@ impl GlobalPass for DelayedUbPass {
                         .get(&instance)
                         .cloned()
                         .unwrap_or_else(|| instance.body().unwrap());
-                    let results =
-                        run_points_to_analysis(&body, tcx, instance, call_graph, &body_overrides);
-                    global_points_to_graph.join(&results);
+                    match run_points_to_analysis(&body, tcx, instance, call_graph, &body_overrides)
+                    {
+                        Ok(results) => {
+                            global_points_to_graph.join(&results);
+                        }
+                        Err(error) => unsupported_roots.push((instance, error)),
+                    }
                 }
             }
 
@@ -174,6 +180,27 @@ impl GlobalPass for DelayedUbPass {
                         *transformation_result = TransformationResult(body, true);
                     });
                 }
+            }
+
+            // Insert at the failed entry root, AFTER ordinary instrumentation. No
+            // partial summary was merged, and no shared callee is globally blocked.
+            // Continue processing other roots rather than issuing a compiler error.
+            for (instance, error) in unsupported_roots {
+                let mut body = MutableBody::from(transformer.body(tcx, instance));
+                let mut source = if body.blocks()[0].statements.is_empty() {
+                    SourceInstruction::Terminator { bb: 0 }
+                } else {
+                    SourceInstruction::Statement { bb: 0, idx: 0 }
+                };
+                body.insert_check(
+                    &self.unsupported_check_type,
+                    &mut source,
+                    InsertPosition::Before,
+                    None,
+                    &error.reason,
+                );
+                transformer.cache.insert(instance, TransformationResult(body.into(), true));
+                modified = true;
             }
         }
         modified

@@ -1,0 +1,2 @@
+Kani delayed uninitialized-memory analysis detected an interprocedural cycle
+Complete - 1 successfully verified harnesses, 1 failures, 2 total.

@@ -1,0 +1,5 @@
+Checking harness capture_free_recursive_check...
+Kani delayed uninitialized-memory analysis detected an interprocedural cycle
+VERIFICATION:- FAILED
+Verification failed for - capture_free_recursive_check
+Complete - 0 successfully verified harnesses, 1 failures, 1 total.
