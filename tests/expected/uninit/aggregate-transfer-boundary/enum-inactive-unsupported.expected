@@ -1,3 +1,4 @@
 Checking harness enum_inactive_unsupported...
 Failed Checks: Kani uninit-checks does not support aggregate argument type
+nested-slot shadow transfer is not implemented
 VERIFICATION:- FAILED

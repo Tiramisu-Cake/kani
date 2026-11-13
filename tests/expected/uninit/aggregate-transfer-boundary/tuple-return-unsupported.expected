@@ -1,3 +1,4 @@
 Checking harness tuple_return_unsupported...
 Failed Checks: Kani uninit-checks does not support aggregate return type
+nested-slot shadow transfer is not implemented
 VERIFICATION:- FAILED

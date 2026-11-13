@@ -591,8 +591,21 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                 let instance = match try_resolve_instance(&self.locals, func) {
                     Ok(instance) => instance,
                     Err(reason) => {
-                        self.push_target(MemoryInitOp::Unsupported { reason });
-                        // Flush entry loads, operand reads and this diagnostic exactly once.
+                        // Resolution failure cannot establish the exact Forget exception.
+                        // Still diagnose actual nested values, even for indirect calls.
+                        let mut rejected = false;
+                        for arg in args {
+                            rejected |= self
+                                .reject_nested_transfer(arg.ty(&self.locals).unwrap(), "argument");
+                        }
+                        rejected |= self.reject_nested_transfer(
+                            destination.ty(&self.locals).unwrap(),
+                            "return",
+                        );
+                        if !rejected {
+                            self.push_target(MemoryInitOp::Unsupported { reason });
+                        }
+                        // Flush entry operations and the explicit diagnostic exactly once.
                         break 'call;
                     }
                 };
