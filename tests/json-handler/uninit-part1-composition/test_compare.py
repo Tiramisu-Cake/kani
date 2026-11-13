@@ -3,6 +3,8 @@
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 """Synthetic tests for complete, root-bound mixed inventory comparisons."""
 import unittest
+import io
+from contextlib import redirect_stdout, redirect_stderr
 import tempfile
 import hashlib
 import json
@@ -225,6 +227,21 @@ class ObservationInvariantTests(unittest.TestCase):
                     "unsupported_constructs": root_observation["unsupported_constructs"]}
         self.assertTrue(check_single(root_observation, expected))
 
+    def test_pfc_target_accepts_bare_and_qualified_names_but_rejects_other_targets(self):
+        for target in ("pfc_contract", "mixed::pfc_contract", "other_contract",
+                       "not_pfc_contract", "mixed::not_pfc_contract"):
+            with self.subTest(target=target):
+                data, regular, selectors, cases, receipt = observation_fixture()
+                case = cases[selectors[0]]
+                case.update(mode="PFC", target="pfc_contract")
+                data["harnesses"][0]["attributes"]["kind"] = {
+                    "ProofForContract": {"target_fn": target}}
+                if target in ("pfc_contract", "mixed::pfc_contract"):
+                    observation(data, regular, selectors, cases, receipt)
+                else:
+                    with self.assertRaisesRegex(Rejected, "wrong PFC target.*actual="):
+                        observation(data, regular, selectors, cases, receipt)
+
     def test_failed_trace_availability_is_retained_and_compared(self):
         baseline = self.observe()
         changed = self.observe(lambda d, _r, _p:
@@ -336,6 +353,7 @@ class ExecuteReceiptTests(unittest.TestCase):
         self.assertIsNone(error)
         self.assertEqual(result[0], {"observed": True})
         self.assertEqual(receipt["original_exit"], 0)
+        self.assertEqual(receipt["expected_exit"], 0)
         self.assertEqual(receipt["input_sha256_after"], self.source_hash)
 
     def test_execute_nonverification_exit_keeps_exit(self):
@@ -378,6 +396,105 @@ class ExecuteReceiptTests(unittest.TestCase):
                 self.assertIn(message, receipt["error"])
                 if snapshot == "missing":
                     self.assertIn("input_sha256_after", receipt["snapshot_errors"])
+
+
+class CaptureDiagnosticTests(unittest.TestCase):
+    def invoke(self, fail_run=None, compare_error=False, corrupt_receipt=False,
+               collect_unbound=True, report_error=False, interrupt=False):
+        args = SimpleNamespace(kani="must-not-run", keep_output=True,
+                               collect_unbound=collect_unbound)
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary)
+            output, errors = io.StringIO(), io.StringIO()
+
+            def execute(_kani, _manifest, selectors, cases, _parent, run_id):
+                if run_id == fail_run:
+                    directory = base / run_id
+                    directory.mkdir()
+                    if corrupt_receipt:
+                        (directory / "receipt.json").write_text('{"broken":')
+                    (directory / "regular.out").write_text("VERIFICATION:- SUCCESSFUL\n")
+                    if interrupt:
+                        raise KeyboardInterrupt()
+                    raise Rejected("wrong PFC target: pfc_legal")
+                roots = [root(name, [check(name, "FAILURE" if
+                         cases[name]["expected_verdict"] == "FAILURE" else "SUCCESS")],
+                         cases[name]["expected_verdict"]) for name in selectors]
+                if compare_error and run_id == "all_A_then_B":
+                    roots[0]["checks"][0]["location"] = "changed.rs:1"
+                return run(*roots), {"run_id": run_id}
+
+            original_write = Path.write_text
+
+            def write_text(path, *args, **kwargs):
+                if report_error and path == base / "capture.json":
+                    raise OSError("report disk failure")
+                return original_write(path, *args, **kwargs)
+
+            with mock.patch.object(mixed_runner.tempfile, "mkdtemp", return_value=str(base)), \
+                    mock.patch.object(mixed_runner, "execute", side_effect=execute) as invoked, \
+                    mock.patch.object(mixed_runner.subprocess, "run") as process, \
+                    mock.patch.object(Path, "write_text", write_text), \
+                    redirect_stdout(output), redirect_stderr(errors):
+                code = mixed_runner.capture(args)
+            process.assert_not_called()
+            report = json.loads((base / "capture.json").read_text()) if (
+                base / "capture.json").exists() else None
+            return code, report, output.getvalue(), errors.getvalue(), invoked.call_count
+
+    def test_isolated_and_combined_failures_report_step_and_reason_after_logs(self):
+        for run_id in ("isolated-pfc_legal", "all_A_then_B"):
+            with self.subTest(run_id=run_id):
+                code, report, output, errors, _ = self.invoke(fail_run=run_id)
+                self.assertEqual(code, 1)
+                self.assertEqual(report["status"], "FAIL")
+                self.assertEqual(report["step"], run_id + ": execute/observe")
+                self.assertIn("VERIFICATION:- SUCCESSFUL", output)
+                self.assertIn(run_id + ": execute/observe: Rejected: wrong PFC target",
+                              errors.splitlines()[-1])
+
+    def test_inventory_comparison_failure_reports_combined_order(self):
+        code, report, _, errors, _ = self.invoke(compare_error=True)
+        self.assertEqual(code, 1)
+        self.assertEqual(report["step"], "all_A_then_B: compare inventories")
+        self.assertIn("mixed-root inventory changed: immutable_legal", errors)
+
+    def test_corrupt_receipt_does_not_mask_original_failure(self):
+        code, report, _, errors, _ = self.invoke(fail_run="isolated-pfc_legal",
+                                                corrupt_receipt=True)
+        self.assertEqual(code, 1)
+        self.assertIn("read_error", report["runs"][0])
+        self.assertIn("wrong PFC target", errors.splitlines()[-1])
+
+    def test_report_write_failure_does_not_mask_original_failure(self):
+        code, report, _, errors, _ = self.invoke(fail_run="isolated-pfc_legal",
+                                                report_error=True)
+        self.assertEqual(code, 1)
+        self.assertIsNone(report)
+        self.assertIn("Could not save failure report: report disk failure", errors)
+        self.assertIn("wrong PFC target", errors.splitlines()[-1])
+
+    def test_preflight_binding_pending_reports_reason_without_executing(self):
+        code, report, _, errors, count = self.invoke(collect_unbound=False)
+        self.assertEqual(code, 1)
+        self.assertIsNone(report)
+        self.assertEqual(count, 0)
+        self.assertIn("Composition stopped at preflight: Rejected: BINDING_PENDING", errors)
+
+    def test_keyboard_interrupt_reports_active_step(self):
+        code, report, _, errors, _ = self.invoke(fail_run="all_A_then_B", interrupt=True)
+        self.assertEqual(code, 130)
+        self.assertEqual(report["status"], "FAIL")
+        self.assertIn("all_A_then_B: execute/observe: KeyboardInterrupt", errors)
+
+    def test_complete_unbound_capture_still_exits_two_without_pass_credit(self):
+        code, report, _, errors, count = self.invoke()
+        self.assertEqual(code, 2)
+        self.assertEqual(count, 11)
+        self.assertEqual(report["status"], "UNBOUND_CAPTURE")
+        self.assertEqual(report["binding_status"], "BINDING_PENDING")
+        self.assertEqual(report["order_credit"], "NOT_ESTABLISHED")
+        self.assertEqual(errors, "")
 
 
 def subprocess_timeout():

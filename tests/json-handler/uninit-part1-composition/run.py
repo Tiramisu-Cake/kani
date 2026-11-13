@@ -10,6 +10,7 @@ import os
 from pathlib import Path
 import re
 import subprocess
+import sys
 import tempfile
 import time
 from datetime import datetime, timezone
@@ -30,9 +31,9 @@ def sha256(path):
 
 def validate_process_result(return_code, expected_exit, timed_out=False, start_error=None):
     require(not timed_out, "TIMEOUT")
-    require(start_error is None, "PROCESS_START_OR_OUTPUT_ERROR")
+    require(start_error is None, f"PROCESS_START_OR_OUTPUT_ERROR: {start_error}")
     require(type(return_code) is int and return_code == expected_exit,
-            "NONVERIFICATION_OR_EXIT_MISMATCH")
+            f"NONVERIFICATION_OR_EXIT_MISMATCH: actual={return_code!r}, expected={expected_exit}")
 
 
 def command(kani, manifest, selectors, directory):
@@ -114,9 +115,12 @@ def observation(data, regular, selectors, case_by_name, receipt):
                 f"unexpected harness attributes: {name}")
         if case["mode"] in ("PFC", "PFC+recursion"):
             kind = attrs["kind"]
+            target = (kind.get("ProofForContract", {}).get("target_fn")
+                      if isinstance(kind, dict) else None)
             require(isinstance(kind, dict) and set(kind) == {"ProofForContract"}
-                    and kind["ProofForContract"]["target_fn"].endswith("::" + case["target"]),
-                    f"wrong PFC target: {name}")
+                    and isinstance(target, str)
+                    and (target == case["target"] or target.endswith("::" + case["target"])),
+                    f"wrong PFC target: {name}: expected={case['target']!r}, actual={kind!r}")
             require(attrs["verified_stubs"] == [], f"unexpected verified stubs: {name}")
             if case["mode"] == "PFC+recursion":
                 require(harness["contract"] is not None
@@ -238,7 +242,9 @@ def execute(kani, manifest, selectors, case_by_name, parent, run_id):
     receipt = {"run_id": run_id, "selectors": selectors, "input": manifest["source"],
                "source_sha256": before, "build_prefix": str(ROOT), "cwd": str(ROOT),
                "argv": argv, "started_epoch": time.time(), "original_exit": None,
-               "timed_out": False, "error": None, "snapshot_errors": {}}
+               "timed_out": False, "error": None, "snapshot_errors": {},
+               "expected_exit": int(any(case_by_name[name]["expected_verdict"] == "FAILURE"
+                                        for name in selectors))}
     process_error = None
     try:
         with (directory / "regular.out").open("wb") as output:
@@ -270,15 +276,12 @@ def execute(kani, manifest, selectors, case_by_name, parent, run_id):
     if process_error is not None:
         raise process_error
     receipt["original_exit"] = result.returncode
-    expected_exit = int(any(case_by_name[name]["expected_verdict"] == "FAILURE"
-                            for name in selectors))
-    receipt["expected_exit"] = expected_exit
     try:
         require("input_sha256_after" not in receipt["snapshot_errors"],
                 f"SNAPSHOT_ERROR: {receipt['snapshot_errors']}")
         require(receipt["input_sha256_after"] == before,
                 "INPUT_HASH_CHANGED during invocation")
-        validate_process_result(result.returncode, expected_exit)
+        validate_process_result(result.returncode, receipt["expected_exit"])
         data = CHECKER.load_export(directory / "export.json")
         regular = (directory / "regular.out").read_text(errors="replace")
         observed = observation(data, regular, selectors, case_by_name, receipt)
@@ -297,30 +300,38 @@ def main():
     parser.add_argument("--collect-unbound", action="store_true",
                         help="explicit pre-binding capture; prints complete observations and exits 2")
     args = parser.parse_args()
-    manifest = json.loads((HERE / "roots.json").read_text())
-    cases = manifest["roots"]
-    case_by_name = {case["name"]: case for case in cases}
-    require(len(case_by_name) == len(cases), "duplicate manifest root")
-    require(sha256(ROOT / manifest["source"]) == manifest["source_sha256"], "manifest source hash mismatch")
-    binding_pending = any(case["binding"] != "REGRESSION_BOUND"
-                          or not isinstance(case.get("expected_inventory"), list)
-                          or not isinstance(case.get("expected_failures"), list)
-                          or not isinstance(case.get("expected_unsupported_inventory"), list)
-                          or case.get("expected_failure_kind") not in
-                              {"ERROR", "NONE", "OTHER", "PANICS_ONLY"}
-                          for case in cases)
-    require(not binding_pending or args.collect_unbound,
-            "BINDING_PENDING: use --collect-unbound for pre-C1 evidence capture; no PASS credit")
-    base = Path(tempfile.mkdtemp(prefix="kani-uninit-part1-composition-"))
+    return capture(args)
+
+
+def capture(args):
+    base = None
+    step = "preflight"
     try:
+        manifest = json.loads((HERE / "roots.json").read_text())
+        cases = manifest["roots"]
+        case_by_name = {case["name"]: case for case in cases}
+        require(len(case_by_name) == len(cases), "duplicate manifest root")
+        require(sha256(ROOT / manifest["source"]) == manifest["source_sha256"], "manifest source hash mismatch")
+        binding_pending = any(case["binding"] != "REGRESSION_BOUND"
+                              or not isinstance(case.get("expected_inventory"), list)
+                              or not isinstance(case.get("expected_failures"), list)
+                              or not isinstance(case.get("expected_unsupported_inventory"), list)
+                              or case.get("expected_failure_kind") not in
+                                  {"ERROR", "NONE", "OTHER", "PANICS_ONLY"}
+                              for case in cases)
+        require(not binding_pending or args.collect_unbound,
+                "BINDING_PENDING: use --collect-unbound for pre-C1 evidence capture; no PASS credit")
+        base = Path(tempfile.mkdtemp(prefix="kani-uninit-part1-composition-"))
         isolated = {}
         combined_observations = []
         receipts = []
         for case in cases:
+            step = "isolated-" + case["name"] + ": execute/observe"
             result, receipt = execute(args.kani, manifest, [case["name"]], case_by_name,
                                       base, "isolated-" + case["name"])
             isolated[case["name"]] = result
             receipts.append(receipt)
+            step = "isolated-" + case["name"] + ": compare/binding"
             isolated_root = compare_selection(result, {case["name"]: case})[case["name"]]
             if not binding_pending:
                 check_single(isolated_root, {"binding": case["binding"],
@@ -331,12 +342,14 @@ def main():
                                              "unsupported_constructs":
                                                  case["expected_unsupported_inventory"]})
         for order in manifest["orders"]:
+            step = order["id"] + ": execute/observe"
             selected = order["selectors"]
             combined, receipt = execute(args.kani, manifest, selected, case_by_name,
                                         base, order["id"])
             receipts.append(receipt)
             combined_observations.append({"order": order["id"], "observation": combined})
             singles = {name: isolated[name] for name in selected}
+            step = order["id"] + ": compare inventories"
             combined_by_name = compare_selection(combined, case_by_name)
             isolated_by_name = {name: compare_selection(singles[name], case_by_name)[name]
                                 for name in selected}
@@ -344,6 +357,7 @@ def main():
             for name in selected:
                 require(inventory(isolated_by_name[name]) == inventory(combined_by_name[name]),
                         f"mixed-root inventory changed: {name} in {order['id']}")
+        step = "write capture report"
         report = {"status": "UNBOUND_CAPTURE" if binding_pending else "PASS",
                   "binding_status": "BINDING_PENDING" if binding_pending else "REGRESSION_BOUND",
                   "root_inventory_observations": isolated,
@@ -355,21 +369,41 @@ def main():
         print("Composition observation: " + json.dumps(report, sort_keys=True))
         # Exit 2 distinguishes useful capture from qualified regression success.
         return 2 if binding_pending else 0
-    except Exception as error:
-        receipt_files = sorted(base.rglob("receipt.json"))
-        saved_receipts = [json.loads(path.read_text()) for path in receipt_files]
-        report = {"status": "FAIL", "error": repr(error), "runs": saved_receipts}
+    except (Exception, KeyboardInterrupt) as error:
+        diagnostic = f"Composition stopped at {step}: {type(error).__name__}: {error}"
+        print(diagnostic, file=sys.stderr, flush=True)
+        saved_receipts = []
+        if base is not None:
+            for path in sorted(base.rglob("receipt.json")):
+                try:
+                    saved_receipts.append(json.loads(path.read_text()))
+                except Exception as receipt_error:
+                    saved_receipts.append({"receipt_path": str(path),
+                                           "read_error": repr(receipt_error)})
+        report = {"status": "FAIL", "step": step, "error": repr(error), "runs": saved_receipts}
+        if base is not None:
+            try:
+                (base / "capture.json").write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
+            except OSError as report_error:
+                print(f"Could not save failure report: {report_error}", file=sys.stderr, flush=True)
         print("Composition observation: " + json.dumps(report, sort_keys=True), flush=True)
-        for log in sorted(base.rglob("regular.out")):
-            for line in log.read_text(errors="replace").splitlines():
-                print(f"{log.parent.name}: {line}", flush=True)
-        return 1
+        if base is not None:
+            for log in sorted(base.rglob("regular.out")):
+                try:
+                    for line in log.read_text(errors="replace").splitlines():
+                        print(f"{log.parent.name}: {line}", flush=True)
+                except OSError as log_error:
+                    print(f"Could not read {log}: {log_error}", file=sys.stderr, flush=True)
+        # Keep the reason visible at the end even when regular logs are very long.
+        print(diagnostic, file=sys.stderr, flush=True)
+        return 130 if isinstance(error, KeyboardInterrupt) else 1
     finally:
-        if args.keep_output or args.collect_unbound:
-            print(f"Retained mixed-root outputs: {base}")
-        else:
-            import shutil
-            shutil.rmtree(base, ignore_errors=True)
+        if base is not None:
+            if args.keep_output or args.collect_unbound:
+                print(f"Retained mixed-root outputs: {base}", flush=True)
+            else:
+                import shutil
+                shutil.rmtree(base, ignore_errors=True)
 
 
 if __name__ == "__main__":

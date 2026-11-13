@@ -22,7 +22,12 @@ path is `./test.sh --collect-unbound --keep-output`; it runs isolated roots,
 then all seven selectors in both orders and the focused cycle/legal pair in
 both orders. It prints and retains `capture.json`, each invocation's
 `receipt.json`, exports, and regular output. Capture exits 2 with
-`UNBOUND_CAPTURE`, never PASS. Review the full inventories and operation/root
+`UNBOUND_CAPTURE`, never PASS. Any caught stop reports its invocation/order and
+phase plus the exception type and reason on stderr, before and after regular
+logs. Failed captures retain a `capture.json` with `status: FAIL`, the failing
+step, and available receipts; unreadable receipts cannot hide the original
+reason. Preflight stops report their reason before a capture directory exists.
+Review the full inventories and operation/root
 bindings, including complete regular check IDs/statuses, failure kind, full
 failed-property metadata, and the exact Unsupported inventory. Commit exact
 identities to `roots.json` with status
