@@ -1,13 +1,7 @@
 #!/usr/bin/env python3
 # Copyright Kani Contributors
 # SPDX-License-Identifier: Apache-2.0 OR MIT
-"""One existing json-handler exec scenario, using the standard Kani CLI.
-
-No CBMC interception or CI scheduling. The coordinator owns timeout/RSS caps
-and capture of the printed artifact directory. All eight inputs are the actual
-expected-suite files, never copied Rust bodies. Observations do not auto-enrol
-new IDs into the oracle.
-"""
+"""Run eight exact JSON regression oracles in temporary directories."""
 
 import json
 import os
@@ -26,7 +20,7 @@ def command(case, directory):
     return ["kani", str(checker.ROOT / case["input"]),
             "-Z", "uninit-checks", "-Z", "function-contracts", "-Z", "export-json",
             "-Z", "unstable-options", "--harness", case["root"], "--exact", "--jobs", "1",
-            "--target-dir", str(directory / "target"), "--keep-temps",
+            "--target-dir", str(directory / "target"),
             "--export-json", str(directory / "export.json"), "--output-format=regular",
             "--cbmc-args", "--object-bits", "12"]
 
@@ -41,8 +35,7 @@ def execute_case(case, parent):
     env["RUSTFLAGS"] = "--edition 2021 -D warnings"
     env["NO_COLOR"] = "1"
     receipt = {"input": case["input"], "root": case["root"], "input_sha256": before,
-               "build_prefix": str(checker.ROOT), "cwd": str(checker.ROOT), "argv": argv,
-               "rustflags": env["RUSTFLAGS"], "started_epoch": time.time(),
+               "build_prefix": str(checker.ROOT), "cwd": str(checker.ROOT), "started_epoch": time.time(),
                "original_exit": None, "timed_out": False, "error": None}
     with (directory / "regular.out").open("wb") as output:
         try:
@@ -52,6 +45,9 @@ def execute_case(case, parent):
             result = subprocess.run(argv, cwd=checker.ROOT, env=env,
                                     stdout=output, stderr=subprocess.STDOUT, check=False)
             receipt["original_exit"] = result.returncode
+        except subprocess.TimeoutExpired as error:
+            receipt["timed_out"] = True
+            receipt["error"] = repr(error)
         except OSError as error:
             receipt["error"] = repr(error)
     receipt["finished_epoch"] = time.time()
@@ -59,22 +55,21 @@ def execute_case(case, parent):
     receipt["regular_sha256"] = checker.sha256(directory / "regular.out")
     export = directory / "export.json"
     receipt["export_sha256"] = checker.sha256(export) if export.exists() else None
-    (directory / "invocation.json").write_text(json.dumps(receipt, indent=2) + "\n")
-    observation = {"case": case["id"], "status": "FAIL", "artifact_directory": str(directory)}
+    observation = {"case": case["id"], "status": "FAIL"}
     data = None
     try:
         checker.require(before == receipt["input_sha256_after"], "source changed during invocation")
         data = checker.load_export(export)
-        # Retain structured observations without learning new oracle identities.
-        observation["harnesses"] = data.get("harnesses") if isinstance(data, dict) else None
-        observation["status"] = checker.check_directory(directory, case)
+        observation["status"] = checker.check_directory(directory, case, receipt)
     except (checker.Rejected, OSError, ValueError, KeyError, TypeError) as error:
         observation.update(status="FAIL", reason=str(error))
-    (directory / "observation.json").write_text(json.dumps(observation, indent=2) + "\n")
-    # compiletest's failure renderer treats lines starting with '{' as rustc
-    # diagnostics. Retain machine-readable JSON in observation.json instead.
-    print("Oracle observation: " + json.dumps(
-        {k: v for k, v in observation.items() if k != "harnesses"}), flush=True)
+    # compiletest parses lines beginning with '{' as rustc diagnostics.
+    print("Oracle observation: " + json.dumps(observation), flush=True)
+    if observation["status"] != "PASS":
+        print(f"Original exit: {receipt['original_exit']}; process error: {receipt['error']}",
+              flush=True)
+        for line in (directory / "regular.out").read_text(errors="replace").splitlines():
+            print("Kani output: " + line, flush=True)
     stop = case["id"] == "lawful-modifies" and reached_unsupported(data)
     return observation["status"], stop
 
@@ -100,16 +95,15 @@ def main():
     for case in cases:
         checker.require(checker.sha256(checker.ROOT / case["input"]) == case["sha256"],
                         f"wrong source: {case['id']}")
-    parent = Path(tempfile.mkdtemp(prefix="kani-uninit-contract-oracles-"))
-    print(f"Capture with existing CI evidence mechanism: {parent}", flush=True)
-    statuses = []
-    for case in cases:
-        status, stop = execute_case(case, parent)
-        statuses.append(status)
-        if stop:
-            print("STOP: lawful-modifies closure/layout Unsupported; retain exact properties", flush=True)
-            break
-    return 0 if len(statuses) == 8 and all(status == "PASS" for status in statuses) else 1
+    with tempfile.TemporaryDirectory(prefix="kani-uninit-contract-oracles-") as parent:
+        statuses = []
+        for case in cases:
+            status, stop = execute_case(case, parent)
+            statuses.append(status)
+            if stop:
+                print("STOP: lawful-modifies reached Unsupported", flush=True)
+                break
+        return 0 if len(statuses) == 8 and all(status == "PASS" for status in statuses) else 1
 
 
 if __name__ == "__main__":

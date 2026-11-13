@@ -1,73 +1,42 @@
-# Uninit contract exact oracles
+# Uninitialized-memory contract oracles
 
-This is one `json-handler exec` scenario using the existing Kani CLI and JSON
-0.1 export. It reads the eight existing input/root selections in `oracles.json`;
-there are no copied Rust bodies or expected-suite runner/schema changes.
+This JSON-handler regression runs eight existing Rust inputs using the Kani CLI
+and JSON 0.1 export. Run `./test.sh` with Kani on PATH, or run
+`python3 test_checker.py` for synthetic Python-only checker tests.
 
-`python3 test_checker.py` runs Python-only adversarial tests. `test.sh` also
-invokes Kani and belongs in coordinator CI only. It uses sequential jobs1,
-`RUSTFLAGS='--edition 2021 -D warnings'`, regular output, the four explicit
-unstable features and final backend arguments `--object-bits 12`. No global
-object-bit/solver/slicing/check default changes. The existing CI capture owns
-resource limits and must retain the printed unique artifact directory (including
-`target` for selected GOTO evidence). No scheduler or CBMC interceptor is added.
-
-Each invocation retains its original exit/signal, source hashes before/after,
-argv/environment recipe, regular output and unique JSON export. Missing,
-malformed, stale or incomplete exports fail. A negative exit1 is accepted only
-with a completed, consistent export and exact inventory. Observations are PASS
-or FAIL, and the scenario exits 0 or 1. Missing/pending oracle bindings fail;
-there is no manual confirmation step or UNKNOWN result in CI.
-
-Kani runs with the checkout root as its recorded `cwd`: the existing JSON
-exporter makes source paths relative to the process working directory. Target,
-export and regular output still use the unique invocation directory. The checker
-requires this cwd and keeps the exact input/root comparison. Synthetic subprocess
-tests model the exporter's cwd-relative paths for all eight cases, including
-wrong input/root and pending bindings. Console observations have a text prefix
-because compiletest's error renderer parses lines starting with `{` as rustc
-diagnostics; the complete structured observation remains in `observation.json`.
-
-The eight `REGRESSION_BOUND` oracles pin reviewed CI r3 run `43430797896`
-export/regular identities. Input hashes and retained file hashes were checked
-against each invocation receipt. Exact useful regular records include `id`,
-`status`, `description` and full `location`; failures also pin class, file and
-line. The manifest retains evidence SHA256/selectors and explicit operation
-associations. CI never learns IDs or rewrites expectations from its observations.
-These are regression expectations: independent source-to-GOTO causality,
-private-write target qualification and proof credit remain `NOT_RUN`. In
-particular, a library read's source-to-helper causal binding is not established
-by an exact library property ID. This replaces the former conflation of CI
-regression acceptance with manual semantic qualification.
-
-| Case | Committed regression expectation |
+| Case | Required result |
 | --- | --- |
 | p1 | No failures; useful outer ensures SUCCESS. |
-| ordinary | No failures; actual generated body assertions, ensures and harness assertions SUCCESS. Original-function UNREACHABLE copies are not the useful assertions. |
-| pfc | No failures; useful body/ensures/harness assertions and selected out assigns SUCCESS. |
+| ordinary | No failures; generated body, ensures and harness assertions SUCCESS. |
+| pfc | No failures; useful body, ensures, harness assertions and selected out assigns SUCCESS. |
 | lawful-modifies | No failures; useful ensures, result29/out29/outside41 and selected out assigns SUCCESS. |
-| p2 | Exactly two required ptr::read u8 uninit failures; only the exact outer ensures assertion additionally permits FAILURE or UNREACHABLE at line14. |
-| postcondition-hole | Independently reviewed input: same two required uninit failures; its exact outer ensures permits FAILURE or UNREACHABLE at line16. |
-| frame | Exactly the user assigns failure at line22 (`*var_7`); selected line23 out write SUCCESS. |
-| clause | Exactly one transmute_neo MU<u16>→u16 safety-check failure, with exact library source and line. No assumed second layer. |
+| p2 | Two exact instrumentation checks for the same intended uninitialized ptr::read u8; the exact outer ensures may additionally be FAILURE or UNREACHABLE at line14. |
+| postcondition-hole | The same two required read checks; the exact outer ensures may additionally be FAILURE or UNREACHABLE at line16. |
+| frame | Only the user outside assigns failure at line22; selected line23 out write SUCCESS. |
+| clause | One exact transmute_neo MaybeUninit<u16> to u16 safety-check failure at its library location. |
 
-All eight retained r3 invocations pass offline with these fixed expectations.
-Future CI needs the same source/tool/property identities and complete consistent
-exports/regular output; it needs no manual binding. A changed identity, missing
-required check, unrelated failure or useful positive assertion becoming
-UNREACHABLE fails. A compiler/toolchain change requires a reviewed oracle update,
-not automatic ID or source-path wildcarding. Only the exact checkout prefix is
-normalized; Rust library paths and generated names remain exact.
+`oracles.json` fixes input hashes, exact roots and lines, operation associations,
+full failure identities, useful SUCCESS rows and the two specific allowed
+consequences. The two read checks do not claim two distinct undefined operations.
+Verifier-private writes cannot replace the expected user frame failure. No
+arbitrary assertion or Unsupported can replace a listed failure.
 
-The checker validates complete regular counts/statuses against JSON; successful
-checks absent from JSON are matched in the same invocation's regular output.
-Unrelated UNREACHABLE service properties are allowed. Unsupported properties are
-assert(false): SUCCESS proves that the unsupported path was not executed;
-SUCCESS/UNREACHABLE are allowed and crosschecked with regular output. FAILURE,
-UNDETERMINED and UNKNOWN are reached Unsupported and trigger the lawful-modifies
-STOP; other nonterminal/error statuses fail validation without claiming reach.
+The checker validates the shared JSON schema, complete run and selection,
+source hashes, process exit and export time, enabled checks and configuration.
+It crosschecks the full regular property inventory with JSON, rejects duplicate
+keys/IDs, missing/extra failures and unknown statuses, and compares exact failure
+multisets. Useful assertions must be SUCCESS; UNREACHABLE is insufficient.
+Unused service properties may be UNREACHABLE. Unsupported properties may be
+SUCCESS or UNREACHABLE only; a reached Unsupported fails the test and stops the
+lawful-modifies run. Only the exact checkout prefix is normalized; generated
+names and Rust library paths remain exact. Changed identities require a reviewed
+manifest update; the runner never learns expectations from its output.
 
-For offline rechecking of the retained invocation after reviewed binding updates:
-`python3 checker.py --case CASE --directory ARTIFACT_DIRECTORY`.
-This checks retained export/regular hashes and current input identity before
-applying the regression oracle. No compiler/verifier is needed for offline replay.
+Invocations use the checkout root as cwd so export paths are checkout-relative,
+with sequential jobs, edition 2021, warnings denied, explicit unstable features,
+and final backend arguments `--cbmc-args --object-bits 12`. Each run has fresh
+temporary target/export/output files and an in-memory invocation record binding
+source, export and regular hashes. Temporary files are removed on success or
+failure; failed runs print the checker reason, original exit and regular output
+with text prefixes compatible with compiletest. CI artifact capture is separate
+from this regression test.

@@ -14,7 +14,7 @@ import unittest
 from unittest.mock import patch
 
 from observe import CYCLE_UNSUPPORTED, observe as observe_export
-from run import collect, invoke
+from run import collect, invoke, main
 
 ROOTS = json.loads(Path(__file__).with_name("roots.json").read_text())["roots"]
 
@@ -329,11 +329,67 @@ class CollectorTests(unittest.TestCase):
                 report = json.loads((destination / "observations.json").read_text())
                 self.assertTrue(all(r["execution_status"] == "NOT_RUN" for r in report["roots"][1:]))
 
+    def test_malformed_exports_and_source_changes_stop_with_diagnostics(self):
+        for mutation in ("null", "wrong-type", "partial", "wrong-root", "source-change", "exec-error"):
+            def fake(command, work, log, timeout):
+                if mutation == "exec-error":
+                    raise OSError("synthetic exec error")
+                root = ROOTS[0]
+                data = export_for(root)
+                if mutation == "null":
+                    data = None
+                elif mutation == "wrong-type":
+                    data = []
+                elif mutation == "partial":
+                    data["run_state"] = "PARTIAL"
+                elif mutation == "wrong-root":
+                    data["harnesses"][0]["name"] = "other"
+                elif mutation == "source-change":
+                    # Only mutate the temporary copy, never a Rust fixture.
+                    (work / root["file"]).write_text("synthetic changed copy")
+                Path(command[command.index("--export-json") + 1]).write_text(json.dumps(data))
+                log.write(b'{"synthetic diagnostic": true}\n')
+                return 0
+
+            with self.subTest(mutation=mutation), tempfile.TemporaryDirectory() as temporary:
+                output = io.StringIO()
+                destination = Path(temporary) / "results"
+                with patch("run.invoke", side_effect=fake) as invocation, \
+                        contextlib.redirect_stdout(output):
+                    result = collect("NEVER_EXECUTED_KANI", destination)
+                self.assertEqual((result, invocation.call_count), (1, 1))
+                report = json.loads((destination / "observations.json").read_text())
+                self.assertEqual(report["roots"][0]["original_exit"],
+                                 None if mutation == "exec-error" else 0)
+                self.assertTrue(all(r["execution_status"] == "NOT_RUN" for r in report["roots"][1:]))
+                self.assertTrue(output.getvalue())
+                self.assertTrue(all(not line.startswith("{") for line in output.getvalue().splitlines()))
+
     def test_stale_output_rejected_before_invocation(self):
         with tempfile.TemporaryDirectory() as temporary, patch("run.invoke") as invocation:
             with self.assertRaises(FileExistsError):
                 collect("NEVER_EXECUTED_KANI", Path(temporary))
             invocation.assert_not_called()
+
+    def test_main_cleans_temporary_files_on_success_failure_and_exception(self):
+        for outcome in (0, 1, OSError("synthetic")):
+            directories = []
+
+            def fake_collect(kani, output):
+                directories.append(output.parent)
+                output.mkdir()
+                if isinstance(outcome, Exception):
+                    raise outcome
+                return outcome
+
+            with self.subTest(outcome=str(outcome)), patch("run.collect", side_effect=fake_collect):
+                if isinstance(outcome, Exception):
+                    with self.assertRaises(OSError):
+                        main([])
+                else:
+                    self.assertEqual(main([]), outcome)
+                self.assertTrue(directories)
+                self.assertTrue(all(not path.exists() for path in directories))
 
     def test_outer_timeout_kills_and_reaps_the_process_group(self):
         with patch("run.subprocess.Popen") as launch, patch("run.os.killpg") as kill:

@@ -86,8 +86,7 @@ def fixture(case_id="p2"):
                "build_prefix": str(checker.ROOT), "cwd": str(checker.ROOT)}
     case["binding"] = {"status": "REGRESSION_BOUND", "failures": copy.deepcopy(failures),
                        "required_successes": copy.deepcopy(successes),
-                       "operations": {op: "SYNTHETIC mapping only" for op in case["required_operations"]},
-                       "evidence": [{"artifact": "synthetic", "selector": "fixture", "sha256": "a" * 64}]}
+                       "operations": {op: "SYNTHETIC mapping only" for op in case["required_operations"]}}
     return data, case, receipt, regular(data)
 
 
@@ -275,7 +274,6 @@ class CheckerTests(unittest.TestCase):
             lambda d, c, r, t: d["harnesses"][0]["failed_properties"][0].update(status="UNKNOWN"),
             lambda d, c, r, t: d["configuration"]["checks"].update(overflow=False),
             lambda d, c, r, t: c["binding"].update(operations={}),
-            lambda d, c, r, t: c["binding"].update(evidence=[]),
         ):
             self.reject(change)
 
@@ -339,12 +337,14 @@ class CheckerTests(unittest.TestCase):
         # Mock the CLI boundary only. Keep the actual scenario/consumer and
         # filesystem behavior, including original return codes and absent files.
         for mode in ("ok", "missing", "stale", "signal", "codegen", "oserror", "tampered",
-                     "null", "wrong-type", "incomplete", "truncated"):
+                     "null", "wrong-type", "incomplete", "truncated", "timeout"):
             data, case, sample_receipt, text = fixture()
             if mode == "stale":
                 data["started_at"] = "2020-01-01T00:00:00Z"
 
             def fake(argv, **kwargs):
+                if mode == "timeout":
+                    raise run.subprocess.TimeoutExpired("synthetic", 180)
                 if mode == "oserror":
                     raise OSError("synthetic exec failure")
                 kwargs["stdout"].write(text.encode())
@@ -363,20 +363,25 @@ class CheckerTests(unittest.TestCase):
                 return Result()
 
             with self.subTest(mode=mode), tempfile.TemporaryDirectory() as temp:
-                with patch.object(run.subprocess, "run", side_effect=fake), \
+                with patch.object(run.subprocess, "run", side_effect=fake) as invocation, \
+                        patch.object(checker, "check_directory", wraps=checker.check_directory) as checked, \
                         patch.object(run.time, "time", return_value=sample_receipt["started_epoch"] + 0.5), \
                         contextlib.redirect_stdout(io.StringIO()):
                     status, stop = run.execute_case(case, temp)
                 directory = next(Path(temp).iterdir())
-                receipt = checker.load_export(directory / "invocation.json")
                 self.assertEqual(status, "PASS" if mode in ("ok", "tampered") else "FAIL")
                 self.assertFalse(stop)
-                self.assertEqual(receipt["original_exit"], None if mode == "oserror" else
-                                 -15 if mode == "signal" else 2 if mode == "codegen" else 1)
+                self.assertFalse((directory / "invocation.json").exists())
+                self.assertFalse((directory / "observation.json").exists())
+                if checked.called:
+                    receipt = checked.call_args.args[2]
+                    self.assertEqual(receipt["original_exit"],
+                                     None if mode == "timeout" else
+                                     -15 if mode == "signal" else 2 if mode == "codegen" else 1)
                 if mode == "tampered":
                     (directory / "export.json").write_text("{}")
                     with self.assertRaises(checker.Rejected):
-                        checker.check_directory(directory, case)
+                        checker.check_directory(directory, case, receipt)
 
     def test_exporter_cwd_and_compiletest_failure_output(self):
         # Model schema_utils::HarnessExport's relativize_path, rather than
@@ -407,7 +412,8 @@ class CheckerTests(unittest.TestCase):
 
                 with self.subTest(case=case["id"], mode=mode), tempfile.TemporaryDirectory() as temp:
                     output = io.StringIO()
-                    with patch.object(run.subprocess, "run", side_effect=fake), \
+                    with patch.object(run.subprocess, "run", side_effect=fake) as invocation, \
+                            patch.object(checker, "check_directory", wraps=checker.check_directory) as checked, \
                             patch.object(run.time, "time", return_value=sample_receipt["started_epoch"] + 0.5), \
                             contextlib.redirect_stdout(output):
                         status, stop = run.execute_case(case, temp)
@@ -415,13 +421,11 @@ class CheckerTests(unittest.TestCase):
                     self.assertEqual(status, expected)
                     self.assertFalse(stop)
                     directory = next(Path(temp).iterdir())
-                    receipt = checker.load_export(directory / "invocation.json")
+                    receipt = checked.call_args.args[2]
                     self.assertEqual(receipt["cwd"], str(checker.ROOT))
                     self.assertEqual(receipt["original_exit"], int(case["verdict"] == "FAILURE"))
-                    self.assertEqual(Path(receipt["argv"][receipt["argv"].index("--target-dir") + 1]),
+                    self.assertEqual(Path(invocation.call_args.args[0][invocation.call_args.args[0].index("--target-dir") + 1]),
                                      directory / "target")
-                    observation = checker.load_export(directory / "observation.json")
-                    self.assertEqual(observation["status"], expected)
                     # extract_rendered only tries rustc JSON parsing for '{'
                     # at column zero, even for arbitrary exec-mode output.
                     lines = output.getvalue().splitlines()
@@ -448,13 +452,27 @@ class CheckerTests(unittest.TestCase):
         for malformed in (None, [], {"harnesses": None}, {"harnesses": [None]}):
             self.assertFalse(run.reached_unsupported(malformed))
 
-    def test_scenario_has_only_binary_exit_status(self):
-        for status in ("PASS", "FAIL", "UNKNOWN"):
-            with self.subTest(status=status), tempfile.TemporaryDirectory() as temp:
-                with patch.object(run.tempfile, "mkdtemp", return_value=temp), \
-                        patch.object(run, "execute_case", return_value=(status, False)), \
-                        contextlib.redirect_stdout(io.StringIO()):
-                    self.assertEqual(run.main(), 0 if status == "PASS" else 1)
+    def test_main_cleans_temporary_files_on_success_failure_and_exception(self):
+        for outcome in ("PASS", "FAIL", "UNKNOWN", OSError("synthetic")):
+            directories = []
+
+            def execute(case, parent):
+                directories.append(Path(parent))
+                (Path(parent) / "diagnostic").write_text("synthetic output")
+                if isinstance(outcome, Exception):
+                    raise outcome
+                return outcome, False
+
+            with self.subTest(outcome=str(outcome)), \
+                    patch.object(run, "execute_case", side_effect=execute), \
+                    contextlib.redirect_stdout(io.StringIO()):
+                if isinstance(outcome, Exception):
+                    with self.assertRaises(OSError):
+                        run.main()
+                else:
+                    self.assertEqual(run.main(), 0 if outcome == "PASS" else 1)
+                self.assertTrue(directories)
+                self.assertTrue(all(not path.exists() for path in directories))
 
     def test_truncated_regular(self):
         self.reject(lambda d, c, r, t: t.split("SUMMARY:")[0])
