@@ -1,6 +1,7 @@
 name: KANI3300 full gate (coordinator only)
 on:
-  workflow_dispatch:
+  push:
+    branches: ['ci/kani3300-fullgate-c1-w15']
 permissions:
   contents: read
 concurrency:
