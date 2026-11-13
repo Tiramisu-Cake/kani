@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "root_count": 6,
+  "unwind": 8,
+  "proposed_harness_timeout_s": 120,
+  "object_bits": 12,
+  "mode_qualification": false,
+  "roots": [
+    {
+      "file": "replace.rs",
+      "harness": "replace_transfer",
+      "intended_mode": "Replace",
+      "target": "passthrough",
+      "companion": false,
+      "source_semantics": "legal",
+      "observed_outcome": null,
+      "binding_status": "BINDING_PENDING"
+    },
+    {
+      "file": "replace.rs",
+      "harness": "replace_ordinary",
+      "intended_mode": "Assert",
+      "target": "passthrough",
+      "companion": true,
+      "source_semantics": "legal",
+      "observed_outcome": null,
+      "binding_status": "BINDING_PENDING"
+    },
+    {
+      "file": "replace.rs",
+      "harness": "replace_simple_check",
+      "intended_mode": "SimpleCheck",
+      "target": "passthrough",
+      "companion": true,
+      "source_semantics": "legal",
+      "observed_outcome": null,
+      "binding_status": "BINDING_PENDING"
+    },
+    {
+      "file": "recursive.rs",
+      "harness": "recursive_check",
+      "intended_mode": "RecursiveCheck",
+      "target": "recursive_transfer",
+      "companion": false,
+      "source_semantics": "legal",
+      "observed_outcome": null,
+      "binding_status": "BINDING_PENDING"
+    },
+    {
+      "file": "recursive.rs",
+      "harness": "recursive_ordinary",
+      "intended_mode": "Assert",
+      "target": "recursive_transfer",
+      "companion": true,
+      "source_semantics": "legal",
+      "observed_outcome": null,
+      "binding_status": "BINDING_PENDING"
+    },
+    {
+      "file": "recursive.rs",
+      "harness": "recursive_simple_check",
+      "intended_mode": "SimpleCheck",
+      "target": "bounded_transfer",
+      "companion": true,
+      "source_semantics": "legal",
+      "observed_outcome": null,
+      "binding_status": "BINDING_PENDING"
+    }
+  ]
+}
