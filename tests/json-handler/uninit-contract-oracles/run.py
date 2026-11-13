@@ -65,11 +65,9 @@ def execute_case(case, parent):
     try:
         checker.require(before == receipt["input_sha256_after"], "source changed during invocation")
         data = checker.load_export(export)
-        # Save full structured failure identities even when qualification is pending.
+        # Retain structured observations without learning new oracle identities.
         observation["harnesses"] = data.get("harnesses") if isinstance(data, dict) else None
         observation["status"] = checker.check_directory(directory, case)
-    except checker.Pending as error:
-        observation.update(status="UNKNOWN", reason=str(error))
     except (checker.Rejected, OSError, ValueError, KeyError, TypeError) as error:
         observation.update(status="FAIL", reason=str(error))
     (directory / "observation.json").write_text(json.dumps(observation, indent=2) + "\n")
@@ -87,7 +85,7 @@ def reached_unsupported(data):
     for h in data["harnesses"]:
         if not isinstance(h, dict) or not isinstance(h.get("unsupported_constructs"), list):
             continue
-        if any(isinstance(p, dict) and p.get("status") != "UNREACHABLE"
+        if any(isinstance(p, dict) and p.get("status") in checker.REACHED_UNSUPPORTED
                for p in h["unsupported_constructs"]):
             return True
     return False
@@ -111,9 +109,7 @@ def main():
         if stop:
             print("STOP: lawful-modifies closure/layout Unsupported; retain exact properties", flush=True)
             break
-    if len(statuses) != 8 or "FAIL" in statuses:
-        return 1
-    return 2 if "UNKNOWN" in statuses else 0
+    return 0 if len(statuses) == 8 and all(status == "PASS" for status in statuses) else 1
 
 
 if __name__ == "__main__":

@@ -15,8 +15,9 @@ resource limits and must retain the printed unique artifact directory (including
 Each invocation retains its original exit/signal, source hashes before/after,
 argv/environment recipe, regular output and unique JSON export. Missing,
 malformed, stale or incomplete exports fail. A negative exit1 is accepted only
-with a completed, consistent export and exact inventory. Exit2 of the scenario
-means UNKNOWN, not an expected negative success; the exec gate must fail it.
+with a completed, consistent export and exact inventory. Observations are PASS
+or FAIL, and the scenario exits 0 or 1. Missing/pending oracle bindings fail;
+there is no manual confirmation step or UNKNOWN result in CI.
 
 Kani runs with the checkout root as its recorded `cwd`: the existing JSON
 exporter makes source paths relative to the process working directory. Target,
@@ -27,27 +28,46 @@ wrong input/root and pending bindings. Console observations have a text prefix
 because compiletest's error renderer parses lines starting with `{` as rustc
 diagnostics; the complete structured observation remains in `observation.json`.
 
-All initial bindings are `BINDING_PENDING`. The first CI capture cannot qualify
-any case. Review the selected complete regular/GOTO evidence of that invocation,
-then commit exact failure identities and selected useful successful regular
-records (`id`, `status`, `description`, full `location`), every required operation
-mapping and artifact SHA256/selectors under `binding`. Set `BOUND` only after
-that review. Never learn an oracle automatically from observed failures. P2 and
-postcondition-hole have distinct case identities despite identical root names.
-Postcondition-hole and clause counts remain unset until independently mapped;
-P2 must retain its two known instrumentation obligations. No generated ID is
-guessed here. Evidence references/operation mappings are reviewed declarations;
-the Python checker does not independently prove the source-to-GOTO mapping.
+The eight `REGRESSION_BOUND` oracles pin reviewed CI r3 run `43430797896`
+export/regular identities. Input hashes and retained file hashes were checked
+against each invocation receipt. Exact useful regular records include `id`,
+`status`, `description` and full `location`; failures also pin class, file and
+line. The manifest retains evidence SHA256/selectors and explicit operation
+associations. CI never learns IDs or rewrites expectations from its observations.
+These are regression expectations: independent source-to-GOTO causality,
+private-write target qualification and proof credit remain `NOT_RUN`. In
+particular, a library read's source-to-helper causal binding is not established
+by an exact library property ID. This replaces the former conflation of CI
+regression acceptance with manual semantic qualification.
+
+| Case | Committed regression expectation |
+| --- | --- |
+| p1 | No failures; useful outer ensures SUCCESS. |
+| ordinary | No failures; actual generated body assertions, ensures and harness assertions SUCCESS. Original-function UNREACHABLE copies are not the useful assertions. |
+| pfc | No failures; useful body/ensures/harness assertions and selected out assigns SUCCESS. |
+| lawful-modifies | No failures; useful ensures, result29/out29/outside41 and selected out assigns SUCCESS. |
+| p2 | Exactly two required ptr::read u8 uninit failures; only the exact outer ensures assertion additionally permits FAILURE or UNREACHABLE at line14. |
+| postcondition-hole | Independently reviewed input: same two required uninit failures; its exact outer ensures permits FAILURE or UNREACHABLE at line16. |
+| frame | Exactly the user assigns failure at line22 (`*var_7`); selected line23 out write SUCCESS. |
+| clause | Exactly one transmute_neo MU<u16>→u16 safety-check failure, with exact library source and line. No assumed second layer. |
+
+All eight retained r3 invocations pass offline with these fixed expectations.
+Future CI needs the same source/tool/property identities and complete consistent
+exports/regular output; it needs no manual binding. A changed identity, missing
+required check, unrelated failure or useful positive assertion becoming
+UNREACHABLE fails. A compiler/toolchain change requires a reviewed oracle update,
+not automatic ID or source-path wildcarding. Only the exact checkout prefix is
+normalized; Rust library paths and generated names remain exact.
 
 The checker validates complete regular counts/statuses against JSON; successful
 checks absent from JSON are matched in the same invocation's regular output.
-Unrelated UNREACHABLE service properties are allowed. A required useful positive
-assertion must be SUCCESS. Reached Unsupported fails; an unreachable Unsupported
-service property is allowed and crosschecked with the unreachable inventory.
-A reached lawful-modifies Unsupported stops further selections for that scenario.
+Unrelated UNREACHABLE service properties are allowed. Unsupported properties are
+assert(false): SUCCESS proves that the unsupported path was not executed;
+SUCCESS/UNREACHABLE are allowed and crosschecked with regular output. FAILURE,
+UNDETERMINED and UNKNOWN are reached Unsupported and trigger the lawful-modifies
+STOP; other nonterminal/error statuses fail validation without claiming reach.
 
 For offline rechecking of the retained invocation after reviewed binding updates:
 `python3 checker.py --case CASE --directory ARTIFACT_DIRECTORY`.
 This checks retained export/regular hashes and current input identity before
-applying the oracle. Actual compilation, semantic qualification, private target
-binding and proof credit are NOT_RUN until coordinator CI/review establishes them.
+applying the regression oracle. No compiler/verifier is needed for offline replay.

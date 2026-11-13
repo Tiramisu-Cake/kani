@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 # Copyright Kani Contributors
 # SPDX-License-Identifier: Apache-2.0 OR MIT
-"""Exact per-invocation gate. Pending bindings are UNKNOWN, never a pass.
+"""Exact per-invocation regression gate, with deterministic PASS/FAIL results.
 
 JSON schema validation is shared with the existing export tests. This consumer
 adds selection, complete inventories, counters and selected regular evidence.
-It does not establish source -> GOTO causality: BOUND manifests require review
-of selected same-invocation CI evidence before they are committed.
+It does not establish source -> GOTO causality or independent proof credit.
+REGRESSION_BOUND manifests pin reviewed source/regular/export expectations.
 """
 
 import hashlib
@@ -26,13 +26,10 @@ SPEC.loader.exec_module(VALIDATOR)
 SCHEMA = VALIDATOR.load_schema_template()
 FIELDS = ("id", "description", "class", "file", "line", "status")
 FLAGS = {"uninit-checks", "function-contracts", "export-json", "unstable-options"}
+REACHED_UNSUPPORTED = {"FAILURE", "UNDETERMINED", "UNKNOWN"}
 
 
 class Rejected(ValueError):
-    pass
-
-
-class Pending(Rejected):
     pass
 
 
@@ -133,8 +130,10 @@ def validate(data, case, receipt, regular, root=ROOT):
             "unexpected stubs")
     require(h["outcome"] == {"kind": "COMPLETED", "verdict": case["verdict"]}, "wrong outcome")
     require(h["failure_kind"] == ("NONE" if expected_exit == 0 else "OTHER"), "wrong failure kind")
-    require(all(p["status"] == "UNREACHABLE" for p in h["unsupported_constructs"]),
-            "reached Unsupported")
+    # Unsupported properties assert(false): SUCCESS proves that path was not
+    # executed. Neither SUCCESS nor UNREACHABLE is a reached Unsupported.
+    require(all(p["status"] in {"SUCCESS", "UNREACHABLE"}
+                for p in h["unsupported_constructs"]), "reached/nonterminal Unsupported")
     require(len({p["id"] for p in h["unsupported_constructs"]}) == len(h["unsupported_constructs"]),
             "duplicate Unsupported IDs")
     checks, covers = h["checks"], h["covers"]
@@ -157,8 +156,6 @@ def validate(data, case, receipt, regular, root=ROOT):
     require(h["n_failed"] == len(failed) == len(checks["failure"]), "failure counter mismatch")
     require(set(fids) == set(checks["failure"]), "failed_properties/checks.failure mismatch")
     require(all(p["status"] == "FAILURE" for p in failed), "wrong failed status")
-    if case["failure_count"] is not None:
-        require(len(failed) == case["failure_count"], "missing/extra failure")
     require(bool(failed) == bool(expected_exit), "verdict/failures mismatch")
     summary = {"total": 1, "successful": int(expected_exit == 0), "failed": int(expected_exit != 0),
                "checks_total": checks["total"], "checks_success": checks["success"],
@@ -179,9 +176,9 @@ def validate(data, case, receipt, regular, root=ROOT):
             "regular/JSON unreachable IDs mismatch")
     by_id = {p["id"]: p for p in props}
     for p in h["unsupported_constructs"]:
-        require(p["id"] in checks["unreachable"] and
+        require(p["id"] in by_id and by_id[p["id"]]["status"] == p["status"] and
                 by_id[p["id"]]["description"] == p["description"],
-                "Unsupported unreachable inventory mismatch")
+                "Unsupported regular/JSON inventory mismatch")
     for p in failed:
         require(by_id[p["id"]]["description"] == p["description"], "failure description mismatch")
     marker = "SUCCESSFUL" if expected_exit == 0 else "FAILED"
@@ -189,13 +186,37 @@ def validate(data, case, receipt, regular, root=ROOT):
     require(regular.count(f"Checking harness {case['root']}...") == 1, "regular root mismatch")
 
     binding = case["binding"]
-    if binding["status"] != "BOUND":
-        raise Pending("BINDING_PENDING: selected CI regular/GOTO mapping requires review")
+    require(binding["status"] == "REGRESSION_BOUND",
+            "BINDING_PENDING: regression expectations must be reviewed and committed")
     require(binding["evidence"] and all(
         re.fullmatch(r"[0-9a-f]{64}", e["sha256"]) and e["selector"] and e["artifact"]
         for e in binding["evidence"]), "missing selected binding evidence identities")
     expected = binding["failures"]
     require(isinstance(expected, list), "missing exact failure inventory")
+    expected = list(expected)
+    normalized = {p["id"]: {k: normalize(v, prefix) for k, v in p.items()} for p in props}
+    consequences = binding.get("allowed_consequences", [])
+    consequence_ids = [p["failure"]["id"] for p in consequences]
+    require(len(consequence_ids) == len(set(consequence_ids)) and
+            not set(consequence_ids).intersection(p["id"] for p in expected),
+            "duplicate/overlapping consequence IDs")
+    consequence_failures = 0
+    for consequence in consequences:
+        failure, record = consequence["failure"], consequence["regular"]
+        require(failure["class"] == "assertion" and failure["status"] == "FAILURE" and
+                record["id"] == failure["id"] and record["status"] == "FAILURE" and
+                record["description"] == failure["description"], "bad consequence binding")
+        actual = normalized.get(failure["id"])
+        require(actual is not None and actual["status"] in {"FAILURE", "UNREACHABLE"},
+                "outer ensures must be FAILURE or UNREACHABLE")
+        require(actual == dict(record, status=actual["status"]),
+                "outer ensures identity/location mismatch")
+        if actual["status"] == "FAILURE":
+            expected.append(failure)
+            consequence_failures += 1
+    require(type(case["failure_count"]) is int and
+            case["failure_count"] == len(binding["failures"]) and
+            len(failed) == case["failure_count"] + consequence_failures, "missing/extra failure")
     require(Counter(identity(p, prefix) for p in failed) ==
             Counter(identity(p, prefix) for p in expected), "exact failure inventory mismatch")
     require(set(binding["operations"]) == set(case["required_operations"]), "incomplete operation map")
@@ -203,11 +224,12 @@ def validate(data, case, receipt, regular, root=ROOT):
     successes = binding["required_successes"]
     require(isinstance(successes, list) and (successes or expected_exit != 0),
             "positive useful assertions not bound")
-    normalized = [{k: normalize(v, prefix) for k, v in p.items()} for p in props]
     for p in successes:
-        require(p["status"] == "SUCCESS" and p in normalized,
+        require(p["status"] == "SUCCESS" and normalized.get(p["id"]) == p,
                 "useful assertion missing/unreachable/wrong source or function")
-    return "QUALIFIED"
+    for p in binding.get("required_regular", []):
+        require(normalized.get(p["id"]) == p, "required regular identity/location mismatch")
+    return "PASS"
 
 
 def check_directory(directory, case):
@@ -232,9 +254,6 @@ def main():
         require(len(selected) == 1, "missing/duplicate manifest case")
         print(check_directory(args.directory, selected[0]))
         return 0
-    except Pending as error:
-        print(f"UNKNOWN: {error}")
-        return 2
     except (Rejected, OSError, ValueError, KeyError, TypeError) as error:
         print(f"FAIL: {error}")
         return 1

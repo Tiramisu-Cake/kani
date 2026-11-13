@@ -84,10 +84,38 @@ def fixture(case_id="p2"):
                "original_exit": int(negative), "timed_out": False, "error": None,
                "started_epoch": stamp, "finished_epoch": stamp + 10,
                "build_prefix": str(checker.ROOT), "cwd": str(checker.ROOT)}
-    case["binding"] = {"status": "BOUND", "failures": copy.deepcopy(failures),
+    case["binding"] = {"status": "REGRESSION_BOUND", "failures": copy.deepcopy(failures),
                        "required_successes": copy.deepcopy(successes),
                        "operations": {op: "SYNTHETIC mapping only" for op in case["required_operations"]},
                        "evidence": [{"artifact": "synthetic", "selector": "fixture", "sha256": "a" * 64}]}
+    return data, case, receipt, regular(data)
+
+
+def hole_fixture(case_id, status):
+    data, case, receipt, text = fixture(case_id)
+    h = data["harnesses"][0]
+    failure = {"id": "synthetic::ensures.assertion.1", "class": "assertion",
+               "description": "synthetic ensures reads hole and compares with 17",
+               "file": case["input"], "line": str(case["operation_lines"][0]["line"]),
+               "status": "FAILURE"}
+    record = {"id": failure["id"], "status": "FAILURE", "description": failure["description"],
+              "location": f"{failure['file']}:{failure['line']}:1 in function synthetic::ensures"}
+    case["binding"]["allowed_consequences"] = [{"failure": failure, "regular": record}]
+    h["n_properties"] += 1
+    h["checks"]["total"] += 1
+    data["summary"]["checks_total"] += 1
+    if status == "FAILURE":
+        h["failed_properties"].append(dict(failure, trace_available=True))
+        h["n_failed"] += 1
+        h["checks"]["failure"].append(failure["id"])
+    elif status == "UNREACHABLE":
+        h["checks"]["unreachable"].append(failure["id"])
+    elif status == "SUCCESS":
+        h["checks"]["success"] += 1
+        data["summary"]["checks_success"] += 1
+    else:
+        raise AssertionError("unsupported synthetic status")
+    h["synthetic_regular"] = checker.regular_properties(text) + [dict(record, status=status)]
     return data, case, receipt, regular(data)
 
 
@@ -101,13 +129,14 @@ class CheckerTests(unittest.TestCase):
     def test_complete_bound_fixtures(self):
         for case in MANIFEST["cases"]:
             with self.subTest(case=case["id"]):
-                self.assertEqual(checker.validate(*fixture(case["id"])), "QUALIFIED")
+                self.assertEqual(checker.validate(*fixture(case["id"])), "PASS")
 
     def test_unbound_manifest_is_never_pass(self):
         for case in MANIFEST["cases"]:
-            data, _, receipt, text = fixture(case["id"])
-            with self.subTest(case=case["id"]), self.assertRaises(checker.Pending):
-                checker.validate(data, case, receipt, text)
+            data, synthetic, receipt, text = fixture(case["id"])
+            synthetic["binding"]["status"] = "BINDING_PENDING"
+            with self.subTest(case=case["id"]), self.assertRaisesRegex(checker.Rejected, "BINDING_PENDING"):
+                checker.validate(data, synthetic, receipt, text)
 
     def test_selection_and_source_rejections(self):
         changes = [
@@ -171,6 +200,58 @@ class CheckerTests(unittest.TestCase):
                 return regular(d)
             self.reject(change, "postcondition-hole")
 
+    def test_hole_outer_ensures_failure_or_unreachable(self):
+        for case_id in ("p2", "postcondition-hole"):
+            for status in ("FAILURE", "UNREACHABLE"):
+                with self.subTest(case=case_id, status=status):
+                    self.assertEqual(checker.validate(*hole_fixture(case_id, status)), "PASS")
+
+    def test_hole_consequence_does_not_hide_missing_or_extra_failure(self):
+        for case_id in ("p2", "postcondition-hole"):
+            for status in ("FAILURE", "UNREACHABLE"):
+                for mutation in ("missing-read", "extra-failure", "wrong-location", "missing-ensures"):
+                    data, case, receipt, text = hole_fixture(case_id, status)
+                    h = data["harnesses"][0]
+                    props = checker.regular_properties(text)
+                    if mutation in ("missing-read", "extra-failure"):
+                        if mutation == "missing-read":
+                            removed = h["failed_properties"].pop(0)
+                            props = [p for p in props if p["id"] != removed["id"]]
+                            delta = -1
+                        else:
+                            extra = dict(h["failed_properties"][0], id="synthetic::unrelated.assertion.99",
+                                         description="unrelated failure", **{"class": "assertion"})
+                            h["failed_properties"].append(extra)
+                            props.append({"id": extra["id"], "status": "FAILURE",
+                                          "description": extra["description"], "location": "other.rs:1:1 in function other"})
+                            delta = 1
+                        h["checks"]["failure"] = [p["id"] for p in h["failed_properties"]]
+                        h["n_failed"] += delta
+                    elif mutation == "missing-ensures":
+                        pid = case["binding"]["allowed_consequences"][0]["failure"]["id"]
+                        props = [p for p in props if p["id"] != pid]
+                        if status == "FAILURE":
+                            h["failed_properties"] = [p for p in h["failed_properties"] if p["id"] != pid]
+                            h["checks"]["failure"].remove(pid)
+                            h["n_failed"] -= 1
+                        else:
+                            h["checks"]["unreachable"].remove(pid)
+                        delta = -1
+                    else:
+                        props[-1]["location"] = "wrong.rs:99:1 in function wrong"
+                        delta = 0
+                    h["n_properties"] += delta
+                    h["checks"]["total"] += delta
+                    data["summary"]["checks_total"] += delta
+                    h["synthetic_regular"] = props
+                    with self.subTest(case=case_id, status=status, mutation=mutation), self.assertRaises(checker.Rejected):
+                        checker.validate(data, case, receipt, regular(data))
+
+    def test_hole_outer_ensures_success_is_rejected(self):
+        for case_id in ("p2", "postcondition-hole"):
+            with self.subTest(case=case_id), self.assertRaisesRegex(checker.Rejected, "outer ensures"):
+                checker.validate(*hole_fixture(case_id, "SUCCESS"))
+
     def test_exact_frame_target_type_line_and_function(self):
         def swapped(d, c, r, text):
             p = d["harnesses"][0]["failed_properties"][0]
@@ -216,30 +297,50 @@ class CheckerTests(unittest.TestCase):
         case["binding"]["required_successes"] = case["binding"]["required_successes"][:1]
         text = text.replace('Check 2: synthetic::root.assertion.1\n\t - Status: SUCCESS',
                             'Check 2: synthetic::root.assertion.1\n\t - Status: UNREACHABLE')
-        self.assertEqual(checker.validate(data, case, receipt, text), "QUALIFIED")
+        self.assertEqual(checker.validate(data, case, receipt, text), "PASS")
 
-    def test_unreachable_unsupported_service_branch_is_allowed(self):
-        data, case, receipt, text = fixture()
-        h = data["harnesses"][0]
-        pid = "synthetic::service.unsupported_construct.1"
-        h["n_properties"] += 1
-        h["checks"]["total"] += 1
-        h["checks"]["unreachable"].append(pid)
-        data["summary"]["checks_total"] += 1
-        p = {"id": pid, "status": "UNREACHABLE", "description": "unused service branch",
-             "class": "unsupported_construct", "file": None, "line": None, "trace_available": False}
-        h["unsupported_constructs"] = [p]
-        h["synthetic_regular"] = checker.regular_properties(text) + [
-            {"id": pid, "status": "UNREACHABLE", "description": p["description"], "location": "Unknown file"}]
-        self.assertEqual(checker.validate(data, case, receipt, regular(data)), "QUALIFIED")
+    def test_successful_or_unreachable_unsupported_service_branch_is_allowed(self):
+        for status in ("SUCCESS", "UNREACHABLE"):
+            data, case, receipt, text = fixture()
+            h = data["harnesses"][0]
+            pid = "synthetic::service.unsupported_construct.1"
+            h["n_properties"] += 1
+            h["checks"]["total"] += 1
+            data["summary"]["checks_total"] += 1
+            if status == "SUCCESS":
+                h["checks"]["success"] += 1
+                data["summary"]["checks_success"] += 1
+            else:
+                h["checks"]["unreachable"].append(pid)
+            p = {"id": pid, "status": status, "description": "unused service branch",
+                 "class": "unsupported_construct", "file": None, "line": None, "trace_available": False}
+            h["unsupported_constructs"] = [p]
+            h["synthetic_regular"] = checker.regular_properties(text) + [
+                {"id": pid, "status": status, "description": p["description"], "location": "Unknown file"}]
+            text = regular(data)
+            with self.subTest(status=status):
+                self.assertEqual(checker.validate(data, case, receipt, text), "PASS")
+                self.assertFalse(run.reached_unsupported(data))
+                p["status"] = "UNREACHABLE" if status == "SUCCESS" else "SUCCESS"
+                with self.assertRaisesRegex(checker.Rejected, "Unsupported regular/JSON"):
+                    checker.validate(data, case, receipt, text)
+
+    def test_reached_or_nonterminal_unsupported_is_rejected(self):
+        for status in ("FAILURE", "UNDETERMINED", "UNKNOWN", "ERROR"):
+            data, case, receipt, text = fixture()
+            data["harnesses"][0]["unsupported_constructs"] = [
+                {"id": "synthetic::service.unsupported_construct.1", "status": status,
+                 "description": "unsupported path", "class": "unsupported_construct",
+                 "file": None, "line": None, "trace_available": False}]
+            with self.subTest(status=status), self.assertRaises(checker.Rejected):
+                checker.validate(data, case, receipt, text)
 
     def test_scenario_process_receipts_without_compilation(self):
         # Mock the CLI boundary only. Keep the actual scenario/consumer and
         # filesystem behavior, including original return codes and absent files.
         for mode in ("ok", "missing", "stale", "signal", "codegen", "oserror", "tampered",
                      "null", "wrong-type", "incomplete", "truncated"):
-            data, case, _, text = fixture()
-            data["started_at"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+            data, case, sample_receipt, text = fixture()
             if mode == "stale":
                 data["started_at"] = "2020-01-01T00:00:00Z"
 
@@ -262,11 +363,13 @@ class CheckerTests(unittest.TestCase):
                 return Result()
 
             with self.subTest(mode=mode), tempfile.TemporaryDirectory() as temp:
-                with patch.object(run.subprocess, "run", side_effect=fake), contextlib.redirect_stdout(io.StringIO()):
+                with patch.object(run.subprocess, "run", side_effect=fake), \
+                        patch.object(run.time, "time", return_value=sample_receipt["started_epoch"] + 0.5), \
+                        contextlib.redirect_stdout(io.StringIO()):
                     status, stop = run.execute_case(case, temp)
                 directory = next(Path(temp).iterdir())
                 receipt = checker.load_export(directory / "invocation.json")
-                self.assertEqual(status, "QUALIFIED" if mode in ("ok", "tampered") else "FAIL")
+                self.assertEqual(status, "PASS" if mode in ("ok", "tampered") else "FAIL")
                 self.assertFalse(stop)
                 self.assertEqual(receipt["original_exit"], None if mode == "oserror" else
                                  -15 if mode == "signal" else 2 if mode == "codegen" else 1)
@@ -281,10 +384,9 @@ class CheckerTests(unittest.TestCase):
         # the old temporary cwd produces ../../.../checkout/tests/... here.
         for manifest_case in MANIFEST["cases"]:
             for mode in ("bound", "pending", "wrong-input", "wrong-root"):
-                data, case, _, text = fixture(manifest_case["id"])
+                data, case, sample_receipt, text = fixture(manifest_case["id"])
                 if mode == "pending":
-                    case = copy.deepcopy(manifest_case)
-                data["started_at"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+                    case["binding"]["status"] = "BINDING_PENDING"
 
                 def fake(argv, **kwargs):
                     exported = copy.deepcopy(data)
@@ -305,9 +407,11 @@ class CheckerTests(unittest.TestCase):
 
                 with self.subTest(case=case["id"], mode=mode), tempfile.TemporaryDirectory() as temp:
                     output = io.StringIO()
-                    with patch.object(run.subprocess, "run", side_effect=fake), contextlib.redirect_stdout(output):
+                    with patch.object(run.subprocess, "run", side_effect=fake), \
+                            patch.object(run.time, "time", return_value=sample_receipt["started_epoch"] + 0.5), \
+                            contextlib.redirect_stdout(output):
                         status, stop = run.execute_case(case, temp)
-                    expected = {"bound": "QUALIFIED", "pending": "UNKNOWN"}.get(mode, "FAIL")
+                    expected = {"bound": "PASS", "pending": "FAIL"}.get(mode, "FAIL")
                     self.assertEqual(status, expected)
                     self.assertFalse(stop)
                     directory = next(Path(temp).iterdir())
@@ -333,13 +437,24 @@ class CheckerTests(unittest.TestCase):
     def test_lawful_unsupported_stop_and_unreachable_boundary(self):
         data, _, _, _ = fixture("lawful-modifies")
         self.assertFalse(run.reached_unsupported(data))
-        prop = {"status": "UNREACHABLE"}
+        prop = {}
         data["harnesses"][0]["unsupported_constructs"] = [prop]
-        self.assertFalse(run.reached_unsupported(data))
-        prop["status"] = "FAILURE"
-        self.assertTrue(run.reached_unsupported(data))
+        for status in ("SUCCESS", "UNREACHABLE", "ERROR", None):
+            prop["status"] = status
+            self.assertFalse(run.reached_unsupported(data))
+        for status in ("FAILURE", "UNDETERMINED", "UNKNOWN"):
+            prop["status"] = status
+            self.assertTrue(run.reached_unsupported(data))
         for malformed in (None, [], {"harnesses": None}, {"harnesses": [None]}):
             self.assertFalse(run.reached_unsupported(malformed))
+
+    def test_scenario_has_only_binary_exit_status(self):
+        for status in ("PASS", "FAIL", "UNKNOWN"):
+            with self.subTest(status=status), tempfile.TemporaryDirectory() as temp:
+                with patch.object(run.tempfile, "mkdtemp", return_value=temp), \
+                        patch.object(run, "execute_case", return_value=(status, False)), \
+                        contextlib.redirect_stdout(io.StringIO()):
+                    self.assertEqual(run.main(), 0 if status == "PASS" else 1)
 
     def test_truncated_regular(self):
         self.reject(lambda d, c, r, t: t.split("SUMMARY:")[0])
