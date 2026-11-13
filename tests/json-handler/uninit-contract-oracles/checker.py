@@ -124,6 +124,7 @@ def validate(data, case, receipt, regular, root=ROOT):
     h = data["harnesses"][0]
     prefix = receipt["build_prefix"]
     require(Path(prefix).is_absolute(), "build prefix must be absolute")
+    require(receipt.get("cwd") == prefix, "invocation cwd must be checkout root")
     require(h["name"] == case["root"] and normalize(h["file"], prefix) == case["input"],
             "same root in wrong input or wrong root")
     require(h["line"] == case["root_line"], "wrong harness source line")

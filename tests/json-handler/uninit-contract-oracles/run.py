@@ -41,13 +41,15 @@ def execute_case(case, parent):
     env["RUSTFLAGS"] = "--edition 2021 -D warnings"
     env["NO_COLOR"] = "1"
     receipt = {"input": case["input"], "root": case["root"], "input_sha256": before,
-               "build_prefix": str(checker.ROOT), "argv": argv,
+               "build_prefix": str(checker.ROOT), "cwd": str(checker.ROOT), "argv": argv,
                "rustflags": env["RUSTFLAGS"], "started_epoch": time.time(),
                "original_exit": None, "timed_out": False, "error": None}
     with (directory / "regular.out").open("wb") as output:
         try:
             # The existing coordinator/CI capture owns process watchdogs.
-            result = subprocess.run(argv, cwd=directory, env=env,
+            # The JSON exporter relativizes source paths against Kani's cwd.
+            # Keep them checkout-relative; outputs remain invocation-specific.
+            result = subprocess.run(argv, cwd=checker.ROOT, env=env,
                                     stdout=output, stderr=subprocess.STDOUT, check=False)
             receipt["original_exit"] = result.returncode
         except OSError as error:
@@ -71,7 +73,10 @@ def execute_case(case, parent):
     except (checker.Rejected, OSError, ValueError, KeyError, TypeError) as error:
         observation.update(status="FAIL", reason=str(error))
     (directory / "observation.json").write_text(json.dumps(observation, indent=2) + "\n")
-    print(json.dumps({k: v for k, v in observation.items() if k != "harnesses"}), flush=True)
+    # compiletest's failure renderer treats lines starting with '{' as rustc
+    # diagnostics. Retain machine-readable JSON in observation.json instead.
+    print("Oracle observation: " + json.dumps(
+        {k: v for k, v in observation.items() if k != "harnesses"}), flush=True)
     stop = case["id"] == "lawful-modifies" and reached_unsupported(data)
     return observation["status"], stop
 

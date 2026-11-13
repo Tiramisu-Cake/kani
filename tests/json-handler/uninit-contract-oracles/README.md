@@ -18,6 +18,15 @@ malformed, stale or incomplete exports fail. A negative exit1 is accepted only
 with a completed, consistent export and exact inventory. Exit2 of the scenario
 means UNKNOWN, not an expected negative success; the exec gate must fail it.
 
+Kani runs with the checkout root as its recorded `cwd`: the existing JSON
+exporter makes source paths relative to the process working directory. Target,
+export and regular output still use the unique invocation directory. The checker
+requires this cwd and keeps the exact input/root comparison. Synthetic subprocess
+tests model the exporter's cwd-relative paths for all eight cases, including
+wrong input/root and pending bindings. Console observations have a text prefix
+because compiletest's error renderer parses lines starting with `{` as rustc
+diagnostics; the complete structured observation remains in `observation.json`.
+
 All initial bindings are `BINDING_PENDING`. The first CI capture cannot qualify
 any case. Review the selected complete regular/GOTO evidence of that invocation,
 then commit exact failure identities and selected useful successful regular

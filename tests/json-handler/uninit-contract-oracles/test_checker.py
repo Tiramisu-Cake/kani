@@ -7,6 +7,7 @@ import copy
 import contextlib
 import io
 import json
+import os
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -82,7 +83,7 @@ def fixture(case_id="p2"):
     receipt = {"input": case["input"], "root": case["root"], "input_sha256": case["sha256"],
                "original_exit": int(negative), "timed_out": False, "error": None,
                "started_epoch": stamp, "finished_epoch": stamp + 10,
-               "build_prefix": str(checker.ROOT)}
+               "build_prefix": str(checker.ROOT), "cwd": str(checker.ROOT)}
     case["binding"] = {"status": "BOUND", "failures": copy.deepcopy(failures),
                        "required_successes": copy.deepcopy(successes),
                        "operations": {op: "SYNTHETIC mapping only" for op in case["required_operations"]},
@@ -120,6 +121,7 @@ class CheckerTests(unittest.TestCase):
             lambda d, c, r, t: d["harness_selection"].update(requested_filters=["other_root"]),
             lambda d, c, r, t: r.update(input_sha256="0" * 64),
             lambda d, c, r, t: r.update(input="other.rs"),
+            lambda d, c, r, t: r.update(cwd="/tmp/synthetic-invocation"),
         ]
         for i, change in enumerate(changes):
             with self.subTest(change=i):
@@ -272,6 +274,61 @@ class CheckerTests(unittest.TestCase):
                     (directory / "export.json").write_text("{}")
                     with self.assertRaises(checker.Rejected):
                         checker.check_directory(directory, case)
+
+    def test_exporter_cwd_and_compiletest_failure_output(self):
+        # Model schema_utils::HarnessExport's relativize_path, rather than
+        # handing the consumer an already checkout-relative path. In particular,
+        # the old temporary cwd produces ../../.../checkout/tests/... here.
+        for manifest_case in MANIFEST["cases"]:
+            for mode in ("bound", "pending", "wrong-input", "wrong-root"):
+                data, case, _, text = fixture(manifest_case["id"])
+                if mode == "pending":
+                    case = copy.deepcopy(manifest_case)
+                data["started_at"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+                def fake(argv, **kwargs):
+                    exported = copy.deepcopy(data)
+                    source = Path(argv[1])
+                    if mode == "wrong-input":
+                        # Both real inputs have this basename. Matching only
+                        # the filename would silently accept the wrong source.
+                        source = checker.ROOT / "wrong-input" / source.name
+                    exported["harnesses"][0]["file"] = os.path.relpath(source, kwargs["cwd"])
+                    if mode == "wrong-root":
+                        exported["harnesses"][0]["name"] = "other_root"
+                    kwargs["stdout"].write(text.encode())
+                    Path(argv[argv.index("--export-json") + 1]).write_text(json.dumps(exported))
+
+                    class Result:
+                        returncode = int(case["verdict"] == "FAILURE")
+                    return Result()
+
+                with self.subTest(case=case["id"], mode=mode), tempfile.TemporaryDirectory() as temp:
+                    output = io.StringIO()
+                    with patch.object(run.subprocess, "run", side_effect=fake), contextlib.redirect_stdout(output):
+                        status, stop = run.execute_case(case, temp)
+                    expected = {"bound": "QUALIFIED", "pending": "UNKNOWN"}.get(mode, "FAIL")
+                    self.assertEqual(status, expected)
+                    self.assertFalse(stop)
+                    directory = next(Path(temp).iterdir())
+                    receipt = checker.load_export(directory / "invocation.json")
+                    self.assertEqual(receipt["cwd"], str(checker.ROOT))
+                    self.assertEqual(receipt["original_exit"], int(case["verdict"] == "FAILURE"))
+                    self.assertEqual(Path(receipt["argv"][receipt["argv"].index("--target-dir") + 1]),
+                                     directory / "target")
+                    observation = checker.load_export(directory / "observation.json")
+                    self.assertEqual(observation["status"], expected)
+                    # extract_rendered only tries rustc JSON parsing for '{'
+                    # at column zero, even for arbitrary exec-mode output.
+                    lines = output.getvalue().splitlines()
+                    self.assertTrue(lines)
+                    self.assertTrue(all(not line.startswith("{") for line in lines))
+                    prefix = "Oracle observation: "
+                    self.assertTrue(lines[0].startswith(prefix))
+                    printed = json.loads(lines[0][len(prefix):])
+                    self.assertEqual(printed["status"], expected)
+                    if mode in ("wrong-input", "wrong-root"):
+                        self.assertEqual(printed["reason"], "same root in wrong input or wrong root")
 
     def test_lawful_unsupported_stop_and_unreachable_boundary(self):
         data, _, _, _ = fixture("lawful-modifies")
