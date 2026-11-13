@@ -142,7 +142,7 @@ def verify_source(repo: Path) -> dict[str, Any]:
             "proof_status": "NOT_RUN"}
 
 
-def prepare_std(repo: Path, destination: Path) -> dict[str, Any]:
+def prepare_std(repo: str, destination: Path) -> dict[str, Any]:
     """Create an isolated std checkout, pin exact base, then apply only test patch."""
     if destination.exists() and any(destination.iterdir()):
         raise ValueError(f"refusing to reuse non-empty std checkout: {destination}")
@@ -373,7 +373,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     sub = parser.add_subparsers(dest="command", required=True)
     v = sub.add_parser("verify-source"); v.add_argument("--repo", type=Path, default=Path.cwd())
-    p = sub.add_parser("prepare-std"); p.add_argument("--repo", type=Path, required=True); p.add_argument("--destination", type=Path, required=True)
+    p = sub.add_parser("prepare-std"); p.add_argument("--repo", type=str, required=True)  # URL or path; Path() would collapse "https://"; p.add_argument("--destination", type=Path, required=True)
     r = sub.add_parser("run-root"); r.add_argument("--repo", type=Path, required=True); r.add_argument("--std", type=Path, required=True); r.add_argument("--root", required=True); r.add_argument("--binary", type=Path, required=True); r.add_argument("--out", type=Path, required=True)
     args = parser.parse_args()
     try:
