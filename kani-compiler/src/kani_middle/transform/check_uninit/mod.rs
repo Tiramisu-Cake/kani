@@ -188,17 +188,28 @@ impl<'a, 'tcx> UninitInstrumenter<'a, 'tcx> {
 
         if let MemoryInitOp::StoreArgument { operand, .. } = &mut operation
             && matches!(operand, Operand::Constant(_))
-            && maybe_uninit_storage(self.tcx, operand.ty(body.locals()).unwrap()).is_some()
         {
             let Some(initialized) = constant_init_mask(operand) else {
                 self.inject_unsupported_check(
                     body,
                     source,
                     InsertPosition::Before,
-                    "Kani cannot determine the initialization state of this MaybeUninit argument.",
+                    "Kani cannot determine the initialization state of this constant shadow argument.",
                 );
                 return;
             };
+            let ty = operand.ty(body.locals()).unwrap();
+            if !ty.layout().is_ok_and(|layout| {
+                layout.shape().is_sized() && layout.shape().size.bytes() == initialized.len()
+            }) {
+                self.inject_unsupported_check(
+                    body,
+                    source,
+                    InsertPosition::Before,
+                    "Kani cannot determine the complete storage mask of this constant shadow argument.",
+                );
+                return;
+            }
             let local = body.insert_assignment(
                 Rvalue::Use(operand.clone(), WithRetag::No),
                 source,
@@ -241,7 +252,14 @@ impl<'a, 'tcx> UninitInstrumenter<'a, 'tcx> {
                     )
                 };
             // Calculate pointee layout for byte-by-byte memory initialization checks.
-            let layout = if matches!(operation, MemoryInitOp::SetRef { value: false, .. }) {
+            let layout = if matches!(operation, MemoryInitOp::SetStorage { .. })
+                && pointee_ty.kind().is_union()
+                && maybe_uninit_storage(self.tcx, pointee_ty).is_none()
+            {
+                // A constant ordinary union supplies a mask for its entire storage,
+                // independent of a particular active field. Keep every None byte false.
+                PointeeInfo::for_deinit(pointee_ty)
+            } else if matches!(operation, MemoryInitOp::SetRef { value: false, .. }) {
                 // Deinitialization clears every byte, including union storage and padding;
                 // it does not need an active union field or a typed preserve mask.
                 PointeeInfo::for_deinit(pointee_ty)
@@ -695,12 +713,22 @@ impl<'a, 'tcx> UninitInstrumenter<'a, 'tcx> {
         operation: MemoryInitOp,
         pointee_info: PointeeInfo,
     ) {
+        // A slice's maybe_size is its ELEMENT size, never the size of a by-value argument.
+        // Reject it before creating locals, taking addresses or resolving sized model instances.
+        let Some(layout_size) = pointee_info.layout().argument_size() else {
+            self.inject_unsupported_check(
+                body,
+                source,
+                InsertPosition::Before,
+                "Kani does not support unsized by-value shadow argument/return transfers.",
+            );
+            return;
+        };
         let ret_place = Place {
             local: body.new_local(Ty::new_tuple(&[]), source.span(body.blocks()), Mutability::Not),
             projection: vec![],
         };
         let mut statements = vec![];
-        let layout_size = pointee_info.layout().maybe_size().unwrap();
         let diagnostic = match operation {
             MemoryInitOp::LoadArgument { .. } => KANI_LOAD_ARGUMENT,
             MemoryInitOp::StoreArgument { .. } => KANI_STORE_ARGUMENT,

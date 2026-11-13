@@ -55,6 +55,16 @@ pub enum PointeeLayout {
 }
 
 impl PointeeLayout {
+    /// Size of the complete storage accepted by the sized argument/return protocol.
+    /// `maybe_size` also returns element sizes and must not be used for this admission.
+    pub(super) fn argument_size(&self) -> Option<usize> {
+        match self {
+            Self::Sized { layout } => Some(layout.len()),
+            Self::Union { field_layouts } => field_layouts.iter().map(Vec::len).max(),
+            Self::Slice { .. } | Self::TraitObject => None,
+        }
+    }
+
     /// Returns the size of the layout, if available.
     pub fn maybe_size(&self) -> Option<usize> {
         match self {
@@ -554,4 +564,24 @@ fn tys_layout_cmp_to_size(from_ty: &Ty, to_ty: &Ty, cmp: impl Fn(bool, bool) -> 
         }
     };
     false
+}
+
+#[cfg(test)]
+mod argument_size_tests {
+    use super::PointeeLayout;
+
+    #[test]
+    fn transfer_requires_complete_sized_storage() {
+        assert_eq!(PointeeLayout::Sized { layout: vec![] }.argument_size(), Some(0));
+        assert_eq!(
+            PointeeLayout::Union { field_layouts: vec![vec![], vec![true, false]] }.argument_size(),
+            Some(2)
+        );
+        // Even a known nonzero element size cannot stand in for a by-value slice size.
+        let slice = PointeeLayout::Slice { element_layout: vec![true, false] };
+        assert_eq!(slice.maybe_size(), Some(2));
+        assert_eq!(slice.argument_size(), None);
+        assert_eq!(PointeeLayout::Slice { element_layout: vec![] }.argument_size(), None);
+        assert_eq!(PointeeLayout::TraitObject.argument_size(), None);
+    }
 }

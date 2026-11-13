@@ -73,7 +73,19 @@ impl TargetFinder for CheckUninitVisitor<'_> {
                 if self.instance.kind != InstanceKind::Intrinsic
                     && (!union_args.is_empty() || self.transfers_shadow(body.locals()[0].ty))
                 {
-                    if has_transfer_protocol(self.instance) {
+                    let unsized_transfer = union_args.iter().any(|(_, local)| {
+                        !local.ty.layout().is_ok_and(|layout| layout.shape().is_sized())
+                    }) || (self.transfers_shadow(body.locals()[0].ty)
+                        && !body.locals()[0]
+                            .ty
+                            .layout()
+                            .is_ok_and(|layout| layout.shape().is_sized()));
+                    if unsized_transfer {
+                        self.push_target(MemoryInitOp::Unsupported {
+                            reason: "Kani does not support unsized by-value shadow argument/return transfers."
+                                .to_string(),
+                        });
+                    } else if has_transfer_protocol(self.instance) {
                         for (idx, _) in &union_args {
                             self.push_target(MemoryInitOp::LoadArgument {
                                 operand: Operand::Copy(Place::from(*idx)),
@@ -322,32 +334,32 @@ impl<'tcx> CheckUninitVisitor<'tcx> {
         ty: Ty,
         in_union: bool,
     ) {
-        // Check whether we are assigning into a dereference (*ptr = _).
-        if let Some(place_without_deref) = try_remove_topmost_deref(place) {
-            // First, check that we are not dereferencing extra pointers along the way
-            // (e.g., **ptr = _). If yes, check whether these pointers are initialized.
-            let mut place_to_add_projections =
-                Place { local: place_without_deref.local, projection: vec![] };
-            for projection_elem in place_without_deref.projection.iter() {
-                // If the projection is Deref and the current type is raw pointer, check
-                // if it points to initialized memory.
-                if *projection_elem == ProjectionElem::Deref
-                    && let TyKind::RigidTy(RigidTy::RawPtr(..)) =
-                        place_to_add_projections.ty(&self.locals).unwrap().kind()
-                {
+        // Check pointers loaded while computing the destination address, but never read
+        // the final pointee before writing it. Fields/indices after Deref still designate
+        // a raw store: mark exactly that place's data, not its parent or its padding.
+        let last_deref = place.projection.iter().rposition(|p| *p == ProjectionElem::Deref);
+        let mut prefix = Place::from(place.local);
+        let mut raw_store = false;
+        for (index, projection) in place.projection.iter().enumerate() {
+            if *projection == ProjectionElem::Deref
+                && prefix.ty(&self.locals).unwrap().kind().is_raw_ptr()
+            {
+                raw_store = true;
+                if Some(index) != last_deref {
                     self.push_target(MemoryInitOp::Check {
-                        operand: Operand::Copy(place_to_add_projections.clone()),
+                        operand: Operand::Copy(prefix.clone()),
                     });
-                };
-                place_to_add_projections.projection.push(projection_elem.clone());
+                }
             }
-            if place_without_deref.ty(&self.locals).unwrap().kind().is_raw_ptr() {
-                self.push_target(MemoryInitOp::Set {
-                    operand: Operand::Copy(place_without_deref),
-                    value: true,
-                    position: InsertPosition::After,
-                });
-            }
+            prefix.projection.push(projection.clone());
+        }
+        // Union assignments below carry their own field/copy masks.
+        if raw_store && !in_union {
+            self.push_target(MemoryInitOp::SetRef {
+                operand: Operand::Copy(place.clone()),
+                value: true,
+                position: InsertPosition::After,
+            });
         }
         // Check whether Rvalue creates a new initialized pointer previously not captured inside shadow memory.
         if ty.kind().is_raw_ptr()
@@ -372,7 +384,11 @@ impl<'tcx> CheckUninitVisitor<'tcx> {
                 Rvalue::Use(operand, _) => {
                     // This is a union-to-union assignment, so we need to copy the
                     // initialization state.
-                    if place.ty(&self.locals).unwrap().kind().is_union() {
+                    if place.ty(&self.locals).unwrap().kind().is_union()
+                        && matches!(operand, Operand::Constant(_))
+                    {
+                        self.assign_storage_operand(place, operand);
+                    } else if place.ty(&self.locals).unwrap().kind().is_union() {
                         self.push_target(MemoryInitOp::AssignUnion {
                             lvalue: place.clone(),
                             rvalue: operand.clone(),
@@ -507,6 +523,20 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                 let shadow_return = self.transfers_shadow(destination_ty);
                 let shadow_args =
                     args.iter().any(|arg| self.transfers_shadow(arg.ty(&self.locals).unwrap()));
+                let unsized_transfer = args.iter().any(|arg| {
+                    let ty = arg.ty(&self.locals).unwrap();
+                    self.transfers_shadow(ty)
+                        && !ty.layout().is_ok_and(|layout| layout.shape().is_sized())
+                }) || (shadow_return
+                    && !destination_ty.layout().is_ok_and(|layout| layout.shape().is_sized()));
+                if unsized_transfer {
+                    // Reject the entire transfer before ANY begin, load, snapshot or deinit.
+                    self.push_target(MemoryInitOp::Unsupported {
+                        reason: "Kani does not support unsized by-value shadow argument/return transfers."
+                            .to_string(),
+                    });
+                    break 'call;
+                }
                 if instance.kind != InstanceKind::Intrinsic
                     && !paired
                     && (shadow_args || shadow_return)
@@ -767,6 +797,11 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                 let return_place = Place::from(0);
                 if has_transfer_protocol(self.instance)
                     && self.transfers_shadow(return_place.ty(&self.locals).unwrap())
+                    && return_place
+                        .ty(&self.locals)
+                        .unwrap()
+                        .layout()
+                        .is_ok_and(|layout| layout.shape().is_sized())
                 {
                     self.push_target(MemoryInitOp::StoreArgument {
                         operand: Operand::Copy(return_place),
@@ -1076,16 +1111,6 @@ fn can_skip_intrinsic(intrinsic: Intrinsic) -> bool {
             /* Everything else */
             false
         }
-    }
-}
-
-/// Try removing a topmost deref projection from a place if it exists, returning a place without it.
-fn try_remove_topmost_deref(place: &Place) -> Option<Place> {
-    let mut new_place = place.clone();
-    if let Some(ProjectionElem::Deref) = new_place.projection.pop() {
-        Some(new_place)
-    } else {
-        None
     }
 }
 
