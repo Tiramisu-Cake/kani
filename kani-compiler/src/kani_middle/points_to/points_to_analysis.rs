@@ -230,6 +230,7 @@ pub fn run_points_to_analysis<'tcx>(
 impl<'a, 'tcx> PointsToAnalysis<'a, 'tcx> {
     /// Perform the analysis on a body, outputting the graph containing aliasing information of the
     /// body itself and any body reachable from it.
+    #[allow(clippy::too_many_arguments)]
     pub fn run(
         body: &'a Body<'tcx>,
         tcx: TyCtxt<'tcx>,
