@@ -604,13 +604,14 @@ def bundle_identity(bundle, source):
     diff = subprocess.check_output(['git', '-C', str(source), 'diff', '--name-only'], text=True)
     if actual != SOURCE or tree != TREE or diff:
         raise ValueError('source identity/diff mismatch')
-    version = subprocess.check_output([str(bundle/'bin/cbmc'), '--version'], text=True).strip()
-    if version != '6.11.0':
+    version_raw = subprocess.check_output([str(bundle/'bin/cbmc'), '--version'], text=True).strip()
+    if version_raw not in ('6.11.0', '6.11.0 (cbmc-6.11.0)'):
         raise ValueError('stock CBMC version mismatch')
+    version = '6.11.0'
     files = {str(p.relative_to(bundle)): sha(p) for p in sorted(bundle.rglob('*')) if p.is_file()}
     toolchain = subprocess.check_output(['rustc', '-vV'], cwd=source, text=True)
     write(bundle/'identity.json', dict(source=SOURCE, tree=TREE, source_diff=[],
-        ci_head=os.environ.get('GITHUB_SHA'), cbmc_version=version, files=files,
+        ci_head=os.environ.get('GITHUB_SHA'), cbmc_version=version, cbmc_version_raw=version_raw, files=files,
         compiler=toolchain, toolchain_file=(source/'rust-toolchain.toml').read_text(),
         kani_dependencies=(source/'kani-dependencies').read_text(), target='x86_64-unknown-linux-gnu',
         solver='cadical bundled in stock CBMC', build_command='cargo bundle -- h1',

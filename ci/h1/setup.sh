@@ -9,4 +9,6 @@ git diff --exit-code
 rustup toolchain install
 GIT_LFS_SKIP_SMUDGE=1 git submodule update --init --depth 1
 ./scripts/setup/ubuntu/install_deps.sh
-test "$(cbmc --version)" = 6.11.0
+cbmc_version="$(cbmc --version)"
+echo "cbmc --version: $cbmc_version"
+case "$cbmc_version" in "6.11.0"|"6.11.0 (cbmc-6.11.0)") ;; *) echo "unexpected CBMC version" >&2; exit 1 ;; esac
