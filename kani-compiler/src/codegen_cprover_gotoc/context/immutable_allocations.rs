@@ -21,8 +21,8 @@ use rustc_public::mir::{
     mono::{Instance, MonoItem, StaticDef},
     visit::Location as MirLocation,
 };
-use rustc_public::ty::{Allocation, GenericArgs, MirConst};
 use rustc_public::rustc_internal;
+use rustc_public::ty::{Allocation, GenericArgs, MirConst};
 use std::collections::{BTreeMap, HashMap};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
