@@ -1,0 +1,3 @@
+Checking harness closure_argument_unsupported...
+Failed Checks: Kani uninit-checks does not support aggregate argument type
+VERIFICATION:- FAILED

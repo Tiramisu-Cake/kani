@@ -1,0 +1,3 @@
+Checking harness foreign_return_unsupported...
+Failed Checks: Kani uninit-checks does not support aggregate return type
+VERIFICATION:- FAILED

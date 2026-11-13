@@ -178,6 +178,16 @@ Reading uninitialized memory is
 [considered undefined behavior](https://doc.rust-lang.org/reference/behavior-considered-undefined.html#behavior-considered-undefined) in Rust.
 Kani has partial, experimental support for detecting access to uninitialized memory with the `-Z uninit-checks` option.
 See [this issue](https://github.com/model-checking/kani/issues/3300) for more details.
+By-value call arguments and returns with inline `MaybeUninit` or union storage
+nested in tuples, structs, arrays of aggregates, enum variants, or closure
+captures are rejected as unsupported: nested-slot shadow transfer is not
+implemented. All enum variants and zero-sized fields (including zero-length
+arrays) are considered conservatively, regardless of the active value.
+Top-level unions, `MaybeUninit`, and flat `MaybeUninit` arrays keep their existing
+transfer behavior and limitations; unsized by-value transfers remain unsupported.
+References and raw pointers do not transfer their pointee's inline storage.
+The `forget` intrinsic consumes its argument without transferring payload bytes;
+ordinary function wrappers still follow ordinary call-boundary rules.
 
 ### Destructors
 

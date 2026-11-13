@@ -27,9 +27,9 @@ unsafe fn read_source(pointer: *const MaybeUninit<u8>) -> u8 {
 }
 
 #[custom_mir(dialect = "runtime", phase = "optimized")]
-unsafe fn handoff(source: MaybeUninit<u8>, reinit: bool) -> (MaybeUninit<u8>, u8) {
+unsafe fn handoff(source: MaybeUninit<u8>, reinit: bool, observed_out: *mut u8) -> MaybeUninit<u8> {
     mir! {
-        type RET = (MaybeUninit<u8>, u8);
+        type RET = MaybeUninit<u8>;
         let pointer: *mut MaybeUninit<u8>;
         let returned: MaybeUninit<u8>;
         let observed: u8;
@@ -48,8 +48,8 @@ unsafe fn handoff(source: MaybeUninit<u8>, reinit: bool) -> (MaybeUninit<u8>, u8
             Call(observed = read_source(pointer), ReturnTo(done), UnwindUnreachable())
         }
         done = {
-            RET.0 = Move(returned);
-            RET.1 = observed;
+            *observed_out = observed;
+            RET = Move(returned);
             Return()
         }
     }
@@ -57,13 +57,15 @@ unsafe fn handoff(source: MaybeUninit<u8>, reinit: bool) -> (MaybeUninit<u8>, u8
 
 #[kani::proof]
 fn move_return_reinit_legal() {
-    let (returned, source) = unsafe { handoff(MaybeUninit::new(42), true) };
+    let mut source = 0u8;
+    let returned = unsafe { handoff(MaybeUninit::new(42), true, &raw mut source) };
     assert_eq!(unsafe { returned.assume_init() }, 42);
     assert_eq!(source, 23);
 }
 
 #[kani::proof]
 fn move_return_source_hole() {
-    let (returned, _source) = unsafe { handoff(MaybeUninit::new(42), false) };
+    let mut source = 0u8;
+    let returned = unsafe { handoff(MaybeUninit::new(42), false, &raw mut source) };
     assert_eq!(unsafe { returned.assume_init() }, 42);
 }

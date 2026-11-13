@@ -3,6 +3,8 @@
 //
 //! Visitor that collects all instructions relevant to uninitialized memory access.
 
+use std::collections::HashSet;
+
 use crate::{
     intrinsics::Intrinsic,
     kani_middle::transform::{
@@ -20,7 +22,7 @@ use crate::{
 };
 use rustc_attr_ir::lang_items::LangItem;
 use rustc_middle::ty::TyCtxt;
-use rustc_public::CrateDefType;
+use rustc_public::{CrateDefType, rustc_internal};
 use rustc_public::{
     mir::{
         AggregateKind, CastKind, LocalDecl, MirVisitor, NonDivergingIntrinsic, Operand, Place,
@@ -32,6 +34,13 @@ use rustc_public::{
     },
     ty::{AdtKind, ConstantKind, RigidTy, Ty, TyKind, UintTy},
 };
+
+/// Classification only: nested carriers must never enter the flat transfer protocol.
+enum ShadowTransferKind {
+    Supported,
+    Ordinary,
+    UnsupportedNested(Ty),
+}
 
 pub struct CheckUninitVisitor<'tcx> {
     tcx: TyCtxt<'tcx>,
@@ -62,6 +71,17 @@ impl TargetFinder for CheckUninitVisitor<'_> {
                 }
             };
             if bb_idx == 0 {
+                // Validate every signature local, before filtering for flat carriers. Stop
+                // visiting this body on rejection so no payload/layout fallback is emitted.
+                let mut rejected = false;
+                for local in body.locals().iter().skip(1).take(body.arg_count()) {
+                    rejected |= self.reject_nested_transfer(local.ty, "argument");
+                }
+                rejected |= self.reject_nested_transfer(body.locals()[0].ty, "return");
+                if rejected {
+                    self.targets.push(self.current_target.clone());
+                    return self.targets;
+                }
                 let union_args: Vec<_> = body
                     .locals()
                     .iter()
@@ -130,6 +150,67 @@ impl<'tcx> CheckUninitVisitor<'tcx> {
 
     fn transfers_shadow(&self, ty: Ty) -> bool {
         ty.kind().is_union() || maybe_uninit_storage(self.tcx, ty).is_some()
+    }
+
+    /// Walk instantiated inline fields, never generic arguments or pointees. Existing
+    /// top-level carriers are terminal: this does not extend their support domain.
+    fn shadow_transfer_kind(&self, ty: Ty) -> ShadowTransferKind {
+        if self.transfers_shadow(ty) {
+            return ShadowTransferKind::Supported;
+        }
+        let mut pending = vec![ty];
+        let mut seen = HashSet::new();
+        while let Some(field_ty) = pending.pop() {
+            if !seen.insert(field_ty) {
+                continue;
+            }
+            if self.transfers_shadow(field_ty) {
+                return ShadowTransferKind::UnsupportedNested(field_ty);
+            }
+            match field_ty.kind() {
+                TyKind::RigidTy(RigidTy::Tuple(fields)) => pending.extend(fields),
+                // Conservatively include even zero-length arrays and zero-sized fields.
+                // No active-variant or field-sensitive transfer is implemented here.
+                TyKind::RigidTy(RigidTy::Array(element, _) | RigidTy::Slice(element)) => {
+                    pending.push(element);
+                }
+                TyKind::RigidTy(RigidTy::Adt(def, args)) => {
+                    for variant in def.variants_iter() {
+                        pending
+                            .extend(variant.fields().iter().map(|field| field.ty_with_args(&args)));
+                    }
+                }
+                TyKind::RigidTy(RigidTy::Closure(_, _)) => {
+                    let internal_ty = rustc_internal::internal(self.tcx, field_ty);
+                    if let rustc_middle::ty::Closure(_, args) = internal_ty.kind() {
+                        pending.extend(
+                            args.as_closure().upvar_tys().iter().map(rustc_internal::stable),
+                        );
+                    } else {
+                        // Fail closed if the public and internal closure views disagree.
+                        return ShadowTransferKind::UnsupportedNested(field_ty);
+                    }
+                }
+                TyKind::RigidTy(RigidTy::Pat(base, _)) => pending.push(base),
+                // Refs/raw pointers stop the walk. Box<T> is inspected through its
+                // actual pointer/allocator/PhantomData fields, not through T.
+                _ => {}
+            }
+        }
+        ShadowTransferKind::Ordinary
+    }
+
+    fn reject_nested_transfer(&mut self, ty: Ty, direction: &str) -> bool {
+        if let ShadowTransferKind::UnsupportedNested(slot) = self.shadow_transfer_kind(ty) {
+            self.push_target(MemoryInitOp::Unsupported {
+                reason: format!(
+                    "Kani uninit-checks does not support aggregate {direction} type `{ty}`: nested-slot shadow transfer is not implemented (inline carrier `{slot}`)."
+                ),
+            });
+            true
+        } else {
+            false
+        }
     }
 
     /// Locate the first union on the projection path, including a union at the end.
@@ -507,7 +588,6 @@ impl MirVisitor for CheckUninitVisitor<'_> {
         // Leave it as an exhaustive match to be notified when a new kind is added.
         match &term.kind {
             TerminatorKind::Call { func, args, destination, .. } => 'call: {
-                self.super_terminator(term, location);
                 let instance = match try_resolve_instance(&self.locals, func) {
                     Ok(instance) => instance,
                     Err(reason) => {
@@ -516,6 +596,33 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                         break 'call;
                     }
                 };
+                // Forget consumes without reading/returning payload bytes. This exact
+                // intrinsic is the existing no-transfer exception; wrappers still use
+                // the ordinary call boundary. Do not exempt other skip-list intrinsics.
+                let forget = instance.kind == InstanceKind::Intrinsic
+                    && matches!(Intrinsic::from_instance(&instance), Intrinsic::Forget);
+                if !forget {
+                    let mut rejected = false;
+                    for arg in args {
+                        rejected |=
+                            self.reject_nested_transfer(arg.ty(&self.locals).unwrap(), "argument");
+                    }
+                    rejected |= self
+                        .reject_nested_transfer(destination.ty(&self.locals).unwrap(), "return");
+                    // Selected signatures cover generated calls and no-body/foreign
+                    // paths too, independently of operand and destination filtering.
+                    if let Some(signature) = instance.ty().kind().fn_sig() {
+                        let signature = signature.skip_binder();
+                        for ty in signature.inputs() {
+                            rejected |= self.reject_nested_transfer(*ty, "argument");
+                        }
+                        rejected |= self.reject_nested_transfer(signature.output(), "return");
+                    }
+                    if rejected {
+                        break 'call;
+                    }
+                }
+                self.super_terminator(term, location);
                 // Intrinsics use their explicit models and value-transfer guard below.
                 // Only ordinary calls need a paired argument/return protocol.
                 let paired = has_transfer_protocol(instance);
@@ -795,7 +902,9 @@ impl MirVisitor for CheckUninitVisitor<'_> {
             }
             TerminatorKind::Return => {
                 let return_place = Place::from(0);
-                if has_transfer_protocol(self.instance)
+                if self.reject_nested_transfer(return_place.ty(&self.locals).unwrap(), "return") {
+                    // Also protect return sites independently of entry validation.
+                } else if has_transfer_protocol(self.instance)
                     && self.transfers_shadow(return_place.ty(&self.locals).unwrap())
                     && return_place
                         .ty(&self.locals)
