@@ -3,3 +3,5 @@ VERIFICATION:- SUCCESSFUL
 Checking harness top_level_move_return_source_hole...
 Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type `u8`
 VERIFICATION:- FAILED
+Verification failed for - top_level_move_return_source_hole
+Complete - 1 successfully verified harnesses, 1 failures, 2 total.

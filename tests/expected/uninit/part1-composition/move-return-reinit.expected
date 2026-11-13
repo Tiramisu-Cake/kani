@@ -7,3 +7,6 @@ VERIFICATION:- FAILED
 Checking harness move_return_source_hole...
 Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type `u8`
 VERIFICATION:- FAILED
+Verification failed for - move_return_reinit_legal
+Verification failed for - move_return_source_hole
+Complete - 0 successfully verified harnesses, 2 failures, 2 total.
