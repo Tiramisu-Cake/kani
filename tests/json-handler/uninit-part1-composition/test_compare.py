@@ -14,7 +14,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
 
-from compare import Rejected, check_single, compare_pair, compare_selection
+from compare import Rejected, check_single, compare_pair, compare_root, compare_selection
 import run as mixed_runner
 from run import CHECKER, observation, validate_process_result
 
@@ -33,7 +33,7 @@ def root(name, checks, verdict="SUCCESS", complete=True, actual_name=None,
     return {"expected_root": name, "actual_root": actual_name or name,
             "inventory_complete": complete, "verdict": verdict,
             "failure_kind": failure_kind or ("NONE" if verdict == "SUCCESS" else "OTHER"),
-            "n_failed": len(failures), "checks": checks,
+            "n_failed": len(failures), "checks": checks, "covers": [],
             "failed_properties": failures, "unsupported_constructs": unsupported}
 
 
@@ -152,6 +152,81 @@ class MixedInventoryTests(unittest.TestCase):
         self.assertTrue(compare_pair(run(self.legal, self.cycle),
                                     run(self.cycle, self.legal), self.expected))
 
+    def shared_check(self, number=5, status="SUCCESS"):
+        row = check(f"std::ptr::read::<u8>.safety_check.{number}", status)
+        row["location"] = "library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>"
+        return row
+
+    def test_shared_superset_and_subset_are_recorded_as_t1b(self):
+        extra = [self.shared_check(), self.shared_check(6, "UNREACHABLE")]
+        mixed = copy.deepcopy(self.legal)
+        mixed["checks"] += extra
+        for before, after, direction in ((self.legal, mixed, "added"),
+                                         (mixed, self.legal, "removed")):
+            with self.subTest(direction=direction):
+                self.assertTrue(compare_pair(run(before), run(after), self.expected))
+                diff = compare_root(before, after)
+                self.assertFalse(diff["exact_match"])
+                self.assertEqual(diff["t1b_evidence"][direction], extra)
+
+    def test_shared_failure_multiset_drift_is_rejected(self):
+        baseline = root("legal", [self.shared_check(1, "FAILURE")], "FAILURE")
+        for mutation in ("extra", "missing", "id", "description", "location"):
+            changed = copy.deepcopy(baseline)
+            if mutation == "extra":
+                changed = root("legal", baseline["checks"] + [self.shared_check(2, "FAILURE")],
+                               "FAILURE")
+            elif mutation == "missing":
+                changed = root("legal", [])
+            elif mutation == "location":
+                changed["checks"][0]["location"] = "other.rs:99"
+                changed["failed_properties"][0].update(file="other.rs", line="99")
+            else:
+                changed["checks"][0][mutation] += "changed"
+                changed["failed_properties"][0][mutation] += "changed"
+            with self.subTest(mutation=mutation), self.assertRaisesRegex(Rejected, "inventory changed"):
+                compare_pair(run(baseline), run(changed), self.expected)
+
+    def test_root_target_unknown_and_useful_check_drift_is_rejected(self):
+        for function in ("legal", "pfc_contract", "repeated_relay", "unknown::<u8>"):
+            changed = copy.deepcopy(self.legal)
+            changed["checks"].append(check(function + ".safety_check.9"))
+            changed["checks"][-1]["location"] = "fixture.rs:1 in function " + function
+            with self.subTest(function=function), self.assertRaisesRegex(Rejected, "inventory changed"):
+                compare_pair(run(self.legal), run(changed), self.expected)
+        for prop_class in ("assertion", "reachability_check", "cover"):
+            changed = copy.deepcopy(self.legal)
+            extra = self.shared_check()
+            extra["id"] = extra["id"].replace("safety_check", prop_class)
+            changed["checks"].append(extra)
+            self.assertFalse(compare_root(self.legal, changed)["accepted"])
+
+    def test_shared_existing_identity_and_status_cannot_drift(self):
+        baseline = root("legal", [self.shared_check()])
+        for field, value in (("status", "UNREACHABLE"), ("description", "changed"),
+                             ("location", "other.rs:1 in function std::ptr::read::<u8>")):
+            changed = copy.deepcopy(baseline)
+            changed["checks"][0][field] = value
+            with self.subTest(field=field):
+                self.assertFalse(compare_root(baseline, changed)["accepted"])
+
+    def test_verdict_unsupported_and_reached_covers_stay_exact(self):
+        changed = copy.deepcopy(self.legal)
+        changed["verdict"] = "FAILURE"
+        self.assertFalse(compare_root(self.legal, changed)["accepted"])
+        baseline = copy.deepcopy(self.legal)
+        baseline["checks"].append(self.shared_check())
+        changed = copy.deepcopy(baseline)
+        changed["unsupported_constructs"] = [dict(failed_metadata(changed["checks"][-1]),
+                                                  status="SUCCESS")]
+        self.assertFalse(compare_root(baseline, changed)["accepted"])
+        baseline["covers"] = [check("useful.cover.1", "SATISFIED")]
+        for covers in ([], [check("useful.cover.1", "UNSATISFIABLE")],
+                       [check("other.cover.1", "SATISFIED")]):
+            changed = copy.deepcopy(baseline)
+            changed["covers"] = covers
+            self.assertFalse(compare_root(baseline, changed)["accepted"])
+
     def test_failed_metadata_drift_and_unsupported_drift_rejected(self):
         failed_metadata_drift = copy.deepcopy(self.cycle)
         failed_metadata_drift["failed_properties"][0]["file"] = "other.rs"
@@ -226,6 +301,24 @@ class ObservationInvariantTests(unittest.TestCase):
                     "failed_properties": root_observation["failed_properties"],
                     "unsupported_constructs": root_observation["unsupported_constructs"]}
         self.assertTrue(check_single(root_observation, expected))
+
+    def test_reached_cover_is_retained_with_exact_identity_and_location(self):
+        data, regular, selectors, cases, receipt = observation_fixture()
+        harness = data["harnesses"][0]
+        harness["covers"].update(total=1, satisfied=["root.cover.1"])
+        harness["n_properties"] += 1
+        data["summary"].update(covers_total=1, covers_satisfied=1)
+        regular = regular.replace("\nSUMMARY:", 'Check 5: root.cover.1\n'
+                                  '\t - Status: SATISFIED\n'
+                                  '\t - Description: "useful path reached"\n'
+                                  '\t - Location: fixture.rs:1 in function root\n\nSUMMARY:')
+        result = observation(data, regular, selectors, cases, receipt)
+        self.assertEqual(result["roots"][0]["covers"], [
+            {"id": "root.cover.1", "status": "SATISFIED", "description": "useful path reached",
+             "location": "fixture.rs:1 in function root"}])
+        harness["covers"]["satisfied"] = ["wrong.cover.1"]
+        with self.assertRaisesRegex(Rejected, "cover inventory mismatch"):
+            observation(data, regular, selectors, cases, receipt)
 
     def test_pfc_target_accepts_bare_and_qualified_names_but_rejects_other_targets(self):
         for target in ("pfc_contract", "mixed::pfc_contract", "other_contract",
@@ -400,12 +493,24 @@ class ExecuteReceiptTests(unittest.TestCase):
 
 class CaptureDiagnosticTests(unittest.TestCase):
     def invoke(self, fail_run=None, compare_error=False, corrupt_receipt=False,
-               collect_unbound=True, report_error=False, interrupt=False):
+               collect_unbound=True, report_error=False, interrupt=False, shared_extra=False,
+               failure_drift=False, bound_manifest=False):
         args = SimpleNamespace(kani="must-not-run", keep_output=True,
                                collect_unbound=collect_unbound)
         with tempfile.TemporaryDirectory() as temporary:
             base = Path(temporary)
             output, errors = io.StringIO(), io.StringIO()
+            if bound_manifest:
+                manifest = json.loads((mixed_runner.HERE / "roots.json").read_text())
+                for case in manifest["roots"]:
+                    baseline = root(case["name"], [check(case["name"], "FAILURE" if
+                                    case["expected_verdict"] == "FAILURE" else "SUCCESS")],
+                                    case["expected_verdict"])
+                    case.update(binding="REGRESSION_BOUND", expected_inventory=baseline["checks"],
+                                expected_failure_kind=baseline["failure_kind"],
+                                expected_failures=baseline["failed_properties"],
+                                expected_unsupported_inventory=baseline["unsupported_constructs"])
+                (base / "roots.json").write_text(json.dumps(manifest))
 
             def execute(_kani, _manifest, selectors, cases, _parent, run_id):
                 if run_id == fail_run:
@@ -422,6 +527,13 @@ class CaptureDiagnosticTests(unittest.TestCase):
                          cases[name]["expected_verdict"]) for name in selectors]
                 if compare_error and run_id == "all_A_then_B":
                     roots[0]["checks"][0]["location"] = "changed.rs:1"
+                if shared_extra and run_id == "all_A_then_B":
+                    row = check("std::ptr::read::<u8>.safety_check.5")
+                    row["location"] = "ptr/mod.rs:1754:9 in function std::ptr::read::<u8>"
+                    roots[0]["checks"].append(row)
+                if failure_drift and run_id == "all_A_then_B":
+                    roots[0] = root(roots[0]["expected_root"], [check("unexpected", "FAILURE")],
+                                    "FAILURE")
                 return run(*roots), {"run_id": run_id}
 
             original_write = Path.write_text
@@ -432,6 +544,7 @@ class CaptureDiagnosticTests(unittest.TestCase):
                 return original_write(path, *args, **kwargs)
 
             with mock.patch.object(mixed_runner.tempfile, "mkdtemp", return_value=str(base)), \
+                    mock.patch.object(mixed_runner, "HERE", base if bound_manifest else mixed_runner.HERE), \
                     mock.patch.object(mixed_runner, "execute", side_effect=execute) as invoked, \
                     mock.patch.object(mixed_runner.subprocess, "run") as process, \
                     mock.patch.object(Path, "write_text", write_text), \
@@ -453,11 +566,55 @@ class CaptureDiagnosticTests(unittest.TestCase):
                 self.assertIn(run_id + ": execute/observe: Rejected: wrong PFC target",
                               errors.splitlines()[-1])
 
-    def test_inventory_comparison_failure_reports_combined_order(self):
-        code, report, _, errors, _ = self.invoke(compare_error=True)
-        self.assertEqual(code, 1)
-        self.assertEqual(report["step"], "all_A_then_B: compare inventories")
-        self.assertIn("mixed-root inventory changed: immutable_legal", errors)
+    def test_inventory_comparison_failure_records_diff_and_completes_all_runs(self):
+        code, report, _, errors, count = self.invoke(compare_error=True)
+        self.assertEqual(code, 2)
+        self.assertEqual(count, 11)
+        self.assertEqual(report["status"], "UNBOUND_CAPTURE")
+        self.assertEqual(report["mixed_root_oracle"], "MISMATCH")
+        mismatches = [item for item in report["mixed_root_comparisons"] if not item["accepted"]]
+        self.assertEqual(len(mismatches), 1)
+        self.assertEqual(mismatches[0]["order"], "all_A_then_B")
+        self.assertEqual(mismatches[0]["root"], "immutable_legal")
+        self.assertEqual(mismatches[0]["differences"]["checks"]["added"][0]["location"],
+                         "changed.rs:1")
+        self.assertEqual(len(report["combined_inventory_observations"]), 4)
+        self.assertEqual(errors, "")
+
+    def test_shared_superset_capture_records_t1b_and_completes_all_runs(self):
+        code, report, _, errors, count = self.invoke(shared_extra=True)
+        self.assertEqual(code, 2)
+        self.assertEqual(count, 11)
+        self.assertEqual(report["mixed_root_oracle"], "MATCH_WITH_T1B")
+        self.assertEqual(report["mixed_root_comparisons"][0]["t1b_evidence"]["added"][0]["id"],
+                         "std::ptr::read::<u8>.safety_check.5")
+        self.assertEqual(errors, "")
+
+    def test_failure_drift_capture_retains_failure_metadata_and_runs_all_orders(self):
+        code, report, _, errors, count = self.invoke(failure_drift=True)
+        self.assertEqual((code, count), (2, 11))
+        self.assertEqual(report["mixed_root_oracle"], "MISMATCH")
+        diff = report["mixed_root_comparisons"][0]
+        self.assertFalse(diff["accepted"])
+        self.assertEqual(diff["differences"]["verdict"],
+                         {"isolated": "SUCCESS", "combined": "FAILURE"})
+        self.assertEqual(diff["differences"]["failed_properties"]["added"][0],
+                         failed_metadata(check("unexpected", "FAILURE")))
+        self.assertEqual(errors, "")
+
+    def test_bound_regression_uses_oracle_and_explicit_capture_never_claims_pass(self):
+        for shared, failure, collect, expected_code in ((False, False, False, 0),
+                                                      (True, False, False, 0),
+                                                      (False, True, False, 1),
+                                                      (False, False, True, 2)):
+            with self.subTest(shared=shared, failure=failure, collect=collect):
+                code, report, _, _, count = self.invoke(
+                    shared_extra=shared, failure_drift=failure, collect_unbound=collect,
+                    bound_manifest=True)
+                self.assertEqual(code, expected_code)
+                if code != 1:
+                    self.assertEqual(count, 11)
+                    self.assertEqual(report["status"], "UNBOUND_CAPTURE" if collect else "PASS")
 
     def test_corrupt_receipt_does_not_mask_original_failure(self):
         code, report, _, errors, _ = self.invoke(fail_run="isolated-pfc_legal",

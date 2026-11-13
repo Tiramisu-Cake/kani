@@ -15,7 +15,7 @@ import tempfile
 import time
 from datetime import datetime, timezone
 
-from compare import check_single, compare_selection, require
+from compare import check_single, compare_root, compare_selection, require
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
@@ -110,6 +110,16 @@ def observation(data, regular, selectors, case_by_name, receipt):
                     f"nonterminal property status: {name}")
         require(checks["total"] == checks["success"] + len(checks["failure"])
                 + len(checks["unreachable"]), f"incomplete JSON check partition: {name}")
+        covers = harness["covers"]
+        cover_status = {}
+        for bucket, status in (("satisfied", "SATISFIED"), ("unsatisfiable", "UNSATISFIABLE"),
+                               ("unreachable", "UNREACHABLE")):
+            for identifier in covers[bucket]:
+                require(identifier not in cover_status, f"duplicate JSON cover ID: {name}")
+                cover_status[identifier] = status
+        require(covers["total"] == len(cover_status), f"incomplete JSON cover partition: {name}")
+        require(harness["n_properties"] == checks["total"] + covers["total"],
+                f"incomplete JSON property partition: {name}")
         attrs = harness["attributes"]
         require(attrs["should_panic"] is False and attrs["stubs"] == [],
                 f"unexpected harness attributes: {name}")
@@ -135,12 +145,16 @@ def observation(data, regular, selectors, case_by_name, receipt):
         remaining = regular[marker.end():]
         next_marker = re.search(r"(?m)^Checking harness .+\.\.\.$", remaining)
         block_end = marker.end() + next_marker.start() if next_marker else len(regular)
-        selected_rows = CHECKER.regular_properties(regular[marker.start():block_end])
+        all_rows = CHECKER.regular_properties(regular[marker.start():block_end])
         expected_count = harness["n_properties"]
-        require(type(expected_count) is int and len(selected_rows) == expected_count,
+        require(type(expected_count) is int and len(all_rows) == expected_count,
                 f"regular root inventory incomplete: {name}")
-        require(len({row["id"] for row in selected_rows}) == len(selected_rows),
+        require(len({row["id"] for row in all_rows}) == len(all_rows),
                 f"duplicate regular root property identity: {name}")
+        cover_rows = [row for row in all_rows if row["id"] in cover_status]
+        selected_rows = [row for row in all_rows if row["id"] not in cover_status]
+        require({row["id"]: row["status"] for row in cover_rows} == cover_status,
+                f"regular/JSON cover inventory mismatch: {name}")
         require(check_ids <= {row["id"] for row in selected_rows},
                 f"JSON failure/unreachable IDs absent from root regular inventory: {name}")
         require(Counter_status(selected_rows) == {
@@ -201,12 +215,11 @@ def observation(data, regular, selectors, case_by_name, receipt):
                                            for key in ("id", "description", "class", "file", "line",
                                                        "trace_available", "status")})
         require(verdict == case["expected_verdict"], f"unexpected verdict: {name}")
-        normalized = []
-        for row in selected_rows:
-            normalized.append({"id": row["id"], "status": row["status"],
-                               "description": row["description"],
-                               "location": CHECKER.normalize(row["location"], receipt["build_prefix"])
-                               if row["location"] else None})
+        def normalize_rows(rows):
+            return [{"id": row["id"], "status": row["status"],
+                     "description": row["description"],
+                     "location": CHECKER.normalize(row["location"], receipt["build_prefix"])
+                     if row["location"] else None} for row in rows]
         normalized_failed = [{key: CHECKER.normalize(item[key], receipt["build_prefix"])
                               if key == "file" else item[key]
                               for key in ("id", "description", "class", "file", "line",
@@ -215,7 +228,7 @@ def observation(data, regular, selectors, case_by_name, receipt):
         roots.append({"expected_root": name, "actual_root": name,
                       "inventory_complete": True, "verdict": verdict,
                       "failure_kind": failure_kind, "n_failed": harness["n_failed"],
-                      "checks": normalized,
+                      "checks": normalize_rows(selected_rows), "covers": normalize_rows(cover_rows),
                       "failed_properties": normalized_failed,
                       "unsupported_constructs": normalized_unsupported})
     return {"run_state": "COMPLETE", "requested_roots": selectors, "roots": roots}
@@ -324,6 +337,7 @@ def capture(args):
         base = Path(tempfile.mkdtemp(prefix="kani-uninit-part1-composition-"))
         isolated = {}
         combined_observations = []
+        comparisons = []
         receipts = []
         for case in cases:
             step = "isolated-" + case["name"] + ": execute/observe"
@@ -337,6 +351,7 @@ def capture(args):
                 check_single(isolated_root, {"binding": case["binding"],
                                              "expected_verdict": case["expected_verdict"],
                                              "checks": case["expected_inventory"],
+                                             "covers": case.get("expected_covers", []),
                                              "failure_kind": case["expected_failure_kind"],
                                              "failed_properties": case["expected_failures"],
                                              "unsupported_constructs":
@@ -353,22 +368,28 @@ def capture(args):
             combined_by_name = compare_selection(combined, case_by_name)
             isolated_by_name = {name: compare_selection(singles[name], case_by_name)[name]
                                 for name in selected}
-            from compare import inventory
             for name in selected:
-                require(inventory(isolated_by_name[name]) == inventory(combined_by_name[name]),
-                        f"mixed-root inventory changed: {name} in {order['id']}")
+                comparison = compare_root(isolated_by_name[name], combined_by_name[name])
+                comparisons.append({"order": order["id"], **comparison})
+                if not args.collect_unbound:
+                    require(comparison["accepted"],
+                            f"mixed-root inventory changed: {name} in {order['id']}")
         step = "write capture report"
-        report = {"status": "UNBOUND_CAPTURE" if binding_pending else "PASS",
+        report = {"status": "UNBOUND_CAPTURE" if args.collect_unbound else "PASS",
                   "binding_status": "BINDING_PENDING" if binding_pending else "REGRESSION_BOUND",
                   "root_inventory_observations": isolated,
                   "combined_inventory_observations": combined_observations,
+                  "mixed_root_comparisons": comparisons,
+                  "mixed_root_oracle": "MISMATCH" if any(not item["accepted"] for item in comparisons)
+                      else "MATCH_WITH_T1B" if any(not item["exact_match"] for item in comparisons)
+                      else "EXACT_MATCH",
                   "order_credit": "NOT_ESTABLISHED",
                   "producer_order": manifest["producer_order_receipt"]["status"],
                   "runs": receipts}
         (base / "capture.json").write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
         print("Composition observation: " + json.dumps(report, sort_keys=True))
         # Exit 2 distinguishes useful capture from qualified regression success.
-        return 2 if binding_pending else 0
+        return 2 if args.collect_unbound else 0
     except (Exception, KeyboardInterrupt) as error:
         diagnostic = f"Composition stopped at {step}: {type(error).__name__}: {error}"
         print(diagnostic, file=sys.stderr, flush=True)

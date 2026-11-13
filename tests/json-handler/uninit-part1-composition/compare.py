@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 # Copyright Kani Contributors
 # SPDX-License-Identifier: Apache-2.0 OR MIT
-"""Fail-closed complete per-root inventory comparison for mixed runs."""
+"""Root-local composition oracle with a narrow, recorded T1b allowance."""
 from collections import Counter
+
+# Reviewed shared monomorphization in this fixture, never a root/contract target.
+# Do not infer sharing merely from a function being outside the selected harness.
+T1B_SHARED_FUNCTIONS = {"std::ptr::read::<u8>"}
 
 
 class Rejected(ValueError):
@@ -36,6 +40,15 @@ def inventory(root_observation):
     require(len(set(ids)) == len(ids), "duplicate check identity")
     require(all(row.get("status") in {"SUCCESS", "FAILURE", "UNREACHABLE"}
                 for row in rows), "nonterminal check status")
+    covers = root_observation.get("covers")
+    require(isinstance(covers, list), "missing cover inventory")
+    cover_ids = [row.get("id") for row in covers if isinstance(row, dict)]
+    require(len(cover_ids) == len(covers)
+            and all(isinstance(item, str) and item for item in cover_ids)
+            and len(set(cover_ids)) == len(cover_ids)
+            and not set(cover_ids) & set(ids), "malformed/duplicate cover identity")
+    require(all(row.get("status") in {"SATISFIED", "UNSATISFIABLE", "UNREACHABLE"}
+                for row in covers), "nonterminal cover status")
     failure_kind = root_observation.get("failure_kind")
     require(failure_kind in {"ERROR", "NONE", "OTHER", "PANICS_ONLY"},
             "missing/invalid failure kind")
@@ -79,7 +92,8 @@ def inventory(root_observation):
                     "failed Unsupported metadata drift")
     return (Counter(freeze(row) for row in rows), failure_kind,
             Counter(freeze(row) for row in failures),
-            Counter(freeze(row) for row in unsupported))
+            Counter(freeze(row) for row in unsupported),
+            Counter(freeze(row) for row in covers))
 
 
 def check_single(root_observation, expected):
@@ -99,6 +113,8 @@ def check_single(root_observation, expected):
                 f"{label} differs from reviewed binding")
     require(actual[1] == expected.get("failure_kind"),
             "failure kind differs from reviewed binding")
+    require(actual[4] == Counter(freeze(row) for row in expected.get("covers", [])),
+            "cover inventory differs from reviewed binding")
     failed = [row for row in rows if row.get("status") == "FAILURE"]
     require(root_observation.get("verdict") == expected.get("expected_verdict"),
             "wrong root verdict")
@@ -125,12 +141,68 @@ def compare_selection(run, expected_roots):
     return by_name
 
 
+def row_difference(before, after):
+    """Preserve exact rows and multiplicities for a JSON-serializable diff."""
+    remaining = Counter(freeze(row) for row in after)
+    difference = []
+    for row in before:
+        key = freeze(row)
+        if remaining[key]:
+            remaining[key] -= 1
+        else:
+            difference.append(row)
+    return difference
+
+
+def t1b_check(row):
+    """Only benign safety instrumentation in an explicitly reviewed shared body."""
+    location = row.get("location")
+    if not isinstance(location, str):
+        return False
+    function = location.rpartition(" in function ")[2]
+    prefix = function + ".safety_check."
+    return (function in T1B_SHARED_FUNCTIONS
+            and row["status"] in {"SUCCESS", "UNREACHABLE"}
+            and row["id"].startswith(prefix) and row["id"][len(prefix):].isdigit())
+
+
+def compare_root(isolated, combined):
+    """Return all drift; permit only extra/missing benign shared instrumentation.
+
+    Verdict, failures (including exact metadata), Unsupported, covers, and every
+    useful/root/target check stay exact. Existing IDs may not change metadata or
+    status, even in a shared body. Unknown functions fail closed.
+    """
+    inventory(isolated)
+    inventory(combined)
+    require(isolated["expected_root"] == combined["expected_root"], "different root bindings")
+    differences = {}
+    for field in ("checks", "failed_properties", "unsupported_constructs", "covers"):
+        removed = row_difference(isolated[field], combined[field])
+        added = row_difference(combined[field], isolated[field])
+        if removed or added:
+            differences[field] = {"removed": removed, "added": added}
+    for field in ("verdict", "failure_kind"):
+        if isolated[field] != combined[field]:
+            differences[field] = {"isolated": isolated[field], "combined": combined[field]}
+    check_diff = differences.get("checks", {"removed": [], "added": []})
+    common_ids = {row["id"] for row in isolated["checks"]} & {
+        row["id"] for row in combined["checks"]}
+    t1b = {direction: [row for row in rows
+                      if t1b_check(row) and row["id"] not in common_ids]
+           for direction, rows in check_diff.items()}
+    accepted = (set(differences) <= {"checks"} and t1b == check_diff)
+    return {"root": isolated["expected_root"], "accepted": accepted,
+            "exact_match": not differences, "differences": differences,
+            "t1b_evidence": t1b}
+
+
 def compare_pair(isolated, combined, expected_roots):
-    """Require every selected root's full check inventory to match isolation."""
+    """Require semantic composition, recording the narrow shared-cache exception."""
     singles = compare_selection(isolated, expected_roots)
     joint = compare_selection(combined, expected_roots)
     require(set(singles) == set(joint), "combined selection has different roots")
     for name in singles:
-        require(inventory(singles[name]) == inventory(joint[name]),
+        require(compare_root(singles[name], joint[name])["accepted"],
                 f"mixed-root inventory changed: {name}")
     return True
