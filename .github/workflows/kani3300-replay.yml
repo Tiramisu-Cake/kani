@@ -1,0 +1,117 @@
+# Copyright Kani Contributors
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+name: Kani 3300 C1 replay (preparation candidate)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  replay:
+    # This candidate is intentionally runnable only from a fork.
+    if: ${{ github.repository == 'Tiramisu-Cake/kani' }}
+    runs-on: ubuntu-24.04
+    # 12 serial jobs × 50 minutes = the proposed 10-hour aggregate envelope;
+    # each 2400-second harness cap leaves at most 10 minutes for setup/reporting.
+    timeout-minutes: 50
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        root:
+          - sort4-pfc-on
+          - sort4-pfc-off
+          - merge-profile-pfc-on
+          - merge-profile-pfc-off
+          - merge-raw-pfc-on
+          - merge-raw-pfc-off
+          - raw-legal-on
+          - raw-legal-off
+          - raw-negative-on
+          - raw-negative-off
+          - sort8-boundary-on
+          - sort8-boundary-off
+    steps:
+      - name: Checkout CI-only overlay
+        uses: actions/checkout@v6
+        with:
+          path: overlay
+          fetch-depth: 0
+
+      - name: Read exact export revision
+        id: export
+        run: |
+          python3 - <<'PY'
+          import json, os
+          req = json.load(open('overlay/scripts/kani3300-replay/request.json'))
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as out:
+              out.write('sha=' + req['tool_export_sha'] + '\n')
+          PY
+
+      - name: Checkout exact frozen C1 export
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ steps.export.outputs.sha }}
+          path: export
+
+      - name: Verify immutable C1 source bindings
+        run: python3 overlay/scripts/kani3300-replay/replay.py verify-source --repo export
+
+      - name: Setup pinned Kani dependencies
+        uses: ./export/.github/actions/setup
+        with:
+          os: ubuntu-24.04
+          kani_dir: export
+
+      - name: Build this exact C1 checkout
+        working-directory: export
+        run: cargo build-dev -- --release
+
+      - name: Prepare isolated selected std snapshot
+        run: >-
+          python3 overlay/scripts/kani3300-replay/replay.py prepare-std
+          --repo https://github.com/Tiramisu-Cake/verify-rust-std.git
+          --destination "$RUNNER_TEMP/kani3300-std"
+
+      - name: Execute one exact replay row
+        run: >-
+          python3 overlay/scripts/kani3300-replay/replay.py run-root
+          --repo "$GITHUB_WORKSPACE/export"
+          --std "$RUNNER_TEMP/kani3300-std"
+          --root "${{ matrix.root }}"
+          --binary "$GITHUB_WORKSPACE/export/scripts/kani"
+          --out "$RUNNER_TEMP/kani3300-receipt/${{ matrix.root }}"
+
+      - name: Materialize NOT_RUN fallback receipt
+        if: always()
+        env:
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          out = Path(os.environ['RUNNER_TEMP']) / 'kani3300-receipt' / '${{ matrix.root }}'
+          out.mkdir(parents=True, exist_ok=True)
+          receipt = out / 'receipt.json'
+          if not receipt.exists():
+              receipt.write_text(json.dumps({
+                  'schema': 'kani3300-replay-receipt-v1',
+                  'root_id': '${{ matrix.root }}',
+                  'outcome': 'UNKNOWN',
+                  'runtime_proof_status': 'NOT_RUN',
+                  'job_status': os.environ['JOB_STATUS'],
+                  'note': 'setup/build/preflight/runner failed before a complete root receipt; no result inferred'
+              }, indent=2, sort_keys=True) + '\n')
+          (out / 'job-status.json').write_text(json.dumps({'status': os.environ['JOB_STATUS']}) + '\n')
+          PY
+
+      - name: Upload bounded NOT_RUN receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kani3300-replay-${{ matrix.root }}
+          path: ${{ runner.temp }}/kani3300-receipt/${{ matrix.root }}/
+          if-no-files-found: error
+          retention-days: 7
