@@ -1,0 +1,68 @@
+name: KANI3300 full gate (coordinator only)
+on:
+  push:
+    branches: ['ci/kani3300-fullgate-c1b']
+permissions:
+  contents: read
+concurrency:
+  group: kani3300-fullgate
+  cancel-in-progress: false
+jobs:
+  linux-full:
+    if: github.repository == 'Tiramisu-Cake/kani'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          path: overlay
+      - name: Require frozen binding before setup
+        id: frozen
+        run: |
+          python3 - <<'PY'
+          import json, os, sys
+          sys.path.insert(0, 'overlay/scripts/kani3300-gate')
+          from receipt import validate_binding
+          b = json.load(open('overlay/scripts/kani3300-gate/binding.json'))
+          validate_binding(b, source=False)
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as out:
+              out.write('sha=' + b['export_sha'] + '\n')
+          PY
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ steps.frozen.outputs.sha }}
+          path: export
+      - name: Validate C1 source before setup
+        working-directory: export
+        run: python3 ../overlay/scripts/kani3300-gate/receipt.py --binding ../overlay/scripts/kani3300-gate/binding.json --output ../gate-artifacts --preflight
+      - name: Setup pinned upstream dependencies
+        uses: ./export/.github/actions/setup
+        with:
+          os: ubuntu-24.04
+          kani_dir: export
+      - name: Full regression and receipt
+        working-directory: export
+        run: python3 ../overlay/scripts/kani3300-gate/receipt.py --binding ../overlay/scripts/kani3300-gate/binding.json --output ../gate-artifacts --timeout 20400
+      - name: Preserve artifacts on failure
+        if: always()
+        env:
+          GATE_JOB_STATUS: ${{ job.status }}
+        run: |
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          out = Path('gate-artifacts')
+          out.mkdir(exist_ok=True)
+          report = out / 'receipt.json'
+          if not report.exists():
+              report.write_text(json.dumps({'status':'NOT_RUN', 'script_exit':None}) + '\n')
+          (out / 'job-status.json').write_text(json.dumps({'status':os.environ['GATE_JOB_STATUS'], 'note':'setup/runner failure requires coordinator classification; no success inferred'}) + '\n')
+          PY
+      - name: Upload artifacts on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kani3300-linux-full
+          path: gate-artifacts/
+          if-no-files-found: error
+          retention-days: 14
