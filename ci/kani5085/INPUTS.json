@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "prepared_by": "worker15",
+  "prepared_at_utc": "2026-11-13T19:52:57.875127+00:00",
+  "kani_repository": "model-checking/kani",
+  "kani_sha": "0aac16ef62da9e9d5645782d458593e5d78143ba",
+  "cbmc_repository": "Tiramisu-Cake/cbmc",
+  "cbmc_fix": "9f2d01ec2bf115879c86e22203d403ba156d22e5",
+  "cbmc_base": "107a1e504cd69a2f3483717c8bcfcfa59814c557",
+  "issue": {
+    "url": "https://github.com/model-checking/kani/issues/5085",
+    "updatedAt": "2026-11-06T02:03:19Z",
+    "body_encoding": "UTF-8, exact decoded JSON body; no added newline"
+  },
+  "roots": [
+    "static_zst_arr",
+    "const_zst_arr",
+    "tail_typed_copy",
+    "tail_nondet",
+    "runtime_control"
+  ],
+  "hashes": {
+    "TASK.md": "36f37ada4bf9d218cbac9962f86e4ca82af0c559aa7aedc5d68b45f968793289",
+    "issue-5085.json": "5ce70e0e82bdd05ed9a7034519e263c7d41d54fca9f8969fe8b3614fab0c1660",
+    "issue-5085.md": "22f137d6e4eea60a7e0f24dd55ffeeffe6bf88aa3f372e0975fb410dd87e5259",
+    "roots/const_zst_arr.rs": "181c7478e9d2dfe173b1fa46eb5f8facc3d843556283ef30a92183ae03d1a1cb",
+    "roots/runtime_control.rs": "ae447b4ff6aa75ae6f8e2ea96967262aa7b8091da32f888c3172320cfea46321",
+    "roots/static_zst_arr.rs": "22e7a7d6784eb2cc57e4d0852bf1ae30e43aa483b90d843e6a0359ded9d97b41",
+    "roots/tail_nondet.rs": "720b495b3d2ff2fd1803cda45d8710da2cc437ff20001b12246589a0fab58505",
+    "roots/tail_typed_copy.rs": "47d14130d50333685c701ade8398d520eec7be216786f8a6be6823f058664cc8"
+  }
+}

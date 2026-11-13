@@ -1,0 +1,62 @@
+name: Kani 5085 paired CBMC replay
+on:
+  push:
+    branches: ['uninit-ci/kani5085-*']
+permissions:
+  contents: read
+jobs:
+  replay:
+    if: github.repository == 'Tiramisu-Cake/kani'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      CARGO_BUILD_JOBS: '2'
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          path: overlay
+          persist-credentials: false
+      - name: Initialize NOT_RUN receipts
+        run: python3 overlay/ci/kani5085/replay.py init "$GITHUB_WORKSPACE/evidence"
+      - uses: actions/checkout@v6
+        with:
+          repository: model-checking/kani
+          ref: 0aac16ef62da9e9d5645782d458593e5d78143ba
+          path: source
+          persist-credentials: false
+      - name: Setup upstream Kani dependencies
+        timeout-minutes: 10
+        uses: ./source/.github/actions/setup
+        with:
+          os: ubuntu-24.04
+          kani_dir: source
+      - name: Build upstream Kani without patches
+        timeout-minutes: 25
+        working-directory: source
+        run: |
+          test "$(git rev-parse HEAD)" = 0aac16ef62da9e9d5645782d458593e5d78143ba
+          cargo build-dev -- --release
+          git diff --exit-code
+      - uses: actions/checkout@v6
+        with:
+          repository: Tiramisu-Cake/cbmc
+          ref: 9f2d01ec2bf115879c86e22203d403ba156d22e5
+          fetch-depth: 2
+          path: cbmc
+          persist-credentials: false
+      - name: Build base then fix with one Release configuration
+        timeout-minutes: 38
+        run: bash overlay/ci/kani5085/build-pair.sh
+      - name: Run every paired root and classify observed outcomes
+        timeout-minutes: 12
+        run: python3 overlay/ci/kani5085/replay.py run "$GITHUB_WORKSPACE/evidence" "$GITHUB_WORKSPACE/source" "$GITHUB_WORKSPACE/pair"
+      - name: Publish bounded summary
+        if: always()
+        run: python3 overlay/ci/kani5085/replay.py summary "$GITHUB_WORKSPACE/evidence" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: kani5085-${{ github.run_id }}-${{ github.run_attempt }}
+          path: evidence/
+          if-no-files-found: error
+          retention-days: 14

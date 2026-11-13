@@ -1,0 +1,30 @@
+{
+  "status": "STATIC_CHECKS_PASS_RUNTIME_NOT_RUN",
+  "checks": [
+    "Python AST parse",
+    "YAML job/trigger/permission/cap structure",
+    "bash -n build-pair.sh",
+    "8 isolated Python service tests",
+    "verbatim issue/source hashes",
+    "exact pinned CBMC production delta"
+  ],
+  "service_cases": [
+    "success",
+    "failure/invariant",
+    "timeout",
+    "overflow/continued drain",
+    "original exit/signal",
+    "missing executable",
+    "missing/null/wrong-type/partial/NOT_RUN",
+    "source-target binary mismatch",
+    "proxy byte forwarding/exact argv"
+  ],
+  "independent_review": {
+    "reviewer": "GPT-6 Luna HIGH",
+    "result": "No concrete findings",
+    "scope": "replay.py/build-pair.sh/workflow.yml/INPUTS.json/roots, static only"
+  },
+  "review_delta": "After review: only timeout allocation changed to setup10/Kani25/CBMC38/replay12, total85 within job90.",
+  "tool_build_or_verification_runs": false,
+  "push_or_ci_dispatch": false
+}
