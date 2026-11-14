@@ -1,0 +1,39 @@
+Checking harness copy_intrinsic_operands_preserve_both_sources...
+- Status: SUCCESS\
+- Description: "Copy sources and selected result retain their values"
+** 0 of
+** 2 of 2 cover properties satisfied
+VERIFICATION:- SUCCESSFUL
+Checking harness true_selected_arm_still_deinitializes_source_a...
+- Status: SUCCESS\
+- Description: "true arm selected value is preserved"
+- Status: FAILURE\
+- Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u8`"
+** 1 of
+Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type `u8`
+VERIFICATION:- FAILED
+Checking harness false_selected_arm_still_deinitializes_source_a...
+- Status: SUCCESS\
+- Description: "false arm selected value is preserved"
+- Status: FAILURE\
+- Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u8`"
+** 1 of
+Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type `u8`
+VERIFICATION:- FAILED
+Checking harness true_selected_arm_still_deinitializes_source_b...
+- Status: SUCCESS\
+- Description: "true arm selected value is preserved"
+- Status: FAILURE\
+- Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u8`"
+** 1 of
+Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type `u8`
+VERIFICATION:- FAILED
+Checking harness false_selected_arm_still_deinitializes_source_b...
+- Status: SUCCESS\
+- Description: "false arm selected value is preserved"
+- Status: FAILURE\
+- Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u8`"
+** 1 of
+Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type `u8`
+VERIFICATION:- FAILED
+Complete - 1 successfully verified harnesses, 4 failures, 5 total.

@@ -1,0 +1,43 @@
+Checking harness legal_selected_true_arm_with_unselected_hole...
+- Status: SUCCESS\
+- Description: "selected true MaybeUninit arm is initialized"
+** 0 of
+VERIFICATION:- SUCCESSFUL
+Checking harness legal_selected_false_arm_with_unselected_hole...
+- Status: SUCCESS\
+- Description: "selected false MaybeUninit arm is initialized"
+** 0 of
+VERIFICATION:- SUCCESSFUL
+Checking harness copied_unselected_false_hole_remains_false...
+- Status: SUCCESS\
+- Description: "selected true value remains initialized"
+- Status: FAILURE\
+- Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u8`"
+** 1 of
+Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type `u8`
+VERIFICATION:- FAILED
+Checking harness copied_unselected_true_hole_remains_false...
+- Status: SUCCESS\
+- Description: "selected false value remains initialized"
+- Status: FAILURE\
+- Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u8`"
+** 1 of
+Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type `u8`
+VERIFICATION:- FAILED
+Checking harness selected_true_hole_fails...
+- Status: SUCCESS\
+- Description: "unselected Copy arm remains initialized"
+- Status: FAILURE\
+- Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u8`"
+** 1 of
+Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type `u8`
+VERIFICATION:- FAILED
+Checking harness selected_false_hole_fails...
+- Status: SUCCESS\
+- Description: "unselected Copy arm remains initialized"
+- Status: FAILURE\
+- Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u8`"
+** 1 of
+Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type `u8`
+VERIFICATION:- FAILED
+Complete - 2 successfully verified harnesses, 4 failures, 6 total.

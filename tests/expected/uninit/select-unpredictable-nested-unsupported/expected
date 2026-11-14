@@ -1,0 +1,9 @@
+Checking harness nested_shadow_layout_remains_unsupported...
+- Status: FAILURE\
+- Description: "Kani does not support memory initialization of intrinsic `select_unpredictable`
+unsupported payload `MaybeUninit<Nested>`
+Cannot determine layout for a type that contains union of type MaybeUninit<u8> as a field.
+** 1 of
+Failed Checks: Kani does not support memory initialization of intrinsic `select_unpredictable`
+VERIFICATION:- FAILED
+Complete - 0 successfully verified harnesses, 1 failures, 1 total.
