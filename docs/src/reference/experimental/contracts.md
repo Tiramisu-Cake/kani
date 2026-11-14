@@ -70,5 +70,24 @@ By leveraging the stubbing feature, we can replace the (expensive) `gcd` call wi
 > functions), or avoid calling the stubbed function from the `Arbitrary`
 > implementation.
 
+## Limitations
+
+With `-Z uninit-checks`, tracking the initialization state of `MaybeUninit` and union
+values passed across a call is not yet supported when the callee is replaced by its
+contract (`#[kani::stub_verified]`) or checked recursively (`#[kani::recursion]`).
+With `-Z uninit-checks`, a harness is rejected as unsupported if delayed
+initialization analysis encounters an interprocedural call cycle. This can affect
+ordinary proof harnesses and `#[kani::proof_for_contract]` checks; a runtime
+recursion bound does not bound this analysis.
+
+Initialization shadow transfer is also not implemented for by-value aggregates
+containing nested `MaybeUninit` or union slots, including call arguments and
+return values. This differs from passing a supported top-level slot. Such paths
+are not guaranteed to fail closed: they may produce false positives or miss
+uninitialized reads. For example, repairing a moved source and returning an
+initialized slot inside a tuple may still report an uninitialized read. That
+result is a known false positive, not evidence of undefined behavior. Returning
+the slot directly avoids this nested aggregate boundary.
+
 There is far more to learn about contracts.
 We highly recommend reading our [blog post about contracts](https://model-checking.github.io/kani-verifier-blog/2024/01/29/function-contracts.html) (from which this `gcd` example is taken). We also recommend looking at the `contracts` module in our [documentation](../../crates/index.md).

@@ -1,0 +1,3 @@
+Checking harness immutable_subrange_legal...
+Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type `[u8; 3]`
+VERIFICATION:- FAILED

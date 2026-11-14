@@ -23,18 +23,20 @@ use rustc_public::{
 pub enum AnalysisTarget {
     Place(Place),
     Static(StaticDef),
+    Anonymous(rustc_public::mir::alloc::AllocId),
 }
 
 /// Visitor that finds initial analysis targets for delayed UB instrumentation. For our purposes,
 /// analysis targets are *pointers* to places reading and writing from which should be tracked.
-pub struct InitialTargetVisitor {
+pub struct InitialTargetVisitor<'tcx> {
     body: Body,
+    tcx: rustc_middle::ty::TyCtxt<'tcx>,
     targets: Vec<AnalysisTarget>,
 }
 
-impl InitialTargetVisitor {
-    pub fn new(body: Body) -> Self {
-        Self { body, targets: vec![] }
+impl<'tcx> InitialTargetVisitor<'tcx> {
+    pub fn new(body: Body, tcx: rustc_middle::ty::TyCtxt<'tcx>) -> Self {
+        Self { body, tcx, targets: vec![] }
     }
 
     pub fn into_targets(self) -> Vec<AnalysisTarget> {
@@ -47,6 +49,12 @@ impl InitialTargetVisitor {
                 self.targets.push(AnalysisTarget::Place(place.clone()));
             }
             Operand::Constant(constant) => {
+                for origin in crate::kani_middle::anonymous_allocations::anonymous_origins(
+                    self.tcx,
+                    &constant.const_,
+                ) {
+                    self.targets.push(AnalysisTarget::Anonymous(origin.key));
+                }
                 // Extract the static from the constant.
                 if let ConstantKind::Allocated(allocation) = constant.const_.kind() {
                     for (_, prov) in &allocation.provenance.ptrs {
@@ -65,7 +73,8 @@ impl InitialTargetVisitor {
 /// We implement MirVisitor to facilitate target finding, we look for:
 /// - pointer casts where pointees have different padding;
 /// - calls to `copy`-like intrinsics.
-impl MirVisitor for InitialTargetVisitor {
+/// - both reference operands of `raw_eq`, which also reads padding bytes.
+impl MirVisitor for InitialTargetVisitor<'_> {
     fn visit_rvalue(&mut self, rvalue: &Rvalue, location: Location) {
         if let Rvalue::Cast(kind, operand, ty) = rvalue {
             let operand_ty = operand.ty(self.body.locals()).unwrap();
@@ -103,14 +112,18 @@ impl MirVisitor for InitialTargetVisitor {
     }
 
     fn visit_terminator(&mut self, term: &Terminator, location: Location) {
-        // Only calls to the copy intrinsics write to a target here. A call through a function
-        // pointer or a vtable cannot be one (intrinsics cannot be coerced to function pointers),
-        // and whatever its callee writes is collected when visiting the callee's own body.
+        // Copy destinations and raw_eq operands need their prior writes tracked. A call through
+        // a function pointer or a vtable cannot be an intrinsic (intrinsics cannot be coerced to
+        // function pointers); effects in other callees are collected from their own bodies.
         if let TerminatorKind::Call { func, args, .. } = &term.kind
             && let Some(instance) = try_resolve_instance(self.body.locals(), func)
             && instance.kind == InstanceKind::Intrinsic
         {
             match Intrinsic::from_instance(&instance) {
+                Intrinsic::RawEq => {
+                    self.push_operand(&args[0]);
+                    self.push_operand(&args[1]);
+                }
                 Intrinsic::Copy => {
                     // Here, `dst` is the second argument.
                     self.push_operand(&args[1]);
@@ -129,7 +142,8 @@ impl MirVisitor for InitialTargetVisitor {
 /// The instance a call operand refers to, if it is a function item rather than a function pointer.
 fn try_resolve_instance(locals: &[LocalDecl], func: &Operand) -> Option<Instance> {
     match func.ty(locals).unwrap().kind() {
-        // A failed resolution cannot identify an intrinsic seed.
+        // A failed resolution is not an intrinsic seed. The local visitor will emit
+        // Unsupported at this call, preserving seeds already collected elsewhere.
         TyKind::RigidTy(RigidTy::FnDef(def, args)) => Instance::resolve(def, &args).ok(),
         _ => None,
     }

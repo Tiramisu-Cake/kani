@@ -137,6 +137,8 @@ pub enum KaniModel {
     CheckUpperExpFmt,
     #[strum(serialize = "CheckUpperHexFmtModel")]
     CheckUpperHexFmt,
+    #[strum(serialize = "BeginArgumentTransferModel")]
+    BeginArgumentTransfer,
     #[strum(serialize = "CopyInitStateModel")]
     CopyInitState,
     #[strum(serialize = "CopyInitStateSingleModel")]

@@ -5,11 +5,13 @@
 
 use std::fmt::Display;
 
-use rustc_public::CrateDefType;
+use rustc_attr_ir::lang_items::LangItem;
+use rustc_middle::ty::TyCtxt;
+use rustc_public::{CrateDef, CrateDefType, rustc_internal};
 use rustc_public::{
     abi::{FieldsShape, Scalar, TagEncoding, ValueRepr, VariantsShape},
     target::{MachineInfo, MachineSize},
-    ty::{AdtKind, RigidTy, Ty, TyKind, UintTy, VariantIdx},
+    ty::{AdtKind, GenericArgKind, RigidTy, Ty, TyKind, UintTy, VariantIdx},
 };
 use rustc_public_bridge::IndexedVal;
 
@@ -53,6 +55,16 @@ pub enum PointeeLayout {
 }
 
 impl PointeeLayout {
+    /// Size of the complete storage accepted by the sized argument/return protocol.
+    /// `maybe_size` also returns element sizes and must not be used for this admission.
+    pub(super) fn argument_size(&self) -> Option<usize> {
+        match self {
+            Self::Sized { layout } => Some(layout.len()),
+            Self::Union { field_layouts } => field_layouts.iter().map(Vec::len).max(),
+            Self::Slice { .. } | Self::TraitObject => None,
+        }
+    }
+
     /// Returns the size of the layout, if available.
     pub fn maybe_size(&self) -> Option<usize> {
         match self {
@@ -104,7 +116,81 @@ impl Display for LayoutComputationError {
     }
 }
 
+/// Returns the type parameter of the specified standard-library wrapper.
+pub(super) fn wrapper_inner(tcx: TyCtxt, ty: Ty, wrapper: LangItem) -> Option<Ty> {
+    if let TyKind::RigidTy(RigidTy::Adt(def, args)) = ty.kind()
+        && tcx.is_lang_item(rustc_internal::internal(tcx, def.def_id()), wrapper)
+        && let Some(GenericArgKind::Type(inner)) = args.0.first()
+    {
+        Some(*inner)
+    } else {
+        None
+    }
+}
+
+/// Recognizes a slot or a flat sequence of slots. Other enclosing types keep their union error.
+pub(super) fn maybe_uninit_storage(tcx: TyCtxt, ty: Ty) -> Option<Ty> {
+    let slot_ty = match ty.kind() {
+        TyKind::RigidTy(RigidTy::Array(slot, _) | RigidTy::Slice(slot)) => slot,
+        _ => ty,
+    };
+    wrapper_inner(tcx, slot_ty, LangItem::MaybeUninit)
+}
+
 impl PointeeInfo {
+    /// Deinitializing a sized call operand clears its entire storage, regardless of field masks.
+    pub(super) fn for_deinit(ty: Ty) -> Result<Self, LayoutComputationError> {
+        let size = ty
+            .layout()
+            .map_err(|_| LayoutComputationError::UnknownUnsizedLayout(ty))?
+            .shape()
+            .size
+            .bytes();
+        Ok(Self { pointee_ty: ty, layout: PointeeLayout::Sized { layout: vec![true; size] } })
+    }
+
+    /// Typed slot transfers preserve only payload data, at the rustc stride of each slot.
+    pub(super) fn for_typed_storage(tcx: TyCtxt, ty: Ty) -> Result<Self, LayoutComputationError> {
+        let inner = maybe_uninit_storage(tcx, ty).unwrap();
+        let data_chunks = data_bytes_for_ty(&MachineInfo::target(), inner, 0)?;
+        let layout = match ty.kind() {
+            TyKind::RigidTy(RigidTy::Slice(slot)) => {
+                let stride = slot.layout().unwrap().shape().size.bytes();
+                PointeeLayout::Slice { element_layout: generate_byte_mask(stride, data_chunks) }
+            }
+            TyKind::RigidTy(RigidTy::Array(_, _)) => {
+                let shape = ty.layout().unwrap().shape();
+                let FieldsShape::Array { stride, count } = shape.fields else { unreachable!() };
+                let slot_mask = generate_byte_mask(stride.bytes(), data_chunks);
+                let mut layout = vec![false; shape.size.bytes()];
+                for index in 0..usize::try_from(count).unwrap() {
+                    let offset = index * stride.bytes();
+                    layout[offset..offset + stride.bytes()].copy_from_slice(&slot_mask);
+                }
+                PointeeLayout::Sized { layout }
+            }
+            _ => {
+                let size = ty.layout().unwrap().shape().size.bytes();
+                PointeeLayout::Sized { layout: generate_byte_mask(size, data_chunks) }
+            }
+        };
+        Ok(Self { pointee_ty: ty, layout })
+    }
+
+    /// Layout for copying storage or writing every byte with a bytewise intrinsic.
+    pub(super) fn for_storage(tcx: TyCtxt, ty: Ty) -> Result<Self, LayoutComputationError> {
+        let inner = maybe_uninit_storage(tcx, ty).unwrap();
+        data_bytes_for_ty(&MachineInfo::target(), inner, 0)?;
+        let layout = if let TyKind::RigidTy(RigidTy::Slice(slot)) = ty.kind() {
+            let size = slot.layout().unwrap().shape().size.bytes();
+            PointeeLayout::Slice { element_layout: vec![true; size] }
+        } else {
+            let size = ty.layout().unwrap().shape().size.bytes();
+            PointeeLayout::Sized { layout: vec![true; size] }
+        };
+        Ok(Self { pointee_ty: ty, layout })
+    }
+
     pub fn from_ty(ty: Ty) -> Result<Self, LayoutComputationError> {
         match ty.kind() {
             TyKind::RigidTy(rigid_ty) => match rigid_ty {
@@ -257,7 +343,8 @@ fn data_bytes_for_ty(
                                     let tag_data_bytes =
                                         vec![DataBytes { offset: current_offset, size: tag_size }];
 
-                                    // Retrieve data bytes for the fields.
+                                    // Compare variant layouts relative to the enum. Absolute
+                                    // offsets could be clipped by the enum-sized masks below.
                                     let mut fields_data_bytes = vec![];
                                     // Iterate over all variants for the enum.
                                     for (index, variant) in variants.iter().enumerate() {
@@ -270,7 +357,7 @@ fn data_bytes_for_ty(
                                                 &mut data_bytes_for_ty(
                                                     machine_info,
                                                     field_ty,
-                                                    field_offset + current_offset,
+                                                    field_offset,
                                                 )?,
                                             );
                                         }
@@ -300,6 +387,10 @@ fn data_bytes_for_ty(
                                         let mut total_data_bytes = tag_data_bytes;
                                         let mut field_data_bytes =
                                             fields_data_bytes.first().unwrap().clone();
+                                        // Compose the selected local layout exactly once.
+                                        for data_bytes in &mut field_data_bytes {
+                                            data_bytes.offset += current_offset;
+                                        }
                                         total_data_bytes.append(&mut field_data_bytes);
                                         Ok(total_data_bytes)
                                     } else {
@@ -333,9 +424,7 @@ fn data_bytes_for_ty(
                 }
                 RigidTy::Pat(base_ty, ..) => {
                     // This is similar to a structure with one field and with niche defined.
-                    let mut pat_data_bytes = vec![];
-                    pat_data_bytes.append(&mut data_bytes_for_ty(machine_info, *base_ty, 0)?);
-                    Ok(pat_data_bytes)
+                    data_bytes_for_ty(machine_info, *base_ty, current_offset)
                 }
                 RigidTy::Tuple(tys) => {
                     let mut tuple_data_bytes = vec![];
@@ -390,9 +479,36 @@ fn data_bytes_for_ty(
                     }
                     _ => unreachable!("RigidTy::RawPtr | RigidTy::Ref with a non-scalar ABI."),
                 }),
+                // A sized closure with a zero-byte environment has no data bytes,
+                // including when it captures only zero-sized values.
+                RigidTy::Closure(_, _) if layout.is_sized() && layout.size.bytes() == 0 => {
+                    Ok(vec![])
+                }
+                RigidTy::Closure(_, _) => {
+                    // Use the same monomorphized captures as codegen_ty_closure.
+                    // Leave the internal context before recursing through public types.
+                    let upvar_tys: Vec<Ty> = rustc_middle::ty::tls::with(|tcx| {
+                        let internal_ty = rustc_internal::internal(tcx, ty);
+                        let rustc_middle::ty::Closure(_, args) = internal_ty.kind() else {
+                            unreachable!("Expected a closure type for {ty:?}")
+                        };
+                        args.as_closure().upvar_tys().iter().map(rustc_internal::stable).collect()
+                    });
+                    assert_eq!(upvar_tys.len(), offsets.len());
+                    let mut closure_data_bytes = vec![];
+                    // Field indices name logical captures; offsets and iteration order
+                    // come from the closure's own layout, not a substituted tuple.
+                    for idx in layout.fields.fields_by_offset_order() {
+                        closure_data_bytes.append(&mut data_bytes_for_ty(
+                            machine_info,
+                            upvar_tys[idx],
+                            current_offset + offsets[idx].bytes(),
+                        )?);
+                    }
+                    Ok(closure_data_bytes)
+                }
                 RigidTy::FnDef(_, _)
                 | RigidTy::FnPtr(_)
-                | RigidTy::Closure(_, _)
                 | RigidTy::Coroutine(_, _)
                 | RigidTy::CoroutineClosure(_, _)
                 | RigidTy::CoroutineWitness(_, _)
@@ -448,4 +564,24 @@ fn tys_layout_cmp_to_size(from_ty: &Ty, to_ty: &Ty, cmp: impl Fn(bool, bool) -> 
         }
     };
     false
+}
+
+#[cfg(test)]
+mod argument_size_tests {
+    use super::PointeeLayout;
+
+    #[test]
+    fn transfer_requires_complete_sized_storage() {
+        assert_eq!(PointeeLayout::Sized { layout: vec![] }.argument_size(), Some(0));
+        assert_eq!(
+            PointeeLayout::Union { field_layouts: vec![vec![], vec![true, false]] }.argument_size(),
+            Some(2)
+        );
+        // Even a known nonzero element size cannot stand in for a by-value slice size.
+        let slice = PointeeLayout::Slice { element_layout: vec![true, false] };
+        assert_eq!(slice.maybe_size(), Some(2));
+        assert_eq!(slice.argument_size(), None);
+        assert_eq!(PointeeLayout::Slice { element_layout: vec![] }.argument_size(), None);
+        assert_eq!(PointeeLayout::TraitObject.argument_size(), None);
+    }
 }

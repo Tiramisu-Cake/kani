@@ -27,7 +27,7 @@ fn seed() {
 fn check() {
     seed();
     let mut value = 0u8;
-    // c_void and u8 have the same one-byte data layout; erasure itself adds no seed.
+    // The raw-pointer cast erases the pointee type while preserving its address.
     indirect(write, (&raw mut value).cast());
     assert_eq!(value, 7);
 }

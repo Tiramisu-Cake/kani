@@ -1,0 +1,13 @@
+{
+  "schema": "kani3300-root-order-map-v1",
+  "status": "ORDER_UNCONTROLLED",
+  "orders": [
+    {"label": "all_A_then_B", "selectors": ["immutable_legal", "immutable_hole_negative", "ordinary_ensures_legal", "pfc_legal", "pfc_negative", "cycle_root", "unrelated_legal_after_cycle"], "fresh_process": true, "jobs": 1},
+    {"label": "all_B_then_A", "selectors": ["unrelated_legal_after_cycle", "cycle_root", "pfc_negative", "pfc_legal", "ordinary_ensures_legal", "immutable_hole_negative", "immutable_legal"], "fresh_process": true, "jobs": 1},
+    {"label": "cycle_then_legal", "selectors": ["cycle_root", "unrelated_legal_after_cycle"], "fresh_process": true, "jobs": 1},
+    {"label": "legal_then_cycle", "selectors": ["unrelated_legal_after_cycle", "cycle_root"], "fresh_process": true, "jobs": 1}
+  ],
+  "producer_order_receipt": null,
+  "missing_coordinator_request": "Provide exact selected body/mode identities plus bounded observed producer/codegen order for each fresh run. CLI/declaration order alone does not satisfy this request.",
+  "credit": "No matched A/B or B/A producer-order credit. Per-root complete inventory comparisons remain useful only after reviewed exact bindings."
+}

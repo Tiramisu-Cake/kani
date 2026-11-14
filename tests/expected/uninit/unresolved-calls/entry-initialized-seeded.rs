@@ -15,8 +15,9 @@ fn identity(value: u32) -> u32 {
     value
 }
 
-// No statements in bb0: LoadArgument and the union-field Check share the
-// unresolved Call's target. The initialized control requires the load to survive.
+// The first MIR block is empty: entry LoadArgument and the u32 union-field
+// read share the unresolved Call target. The aggregate is runtime symbolic
+// input, not an ordinary-union constant.
 #[custom_mir(dialect = "runtime", phase = "optimized")]
 #[inline(never)]
 unsafe fn indirect(value: Word, f: fn(u32) -> u32) -> u32 {
@@ -26,7 +27,7 @@ unsafe fn indirect(value: Word, f: fn(u32) -> u32) -> u32 {
     }
 }
 
-// A copy intrinsic creates a delayed-UB analysis target without introducing UB.
+// An ordinary initialized-byte copy creates a delayed-UB analysis target.
 #[inline(never)]
 fn seed() {
     let source = 7u8;
@@ -38,5 +39,5 @@ fn seed() {
 #[kani::proof]
 fn check() {
     seed();
-    let _ = unsafe { indirect(Word { word: 42 }, identity) };
+    let _ = unsafe { indirect(Word { word: kani::any() }, identity) };
 }

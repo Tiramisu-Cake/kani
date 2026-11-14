@@ -3,17 +3,20 @@
 
 //! Graph data structure to store the results of points-to analysis.
 
+use crate::kani_middle::anonymous_allocations::{AnonymousOrigin, anonymous_origins};
 use rustc_hir::def_id::DefId;
 use rustc_middle::{
     mir::{Location, Place, ProjectionElem},
     ty::{Instance, List, TyCtxt},
 };
 use rustc_mir_dataflow::{JoinSemiLattice, fmt::DebugWithContext};
+use rustc_public::mir::alloc::{AllocId, GlobalAlloc};
 use rustc_public::mir::{
     Place as StablePlace,
     mono::{Instance as StableInstance, StaticDef},
 };
 use rustc_public::rustc_internal;
+use rustc_public::ty::{ConstantKind, MirConst};
 use std::collections::{HashMap, HashSet, VecDeque};
 
 /// A node in the points-to graph, which could be a place on the stack, a heap allocation, or a static.
@@ -27,6 +30,8 @@ pub enum MemLoc<'tcx> {
     /// location of the allocation inside this function implements allocation-site abstraction.
     Heap(Instance<'tcx>, Location),
     Static(DefId),
+    /// An anonymous/promoted referent; this is not a runtime object number.
+    Anonymous(AllocId),
 }
 
 impl<'tcx> MemLoc<'tcx> {
@@ -104,11 +109,36 @@ impl NodeData<'_> {
 pub struct PointsToGraph<'tcx> {
     /// A hash map of node --> {nodes} edges.
     nodes: HashMap<MemLoc<'tcx>, NodeData<'tcx>>,
+    pub anonymous: HashMap<AllocId, Vec<AnonymousOrigin>>,
 }
 
 impl<'tcx> PointsToGraph<'tcx> {
     pub fn empty() -> Self {
-        Self { nodes: HashMap::new() }
+        Self { nodes: HashMap::new(), anonymous: HashMap::new() }
+    }
+
+    /// Resolve all provenance alternatives without discarding immutable anonymous data.
+    pub fn constant_successors(
+        &mut self,
+        tcx: TyCtxt<'tcx>,
+        constant: &MirConst,
+    ) -> HashSet<MemLoc<'tcx>> {
+        let mut result = HashSet::new();
+        if let ConstantKind::Allocated(carrier) = constant.kind() {
+            for &(_, prov) in &carrier.provenance.ptrs {
+                if let GlobalAlloc::Static(def) = GlobalAlloc::from(prov.0) {
+                    result.insert(MemLoc::from_stable_static_allocation(def, tcx));
+                }
+            }
+        }
+        for origin in anonymous_origins(tcx, constant) {
+            result.insert(MemLoc::Anonymous(origin.key));
+            let origins = self.anonymous.entry(origin.key).or_default();
+            if !origins.contains(&origin) {
+                origins.push(origin);
+            }
+        }
+        result
     }
 
     /// Collect all nodes which have incoming edges from `nodes`.
@@ -215,6 +245,7 @@ impl<'tcx> PointsToGraph<'tcx> {
     /// includes statics.
     pub fn transitive_closure(&self, targets: HashSet<MemLoc<'tcx>>) -> PointsToGraph<'tcx> {
         let mut result = PointsToGraph::empty();
+        result.anonymous.clone_from(&self.anonymous);
         // Working queue.
         let mut queue = VecDeque::from_iter(targets);
         // Add all statics, as they can be accessed at any point.
@@ -239,6 +270,15 @@ impl<'tcx> PointsToGraph<'tcx> {
 impl JoinSemiLattice for PointsToGraph<'_> {
     fn join(&mut self, other: &Self) -> bool {
         let mut updated = false;
+        for (key, origins) in &other.anonymous {
+            let existing = self.anonymous.entry(*key).or_default();
+            for origin in origins {
+                if !existing.contains(origin) {
+                    existing.push(origin.clone());
+                    updated = true;
+                }
+            }
+        }
         // Check every node in the other graph.
         for (node, data) in other.nodes.iter() {
             let existing_node = self.nodes.entry(*node).or_default();

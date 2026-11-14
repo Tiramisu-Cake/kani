@@ -92,6 +92,7 @@ impl<'tcx, 'r> GotocCtx<'tcx, 'r> {
     /// - ZeroSized: These are ZST constants and they just need to match the right type.
     pub fn codegen_const(&mut self, constant: &MirConst, loc: Location) -> Expr {
         trace!(?constant, "codegen_constant");
+        self.observe_immutable_origins(constant);
         match constant.kind() {
             ConstantKind::Allocated(alloc) => self.codegen_allocation(alloc, constant.ty(), loc),
             ConstantKind::ZeroSized => {
@@ -336,6 +337,7 @@ impl<'tcx, 'r> GotocCtx<'tcx, 'r> {
                         unreachable!()
                     };
                     let mem_var = self.codegen_const_allocation(&data, None, loc, false);
+                    self.bind_immutable_allocation(prov.0, &data, &mem_var);
                     if offset != 0 || len != data.bytes.len() as u128 {
                         // A substring of another constant records no literal, and the offset,
                         // even when zero, keeps `extract_const_message` from matching it.
@@ -378,7 +380,9 @@ impl<'tcx, 'r> GotocCtx<'tcx, 'r> {
                         let GlobalAlloc::Memory(data) = GlobalAlloc::from(prov.0) else {
                             unreachable!()
                         };
-                        self.codegen_const_allocation(&data, None, loc, false)
+                        let address = self.codegen_const_allocation(&data, None, loc, false);
+                        self.bind_immutable_allocation(prov.0, &data, &address);
+                        address
                             .cast_to(Type::unsigned_int(8).to_pointer())
                             .plus(Expr::int_constant(offset, Type::size_t()))
                     } else {
@@ -457,7 +461,9 @@ impl<'tcx, 'r> GotocCtx<'tcx, 'r> {
                 if is_anon_static(self.tcx, def.def_id()) {
                     let alloc = def.eval_initializer().unwrap();
                     let name = format!("{}::{alloc_id:?}", self.full_crate_name());
-                    self.codegen_nested_static_allocation(&alloc, Some(name), loc)
+                    let address = self.codegen_nested_static_allocation(&alloc, Some(name), loc);
+                    self.bind_immutable_allocation(alloc_id, &alloc, &address);
+                    address
                 } else {
                     self.codegen_static_pointer(def)
                 }
@@ -467,7 +473,9 @@ impl<'tcx, 'r> GotocCtx<'tcx, 'r> {
                 // crates do not conflict. The name alone is insufficient because Rust
                 // allows different versions of the same crate to be used.
                 let name = format!("{}::{alloc_id:?}", self.full_crate_name());
-                self.codegen_const_allocation(&alloc, Some(name), loc, false)
+                let address = self.codegen_const_allocation(&alloc, Some(name), loc, false);
+                self.bind_immutable_allocation(alloc_id, &alloc, &address);
+                address
             }
             alloc @ GlobalAlloc::VTable(..) => {
                 // This is similar to GlobalAlloc::Memory but the type is opaque to rust and it

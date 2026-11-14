@@ -1,0 +1,3 @@
+Checking harness raw_vs_typed_hole...
+Failed Checks: Undefined Behavior: Reading from an uninitialized pointer
+VERIFICATION:- FAILED

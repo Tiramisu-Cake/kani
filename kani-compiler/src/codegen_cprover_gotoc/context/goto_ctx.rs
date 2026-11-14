@@ -77,6 +77,7 @@ pub struct GotocCtx<'tcx, 'r> {
     pub global_var_count: u64,
     /// map a global allocation to a name in the symbol table
     pub alloc_map: FxHashMap<Allocation, String>,
+    pub immutable_allocations: super::immutable_allocations::ImmutableAllocations,
     /// map (trait, method) pairs to possible implementations
     pub vtable_ctx: VtableCtx,
     pub current_fn: Option<CurrentFnCtx<'tcx>>,
@@ -129,6 +130,7 @@ impl<'tcx, 'r> GotocCtx<'tcx, 'r> {
             full_crate_name: full_crate_name(tcx),
             global_var_count: 0,
             alloc_map: FxHashMap::default(),
+            immutable_allocations: Default::default(),
             vtable_ctx: VtableCtx::new(emit_vtable_restrictions),
             current_fn: None,
             type_map: FxHashMap::default(),

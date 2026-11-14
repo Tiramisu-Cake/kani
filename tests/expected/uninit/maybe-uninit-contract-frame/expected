@@ -1,0 +1,9 @@
+assigns\
+- Status: FAILURE\
+- Description: "Check that *var_7 is assignable"\
+- Location: tests/expected/uninit/maybe-uninit-contract-frame/main.rs:22:5 in function frame_target::{closure#2}::{closure#0}
+
+Failed Checks: Check that *var_7 is assignable\
+ maybe-uninit-contract-frame/main.rs", line 22, in frame_target::{closure#2}::{closure#0}
+
+VERIFICATION:- FAILED

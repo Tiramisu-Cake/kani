@@ -8,15 +8,19 @@ use crate::{
     kani_middle::transform::{
         body::{InsertPosition, MutableBody, SourceInstruction},
         check_uninit::{
-            PointeeInfo, TargetFinder,
-            relevant_instruction::{InitRelevantInstruction, MemoryInitOp},
-            ty_layout::{LayoutComputationError, tys_layout_compatible_to_size},
+            PointeeInfo, PointeeLayout, TargetFinder,
+            relevant_instruction::{InitRelevantInstruction, MemoryInitOp, constant_init_mask},
+            ty_layout::{
+                LayoutComputationError, maybe_uninit_storage, tys_layout_compatible_to_size,
+                wrapper_inner,
+            },
         },
     },
     kani_middle::{nonnull_pointee, points_to::resolve_call},
 };
+use rustc_attr_ir::lang_items::LangItem;
 use rustc_middle::ty::TyCtxt;
-use rustc_public::{CrateDefType, rustc_internal};
+use rustc_public::CrateDefType;
 use rustc_public::{
     mir::{
         AggregateKind, CastKind, LocalDecl, MirVisitor, NonDivergingIntrinsic, Operand, Place,
@@ -26,7 +30,7 @@ use rustc_public::{
         mono::{Instance, InstanceKind},
         visit::{Location, PlaceContext},
     },
-    ty::{AdtKind, ConstantKind, RigidTy, Ty, TyConstKind, TyKind},
+    ty::{AdtKind, ConstantKind, RigidTy, Ty, TyConstKind, TyKind, UintTy},
 };
 
 pub struct CheckUninitVisitor<'tcx> {
@@ -64,26 +68,38 @@ impl TargetFinder for CheckUninitVisitor<'_> {
                     .enumerate()
                     .skip(1)
                     .take(body.arg_count())
-                    .filter(|(_, local)| local.ty.kind().is_union())
+                    .filter(|(_, local)| self.transfers_shadow(local.ty))
                     .collect();
-                // RustCall and other generated ABIs do not establish the legacy union
-                // slot pairing. Guard entry before any fallback LoadArgument can bless it.
-                if self.instance.kind == InstanceKind::Shim
-                    && body
-                        .locals()
-                        .iter()
-                        .take(body.arg_count() + 1)
-                        .any(|local| shim_type_may_carry_shadow(self.tcx, local.ty))
+                if self.instance.kind != InstanceKind::Intrinsic
+                    && (!union_args.is_empty() || self.transfers_shadow(body.locals()[0].ty))
                 {
-                    self.push_target(MemoryInitOp::Unsupported {
-                        reason: unsupported_call_reason("shadow transfers through Shim instances"),
-                    });
-                } else if !union_args.is_empty() {
-                    for (idx, _) in union_args {
-                        self.push_target(MemoryInitOp::LoadArgument {
-                            operand: Operand::Copy(Place { local: idx, projection: vec![] }),
-                            argument_no: idx,
-                        })
+                    let unsized_transfer = union_args.iter().any(|(_, local)| {
+                        !local.ty.layout().is_ok_and(|layout| layout.shape().is_sized())
+                    }) || (self.transfers_shadow(body.locals()[0].ty)
+                        && !body.locals()[0]
+                            .ty
+                            .layout()
+                            .is_ok_and(|layout| layout.shape().is_sized()));
+                    if unsized_transfer {
+                        self.push_target(MemoryInitOp::Unsupported {
+                            reason: "Kani does not support unsized by-value shadow argument/return transfers."
+                                .to_string(),
+                        });
+                    } else if has_transfer_protocol(self.instance) {
+                        for (idx, _) in &union_args {
+                            self.push_target(MemoryInitOp::LoadArgument {
+                                operand: Operand::Copy(Place::from(*idx)),
+                                argument_no: *idx,
+                                function: self.instance.ty(),
+                                argument_count: union_args.len(),
+                                position: InsertPosition::Before,
+                            });
+                        }
+                    } else {
+                        self.push_target(MemoryInitOp::Unsupported {
+                            reason: "Kani does not support shadow transfers without a paired argument/return protocol."
+                                .to_string(),
+                        });
                     }
                 }
             }
@@ -111,6 +127,301 @@ impl<'tcx> CheckUninitVisitor<'tcx> {
     fn push_target(&mut self, source_op: MemoryInitOp) {
         self.current_target.push_operation(source_op);
     }
+
+    fn transfers_shadow(&self, ty: Ty) -> bool {
+        ty.kind().is_union() || maybe_uninit_storage(self.tcx, ty).is_some()
+    }
+
+    /// Locate the first union on the projection path, including a union at the end.
+    fn enclosing_union(&self, place: &Place) -> Option<Ty> {
+        let mut prefix = Place::from(place.local);
+        for projection in &place.projection {
+            let ty = prefix.ty(&self.locals).unwrap();
+            if ty.kind().is_union() {
+                return Some(ty);
+            }
+            prefix.projection.push(projection.clone());
+        }
+        let ty = prefix.ty(&self.locals).unwrap();
+        ty.kind().is_union().then_some(ty)
+    }
+
+    fn assign_storage_operand(&mut self, place: &Place, operand: &Operand) {
+        if let Some(initialized) = constant_init_mask(operand) {
+            self.push_target(MemoryInitOp::SetStorage {
+                operand: Operand::Copy(place.clone()),
+                initialized,
+                position: InsertPosition::After,
+            });
+        } else if matches!(operand, Operand::Copy(_) | Operand::Move(_)) {
+            // Capture the source and destination addresses before the assignment can overwrite
+            // any part of either place.
+            self.push_target(MemoryInitOp::AssignUnion {
+                lvalue: place.clone(),
+                rvalue: operand.clone(),
+                position: InsertPosition::Before,
+            });
+        } else {
+            self.unsupported_storage_assignment();
+        }
+    }
+
+    fn unsupported_storage_assignment(&mut self) {
+        self.push_target(MemoryInitOp::Unsupported {
+            reason: "Kani does not support this assignment to MaybeUninit storage.".to_string(),
+        });
+    }
+
+    fn assign_storage(&mut self, place: &Place, ty: Ty, rvalue: &Rvalue) {
+        match rvalue {
+            Rvalue::Cast(CastKind::Transmute, operand, target)
+                if let Some(initialized) = self.typed_storage_mask(operand, *target) =>
+            {
+                // visit_rvalue preserves the typed source checks. A typed move
+                // can discard padding, so only T's data bytes are initialized in the slot.
+                // This is the sole destination update: do not run the generic union setter.
+                self.push_target(MemoryInitOp::SetStorage {
+                    operand: Operand::Copy(place.clone()),
+                    initialized,
+                    position: InsertPosition::After,
+                });
+            }
+            Rvalue::Use(operand, _) => self.assign_storage_operand(place, operand),
+            Rvalue::Aggregate(AggregateKind::Adt(def, _, _, _, Some(field)), _)
+                if def.kind() == AdtKind::Union =>
+            {
+                self.push_target(MemoryInitOp::CreateUnion {
+                    operand: Operand::Copy(place.clone()),
+                    field: *field,
+                });
+            }
+            Rvalue::Aggregate(AggregateKind::Array(_), operands)
+                if place.projection.is_empty()
+                    && operands.iter().all(|operand| match operand {
+                        Operand::Copy(src) | Operand::Move(src) => {
+                            src.local != place.local && src.projection.is_empty()
+                        }
+                        _ => constant_init_mask(operand).is_some(),
+                    }) =>
+            {
+                let len = operands.len().try_into().unwrap();
+                for (index, operand) in operands.iter().enumerate() {
+                    let mut element = place.clone();
+                    element.projection.push(ProjectionElem::ConstantIndex {
+                        offset: index.try_into().unwrap(),
+                        min_length: len,
+                        from_end: false,
+                    });
+                    self.assign_storage_operand(&element, operand);
+                }
+            }
+            Rvalue::Repeat(operand, _) => {
+                if let Some(mask) = constant_init_mask(operand) {
+                    let TyKind::RigidTy(RigidTy::Array(_, len)) = ty.kind() else { unreachable!() };
+                    self.push_target(MemoryInitOp::SetStorage {
+                        operand: Operand::Copy(place.clone()),
+                        initialized: mask
+                            .repeat(len.eval_target_usize().unwrap().try_into().unwrap()),
+                        position: InsertPosition::After,
+                    });
+                } else if place.projection.is_empty()
+                    && let Operand::Copy(source) | Operand::Move(source) = operand
+                    && source.projection.is_empty()
+                    && source.local != place.local
+                {
+                    // MIR may hold a const constructor result in a local before repeating it.
+                    // Copy its byte state to each slot using the array's static element stride.
+                    let TyKind::RigidTy(RigidTy::Array(_, len)) = ty.kind() else { unreachable!() };
+                    let len = len.eval_target_usize().unwrap();
+                    for index in 0..len {
+                        let mut element = place.clone();
+                        element.projection.push(ProjectionElem::ConstantIndex {
+                            offset: index,
+                            min_length: len,
+                            from_end: false,
+                        });
+                        self.assign_storage_operand(&element, operand);
+                    }
+                } else {
+                    self.unsupported_storage_assignment();
+                }
+            }
+            _ => self.unsupported_storage_assignment(),
+        }
+    }
+
+    /// Match only T -> MaybeUninit<T> or [T; N] -> [MaybeUninit<T>; N].
+    /// Both the cast visitor and assignment handler use this exact predicate and mask.
+    fn typed_storage_mask(&self, operand: &Operand, target: Ty) -> Option<Vec<bool>> {
+        let source = operand.ty(&self.locals).ok()?;
+        let matches = wrapper_inner(self.tcx, target, LangItem::MaybeUninit) == Some(source)
+            || match (source.kind(), target.kind()) {
+                (
+                    TyKind::RigidTy(RigidTy::Array(from, from_len)),
+                    TyKind::RigidTy(RigidTy::Array(to, to_len)),
+                ) => {
+                    from_len == to_len
+                        && wrapper_inner(self.tcx, to, LangItem::MaybeUninit) == Some(from)
+                }
+                _ => false,
+            };
+        if !matches || source.layout().ok()?.shape().size != target.layout().ok()?.shape().size {
+            return None;
+        }
+        let info = PointeeInfo::from_ty(source).ok()?;
+        let PointeeLayout::Sized { layout } = info.layout() else { return None };
+        Some(layout.clone())
+    }
+
+    /// Match only the transparent conversion from MaybeUninit<T> to T or ManuallyDrop<T>.
+    fn maybe_uninit_transmute(&mut self, operand: &Operand, target: Ty) -> bool {
+        let operand_ty = operand.ty(&self.locals).unwrap();
+        let Some(inner) = wrapper_inner(self.tcx, operand_ty, LangItem::MaybeUninit) else {
+            return false;
+        };
+        if target != inner && wrapper_inner(self.tcx, target, LangItem::ManuallyDrop) != Some(inner)
+        {
+            return false;
+        }
+        let Ok(info) = PointeeInfo::from_ty(inner) else { return false };
+        let PointeeLayout::Sized { layout } = info.layout() else { return false };
+        if matches!(operand, Operand::Copy(_) | Operand::Move(_)) {
+            self.push_target(MemoryInitOp::CheckRefAs {
+                operand: operand.clone(),
+                pointee_ty: inner,
+            });
+        } else if let Some(initialized) = constant_init_mask(operand)
+            && initialized.len() == layout.len()
+        {
+            if layout
+                .iter()
+                .zip(initialized)
+                .any(|(required, initialized)| *required && !initialized)
+            {
+                self.push_target(MemoryInitOp::TriviallyUnsafe {
+                    reason: format!(
+                        "Undefined Behavior: Reading from an uninitialized pointer of type `{inner}`"
+                    ),
+                });
+            }
+        } else {
+            self.push_target(MemoryInitOp::Unsupported {
+                reason:
+                    "Kani cannot determine the initialization state of this MaybeUninit constant."
+                        .to_string(),
+            });
+        }
+        true
+    }
+
+    fn address_of_raw_deref(&self, place: &Place) -> bool {
+        let mut prefix = Place::from(place.local);
+        for projection in &place.projection {
+            if *projection == ProjectionElem::Deref
+                && prefix.ty(&self.locals).unwrap().kind().is_raw_ptr()
+            {
+                return true;
+            }
+            prefix.projection.push(projection.clone());
+        }
+        false
+    }
+
+    fn visit_ordinary_assignment(
+        &mut self,
+        place: &Place,
+        rvalue: &Rvalue,
+        ty: Ty,
+        in_union: bool,
+    ) {
+        // Check pointers loaded while computing the destination address, but never read
+        // the final pointee before writing it. Fields/indices after Deref still designate
+        // a raw store: mark exactly that place's data, not its parent or its padding.
+        let last_deref = place.projection.iter().rposition(|p| *p == ProjectionElem::Deref);
+        let mut prefix = Place::from(place.local);
+        let mut raw_store = false;
+        for (index, projection) in place.projection.iter().enumerate() {
+            if *projection == ProjectionElem::Deref
+                && prefix.ty(&self.locals).unwrap().kind().is_raw_ptr()
+            {
+                raw_store = true;
+                if Some(index) != last_deref {
+                    self.push_target(MemoryInitOp::Check {
+                        operand: Operand::Copy(prefix.clone()),
+                    });
+                }
+            }
+            prefix.projection.push(projection.clone());
+        }
+        // Union assignments below carry their own field/copy masks.
+        if raw_store && !in_union {
+            self.push_target(MemoryInitOp::SetRef {
+                operand: Operand::Copy(place.clone()),
+                value: true,
+                position: InsertPosition::After,
+            });
+        }
+        // Check whether Rvalue creates a new initialized pointer previously not captured inside shadow memory.
+        if ty.kind().is_raw_ptr()
+            && let Rvalue::AddressOf(_, addressed) = rvalue
+            && !self.address_of_raw_deref(addressed)
+            && !self.enclosing_union(addressed).is_some_and(|union| {
+                wrapper_inner(self.tcx, union, LangItem::MaybeUninit).is_some()
+            })
+            && maybe_uninit_storage(self.tcx, addressed.ty(&self.locals).unwrap()).is_none()
+        {
+            self.push_target(MemoryInitOp::Set {
+                operand: Operand::Copy(place.clone()),
+                value: true,
+                position: InsertPosition::After,
+            });
+        }
+
+        // Need to copy some information about union initialization, since lvalue is
+        // either a union or a field inside a union.
+        if in_union {
+            match rvalue {
+                Rvalue::Use(operand, _) => {
+                    // This is a union-to-union assignment, so we need to copy the
+                    // initialization state.
+                    if place.ty(&self.locals).unwrap().kind().is_union()
+                        && matches!(operand, Operand::Constant(_))
+                    {
+                        self.assign_storage_operand(place, operand);
+                    } else if place.ty(&self.locals).unwrap().kind().is_union() {
+                        self.push_target(MemoryInitOp::AssignUnion {
+                            lvalue: place.clone(),
+                            rvalue: operand.clone(),
+                            position: InsertPosition::After,
+                        });
+                    } else {
+                        // This is assignment to a field of a union.
+                        self.push_target(MemoryInitOp::SetRef {
+                            operand: Operand::Copy(place.clone()),
+                            value: true,
+                            position: InsertPosition::After,
+                        });
+                    }
+                }
+                Rvalue::Aggregate(AggregateKind::Adt(adt_def, _, _, _, union_field), _) => {
+                    // Create a union from scratch as an aggregate. We handle it here because we
+                    // need to know which field is getting assigned.
+                    if adt_def.kind() == AdtKind::Union {
+                        self.push_target(MemoryInitOp::CreateUnion {
+                            operand: Operand::Copy(place.clone()),
+                            field: union_field.unwrap(), // Safe to unwrap because we know this is a union.
+                        });
+                    }
+                }
+                // TODO: add support for Rvalue::Cast, etc.
+                _ => self.push_target(MemoryInitOp::Unsupported {
+                    reason:
+                        "Performing a union assignment with a non-supported construct as an Rvalue"
+                            .to_string(),
+                }),
+            }
+        }
+    }
 }
 
 impl MirVisitor for CheckUninitVisitor<'_> {
@@ -131,112 +442,30 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                 // First check rvalue.
                 self.visit_rvalue(rvalue, location);
 
-                // Preemptively check if we do not support computing the layout of a type because of
-                // inner union fields. This allows to inject `assert!(false)` early.
-                if let Err(reason @ LayoutComputationError::UnionAsField(_)) =
-                    PointeeInfo::from_ty(place.ty(&self.locals).unwrap())
+                let ty = place.ty(&self.locals).unwrap();
+                let union = self.enclosing_union(place);
+                let in_maybe_uninit = union
+                    .is_some_and(|ty| wrapper_inner(self.tcx, ty, LangItem::MaybeUninit).is_some());
+
+                // Reject nested unions before the generic shadow update can treat them as values.
+                if maybe_uninit_storage(self.tcx, ty).is_some() {
+                    self.assign_storage(place, ty, rvalue);
+                } else if let Err(reason @ LayoutComputationError::UnionAsField(_)) =
+                    PointeeInfo::from_ty(ty)
                 {
                     self.push_target(MemoryInitOp::Unsupported {
                         reason: format!(
-                            "Checking memory initialization of type {} is not supported. {}",
-                            place.ty(&self.locals).unwrap(),
-                            reason
+                            "Checking memory initialization of type {ty} is not supported. {reason}"
                         ),
                     });
-                    return;
-                }
-
-                // Check whether we are assigning into a dereference (*ptr = _).
-                if let Some(place_without_deref) = try_remove_topmost_deref(place) {
-                    // First, check that we are not dereferencing extra pointers along the way
-                    // (e.g., **ptr = _). If yes, check whether these pointers are initialized.
-                    let mut place_to_add_projections =
-                        Place { local: place_without_deref.local, projection: vec![] };
-                    for projection_elem in place_without_deref.projection.iter() {
-                        // If the projection is Deref and the current type is raw pointer, check
-                        // if it points to initialized memory.
-                        if *projection_elem == ProjectionElem::Deref
-                            && let TyKind::RigidTy(RigidTy::RawPtr(..)) =
-                                place_to_add_projections.ty(&self.locals).unwrap().kind()
-                        {
-                            self.push_target(MemoryInitOp::Check {
-                                operand: Operand::Copy(place_to_add_projections.clone()),
-                            });
-                        };
-                        place_to_add_projections.projection.push(projection_elem.clone());
-                    }
-                    if place_without_deref.ty(&self.locals).unwrap().kind().is_raw_ptr() {
-                        self.push_target(MemoryInitOp::Set {
-                            operand: Operand::Copy(place_without_deref),
-                            value: true,
-                            position: InsertPosition::After,
-                        });
-                    }
-                }
-                // Check whether Rvalue creates a new initialized pointer previously not captured inside shadow memory.
-                if place.ty(&self.locals).unwrap().kind().is_raw_ptr()
-                    && let Rvalue::AddressOf(..) = rvalue
-                {
-                    self.push_target(MemoryInitOp::Set {
+                } else if in_maybe_uninit {
+                    self.push_target(MemoryInitOp::SetRef {
                         operand: Operand::Copy(place.clone()),
                         value: true,
                         position: InsertPosition::After,
                     });
-                }
-
-                // TODO: add support for ADTs which could have unions as subfields. Currently,
-                // if a union as a subfield is detected, `assert!(false)` will be injected from
-                // the type layout code.
-                let is_inside_union = {
-                    let mut place_to_add_projections =
-                        Place { local: place.local, projection: vec![] };
-                    let mut contains_union =
-                        place_to_add_projections.ty(&self.locals).unwrap().kind().is_union();
-                    for projection_elem in place.projection.iter() {
-                        if place_to_add_projections.ty(&self.locals).unwrap().kind().is_union() {
-                            contains_union = true;
-                            break;
-                        }
-                        place_to_add_projections.projection.push(projection_elem.clone());
-                    }
-                    contains_union
-                };
-
-                // Need to copy some information about union initialization, since lvalue is
-                // either a union or a field inside a union.
-                if is_inside_union {
-                    match rvalue {
-                        Rvalue::Use(operand, _) => {
-                            // This is a union-to-union assignment, so we need to copy the
-                            // initialization state.
-                            if place.ty(&self.locals).unwrap().kind().is_union() {
-                                self.push_target(MemoryInitOp::AssignUnion {
-                                    lvalue: place.clone(),
-                                    rvalue: operand.clone(),
-                                });
-                            } else {
-                                // This is assignment to a field of a union.
-                                self.push_target(MemoryInitOp::SetRef {
-                                    operand: Operand::Copy(place.clone()),
-                                    value: true,
-                                    position: InsertPosition::After,
-                                });
-                            }
-                        }
-                        Rvalue::Aggregate(AggregateKind::Adt(adt_def, _, _, _, union_field), _) => {
-                            // Create a union from scratch as an aggregate. We handle it here because we
-                            // need to know which field is getting assigned.
-                            if adt_def.kind() == AdtKind::Union {
-                                self.push_target(MemoryInitOp::CreateUnion {
-                                    operand: Operand::Copy(place.clone()),
-                                    field: union_field.unwrap(), // Safe to unwrap because we know this is a union.
-                                });
-                            }
-                        }
-                        // TODO: add support for Rvalue::Cast, etc.
-                        _ => self
-                            .push_target(MemoryInitOp::Unsupported { reason: "Performing a union assignment with a non-supported construct as an Rvalue".to_string() }),
-                    }
+                } else {
+                    self.visit_ordinary_assignment(place, rvalue, ty, union.is_some());
                 }
             }
             StatementKind::FakeRead(_, _)
@@ -279,33 +508,67 @@ impl MirVisitor for CheckUninitVisitor<'_> {
         match &term.kind {
             TerminatorKind::Call { func, args, destination, .. } => 'call: {
                 self.super_terminator(term, location);
-                let instance = match try_resolve_instance(&self.locals, func) {
+                let instance = match try_resolve_instance(self.tcx, &self.locals, func) {
                     Ok(instance) => instance,
                     Err(reason) => {
                         self.push_target(MemoryInitOp::Unsupported { reason });
-                        // Keep entry loads and operations collected while visiting the call.
-                        // The common terminator epilogue must publish this target, even on error.
+                        // Flush entry loads, operand reads and this diagnostic exactly once.
                         break 'call;
                     }
                 };
-                // Inspect the source operands and destination before any StoreArgument.
-                // Tuple wrapping must not hide a union behind an unproved generated ABI.
-                if instance.kind == InstanceKind::Shim
-                    && (args.iter().any(|arg| {
-                        shim_type_may_carry_shadow(self.tcx, arg.ty(&self.locals).unwrap())
-                    }) || shim_type_may_carry_shadow(
-                        self.tcx,
-                        destination.ty(&self.locals).unwrap(),
-                    ))
-                {
+                // Intrinsics use their explicit models and value-transfer guard below.
+                // Only ordinary calls need a paired argument/return protocol.
+                let paired = has_transfer_protocol(instance);
+                let destination_ty = destination.ty(&self.locals).unwrap();
+                let shadow_return = self.transfers_shadow(destination_ty);
+                let shadow_args =
+                    args.iter().any(|arg| self.transfers_shadow(arg.ty(&self.locals).unwrap()));
+                let unsized_transfer = args.iter().any(|arg| {
+                    let ty = arg.ty(&self.locals).unwrap();
+                    self.transfers_shadow(ty)
+                        && !ty.layout().is_ok_and(|layout| layout.shape().is_sized())
+                }) || (shadow_return
+                    && !destination_ty.layout().is_ok_and(|layout| layout.shape().is_sized()));
+                if unsized_transfer {
+                    // Reject the entire transfer before ANY begin, load, snapshot or deinit.
                     self.push_target(MemoryInitOp::Unsupported {
-                        reason: unsupported_call_reason("shadow transfers through Shim instances"),
+                        reason: "Kani does not support unsized by-value shadow argument/return transfers."
+                            .to_string(),
                     });
                     break 'call;
+                }
+                if instance.kind != InstanceKind::Intrinsic
+                    && !paired
+                    && (shadow_args || shadow_return)
+                {
+                    self.push_target(MemoryInitOp::Unsupported {
+                        reason: "Kani does not support shadow transfers without a paired argument/return protocol."
+                            .to_string(),
+                    });
+                    break 'call;
+                }
+                if paired && shadow_return {
+                    self.push_target(MemoryInitOp::LoadArgument {
+                        operand: Operand::Copy(destination.clone()),
+                        argument_no: 0,
+                        function: instance.ty(),
+                        argument_count: 0,
+                        position: InsertPosition::After,
+                    });
                 }
                 match instance.kind {
                     InstanceKind::Intrinsic => {
                         match Intrinsic::from_instance(&instance) {
+                            // Forget consumes without reading or returning any payload bytes.
+                            Intrinsic::Forget => {}
+                            // Pointer-effect models below do not transfer by-value shadow
+                            // storage. In particular, skipping black_box would lose its copy
+                            // effect. Reject such values until an explicit model exists.
+                            intrinsic if shadow_args || shadow_return => {
+                                self.push_target(MemoryInitOp::Unsupported {
+                                    reason: format!("Kani does not support shadow-carrying argument or return values of intrinsic `{intrinsic:?}`."),
+                                });
+                            }
                             intrinsic_name if can_skip_intrinsic(intrinsic_name.clone()) => {
                                 /* Intrinsics that can be safely skipped */
                             }
@@ -344,6 +607,38 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                                     position: InsertPosition::After,
                                 });
                             }
+                            Intrinsic::RawEq => {
+                                for operand in args {
+                                    let TyKind::RigidTy(RigidTy::Ref(_, pointee_ty, _)) =
+                                        operand.ty(&self.locals).unwrap().kind()
+                                    else {
+                                        unreachable!("raw_eq operands must be references")
+                                    };
+                                    // raw_eq reads the whole extent, including padding and union
+                                    // storage. A byte array selects every byte without imposing
+                                    // the pointee's typed data mask or reading its value.
+                                    // CheckAs reborrows reference places as &raw const *operand.
+                                    let bytes_ty = pointee_ty.layout().ok().and_then(|layout| {
+                                        Ty::try_new_array(
+                                            Ty::unsigned_ty(UintTy::U8),
+                                            layout.shape().size.bytes().try_into().unwrap(),
+                                        )
+                                        .ok()
+                                    });
+                                    if let Some(pointee_ty) = bytes_ty {
+                                        self.push_target(MemoryInitOp::CheckAs {
+                                            operand: operand.clone(),
+                                            pointee_ty,
+                                        });
+                                    } else {
+                                        self.push_target(MemoryInitOp::Unsupported {
+                                            reason: format!(
+                                                "Kani cannot determine the pointee layout for raw_eq of `{pointee_ty}`."
+                                            ),
+                                        });
+                                    }
+                                }
+                            }
                             Intrinsic::CompareBytes => {
                                 self.push_target(MemoryInitOp::CheckSliceChunk {
                                     operand: args[0].clone(),
@@ -372,6 +667,17 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                                     from: args[1].clone(),
                                     to: args[0].clone(),
                                     count: args[2].clone(),
+                                });
+                            }
+                            Intrinsic::TypedSwap
+                                if let TyKind::RigidTy(RigidTy::RawPtr(ty, _)) =
+                                    args[0].ty(&self.locals).unwrap().kind()
+                                    && maybe_uninit_storage(self.tcx, ty).is_some() =>
+                            {
+                                self.push_target(MemoryInitOp::Unsupported {
+                                    reason:
+                                        "Kani does not support typed_swap of MaybeUninit storage."
+                                            .to_string(),
                                 });
                             }
                             Intrinsic::TypedSwap => {
@@ -406,8 +712,8 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                         }
                     }
                     InstanceKind::Item | InstanceKind::Shim => {
-                        // The resolver checked actual instance body availability, with foreign
-                        // models retained. Non-shadow shims follow the ordinary MIR path.
+                        // Non-shadow MIR-backed shims are followed by points-to and the
+                        // local visitor. Only the unchanged Item predicate grants pairing.
                         if instance.is_foreign_item() {
                             match instance.name().as_str() {
                                 "alloc::alloc::__rust_alloc" | "alloc::alloc::__rust_realloc" => {
@@ -433,25 +739,44 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                                 }
                                 _ => {}
                             }
-                        } else {
+                        } else if paired {
                             let union_args: Vec<_> = args
                                 .iter()
                                 .enumerate()
-                                .filter(|(_, arg)| arg.ty(&self.locals).unwrap().kind().is_union())
+                                .filter(|(_, arg)| {
+                                    self.transfers_shadow(arg.ty(&self.locals).unwrap())
+                                })
                                 .collect();
                             if !union_args.is_empty() {
-                                for (idx, operand) in union_args {
+                                self.push_target(MemoryInitOp::BeginArgumentTransfer {
+                                    function: instance.ty(),
+                                    argument_count: union_args.len(),
+                                });
+                                for (idx, operand) in union_args.iter().copied() {
                                     self.push_target(MemoryInitOp::StoreArgument {
                                         operand: operand.clone(),
-                                        argument_no: idx + 1, // since arguments are 1-indexed
-                                    })
+                                        argument_no: idx + 1,
+                                        function: instance.ty(),
+                                    });
+                                }
+                                // Snapshot ALL argument witnesses before clearing ANY source.
+                                // Assignment moves, Copy operands and forget's intrinsic model
+                                // do not take this path. A usual by-value call moves a temporary,
+                                // so the original address-taken storage retains its state.
+                                for (_, operand) in union_args {
+                                    if let Operand::Move(place) = operand {
+                                        self.push_target(MemoryInitOp::SetRef {
+                                            operand: Operand::Copy(place.clone()),
+                                            value: false,
+                                            position: InsertPosition::Before,
+                                        });
+                                    }
                                 }
                             }
                         }
                     }
-                    InstanceKind::Virtual { .. } | InstanceKind::LlvmIntrinsic => {
-                        unreachable!("the shared resolver rejects unsupported callees")
-                    }
+                    // The shared resolver rejects these before any call-specific effects.
+                    InstanceKind::Virtual { .. } | InstanceKind::LlvmIntrinsic => unreachable!(),
                 }
             }
             TerminatorKind::Drop { place, .. } => {
@@ -486,11 +811,28 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                     });
                 }
             }
+            TerminatorKind::Return => {
+                let return_place = Place::from(0);
+                if has_transfer_protocol(self.instance)
+                    && self.transfers_shadow(return_place.ty(&self.locals).unwrap())
+                    && return_place
+                        .ty(&self.locals)
+                        .unwrap()
+                        .layout()
+                        .is_ok_and(|layout| layout.shape().is_sized())
+                {
+                    self.push_target(MemoryInitOp::StoreArgument {
+                        operand: Operand::Copy(return_place),
+                        argument_no: 0,
+                        function: self.instance.ty(),
+                    });
+                }
+                self.super_terminator(term, location);
+            }
             TerminatorKind::Goto { .. }
             | TerminatorKind::SwitchInt { .. }
             | TerminatorKind::Resume
             | TerminatorKind::Abort
-            | TerminatorKind::Return
             | TerminatorKind::Unreachable
             | TerminatorKind::Assert { .. }
             | TerminatorKind::InlineAsm { .. } => self.super_terminator(term, location),
@@ -513,12 +855,11 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                     }
                 }
                 ProjectionElem::Field(_, _) => {
-                    if intermediate_place.ty(&self.locals).unwrap().kind().is_union()
-                        && !ptx.is_mutating()
-                    {
-                        let contains_deref_projection =
-                            { place.projection.contains(&ProjectionElem::Deref) };
-                        if contains_deref_projection {
+                    let union_ty = intermediate_place.ty(&self.locals).unwrap();
+                    if union_ty.kind().is_union() && !ptx.is_mutating() {
+                        if wrapper_inner(self.tcx, union_ty, LangItem::MaybeUninit).is_none()
+                            && place.projection.contains(&ProjectionElem::Deref)
+                        {
                             // We do not currently support having a deref projection in the same
                             // place as union field access.
                             self.push_target(MemoryInitOp::Unsupported {
@@ -564,6 +905,31 @@ impl MirVisitor for CheckUninitVisitor<'_> {
     }
 
     fn visit_rvalue(&mut self, rvalue: &Rvalue, location: Location) {
+        if let Rvalue::AddressOf(_, place) = rvalue
+            && let Some(deref) = place.projection.iter().rposition(|p| *p == ProjectionElem::Deref)
+        {
+            // Forming an address does not read the final pointee. A pointer loaded while
+            // computing that address still needs the ordinary read checks.
+            let pointer =
+                Place { local: place.local, projection: place.projection[..deref].to_vec() };
+            self.visit_operand(&Operand::Copy(pointer), location);
+            return;
+        }
+        if let Rvalue::AddressOf(_, place) = rvalue
+            && self.enclosing_union(place).is_some_and(|union| {
+                wrapper_inner(self.tcx, union, LangItem::MaybeUninit).is_some()
+            })
+        {
+            // A raw address into the value field of a local slot also leaves shadow unchanged.
+            return;
+        }
+        if let Rvalue::Ref(_, _, place) = rvalue
+            && let Some(union) = self.enclosing_union(place)
+            && wrapper_inner(self.tcx, union, LangItem::MaybeUninit).is_some()
+        {
+            self.push_target(MemoryInitOp::CheckRef { operand: Operand::Copy(place.clone()) });
+            return;
+        }
         if let Rvalue::Cast(cast_kind, operand, ty) = rvalue {
             match cast_kind {
                 CastKind::PointerCoercion(PointerCoercion::Unsize) => {
@@ -577,7 +943,25 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                 }
                 CastKind::Transmute => {
                     let operand_ty = operand.ty(&self.locals).unwrap();
-                    if !tys_layout_compatible_to_size(&operand_ty, ty) {
+                    if self.typed_storage_mask(operand, *ty).is_some() {
+                        // The ordinary operand traversal below retains raw-dereference and
+                        // union-field checks. Delayed UB still checks affected typed locals.
+                        // Only the layout rejection is bypassed; assign_storage installs T's
+                        // data mask once, including false padding bytes.
+                    } else if let (
+                        TyKind::RigidTy(RigidTy::Array(from, from_len)),
+                        TyKind::RigidTy(RigidTy::Array(to, to_len)),
+                    ) = (operand_ty.kind(), ty.kind())
+                        && from_len == to_len
+                        && wrapper_inner(self.tcx, from, LangItem::MaybeUninit) == Some(to)
+                    {
+                        self.push_target(MemoryInitOp::Unsupported {
+                            reason: "Kani does not support checking memory initialization of transmute from [MaybeUninit<T>; N] to [T; N]."
+                                .to_string(),
+                        });
+                    } else if self.maybe_uninit_transmute(operand, *ty) {
+                        // Initialization was checked against the destination's data bytes.
+                    } else if !tys_layout_compatible_to_size(&operand_ty, ty) {
                         // If transmuting between two types of incompatible layouts, padding
                         // bytes are exposed, which is UB.
                         self.push_target(MemoryInitOp::TriviallyUnsafe {
@@ -680,7 +1064,6 @@ fn can_skip_intrinsic(intrinsic: Intrinsic) -> bool {
         | Intrinsic::PowF64
         | Intrinsic::PowIF32
         | Intrinsic::PowIF64
-        | Intrinsic::RawEq
         | Intrinsic::RotateLeft
         | Intrinsic::RotateRight
         | Intrinsic::RoundF32
@@ -749,58 +1132,13 @@ fn can_skip_intrinsic(intrinsic: Intrinsic) -> bool {
     }
 }
 
-/// Try removing a topmost deref projection from a place if it exists, returning a place without it.
-fn try_remove_topmost_deref(place: &Place) -> Option<Place> {
-    let mut new_place = place.clone();
-    if let Some(ProjectionElem::Deref) = new_place.projection.pop() {
-        Some(new_place)
-    } else {
-        None
-    }
-}
-
 /// Try retrieving instance for the given function operand.
-fn try_resolve_instance(locals: &[LocalDecl], func: &Operand) -> Result<Instance, String> {
-    resolve_call(func.ty(locals).unwrap())
-}
-
-/// Conservative admission guard for generated ABIs, not an expansion of the shadow model.
-/// Inspect only by-value storage: references and pointers do not transfer their pointee shadow.
-/// Unknown storage is rejected rather than treated as an empty tuple or ordinary bytes.
-fn shim_type_may_carry_shadow(tcx: TyCtxt<'_>, ty: Ty) -> bool {
-    fn inspect<'tcx>(tcx: TyCtxt<'tcx>, ty: rustc_middle::ty::Ty<'tcx>) -> bool {
-        use rustc_middle::ty::TyKind;
-        match ty.kind() {
-            TyKind::Adt(def, args) => {
-                def.is_union()
-                    || def
-                        .all_fields()
-                        .any(|field| inspect(tcx, field.ty(tcx, args).skip_normalization()))
-            }
-            TyKind::Tuple(fields) => fields.iter().any(|field| inspect(tcx, field)),
-            TyKind::Array(element, _) | TyKind::Pat(element, _) => inspect(tcx, *element),
-            TyKind::Closure(_, args) => inspect(tcx, args.as_closure().tupled_upvars_ty()),
-            TyKind::Bool
-            | TyKind::Char
-            | TyKind::Int(_)
-            | TyKind::Uint(_)
-            | TyKind::Float(_)
-            | TyKind::Never
-            | TyKind::FnDef(..)
-            | TyKind::FnPtr(..)
-            | TyKind::RawPtr(..)
-            | TyKind::Ref(..) => false,
-            _ => true,
-        }
-    }
-    inspect(tcx, rustc_internal::internal(tcx, ty))
-}
-
-/// Describe a call whose memory effects cannot be tracked by the uninitialized-memory passes.
-fn unsupported_call_reason(kind: &str) -> String {
-    format!(
-        "Kani does not support memory initialization checks across {kind}. For more information about planned support, see https://github.com/model-checking/kani/issues/3300."
-    )
+fn try_resolve_instance(
+    tcx: TyCtxt,
+    locals: &[LocalDecl],
+    func: &Operand,
+) -> Result<Instance, String> {
+    resolve_call(tcx, func.ty(locals).unwrap())
 }
 
 /// The pointer argument of an allocation shim, as a raw pointer.
@@ -847,4 +1185,10 @@ fn single_field_ty(ty: Ty) -> Option<Ty> {
         TyKind::RigidTy(RigidTy::Pat(base_ty, _)) => Some(base_ty),
         _ => None,
     }
+}
+
+/// Caller stores and callee loads must agree on exactly the same supported instance domain.
+/// Bodyful shims/intrinsics are not ordinary item calls and have no paired protocol here.
+fn has_transfer_protocol(instance: Instance) -> bool {
+    instance.kind == InstanceKind::Item && !instance.is_foreign_item() && instance.has_body()
 }

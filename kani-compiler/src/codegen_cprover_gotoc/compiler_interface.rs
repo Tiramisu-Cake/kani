@@ -137,6 +137,7 @@ impl GotocCodegenBackend {
         let mut gcx =
             QUERY_DB.with(|db| GotocCtx::new(tcx, db.borrow().clone(), machine_model, transformer));
         check_reachable_items(gcx.tcx, &gcx.queries, &items);
+        gcx.prepare_immutable_allocations(&items);
 
         let contract_info = with_timer(
             || {
@@ -193,6 +194,15 @@ impl GotocCodegenBackend {
             "codegen",
         );
 
+        // Post-pass: inline remaining function calls in quantifier bodies.
+        // build_quantifier_predicate handles checked arithmetic (StatementExpression
+        // flattening, overflow simplification), but user-defined function calls
+        // (e.g., comp(x, y)) require this post-pass because the called functions
+        // may not be in the symbol table when the quantifier hook runs.
+        gcx.handle_quantifiers();
+
+        gcx.finalize_immutable_allocations();
+
         // Map from name to prettyName for all symbols
         let pretty_name_map: BTreeMap<InternedString, Option<InternedString>> =
             BTreeMap::from_iter(gcx.symbol_table.iter().map(|(k, s)| (*k, s.pretty_name)));
@@ -207,13 +217,6 @@ impl GotocCodegenBackend {
         } else {
             None
         };
-
-        // Post-pass: inline remaining function calls in quantifier bodies.
-        // build_quantifier_predicate handles checked arithmetic (StatementExpression
-        // flattening, overflow simplification), but user-defined function calls
-        // (e.g., comp(x, y)) require this post-pass because the called functions
-        // may not be in the symbol table when the quantifier hook runs.
-        gcx.handle_quantifiers();
 
         // Split ownership of the context so that the majority of fields can be saved to our results,
         // but the symbol table can be passed to the thread that handles exporting.

@@ -1,0 +1,5 @@
+Checking harness item_return_preserves_uninitialized_read...
+Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type `u16`
+VERIFICATION:- FAILED
+Verification failed for - item_return_preserves_uninitialized_read
+Complete - 0 successfully verified harnesses, 1 failures, 1 total.

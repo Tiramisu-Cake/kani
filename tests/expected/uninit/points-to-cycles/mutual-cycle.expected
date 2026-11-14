@@ -1,0 +1,8 @@
+Checking harness mutual_cycle...
+Kani delayed uninitialized-memory analysis detected an interprocedural cycle (repeats active frame
+root/active path: mutual_cycle [provenance=source]
+transfer [provenance=source] [call at
+mutual-cycle.rs:15]
+VERIFICATION:- FAILED
+Verification failed for - mutual_cycle
+Complete - 0 successfully verified harnesses, 1 failures, 1 total.
