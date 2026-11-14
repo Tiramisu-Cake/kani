@@ -1,0 +1,6 @@
+Checking harness moved_from_nested_payload_read_is_rejected...
+** 1 of
+Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type `u8`
+VERIFICATION:- FAILED
+Verification failed for - moved_from_nested_payload_read_is_rejected
+Complete - 0 successfully verified harnesses, 1 failures, 1 total.
