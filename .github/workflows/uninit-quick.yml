@@ -1,0 +1,40 @@
+# CI-only: measure SAT instance size vs --object-bits for the kani#3611 refcell.rs test on upstream main.
+name: DFCC object-bits scaling (kani#3611 refcell.rs)
+on:
+  push:
+    branches:
+      - 'uninit-ci/**'
+
+jobs:
+  measure:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout Kani
+        uses: actions/checkout@v6
+
+      - name: Setup Kani Dependencies
+        uses: ./.github/actions/setup
+        with:
+          os: ubuntu-24.04
+
+      - name: Build Kani
+        run: cargo build-dev
+
+      - name: Measure refcell.rs at 8..16 object bits
+        run: |
+          export PATH="$(pwd)/scripts:$PATH"
+          f=tests/expected/function-contract/interior-mutability/whole-struct/refcell.rs
+          for b in 8 10 12 14 16; do
+            echo "::group::object-bits $b"
+            /usr/bin/time -v -o time-$b.txt timeout 1500 kani "$f" -Z function-contracts -Z unstable-options \
+              --cbmc-args --object-bits $b > out-$b.txt 2>&1; rc=$?
+            echo "exit=$rc"
+            grep -m1 -E "^[0-9]+ variables, [0-9]+ clauses" out-$b.txt || echo "no solver line"
+            grep -E "^Runtime Convert SSA|^VERIFICATION" out-$b.txt | head -3
+            grep -E "Maximum resident set size|Elapsed \(wall" time-$b.txt
+            echo "::endgroup::"
+            echo "RESULT bits=$b exit=$rc $(grep -m1 -E '^[0-9]+ variables, [0-9]+ clauses' out-$b.txt) rss_kb=$(awk -F': ' '/Maximum resident/{print $2}' time-$b.txt)"
+          done
