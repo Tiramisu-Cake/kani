@@ -140,7 +140,9 @@ impl GlobalPass for DelayedUbPass {
                     let body = body_overrides
                         .get(&instance)
                         .map(|selected| selected.body.clone())
-                        .unwrap_or_else(|| crate::kani_middle::checked_body(tcx, instance).unwrap());
+                        .unwrap_or_else(|| {
+                            crate::kani_middle::checked_body(tcx, instance).unwrap()
+                        });
                     match run_points_to_analysis(&body, tcx, instance, call_graph, &body_overrides)
                     {
                         Ok(results) => {
