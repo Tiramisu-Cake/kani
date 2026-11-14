@@ -21,6 +21,13 @@ fn selected_scalar_values() {
     assert_eq!(select(false, 11u64, 13), 13);
     assert_eq!(select(condition, true, false), condition);
     assert_eq!(select(condition, 'a', 'z'), if condition { 'a' } else { 'z' });
+    // Both paths resolve to the same core definition, irrespective of its printed name.
+    let core_value = core::intrinsics::select_unpredictable(condition, 7u8, 9u8);
+    let std_value = std::intrinsics::select_unpredictable(condition, 7u8, 9u8);
+    kani::assert(
+        core_value == (if condition { 7 } else { 9 }) && std_value == core_value,
+        "core and std select paths preserve the chosen value",
+    );
     kani::cover!(condition);
     kani::cover!(!condition);
 }

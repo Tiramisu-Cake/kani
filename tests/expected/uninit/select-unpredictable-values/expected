@@ -1,3 +1,6 @@
 Checking harness selected_scalar_values...
+- Status: SUCCESS\
+- Description: "core and std select paths preserve the chosen value"
+** 0 of
 VERIFICATION:- SUCCESSFUL
 Complete - 1 successfully verified harnesses, 0 failures, 1 total.

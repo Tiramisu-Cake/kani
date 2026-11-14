@@ -31,7 +31,7 @@ fn overwriting_selected_hole_reinitializes_result() {
 }
 
 #[kani::proof]
-fn overwriting_initialized_destination_with_selected_hole_does_not_retain_true() {
+fn overwrite_hole() {
     let hole = MaybeUninit::<u8>::uninit();
     let initialized = MaybeUninit::new(47u8);
     let mut destination = MaybeUninit::new(43u8);

@@ -22,7 +22,7 @@ fn selected_hole_in_true_arm_fails() {
     kani::cover!(condition);
     kani::assert(
         selected == if condition { hole.as_ptr() } else { initialized.as_ptr() },
-        "selected raw pointer names the condition's arm"
+        "selected raw pointer names the condition's arm",
     );
     let _value = unsafe { selected.read_volatile() }; // True selects the hole.
 }

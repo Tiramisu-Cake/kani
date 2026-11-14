@@ -148,7 +148,10 @@ impl<'tcx> CheckUninitVisitor<'tcx> {
     /// false padding bytes; layout existence alone is not sufficient.
     fn validate_select_fallback(&self, instance: Instance) -> Result<(), String> {
         let reject = |reason: String| {
-            format!("Kani does not support memory initialization of intrinsic `select_unpredictable` for `{}`: {reason}", instance.ty())
+            format!(
+                "Kani does not support memory initialization of intrinsic `select_unpredictable` for `{}`: {reason}",
+                instance.ty()
+            )
         };
         let ty = select_unpredictable_fallback(self.tcx, instance).ok_or_else(|| {
             reject("no usable standard fallback with signature (bool, T, T) -> T.".to_string())
@@ -591,9 +594,10 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                     }
                     let sig = instance.ty().kind().fn_sig().unwrap().skip_binder();
                     if args.len() != sig.inputs().len()
-                        || args.iter().zip(sig.inputs()).any(|(arg, ty)| {
-                            arg.ty(&self.locals).unwrap() != *ty
-                        })
+                        || args
+                            .iter()
+                            .zip(sig.inputs())
+                            .any(|(arg, ty)| arg.ty(&self.locals).unwrap() != *ty)
                         || destination.ty(&self.locals).unwrap() != sig.output()
                     {
                         self.push_target(MemoryInitOp::Unsupported {

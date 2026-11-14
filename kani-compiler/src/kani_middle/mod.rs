@@ -162,6 +162,8 @@ pub fn has_intrinsic_fallback(instance: Instance) -> bool {
 /// Layout admission belongs to the local uninit visitor; this only selects the body
 /// and validates the monomorphized `(bool, T, T) -> T` signature.
 pub fn select_unpredictable_fallback(tcx: TyCtxt, instance: Instance) -> Option<Ty> {
+    use rustc_hir::definitions::DefPathData;
+
     if instance.kind != rustc_public::mir::mono::InstanceKind::Intrinsic
         || instance.intrinsic_name().as_deref() != Some("select_unpredictable")
         || !has_intrinsic_fallback(instance)
@@ -169,7 +171,17 @@ pub fn select_unpredictable_fallback(tcx: TyCtxt, instance: Instance) -> Option<
         return None;
     }
     let TyKind::RigidTy(RigidTy::FnDef(def, _)) = instance.ty().kind() else { return None };
-    if def.name() != "core::intrinsics::select_unpredictable" {
+    // The displayed name can use std's re-export, even for this exact core item.
+    // Match its definition path, as for multi_char_eq_searcher_kind below, rather
+    // than accepting an additional printed spelling or arbitrary bodyful intrinsic.
+    let path = tcx.def_path(rustc_internal::internal(tcx, def.def_id()));
+    if tcx.crate_name(path.krate) != rustc_span::sym::core {
+        return None;
+    }
+    let [module, item] = path.data.as_slice() else { return None };
+    let DefPathData::TypeNs(module) = &module.data else { return None };
+    let DefPathData::ValueNs(item) = &item.data else { return None };
+    if module.as_str() != "intrinsics" || item.as_str() != "select_unpredictable" {
         return None;
     }
     let sig = instance.ty().kind().fn_sig()?.skip_binder();
