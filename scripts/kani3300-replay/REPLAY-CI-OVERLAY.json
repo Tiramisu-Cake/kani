@@ -1,67 +1,111 @@
 {
-  "schema": "kani3300-replay-ci-overlay-v1",
-  "state": "PREPARATION_ONLY_REVIEW_REQUIRED",
   "base": {
-    "c1_sha": "1658f4cadfa83139e41180ce3865e23f79d889aa",
-    "c1_tree": "bfb5eb9db13ffb91ec4585b7c7ef41ddfe0008fb",
-    "source_binding": "c1-source-binding.json",
-    "source_binding_counts": {"files": 37, "subtrees": 6}
+    "commit": "ac49cf8f62137e25e8cfea04968016e60d6c5906",
+    "source_binding": "byte-identical run4 c1-source-binding.json",
+    "source_checkout_status": "clean_at_inspection",
+    "tree": "8250d8d1b353d10eb4324021e8cad8c3beaee7e6"
   },
-  "std": {
-    "source": "https://github.com/Tiramisu-Cake/verify-rust-std.git",
-    "base_commit": "70ba5befc617627073738e26cb1466bd4fb76e41",
-    "base_commit_tree": "84ab170ccdcc29fba69e55e0a46e6acdf52d9704",
-    "selected_library_tree": "6ea9d3425f6d0478cfc2517cbdd2fb7d7b32a53f",
-    "test_patch": "replay-test-only.patch",
-    "test_patch_sha256": "f2689c76720e95f98a88bdd17a2bf4cf13a7348d40dedcf9c009aa0b20db0df5",
-    "applied_paths": [
-      "library/core/src/slice/sort/shared/smallsort/verify.rs",
-      "library/core/src/slice/sort/shared/smallsort/verify/replay_uninit_controls.rs"
+  "delta_against": "exact ac49cf8f62137e25e8cfea04968016e60d6c5906 files; source-binding unchanged",
+  "delta_patch": "ci-overlay-delta.patch",
+  "full_export_file_sha256": {
+    ".github/workflows/kani3300-replay.yml": "aa9d76cd87af2a220c67df5c54dc2ba3debfa9f5de372236350b92282e4902d7",
+    "scripts/kani3300-replay/CI-REQUEST.json": "5a769b123e92a1d46962e946bb500e076eb2d528657ebf287df87d7b0f53a55d",
+    "scripts/kani3300-replay/c1-source-binding.json": "cf67542d5ef1bfd9454986f1bba0599dcae4f7168dff47599bf5803df7568c55",
+    "scripts/kani3300-replay/gateb-prime-test-only.patch": "af2d6e7bce1d628ab7b56363578e9aa1393aa1e02be72786ae277d34a43892a5",
+    "scripts/kani3300-replay/replay.py": "38062b43a135fd103920deca53f805169ee3355879756a0077895a6635773c31",
+    "scripts/kani3300-replay/test_replay.py": "59ccf304925f4d082201223142b166e07faec6735aacb7df41f7bed4a41c64aa"
+  },
+  "python_tests": {
+    "count": 20,
+    "coverage": [
+      "success remains UNKNOWN",
+      "positive failure exit retained",
+      "timeout and signal",
+      "runner start error",
+      "atomic receipt survives postprocessing error",
+      "missing/partial/null/wrong-type/wrong-selector export",
+      "request checksum/patch/file-hash/allowlist/cap validation",
+      "unknown RSS fails closed"
     ],
-    "patched_file_sha256": {
-      "library/core/src/slice/sort/shared/smallsort/verify.rs": "3a8aa452408f3048c80a73dde8a4fd28f4a3b647b0a171512e186c93f99c4c33",
-      "library/core/src/slice/sort/shared/smallsort/verify/replay_uninit_controls.rs": "c186a086dadba038ff5ad7ca823e52e1e807758a92b1a46cf4c807fc07d96a39"
-    },
-    "production_source_changed": false,
-    "library_pin_confirmation": "PENDING"
-  },
-  "request": {
-    "file": "request.json",
-    "sha256": "9c0524996be2491fbb1a4ef5bb2faee9d5651cadda9053604e6cd21cb1aa38ad",
-    "root_count": 12,
-    "all_rows": "exact request argv; ON/OFF differ only by -Z uninit-checks; object-bits=12; jobs=1"
-  },
-  "workflow": {
-    "file": ".github/workflows/kani3300-replay.yml",
-    "trigger": "workflow_dispatch",
-    "repository_guard": "github.repository == 'Tiramisu-Cake/kani'",
-    "runner": "ubuntu-24.04",
-    "max_parallel": 1,
-    "fail_fast": false,
-    "root_harness_cap_seconds": 2400,
-    "job_timeout_minutes": 50,
-    "proposed_serial_envelope_seconds": 36000,
-    "aggregate_cap_note": "12 serial 50-minute job timeouts form a proposed 10-hour workflow envelope; queue/setup overhead outside job timeouts is not measured or controlled here.",
-    "build": "cargo build-dev -- --release from a separate exact C1 export checkout; overlay scripts/workflow are not built",
-    "kani_entrypoint": "export/scripts/kani wrapper (execs target/kani/bin/kani-driver with argv0 kani)",
-    "artifact": "per-root receipt.json, runtime-identities.json, export.json, stdout.log, stderr.log, job-status.json"
+    "file": "test_replay.py",
+    "no_rust_or_kani": true
   },
   "receipt": {
-    "parser": "replay.py validates JSON parse/top-level type only; object envelopes remain UNVALIDATED_JSON_OBJECT",
-    "receipt_persistence": "atomic execution snapshot is written before fallible enrichment; enrichment errors retain the snapshot and record stage/type/message",
-    "runner_exit": "preserve positive child exit codes; return nonzero for malformed/missing exports, timeout, signals, runner errors, or incomplete postprocessing",
-    "preserves": ["original exit code", "signal", "timeout", "runner error", "stdout/stderr full files plus hashes and byte counts", "export JSON", "pinned rustc/CBMC/Kissat/Kani identities", "all target/kani file hashes", "post-run C1 and std validation"],
-    "outcome": "UNKNOWN",
-    "negative_observation": "REVIEW_REQUIRED; nonzero exit alone is never accepted as intended-read evidence",
+    "outcome": "UNKNOWN_until_reviewed",
+    "preserves": [
+      "argv",
+      "exit code",
+      "signal",
+      "timeout",
+      "runner error",
+      "wait4 RSS",
+      "stdout/stderr bytes and hashes",
+      "export JSON",
+      "C1/runtime identities",
+      "failure artifacts"
+    ],
     "proof_status": "NOT_RUN_UNTIL_REVIEWED",
-    "generated_property_binding": null,
-    "required_review": [
-      "actual std worktree contains only the two pinned test-only patch paths",
-      "useful checks and Check body for each positive root",
-      "negative failure binds to intended live source[1] read",
-      "export identities and complete artifact coverage"
-    ]
+    "rss": "wait4 per-child ru_maxrss in Linux bytes; null/UNKNOWN if unavailable; no command wrapper or argv change",
+    "sort4": "Expected diagnostic BOUNDARY is one named select_unpredictable Unsupported at library/core/src/hint.rs:871; never auto SUCCESS",
+    "truncation_or_missing": "UNKNOWN"
   },
-  "synthetic_tests": "test_replay.py covers success, failure, timeout, signal, partial, missing, null, wrong-type, wrong-source, and unbound/NOT_RUN handling; no Kani/compiler/build is invoked.",
-  "authorization": "NO_DISPATCH_NO_PROOF_BUILD"
+  "request": {
+    "authorization": "PREPARATION_ONLY",
+    "file": "CI-REQUEST.json",
+    "row_count": 3,
+    "row_ids": [
+      "merge-raw-closure-on",
+      "merge-profile-closure-on",
+      "sort4-closure-on"
+    ],
+    "sha256": "5a769b123e92a1d46962e946bb500e076eb2d528657ebf287df87d7b0f53a55d",
+    "status": "NOT_RUN_C1_FROZEN"
+  },
+  "run4_recipe": {
+    "destination": "$RUNNER_TEMP/kani3300-std",
+    "repo_url": "https://github.com/Tiramisu-Cake/verify-rust-std.git",
+    "source": "ac49cf8f62 scripts/kani3300-replay/replay.py prepare_std",
+    "submodule_step": "git submodule update --init --depth 1"
+  },
+  "schema": "kani3300-gateb-prime-ci-overlay-v1",
+  "source": {
+    "c1_sha": "1658f4cadfa83139e41180ce3865e23f79d889aa",
+    "c1_tree": "bfb5eb9db13ffb91ec4585b7c7ef41ddfe0008fb",
+    "source_binding_sha256": "cf67542d5ef1bfd9454986f1bba0599dcae4f7168dff47599bf5803df7568c55"
+  },
+  "state": "PREPARATION_ONLY_REVIEW_REQUIRED",
+  "std": {
+    "applied_paths": [
+      "library/core/src/slice/sort/shared/smallsort/verify.rs",
+      "library/core/src/slice/sort/shared/smallsort/verify/helper_contracts.rs",
+      "library/core/src/slice/sort/shared/smallsort/verify/helper_contracts_wide.rs",
+      "library/core/src/slice/sort/shared/smallsort/verify/replay_gateb_prime.rs"
+    ],
+    "base_commit": "70ba5befc617627073738e26cb1466bd4fb76e41",
+    "base_library_tree": "6ea9d3425f6d0478cfc2517cbdd2fb7d7b32a53f",
+    "overlay_commit": "933b20a2375bd7529243510728b1eb48adf34e5d",
+    "overlay_library_tree": "86cbdb4d9f8415161657f66bf07e5a0dd1b3e982",
+    "patch": "gateb-prime-test-only.patch",
+    "patch_sha256": "af2d6e7bce1d628ab7b56363578e9aa1393aa1e02be72786ae277d34a43892a5",
+    "patched_file_sha256": {
+      "library/core/src/slice/sort/shared/smallsort/verify.rs": "b37239fc681409922606a8fd310e20f9c776e67a9c7f8dd4e4b79a77172c79fb",
+      "library/core/src/slice/sort/shared/smallsort/verify/helper_contracts.rs": "270e2a2d57d162e979d375c1a1bdb786dfdca664ad6e610e7b4e8661c135d933",
+      "library/core/src/slice/sort/shared/smallsort/verify/helper_contracts_wide.rs": "b2d71e6e61b4130a95dda6daac3cd5f0970f9daf7b0f7bfa8a9f99d9c3c29844",
+      "library/core/src/slice/sort/shared/smallsort/verify/replay_gateb_prime.rs": "c585f3d0c74879cb21e8f09204f52d59b7aa4948a2e17541a94e162b3ffb10a1"
+    },
+    "production_source_changed": false,
+    "source": "https://github.com/Tiramisu-Cake/verify-rust-std.git"
+  },
+  "workflow": {
+    "authorization": "NOT_GRANTED",
+    "file": ".github/workflows/kani3300-replay.yml",
+    "job_timeout_minutes": 60,
+    "max_parallel": 1,
+    "proposed_serial_envelope_minutes": 180,
+    "repository_guard": "github.repository == 'Tiramisu-Cake/kani'",
+    "retry_count": 0,
+    "root_harness_cap_seconds": 2400,
+    "rows": 3,
+    "trigger": "push on coordinator-owned ci/kani3300-gateb-prime-w15 only"
+  }
 }

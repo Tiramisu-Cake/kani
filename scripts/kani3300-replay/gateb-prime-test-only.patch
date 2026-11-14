@@ -1,0 +1,101 @@
+diff --git a/library/core/src/slice/sort/shared/smallsort/verify.rs b/library/core/src/slice/sort/shared/smallsort/verify.rs
+index 9ed9be525b..e1093b410b 100644
+--- a/library/core/src/slice/sort/shared/smallsort/verify.rs
++++ b/library/core/src/slice/sort/shared/smallsort/verify.rs
+@@ -84,6 +84,8 @@ mod merge;
+ #[cfg(kani_smallsort_controls)]
+ mod mutations;
+ mod network;
++#[cfg(kani_smallsort_controls)]
++mod replay_gateb_prime;
+ mod scratch_geometry;
+ mod smoke;
+ mod tag_permutation;
+diff --git a/library/core/src/slice/sort/shared/smallsort/verify/helper_contracts.rs b/library/core/src/slice/sort/shared/smallsort/verify/helper_contracts.rs
+index 52977f4b1f..30683b3717 100644
+--- a/library/core/src/slice/sort/shared/smallsort/verify/helper_contracts.rs
++++ b/library/core/src/slice/sort/shared/smallsort/verify/helper_contracts.rs
+@@ -196,7 +196,11 @@ fn sort4_safety_u64() {
+     let mut dst = crate::mem::MaybeUninit::<[u64; 4]>::uninit();
+     // SAFETY: four initialized source values and a distinct allocation writable for four
+     // destination values. The destination need not be initialized before the call.
+-    unsafe { sort4_stable(src.as_ptr(), dst.as_mut_ptr().cast(), &mut arbitrary_less::<u64>) };
++    unsafe {
++        sort4_stable(src.as_ptr(), dst.as_mut_ptr().cast(), &mut |a: &u64, b: &u64| {
++            arbitrary_less::<u64>(a, b)
++        })
++    };
+     for i in 0..4 {
+         kani::assert(src[i] == before[i], "helper contract sort4 source frame");
+     }
+diff --git a/library/core/src/slice/sort/shared/smallsort/verify/helper_contracts_wide.rs b/library/core/src/slice/sort/shared/smallsort/verify/helper_contracts_wide.rs
+index b0c6777add..432a9c0d4b 100644
+--- a/library/core/src/slice/sort/shared/smallsort/verify/helper_contracts_wide.rs
++++ b/library/core/src/slice/sort/shared/smallsort/verify/helper_contracts_wide.rs
+@@ -114,7 +114,7 @@ fn merge_safety_u64_len8_scratch48_src32_dst0() {
+     unsafe {
+         let base = scratch.as_mut_ptr().cast::<u64>();
+         let source = crate::slice::from_raw_parts(base.add(32), 8);
+-        bidirectional_merge(source, base, &mut tail_less_u64);
++        bidirectional_merge(source, base, &mut |a: &u64, b: &u64| tail_less_u64(a, b));
+     }
+     for i in 0..8 {
+         // SAFETY: the initialized source must be framed by the merge.
+diff --git a/library/core/src/slice/sort/shared/smallsort/verify/replay_gateb_prime.rs b/library/core/src/slice/sort/shared/smallsort/verify/replay_gateb_prime.rs
+new file mode 100644
+index 0000000000..b66ce6ee72
+--- /dev/null
++++ b/library/core/src/slice/sort/shared/smallsort/verify/replay_gateb_prime.rs
+@@ -0,0 +1,52 @@
++//! Gate B-prime: concrete closure comparator companion, enabled only for replay controls.
++//! This proves its own bounded target, not the generic fn-pointer `merge_profile<P>`.
++
++use super::merge::profiles::{
++    LtU8, Profile, merge_halves_sorted, merge_regions, model_count, model_sorted,
++};
++use crate::mem::MaybeUninit;
++use crate::slice::sort::shared::smallsort::{SMALL_SORT_GENERAL_SCRATCH_LEN, bidirectional_merge};
++use crate::{kani, ptr};
++
++// The original profile's canonical comparator guard is discharged by construction:
++// no comparator parameter or fn-pointer coercion exists; the closure calls lt_u8 directly.
++// The remaining clauses are exactly merge_profile::<LtU8>'s clauses.
++#[cfg(kani_smallsort_controls)]
++#[kani::requires(merge_regions::<u8>(v, dst) && merge_halves_sorted::<LtU8>(v))]
++#[kani::modifies(ptr::slice_from_raw_parts_mut(dst, v.len()))]
++#[kani::ensures(|_| model_sorted::<LtU8>(dst, v.len()))]
++#[kani::ensures(|_| model_count::<LtU8>(v.as_ptr(), v.len()) == model_count::<LtU8>(dst, v.len()))]
++pub(crate) unsafe fn merge_profile_closure_u8(v: &[u8], dst: *mut u8) {
++    // SAFETY: the unchanged profile region/sorted-halves premises establish the source
++    // and destination geometry; lt_u8 is the fixed canonical key order (x >> 1).
++    unsafe { bidirectional_merge(v, dst, &mut |a: &u8, b: &u8| super::merge::lt_u8(a, b)) }
++}
++
++#[cfg(kani_smallsort_controls)]
++#[kani::proof_for_contract(merge_profile_closure_u8)]
++#[kani::unwind(34)]
++fn merge_profile_closure_scratch48_u8_n9() {
++    const N: usize = 9;
++    const { assert!(N >= 2 && N <= 32) };
++    LtU8::set_probe(kani::any());
++    let input: [u8; N] = kani::any();
++    let mut dst: [u8; N] = kani::any();
++    let stable: bool = kani::any();
++    let mut stable_scratch = [MaybeUninit::<u8>::uninit(); SMALL_SORT_GENERAL_SCRATCH_LEN];
++    let mut general_scratch = MaybeUninit::<[u8; SMALL_SORT_GENERAL_SCRATCH_LEN]>::uninit();
++    let src = if stable {
++        stable_scratch.as_mut_ptr() as *mut u8
++    } else {
++        general_scratch.as_mut_ptr() as *mut u8
++    };
++    // SAFETY: copy initializes only prefix N of the selected 48-slot backing before
++    // forming a slice; dst is separate and initialized. The enclosing PFC checks the
++    // concrete companion's unchanged region and sorted-half contract.
++    unsafe {
++        ptr::copy_nonoverlapping(input.as_ptr(), src, N);
++        let v = crate::slice::from_raw_parts(src, N);
++        merge_profile_closure_u8(v, dst.as_mut_ptr());
++    }
++    kani::cover(!stable, "general scratch48 merge contract checked");
++    kani::cover(stable, "stable scratch48 merge contract checked");
++}

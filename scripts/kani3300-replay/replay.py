@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Preparation and bounded execution receipts for the Kani 3300 replay.
+"""Preparation and bounded execution receipts for the Kani 3300 Gate B-prime replay.
 
 This file deliberately records observations without assigning proof credit.
-Every root stays UNKNOWN until a reviewer binds the useful checks and selected
-Check body (or the intended negative read) to the generated artifact.
+Every root stays UNKNOWN until a reviewer binds useful checks and the selected
+Check body or expected boundary to the generated artifact.
 """
 
 from __future__ import annotations
@@ -22,25 +22,22 @@ from typing import Any
 
 
 HERE = Path(__file__).resolve().parent
-REQUEST = HERE / "request.json"
+REQUEST = HERE / "CI-REQUEST.json"
 SOURCE_BINDING = HERE / "c1-source-binding.json"
-PATCH = HERE / "replay-test-only.patch"
+PATCH = HERE / "gateb-prime-test-only.patch"
 C1_SHA = "1658f4cadfa83139e41180ce3865e23f79d889aa"
 C1_TREE = "bfb5eb9db13ffb91ec4585b7c7ef41ddfe0008fb"
 STD_SHA = "70ba5befc617627073738e26cb1466bd4fb76e41"
 STD_TREE = "6ea9d3425f6d0478cfc2517cbdd2fb7d7b32a53f"
 STD_COMMIT_TREE = "84ab170ccdcc29fba69e55e0a46e6acdf52d9704"
-PATCH_SHA = "f2689c76720e95f98a88bdd17a2bf4cf13a7348d40dedcf9c009aa0b20db0df5"
-REQUEST_SHA = "9c0524996be2491fbb1a4ef5bb2faee9d5651cadda9053604e6cd21cb1aa38ad"
+PATCH_SHA = "af2d6e7bce1d628ab7b56363578e9aa1393aa1e02be72786ae277d34a43892a5"
+REQUEST_SHA = "5a769b123e92a1d46962e946bb500e076eb2d528657ebf287df87d7b0f53a55d"
 ROOT_CAP_SECONDS = 2400
 INVALID_EXPORT_STATES = {
     "MISSING", "EMPTY", "INVALID_OR_PARTIAL", "NULL", "WRONG_TOP_LEVEL_TYPE",
     "WRONG_SOURCE_OR_SELECTOR",
 }
-PATCHED_FILE_HASHES = {
-    "library/core/src/slice/sort/shared/smallsort/verify.rs": "3a8aa452408f3048c80a73dde8a4fd28f4a3b647b0a171512e186c93f99c4c33",
-    "library/core/src/slice/sort/shared/smallsort/verify/replay_uninit_controls.rs": "c186a086dadba038ff5ad7ca823e52e1e807758a92b1a46cf4c807fc07d96a39",
-}
+PATCHED_FILE_HASHES = {'library/core/src/slice/sort/shared/smallsort/verify.rs': 'b37239fc681409922606a8fd310e20f9c776e67a9c7f8dd4e4b79a77172c79fb', 'library/core/src/slice/sort/shared/smallsort/verify/helper_contracts.rs': '270e2a2d57d162e979d375c1a1bdb786dfdca664ad6e610e7b4e8661c135d933', 'library/core/src/slice/sort/shared/smallsort/verify/helper_contracts_wide.rs': 'b2d71e6e61b4130a95dda6daac3cd5f0970f9daf7b0f7bfa8a9f99d9c3c29844', 'library/core/src/slice/sort/shared/smallsort/verify/replay_gateb_prime.rs': 'c585f3d0c74879cb21e8f09204f52d59b7aa4948a2e17541a94e162b3ffb10a1'}
 PINNED_RUST_TOOLCHAIN = "nightly-2026-10-23"
 
 
@@ -66,6 +63,9 @@ def root_exit_code(receipt: dict[str, Any]) -> int:
     if (code is None or code < 0 or receipt.get("timed_out") or receipt.get("runner_error") or
             receipt.get("export", {}).get("state") in INVALID_EXPORT_STATES or
             receipt.get("postprocessing_state") != "COMPLETE"):
+        return 1
+    rss = receipt.get("rss", {})
+    if rss.get("status") != "OBSERVED_WAIT4_LINUX_RU_MAXRSS" or not isinstance(rss.get("max_bytes"), int):
         return 1
     validation = receipt.get("post_run_validation", {})
     source = validation.get("c1_source_valid", {})
@@ -96,8 +96,27 @@ def load_request() -> dict[str, Any]:
     req = json.loads(REQUEST.read_text())
     if req.get("tool_export_sha") != C1_SHA or req.get("tool_export_tree") != C1_TREE:
         raise ValueError("request does not pin the frozen C1 source")
-    if req.get("selected_library_tree") != STD_TREE or len(req.get("roots", [])) != 12:
-        raise ValueError("request library pin or exact 12-root inventory mismatch")
+    if req.get("selected_library_tree") != STD_TREE or len(req.get("roots", [])) != 3:
+        raise ValueError("request library pin or exact 3-root inventory mismatch")
+    expected_ids = {"merge-raw-closure-on", "merge-profile-closure-on", "sort4-closure-on"}
+    if {r.get("id") for r in req["roots"]} != expected_ids:
+        raise ValueError("request row allowlist mismatch")
+    if (req.get("authorization") != "PREPARATION_ONLY" or
+            req.get("run_budget", {}).get("max_invocations") != 3 or
+            req.get("run_budget", {}).get("retry_policy") != "NONE" or
+            req.get("run_budget", {}).get("jobs") != 1 or
+            req.get("run_budget", {}).get("max_parallel") != 1):
+        raise ValueError("request exceeds bounded preparation caps")
+    if req.get("test_patch_sha256") != PATCH_SHA:
+        raise ValueError("request test patch hash differs from wrapper")
+    if req.get("patched_file_sha256") != PATCHED_FILE_HASHES:
+        raise ValueError("request patched file hashes differ from wrapper")
+    flags = req.get("flags", {})
+    budget = req.get("run_budget", {})
+    if (flags.get("object_bits") != 12 or flags.get("experimental_valid_value") is not False or
+            flags.get("cfg_controls") is not True or budget.get("harness_cap_seconds") != ROOT_CAP_SECONDS or
+            budget.get("aggregate_job_envelope_seconds", ROOT_CAP_SECONDS + 1) > 10800):
+        raise ValueError("request flags or time caps exceed authorized bounds")
     if any(r.get("status") != "NOT_RUN" or r.get("generated_property_binding") is not None for r in req["roots"]):
         raise ValueError("request must remain NOT_RUN with unbound generated properties")
     return req
@@ -139,7 +158,7 @@ def verify_source(repo: Path) -> dict[str, Any]:
     return {"c1_sha": C1_SHA, "c1_tree": C1_TREE, "bound_files": len(actual_files),
             "bound_subtrees": len(binding["subtrees"]), "request_sha256": sha256(REQUEST),
             "std_commit": STD_SHA, "std_tree": STD_TREE, "patch_sha256": sha256(PATCH),
-            "proof_status": "NOT_RUN"}
+            "test_overlay_tree": req["test_only_library_tree"], "proof_status": "NOT_RUN"}
 
 
 def prepare_std(repo: str, destination: Path) -> dict[str, Any]:
@@ -162,8 +181,7 @@ def prepare_std(repo: str, destination: Path) -> dict[str, Any]:
     status = subprocess.run(["git", "-C", str(destination), "status", "--porcelain=v1", "-z"],
                             check=True, stdout=subprocess.PIPE).stdout
     changed = [entry[3:].decode() for entry in status.split(b"\0") if entry]
-    expected = ["library/core/src/slice/sort/shared/smallsort/verify.rs",
-                "library/core/src/slice/sort/shared/smallsort/verify/replay_uninit_controls.rs"]
+    expected = sorted(PATCHED_FILE_HASHES)
     if sorted(changed) != sorted(expected):
         raise ValueError(f"test overlay changed unexpected std paths: {changed}")
     for rel, digest in PATCHED_FILE_HASHES.items():
@@ -176,7 +194,7 @@ def prepare_std(repo: str, destination: Path) -> dict[str, Any]:
 
 
 def parse_export(path: Path, expected_selector: str) -> dict[str, Any]:
-    """Validate export envelope only; never infer success or intended-failure credit."""
+    """Validate the export envelope only; never infer proof or boundary credit."""
     if not path.exists():
         return {"state": "MISSING", "outcome": "UNKNOWN"}
     try:
@@ -201,36 +219,61 @@ def parse_export(path: Path, expected_selector: str) -> dict[str, Any]:
         return {"state": "WRONG_SOURCE_OR_SELECTOR", "observed": selectors, "outcome": "UNKNOWN"}
     return {"state": "UNVALIDATED_JSON_OBJECT", "selector_identity": selectors or None,
             "outcome": "UNKNOWN", "generated_property_binding": None,
-            "review_required": ["selected Check body", "useful checks/ensures and covers",
-                                "negative intended source[1] read, where applicable"]}
+            "review_required": ["selected Check body", "useful reached checks/ensures and covers",
+                                "complete artifact coverage; no proof credit from this envelope parse"] +
+                               (["sort4 expected boundary: exactly one named select_unpredictable Unsupported at library/core/src/hint.rs:871"]
+                                if expected_selector.endswith("helper_contracts::sort4_safety_u64") else [])}
 
 
 def execute(argv: list[str], cwd: Path, env: dict[str, str], out: Path,
             timeout_seconds: float = ROOT_CAP_SECONDS) -> dict[str, Any]:
-    """Run one exact command while retaining exit, timeout, and signal evidence."""
+    """Run one exact child argv and retain its exit, signal, timeout and wait4 RSS."""
     started = time.time()
     result: dict[str, Any] = {"started_unix": started, "original_exit_code": None,
-                              "timed_out": False, "runner_error": None, "signal": None}
+                              "timed_out": False, "runner_error": None, "signal": None,
+                              "rss_max_bytes": None, "rss_status": "UNKNOWN"}
+
+    def wait4_until(pid: int, deadline: float):
+        while True:
+            try:
+                got, status, usage = os.wait4(pid, os.WNOHANG)
+            except InterruptedError:
+                continue
+            if got == pid:
+                return status, usage
+            if time.monotonic() >= deadline:
+                return None
+            time.sleep(min(0.05, max(0.001, deadline - time.monotonic())))
+
     try:
         with (out / "stdout.log").open("wb") as stdout, (out / "stderr.log").open("wb") as stderr:
             p = subprocess.Popen(argv, cwd=cwd, env=env, stdout=stdout, stderr=stderr,
                                  start_new_session=True)
-            try:
-                code = p.wait(timeout=timeout_seconds)
-            except subprocess.TimeoutExpired:
+            waited = wait4_until(p.pid, time.monotonic() + timeout_seconds)
+            if waited is None:
                 result["timed_out"] = True
                 result["runner_error"] = f"{timeout_seconds:g} second cap elapsed; process group terminated"
                 os.killpg(p.pid, signal.SIGTERM)
-                try:
-                    code = p.wait(timeout=5)
-                except subprocess.TimeoutExpired:
+                waited = wait4_until(p.pid, time.monotonic() + 5)
+                if waited is None:
                     os.killpg(p.pid, signal.SIGKILL)
-                    code = p.wait()
+                    while True:
+                        try:
+                            _, status, usage = os.wait4(p.pid, 0)
+                            break
+                        except InterruptedError:
+                            continue
+                    waited = (status, usage)
+            status, usage = waited
+            code = os.waitstatus_to_exitcode(status)
+            p.returncode = code
             result["original_exit_code"] = code
+            result["rss_max_bytes"] = int(usage.ru_maxrss * 1024)
+            result["rss_status"] = "OBSERVED_WAIT4_LINUX_RU_MAXRSS"
             if code < 0:
                 result["signal"] = -code
     except OSError as e:
-        result["runner_error"] = f"runner_exec_error: {e}"
+        result["runner_error"] = f"runner_exec_or_wait_error: {e}"
     except subprocess.SubprocessError as e:
         result["runner_error"] = f"runner_subprocess_error: {e}"
     result["elapsed_seconds"] = round(time.time() - started, 3)
@@ -304,8 +347,7 @@ def run_root(repo: Path, std: Path, root_id: str, binary: Path, out: Path) -> di
     status = subprocess.run(["git", "-C", str(std), "status", "--porcelain=v1", "-z"],
                             check=True, stdout=subprocess.PIPE).stdout
     changed_paths = [entry[3:].decode() for entry in status.split(b"\0") if entry]
-    expected_paths = ["library/core/src/slice/sort/shared/smallsort/verify.rs",
-                      "library/core/src/slice/sort/shared/smallsort/verify/replay_uninit_controls.rs"]
+    expected_paths = sorted(PATCHED_FILE_HASHES)
     if sorted(changed_paths) != sorted(expected_paths):
         raise ValueError(f"std checkout must contain only the exact test-only overlay paths: {changed_paths}")
     std_file_hashes = {rel: sha256(std / rel) for rel in expected_paths}
@@ -328,12 +370,13 @@ def run_root(repo: Path, std: Path, root_id: str, binary: Path, out: Path) -> di
         "std_library_tree": STD_TREE, "test_patch_sha256": sha256(PATCH),
         "argv": argv, "environment": {k: env.get(k) for k in row["environment"]},
         "expected_result": row["expected_result"], "expected_mode": row["expected_mode"],
+        "rss": {"max_bytes": execution.pop("rss_max_bytes"),
+                "status": execution.pop("rss_status")},
         **execution,
         "export": {"state": "PENDING_PARSE", "outcome": "UNKNOWN"},
         "runtime_identity_file": "runtime-identities.json",
         "outcome": "UNKNOWN", "generated_property_binding": None,
         "runtime_proof_status": "NOT_RUN_UNTIL_REVIEWED",
-        "negative_observation": ("REVIEW_REQUIRED" if root_id.startswith("raw-negative") else None),
         "postprocessing_state": "INCOMPLETE",
     }
     receipt_path = out / "receipt.json"
