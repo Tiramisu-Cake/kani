@@ -520,11 +520,8 @@ mod tests {
                 let mut next = conflict.clone();
                 next.frozen = qualifications[1];
                 assert!(registry.register(symbol, first.clone()).is_ok());
-                let expected = if first.admitted() || next.admitted() {
-                    Err(first.clone())
-                } else {
-                    Ok(())
-                };
+                let expected =
+                    if first.admitted() || next.admitted() { Err(first.clone()) } else { Ok(()) };
                 assert_eq!(registry.register(symbol, next), expected);
                 assert_eq!(registry.symbols.len(), 1);
                 assert_eq!(registry.symbols[&symbol], first);
@@ -550,7 +547,9 @@ mod tests {
         let symbol = "mutable-mask".into();
         for frozen in [false, true] {
             assert!(
-                registry.register(symbol, descriptor(vec![Some(0)], Mutability::Mut, frozen)).is_ok()
+                registry
+                    .register(symbol, descriptor(vec![Some(0)], Mutability::Mut, frozen))
+                    .is_ok()
             );
         }
         assert!(registry.symbols[&symbol].frozen);
