@@ -1,0 +1,37 @@
+# CI-only: run the B3 zst-union tests on a given base and report per-harness outcomes.
+name: B3 zst-union tests per harness
+on:
+  push:
+    branches:
+      - 'uninit-ci/**'
+
+jobs:
+  run:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout Kani
+        uses: actions/checkout@v6
+
+      - name: Setup Kani Dependencies
+        uses: ./.github/actions/setup
+        with:
+          os: ubuntu-24.04
+
+      - name: Build Kani
+        run: cargo build-dev
+
+      - name: Per-harness outcomes
+        shell: bash {0}
+        run: |
+          export PATH="$(pwd)/scripts:$PATH"
+          for d in tests/expected/zst-union-*/; do
+            echo "=== $d"
+            flags=$(grep -h "kani-flags:" "$d"main.rs | sed 's/.*kani-flags://')
+            (cd "$d" && timeout 600 kani main.rs $flags 2>&1) \
+              | grep -E "^Checking harness|^VERIFICATION|^Complete -|Invariant check failed|^Condition:|exited with status" \
+              | sed 's/^/  /'
+          done
+          cargo run -p compiletest --quiet -- --suite expected --mode expected zst-union --no-fail-fast 2>&1 | grep -E "^test |test result:"
