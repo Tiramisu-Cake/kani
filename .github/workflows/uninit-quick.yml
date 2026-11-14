@@ -1,0 +1,55 @@
+# Copyright Kani Contributors
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+# CI-only: fast feedback for uninit-checks work. Builds Kani and runs only the suites that use -Z uninit-checks.
+name: C2-S4 baseline composition capture (ad324418cd + tests)
+on:
+  push:
+    branches:
+      - 'uninit-ci/**'
+  workflow_dispatch:
+
+env:
+  RUST_BACKTRACE: 1
+  KANI_FAIL_ON_UNEXPECTED_DESCRIPTION: "true"
+
+jobs:
+  uninit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout Kani
+        uses: actions/checkout@v6
+
+      - name: Setup Kani Dependencies
+        uses: ./.github/actions/setup
+        with:
+          os: ubuntu-24.04
+
+      - name: Build Kani
+        if: ${{ !cancelled() }}
+        run: cargo build-dev
+
+      - name: Capture unbound composition inventories
+        if: ${{ !cancelled() }}
+        shell: bash {0}
+        run: |
+          export PATH="$(pwd)/scripts:$PATH"
+          export KANI_LOG=kani_compiler::kani_middle::codegen_units=debug
+          python3 tests/json-handler/uninit-part1-composition/run.py --kani "$(pwd)/scripts/kani" --collect-unbound --keep-output
+          rc=$?
+          echo "capture exit=$rc (2 = UNBOUND_CAPTURE expected)"
+          [ "$rc" = 2 ] || exit 1
+
+      - name: Upload oracle artifacts
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: s4-composition-capture
+          path: |
+            /tmp/kani-uninit-contract-oracles-*/
+            /tmp/tmp*/mode-boundary-results/
+            /tmp/kani-uninit-part1-composition-*/
+          if-no-files-found: warn
+          retention-days: 7
