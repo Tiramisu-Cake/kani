@@ -1,22 +1,28 @@
 {
   "base": {
-    "commit": "ac49cf8f62137e25e8cfea04968016e60d6c5906",
-    "source_binding": "byte-identical run4 c1-source-binding.json",
-    "source_checkout_status": "clean_at_inspection",
-    "tree": "8250d8d1b353d10eb4324021e8cad8c3beaee7e6"
+    "commit": "0c1cc8a7d05184044d496b01f5ed41cebfde0cac",
+    "source_binding": "replace prior C1 binding with exact SEL1 binding",
+    "source_checkout_status": "read-only exact git objects; current branch/HEAD not changed",
+    "tree": "cbb04807c711a9d1bad2ac2dbe1f77538d5658b0"
   },
-  "delta_against": "exact ac49cf8f62137e25e8cfea04968016e60d6c5906 files; source-binding unchanged",
+  "delta_against": "exact Gate B-prime0c1cc8a7d05184044d496b01f5ed41cebfde0cac CI paths only; actual Kani source bindingec85b782a1b7156ad434cfac25403acd4e326dc1",
   "delta_patch": "ci-overlay-delta.patch",
+  "followup": {
+    "prior_ci_candidate": "f44ddc4313651fc2fd946ea7f4be60280de47cb5",
+    "prior_tool": "b6f1b08eb512ff9006aff7b4924c2e8f13930d70",
+    "reason": "Tests-only volatile-read golden spelling and local unused-field lint repair. Production unchanged; six rows/profile/std/runner logic unchanged."
+  },
   "full_export_file_sha256": {
-    ".github/workflows/kani3300-replay.yml": "aa9d76cd87af2a220c67df5c54dc2ba3debfa9f5de372236350b92282e4902d7",
-    "scripts/kani3300-replay/CI-REQUEST.json": "5a769b123e92a1d46962e946bb500e076eb2d528657ebf287df87d7b0f53a55d",
-    "scripts/kani3300-replay/c1-source-binding.json": "cf67542d5ef1bfd9454986f1bba0599dcae4f7168dff47599bf5803df7568c55",
-    "scripts/kani3300-replay/gateb-prime-test-only.patch": "af2d6e7bce1d628ab7b56363578e9aa1393aa1e02be72786ae277d34a43892a5",
-    "scripts/kani3300-replay/replay.py": "38062b43a135fd103920deca53f805169ee3355879756a0077895a6635773c31",
-    "scripts/kani3300-replay/test_replay.py": "59ccf304925f4d082201223142b166e07faec6735aacb7df41f7bed4a41c64aa"
+    ".github/workflows/kani3300-replay.yml": "c5ce5250453078053b33e23cbc3ff4f7132f56c8c8993f9bd895f9947ec805bb",
+    "scripts/kani3300-replay/CI-REQUEST.json": "c96c9bd955d64ca7d79bf40e589db397c2447a2cb460703544647b1c079ca033",
+    "scripts/kani3300-replay/replay.py": "067c9fe9569a35db4d48acc5257042229a4d2983003e81cc2efa6e8a1dec5443",
+    "scripts/kani3300-replay/sel1-source-binding.json": "3e23da10b03a3d659b4cc373fdd53b715397d7161fc35014c12ae197e8530e5f",
+    "scripts/kani3300-replay/sel1-test-only.patch": "473526895d6d57a99bd356a060195745cc6aba9ee2b70fcc7ae90fecb6676f06",
+    "scripts/kani3300-replay/test_replay.py": "2256b986945c61532b8ef063bc2f477d83bdf55f02cabd8b90a977a4c1e2ccb3"
   },
   "python_tests": {
-    "count": 20,
+    "command": "PYTHONDONTWRITEBYTECODE=1 python3 -m unittest -v",
+    "count": 29,
     "coverage": [
       "success remains UNKNOWN",
       "positive failure exit retained",
@@ -25,10 +31,17 @@
       "atomic receipt survives postprocessing error",
       "missing/partial/null/wrong-type/wrong-selector export",
       "request checksum/patch/file-hash/allowlist/cap validation",
-      "unknown RSS fails closed"
+      "unknown RSS fails closed",
+      "six exact row source-stage-target/selector/argv/oracle/flag bindings",
+      "exact five-file std overlay and source identities",
+      "explicit NOT_RUN nonzero",
+      "source post-validation failure preserves original positive exit",
+      "run4 URL/destination/submodule and serial push workflow invariants",
+      "mock-only prepare_std/run_root exact argv substitution"
     ],
     "file": "test_replay.py",
-    "no_rust_or_kani": true
+    "no_rust_or_kani": true,
+    "status": "PASS"
   },
   "receipt": {
     "outcome": "UNKNOWN_until_reviewed",
@@ -41,25 +54,29 @@
       "wait4 RSS",
       "stdout/stderr bytes and hashes",
       "export JSON",
-      "C1/runtime identities",
+      "SEL1/runtime identities",
       "failure artifacts"
     ],
     "proof_status": "NOT_RUN_UNTIL_REVIEWED",
+    "raw_negative": "Preserve child nonzero original exit; manual source[1] failure review. No automatic expected-negative acceptance.",
     "rss": "wait4 per-child ru_maxrss in Linux bytes; null/UNKNOWN if unavailable; no command wrapper or argv change",
-    "sort4": "Expected diagnostic BOUNDARY is one named select_unpredictable Unsupported at library/core/src/hint.rs:871; never auto SUCCESS",
+    "sort4": "Expected SUCCESS,0 failed checks; useful comparator/frame/readbacks/return reached; never auto proof credit",
     "truncation_or_missing": "UNKNOWN"
   },
   "request": {
     "authorization": "PREPARATION_ONLY",
     "file": "CI-REQUEST.json",
-    "row_count": 3,
+    "row_count": 6,
     "row_ids": [
+      "sort4-closure-on",
+      "swap-if-less-closure-on",
+      "raw-legal-on",
+      "raw-negative-on",
       "merge-raw-closure-on",
-      "merge-profile-closure-on",
-      "sort4-closure-on"
+      "merge-profile-closure-on"
     ],
-    "sha256": "5a769b123e92a1d46962e946bb500e076eb2d528657ebf287df87d7b0f53a55d",
-    "status": "NOT_RUN_C1_FROZEN"
+    "sha256": "c96c9bd955d64ca7d79bf40e589db397c2447a2cb460703544647b1c079ca033",
+    "status": "NOT_RUN_SEL1_FROZEN"
   },
   "run4_recipe": {
     "destination": "$RUNNER_TEMP/kani3300-std",
@@ -67,11 +84,14 @@
     "source": "ac49cf8f62 scripts/kani3300-replay/replay.py prepare_std",
     "submodule_step": "git submodule update --init --depth 1"
   },
-  "schema": "kani3300-gateb-prime-ci-overlay-v1",
+  "schema": "kani3300-sel1-ci-overlay-v1",
   "source": {
-    "c1_sha": "1658f4cadfa83139e41180ce3865e23f79d889aa",
-    "c1_tree": "bfb5eb9db13ffb91ec4585b7c7ef41ddfe0008fb",
-    "source_binding_sha256": "cf67542d5ef1bfd9454986f1bba0599dcae4f7168dff47599bf5803df7568c55"
+    "quick_assurance": "Owner excerpts: fmt/build/clippy PASS onb6f1b08eb5;24/29 select controls ok,5 fixture failures; new tests-only repair runtime NOT_RUN",
+    "quick_run": "43609527860",
+    "source_binding_file": "sel1-source-binding.json",
+    "source_binding_sha256": "3e23da10b03a3d659b4cc373fdd53b715397d7161fc35014c12ae197e8530e5f",
+    "tool_sha": "ec85b782a1b7156ad434cfac25403acd4e326dc1",
+    "tool_tree": "0c9e5e67ba0a17128f71af415644f3fad84099d3"
   },
   "state": "PREPARATION_ONLY_REVIEW_REQUIRED",
   "std": {
@@ -79,33 +99,36 @@
       "library/core/src/slice/sort/shared/smallsort/verify.rs",
       "library/core/src/slice/sort/shared/smallsort/verify/helper_contracts.rs",
       "library/core/src/slice/sort/shared/smallsort/verify/helper_contracts_wide.rs",
-      "library/core/src/slice/sort/shared/smallsort/verify/replay_gateb_prime.rs"
+      "library/core/src/slice/sort/shared/smallsort/verify/replay_gateb_prime.rs",
+      "library/core/src/slice/sort/shared/smallsort/verify/replay_uninit_controls.rs"
     ],
     "base_commit": "70ba5befc617627073738e26cb1466bd4fb76e41",
     "base_library_tree": "6ea9d3425f6d0478cfc2517cbdd2fb7d7b32a53f",
-    "overlay_commit": "933b20a2375bd7529243510728b1eb48adf34e5d",
-    "overlay_library_tree": "86cbdb4d9f8415161657f66bf07e5a0dd1b3e982",
-    "patch": "gateb-prime-test-only.patch",
-    "patch_sha256": "af2d6e7bce1d628ab7b56363578e9aa1393aa1e02be72786ae277d34a43892a5",
+    "overlay_commit": "6075e7ce17179f45642c9ffe8fe09e3ec9395726",
+    "overlay_library_tree": "12e87bd4a4e141a8f829d8a0519efc09260c5059",
+    "patch": "sel1-test-only.patch",
+    "patch_sha256": "473526895d6d57a99bd356a060195745cc6aba9ee2b70fcc7ae90fecb6676f06",
     "patched_file_sha256": {
-      "library/core/src/slice/sort/shared/smallsort/verify.rs": "b37239fc681409922606a8fd310e20f9c776e67a9c7f8dd4e4b79a77172c79fb",
-      "library/core/src/slice/sort/shared/smallsort/verify/helper_contracts.rs": "270e2a2d57d162e979d375c1a1bdb786dfdca664ad6e610e7b4e8661c135d933",
+      "library/core/src/slice/sort/shared/smallsort/verify.rs": "506644ad92ed4872af19bd1d302b439ff5e1d4dd850e9e9f149d429286065a95",
+      "library/core/src/slice/sort/shared/smallsort/verify/helper_contracts.rs": "22de8b24f6adf35b633b2962d9873a349041a18cca9d580944d2d4a3c9ad0655",
       "library/core/src/slice/sort/shared/smallsort/verify/helper_contracts_wide.rs": "b2d71e6e61b4130a95dda6daac3cd5f0970f9daf7b0f7bfa8a9f99d9c3c29844",
-      "library/core/src/slice/sort/shared/smallsort/verify/replay_gateb_prime.rs": "c585f3d0c74879cb21e8f09204f52d59b7aa4948a2e17541a94e162b3ffb10a1"
+      "library/core/src/slice/sort/shared/smallsort/verify/replay_gateb_prime.rs": "c585f3d0c74879cb21e8f09204f52d59b7aa4948a2e17541a94e162b3ffb10a1",
+      "library/core/src/slice/sort/shared/smallsort/verify/replay_uninit_controls.rs": "c186a086dadba038ff5ad7ca823e52e1e807758a92b1a46cf4c807fc07d96a39"
     },
     "production_source_changed": false,
     "source": "https://github.com/Tiramisu-Cake/verify-rust-std.git"
   },
   "workflow": {
-    "authorization": "NOT_GRANTED",
+    "authorization": "PREPARATION_ONLY; owner publishes and starts workflow",
     "file": ".github/workflows/kani3300-replay.yml",
     "job_timeout_minutes": 60,
     "max_parallel": 1,
-    "proposed_serial_envelope_minutes": 180,
+    "preflight": "python3 -m unittest -v test_replay.py; before source checkout/build",
+    "proposed_serial_envelope_minutes": 360,
     "repository_guard": "github.repository == 'Tiramisu-Cake/kani'",
     "retry_count": 0,
     "root_harness_cap_seconds": 2400,
-    "rows": 3,
-    "trigger": "push on coordinator-owned ci/kani3300-gateb-prime-w15 only"
+    "rows": 6,
+    "trigger": "push on coordinator-owned ci/kani3300-sel1-replay-w15 only"
   }
 }

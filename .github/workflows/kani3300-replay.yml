@@ -1,35 +1,44 @@
 # Copyright Kani Contributors
 # SPDX-License-Identifier: Apache-2.0 OR MIT
-name: Kani 3300 Gate B-prime replay (preparation candidate)
+name: Kani 3300 SEL1 replay (preparation candidate)
 
 on:
   push:
-    branches: ['ci/kani3300-gateb-prime-w15']
+    branches: ['ci/kani3300-sel1-replay-w15']
 
 permissions:
   contents: read
 
 jobs:
   replay:
-    # Coordinator-owned fork lane only. This candidate is intentionally not dispatchable.
+    # Coordinator-owned fork lane only. Only coordinator publication may trigger this workflow.
     if: ${{ github.repository == 'Tiramisu-Cake/kani' }}
     runs-on: ubuntu-24.04
-    # One 60-minute job per row; three serial jobs bound the proposed envelope to 180 minutes.
+    # One 60-minute job per row; six serial jobs bound the proposed envelope to 360 minutes.
     timeout-minutes: 60
     strategy:
       fail-fast: false
       max-parallel: 1
       matrix:
         root:
+          - sort4-closure-on
+          - swap-if-less-closure-on
+          - raw-legal-on
+          - raw-negative-on
           - merge-raw-closure-on
           - merge-profile-closure-on
-          - sort4-closure-on
     steps:
       - name: Checkout CI-only overlay
         uses: actions/checkout@v6
         with:
           path: overlay
           fetch-depth: 0
+
+      - name: Replay Python service preflight
+        working-directory: overlay/scripts/kani3300-replay
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: python3 -m unittest -v test_replay.py
 
       - name: Read exact export revision
         id: export
@@ -41,13 +50,13 @@ jobs:
               out.write('sha=' + req['tool_export_sha'] + '\n')
           PY
 
-      - name: Checkout exact frozen C1 export
+      - name: Checkout exact frozen SEL1 export
         uses: actions/checkout@v6
         with:
           ref: ${{ steps.export.outputs.sha }}
           path: export
 
-      - name: Verify immutable C1 source bindings
+      - name: Verify immutable SEL1 source bindings
         run: python3 overlay/scripts/kani3300-replay/replay.py verify-source --repo export
 
       - name: Setup pinned Kani dependencies
@@ -56,7 +65,7 @@ jobs:
           os: ubuntu-24.04
           kani_dir: export
 
-      - name: Build this exact C1 checkout
+      - name: Build this exact SEL1 checkout
         working-directory: export
         run: cargo build-dev -- --release
 
@@ -88,7 +97,7 @@ jobs:
           receipt = out / 'receipt.json'
           if not receipt.exists():
               receipt.write_text(json.dumps({
-                  'schema': 'kani3300-gateb-prime-receipt-v1',
+                  'schema': 'kani3300-sel1-receipt-v1',
                   'root_id': '${{ matrix.root }}',
                   'outcome': 'UNKNOWN',
                   'runtime_proof_status': 'NOT_RUN',
@@ -103,7 +112,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: kani3300-gateb-prime-${{ matrix.root }}
+          name: kani3300-sel1-${{ matrix.root }}
           path: ${{ runner.temp }}/kani3300-receipt/${{ matrix.root }}/
           if-no-files-found: error
           retention-days: 7

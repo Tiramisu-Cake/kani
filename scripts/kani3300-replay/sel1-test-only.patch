@@ -1,21 +1,34 @@
 diff --git a/library/core/src/slice/sort/shared/smallsort/verify.rs b/library/core/src/slice/sort/shared/smallsort/verify.rs
-index 9ed9be525b..e1093b410b 100644
+index 9ed9be525b..b6d76fe0bc 100644
 --- a/library/core/src/slice/sort/shared/smallsort/verify.rs
 +++ b/library/core/src/slice/sort/shared/smallsort/verify.rs
-@@ -84,6 +84,8 @@ mod merge;
+@@ -84,6 +84,10 @@ mod merge;
  #[cfg(kani_smallsort_controls)]
  mod mutations;
  mod network;
 +#[cfg(kani_smallsort_controls)]
 +mod replay_gateb_prime;
++#[cfg(kani_smallsort_controls)]
++mod replay_uninit_controls;
  mod scratch_geometry;
  mod smoke;
  mod tag_permutation;
 diff --git a/library/core/src/slice/sort/shared/smallsort/verify/helper_contracts.rs b/library/core/src/slice/sort/shared/smallsort/verify/helper_contracts.rs
-index 52977f4b1f..30683b3717 100644
+index 52977f4b1f..336fe65277 100644
 --- a/library/core/src/slice/sort/shared/smallsort/verify/helper_contracts.rs
 +++ b/library/core/src/slice/sort/shared/smallsort/verify/helper_contracts.rs
-@@ -196,7 +196,11 @@ fn sort4_safety_u64() {
+@@ -36,7 +36,9 @@ fn exercise_swap<T: kani::Arbitrary + Copy + PartialEq>() {
+     // SAFETY: both positions are initialized, aligned, readable and writable
+     // and belong to this allocation.
+     // Equality is allowed by the real helper's safety condition.
+-    unsafe { swap_if_less(v.as_mut_ptr(), a, b, &mut arbitrary_less::<T>) };
++    unsafe {
++        swap_if_less(v.as_mut_ptr(), a, b, &mut |a: &T, b: &T| arbitrary_less::<T>(a, b))
++    };
+     for i in 0..4 {
+         kani::assert(i == a || i == b || v[i] == before[i], "helper contract swap frame");
+     }
+@@ -196,7 +198,11 @@ fn sort4_safety_u64() {
      let mut dst = crate::mem::MaybeUninit::<[u64; 4]>::uninit();
      // SAFETY: four initialized source values and a distinct allocation writable for four
      // destination values. The destination need not be initialized before the call.
@@ -98,4 +111,59 @@ index 0000000000..b66ce6ee72
 +    }
 +    kani::cover(!stable, "general scratch48 merge contract checked");
 +    kani::cover(stable, "stable scratch48 merge contract checked");
++}
+diff --git a/library/core/src/slice/sort/shared/smallsort/verify/replay_uninit_controls.rs b/library/core/src/slice/sort/shared/smallsort/verify/replay_uninit_controls.rs
+new file mode 100644
+index 0000000000..890b2597c2
+--- /dev/null
++++ b/library/core/src/slice/sort/shared/smallsort/verify/replay_uninit_controls.rs
+@@ -0,0 +1,49 @@
++//! Opt-in raw-helper uninitialized-read controls. Preparation only; NOT_RUN.
++//!
++//! Run with the organizer --no-assert-contracts profile: the negative calls
++//! the actual Original helper body and intentionally violates its source
++//! initializedness requirement. It is a checker control, not a contract proof.
++
++use super::super::sort4_stable;
++use crate::mem::MaybeUninit;
++use crate::{kani, ptr};
++
++fn read_less_u64(a: &u64, b: &u64) -> bool {
++    // The negative intentionally exercises the live read of an unwritten
++    // source value; no initialized reference is constructed before the helper.
++    unsafe {
++        ptr::read_volatile(a);
++        ptr::read_volatile(b);
++    }
++    kani::any()
++}
++
++fn exercise_sort4_raw<const INITIALIZE_SLOT_ONE: bool>() {
++    let mut src = [MaybeUninit::<u64>::uninit(); 4];
++    src[0].write(kani::any());
++    if INITIALIZE_SLOT_ONE {
++        src[1].write(kani::any());
++    }
++    src[2].write(kani::any());
++    src[3].write(kani::any());
++    let mut dst = MaybeUninit::<[u64; 4]>::uninit();
++    let raw = src.as_mut_ptr().cast::<u64>();
++    kani::cover(true, "sort4 raw helper entered");
++    // The legal instance supplies four initialized source values. The negative
++    // leaves precisely slot 1 unwritten in the same valid MU allocation.
++    // Both use the identical source/destination geometry and actual helper.
++    unsafe { sort4_stable(raw, dst.as_mut_ptr().cast(), &mut read_less_u64) };
++    kani::cover(true, "sort4 raw helper returned");
++}
++
++#[kani::proof]
++#[kani::unwind(16)]
++fn sort4_raw_all_initialized_u64() {
++    exercise_sort4_raw::<true>();
++}
++
++#[kani::proof]
++#[kani::unwind(16)]
++fn sort4_raw_hole_negative_u64() {
++    exercise_sort4_raw::<false>();
 +}

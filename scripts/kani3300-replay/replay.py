@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Preparation and bounded execution receipts for the Kani 3300 Gate B-prime replay.
+"""Preparation and bounded execution receipts for the Kani 3300 SEL1 replay.
 
 This file deliberately records observations without assigning proof credit.
 Every root stays UNKNOWN until a reviewer binds useful checks and the selected
-Check body or expected boundary to the generated artifact.
+Check/Original body or intended negative to the generated artifact.
 """
 
 from __future__ import annotations
@@ -23,22 +23,67 @@ from typing import Any
 
 HERE = Path(__file__).resolve().parent
 REQUEST = HERE / "CI-REQUEST.json"
-SOURCE_BINDING = HERE / "c1-source-binding.json"
-PATCH = HERE / "gateb-prime-test-only.patch"
-C1_SHA = "1658f4cadfa83139e41180ce3865e23f79d889aa"
-C1_TREE = "bfb5eb9db13ffb91ec4585b7c7ef41ddfe0008fb"
+SOURCE_BINDING = HERE / "sel1-source-binding.json"
+PATCH = HERE / "sel1-test-only.patch"
+TOOL_SHA = 'ec85b782a1b7156ad434cfac25403acd4e326dc1'
+TOOL_TREE = '0c9e5e67ba0a17128f71af415644f3fad84099d3'
 STD_SHA = "70ba5befc617627073738e26cb1466bd4fb76e41"
 STD_TREE = "6ea9d3425f6d0478cfc2517cbdd2fb7d7b32a53f"
 STD_COMMIT_TREE = "84ab170ccdcc29fba69e55e0a46e6acdf52d9704"
-PATCH_SHA = "af2d6e7bce1d628ab7b56363578e9aa1393aa1e02be72786ae277d34a43892a5"
-REQUEST_SHA = "5a769b123e92a1d46962e946bb500e076eb2d528657ebf287df87d7b0f53a55d"
+PATCH_SHA = '473526895d6d57a99bd356a060195745cc6aba9ee2b70fcc7ae90fecb6676f06'
+REQUEST_SHA = 'c96c9bd955d64ca7d79bf40e589db397c2447a2cb460703544647b1c079ca033'
+STD_OVERLAY_SHA = '6075e7ce17179f45642c9ffe8fe09e3ec9395726'
+STD_OVERLAY_TREE = '12e87bd4a4e141a8f829d8a0519efc09260c5059'
 ROOT_CAP_SECONDS = 2400
 INVALID_EXPORT_STATES = {
     "MISSING", "EMPTY", "INVALID_OR_PARTIAL", "NULL", "WRONG_TOP_LEVEL_TYPE",
-    "WRONG_SOURCE_OR_SELECTOR",
+    "WRONG_SOURCE_OR_SELECTOR", "EXPLICIT_NOT_RUN",
 }
-PATCHED_FILE_HASHES = {'library/core/src/slice/sort/shared/smallsort/verify.rs': 'b37239fc681409922606a8fd310e20f9c776e67a9c7f8dd4e4b79a77172c79fb', 'library/core/src/slice/sort/shared/smallsort/verify/helper_contracts.rs': '270e2a2d57d162e979d375c1a1bdb786dfdca664ad6e610e7b4e8661c135d933', 'library/core/src/slice/sort/shared/smallsort/verify/helper_contracts_wide.rs': 'b2d71e6e61b4130a95dda6daac3cd5f0970f9daf7b0f7bfa8a9f99d9c3c29844', 'library/core/src/slice/sort/shared/smallsort/verify/replay_gateb_prime.rs': 'c585f3d0c74879cb21e8f09204f52d59b7aa4948a2e17541a94e162b3ffb10a1'}
+PATCHED_FILE_HASHES = {'library/core/src/slice/sort/shared/smallsort/verify.rs': '506644ad92ed4872af19bd1d302b439ff5e1d4dd850e9e9f149d429286065a95',
+ 'library/core/src/slice/sort/shared/smallsort/verify/helper_contracts.rs': '22de8b24f6adf35b633b2962d9873a349041a18cca9d580944d2d4a3c9ad0655',
+ 'library/core/src/slice/sort/shared/smallsort/verify/helper_contracts_wide.rs': 'b2d71e6e61b4130a95dda6daac3cd5f0970f9daf7b0f7bfa8a9f99d9c3c29844',
+ 'library/core/src/slice/sort/shared/smallsort/verify/replay_gateb_prime.rs': 'c585f3d0c74879cb21e8f09204f52d59b7aa4948a2e17541a94e162b3ffb10a1',
+ 'library/core/src/slice/sort/shared/smallsort/verify/replay_uninit_controls.rs': 'c186a086dadba038ff5ad7ca823e52e1e807758a92b1a46cf4c807fc07d96a39'}
 PINNED_RUST_TOOLCHAIN = "nightly-2026-10-23"
+EXPECTED_ROWS = {'sort4-closure-on': {'selector': 'slice::sort::shared::smallsort::verify::helper_contracts::sort4_safety_u64',
+                      'expected_mode': 'Check(sort4_stable)',
+                      'source_unwind': 16,
+                      'expected_result': 'SUCCESS',
+                      'expected_failed_checks': 0},
+ 'swap-if-less-closure-on': {'selector': 'slice::sort::shared::smallsort::verify::helper_contracts::swap_safety_u64_backing4',
+                             'expected_mode': 'Check(swap_if_less)',
+                             'source_unwind': 8,
+                             'expected_result': 'SUCCESS',
+                             'expected_failed_checks': 0},
+ 'raw-legal-on': {'selector': 'slice::sort::shared::smallsort::verify::replay_uninit_controls::sort4_raw_all_initialized_u64',
+                  'expected_mode': 'Original(sort4_stable)',
+                  'source_unwind': 16,
+                  'expected_result': 'SUCCESS',
+                  'expected_failed_checks': 0},
+ 'raw-negative-on': {'selector': 'slice::sort::shared::smallsort::verify::replay_uninit_controls::sort4_raw_hole_negative_u64',
+                     'expected_mode': 'Original(sort4_stable)',
+                     'source_unwind': 16,
+                     'expected_result': 'FAILURE',
+                     'expected_failed_checks': 1},
+ 'merge-raw-closure-on': {'selector': 'slice::sort::shared::smallsort::verify::helper_contracts_wide::merge_safety_u64_len8_scratch48_src32_dst0',
+                          'expected_mode': 'Check(bidirectional_merge)',
+                          'source_unwind': 34,
+                          'expected_result': 'SUCCESS',
+                          'expected_failed_checks': 0},
+ 'merge-profile-closure-on': {'selector': 'slice::sort::shared::smallsort::verify::replay_gateb_prime::merge_profile_closure_scratch48_u8_n9',
+                              'expected_mode': 'Check(merge_profile_closure_u8)',
+                              'source_unwind': 34,
+                              'expected_result': 'SUCCESS',
+                              'expected_failed_checks': 0}}
+EXPECTED_FLAGS = {'assertion_reachability': 'DEFAULT_ON',
+ 'cfg_controls': True,
+ 'coverage_requested': False,
+ 'experimental_valid_value': False,
+ 'no_assert_contracts': True,
+ 'object_bits': 12,
+ 'slicing': 'DEFAULT_ON',
+ 'solver': 'DEFAULT_CADICAL',
+ 'standard_checks': 'DEFAULTS_ON'}
 
 
 def sha256(path: Path) -> str:
@@ -68,7 +113,7 @@ def root_exit_code(receipt: dict[str, Any]) -> int:
     if rss.get("status") != "OBSERVED_WAIT4_LINUX_RU_MAXRSS" or not isinstance(rss.get("max_bytes"), int):
         return 1
     validation = receipt.get("post_run_validation", {})
-    source = validation.get("c1_source_valid", {})
+    source = validation.get("tool_source_valid", {})
     if source.get("valid") is False or validation.get("std_test_only_overlay_valid") is False:
         return 1
     return 0
@@ -94,15 +139,15 @@ def load_request() -> dict[str, Any]:
     if sha256(PATCH) != PATCH_SHA:
         raise ValueError("embedded test patch SHA-256 mismatch")
     req = json.loads(REQUEST.read_text())
-    if req.get("tool_export_sha") != C1_SHA or req.get("tool_export_tree") != C1_TREE:
-        raise ValueError("request does not pin the frozen C1 source")
-    if req.get("selected_library_tree") != STD_TREE or len(req.get("roots", [])) != 3:
-        raise ValueError("request library pin or exact 3-root inventory mismatch")
-    expected_ids = {"merge-raw-closure-on", "merge-profile-closure-on", "sort4-closure-on"}
+    if req.get("tool_export_sha") != TOOL_SHA or req.get("tool_export_tree") != TOOL_TREE:
+        raise ValueError("request does not pin the frozen SEL1 source")
+    if req.get("selected_library_tree") != STD_TREE or len(req.get("roots", [])) != 6:
+        raise ValueError("request library pin or exact 6-root inventory mismatch")
+    expected_ids = set(EXPECTED_ROWS)
     if {r.get("id") for r in req["roots"]} != expected_ids:
         raise ValueError("request row allowlist mismatch")
     if (req.get("authorization") != "PREPARATION_ONLY" or
-            req.get("run_budget", {}).get("max_invocations") != 3 or
+            req.get("run_budget", {}).get("max_invocations") != 6 or
             req.get("run_budget", {}).get("retry_policy") != "NONE" or
             req.get("run_budget", {}).get("jobs") != 1 or
             req.get("run_budget", {}).get("max_parallel") != 1):
@@ -111,13 +156,34 @@ def load_request() -> dict[str, Any]:
         raise ValueError("request test patch hash differs from wrapper")
     if req.get("patched_file_sha256") != PATCHED_FILE_HASHES:
         raise ValueError("request patched file hashes differ from wrapper")
+    if (req.get("test_overlay_commit") != STD_OVERLAY_SHA or
+            req.get("test_only_library_tree") != STD_OVERLAY_TREE):
+        raise ValueError("request std overlay identity mismatch")
+    for row in req["roots"]:
+        expected = EXPECTED_ROWS[row["id"]]
+        if any(row.get(key) != value for key, value in expected.items()):
+            raise ValueError("request source-stage-target or row oracle mismatch")
+        argv = ["<EXACT_SEL1_KANI_BINARY>", "verify-std", "-Z", "unstable-options", "./library",
+                "-Z", "function-contracts", "-Z", "mem-predicates", "-Z", "float-lib", "-Z", "c-ffi",
+                "-Z", "loop-contracts", "-Z", "quantifiers", "-Z", "stubbing", "-Z", "export-json",
+                "-Z", "uninit-checks", "--no-assert-contracts", "--harness", expected["selector"],
+                "--exact", "--jobs", "1", "--harness-timeout", "2400s", "--target-dir",
+                f"<OUTPUT_ROOT>/{row['id']}/target", "--export-json",
+                f"<OUTPUT_ROOT>/{row['id']}/export.json", "--output-format=regular",
+                "--cbmc-args", "--object-bits", "12"]
+        if (row.get("argv") != argv or row.get("uninit") is not True or
+                row.get("environment") != {"NO_COLOR": "1", "RUSTFLAGS": "--cfg kani_smallsort_controls"}):
+            raise ValueError("request exact argv/environment mismatch")
+    if req.get("flags") != EXPECTED_FLAGS:
+        raise ValueError("request checker flags differ from frozen profile")
     flags = req.get("flags", {})
     budget = req.get("run_budget", {})
     if (flags.get("object_bits") != 12 or flags.get("experimental_valid_value") is not False or
             flags.get("cfg_controls") is not True or budget.get("harness_cap_seconds") != ROOT_CAP_SECONDS or
-            budget.get("aggregate_job_envelope_seconds", ROOT_CAP_SECONDS + 1) > 10800):
+            budget.get("aggregate_job_envelope_seconds") != 21600):
         raise ValueError("request flags or time caps exceed authorized bounds")
-    if any(r.get("status") != "NOT_RUN" or r.get("generated_property_binding") is not None for r in req["roots"]):
+    if any(r.get("status") != "NOT_RUN" or r.get("state") != "NOT_RUN" or
+           r.get("generated_property_binding") is not None for r in req["roots"]):
         raise ValueError("request must remain NOT_RUN with unbound generated properties")
     return req
 
@@ -129,33 +195,33 @@ def git(repo: Path, *args: str) -> str:
 
 
 def verify_source(repo: Path) -> dict[str, Any]:
-    """Check C1 by immutable git object IDs, even when overlay files are present."""
+    """Check SEL1 by immutable git object IDs, even when overlay files are present."""
     req = load_request()
     binding = json.loads(SOURCE_BINDING.read_text())
-    if binding.get("export_sha") != C1_SHA or binding.get("export_tree") != C1_TREE:
-        raise ValueError("source binding does not identify C1")
-    if git(repo, "cat-file", "-t", C1_SHA) != "commit":
-        raise ValueError("frozen C1 commit object is unavailable")
-    if git(repo, "rev-parse", f"{C1_SHA}^{{tree}}") != C1_TREE:
-        raise ValueError("frozen C1 tree mismatch")
+    if binding.get("export_sha") != TOOL_SHA or binding.get("export_tree") != TOOL_TREE:
+        raise ValueError("source binding does not identify SEL1")
+    if git(repo, "cat-file", "-t", TOOL_SHA) != "commit":
+        raise ValueError("frozen SEL1 commit object is unavailable")
+    if git(repo, "rev-parse", f"{TOOL_SHA}^{{tree}}") != TOOL_TREE:
+        raise ValueError("frozen SEL1 tree mismatch")
     head = git(repo, "rev-parse", "HEAD")
-    if head != C1_SHA:
-        raise ValueError("build source checkout must be the exact frozen C1 commit")
+    if head != TOOL_SHA:
+        raise ValueError("build source checkout must be the exact frozen SEL1 commit")
     if git(repo, "status", "--porcelain"):
-        raise ValueError("frozen C1 export checkout must be clean")
+        raise ValueError("frozen SEL1 export checkout must be clean")
     actual_files = {}
     for rel, expected in binding["files"].items():
         # git show is text-safe here but hashes must be over exact bytes.
-        data = subprocess.run(["git", "-C", str(repo), "show", f"{C1_SHA}:{rel}"],
+        data = subprocess.run(["git", "-C", str(repo), "show", f"{TOOL_SHA}:{rel}"],
                               check=True, stdout=subprocess.PIPE).stdout
         digest = hashlib.sha256(data).hexdigest()
         if digest != expected:
-            raise ValueError(f"C1 bound source mismatch: {rel}")
+            raise ValueError(f"SEL1 bound source mismatch: {rel}")
         actual_files[rel] = digest
     for rel, expected in binding["subtrees"].items():
-        if git(repo, "rev-parse", f"{C1_SHA}:{rel}") != expected:
-            raise ValueError(f"C1 bound subtree mismatch: {rel}")
-    return {"c1_sha": C1_SHA, "c1_tree": C1_TREE, "bound_files": len(actual_files),
+        if git(repo, "rev-parse", f"{TOOL_SHA}:{rel}") != expected:
+            raise ValueError(f"SEL1 bound subtree mismatch: {rel}")
+    return {"tool_sha": TOOL_SHA, "tool_tree": TOOL_TREE, "bound_files": len(actual_files),
             "bound_subtrees": len(binding["subtrees"]), "request_sha256": sha256(REQUEST),
             "std_commit": STD_SHA, "std_tree": STD_TREE, "patch_sha256": sha256(PATCH),
             "test_overlay_tree": req["test_only_library_tree"], "proof_status": "NOT_RUN"}
@@ -208,6 +274,8 @@ def parse_export(path: Path, expected_selector: str) -> dict[str, Any]:
         return {"state": "NULL", "outcome": "UNKNOWN"}
     if not isinstance(value, dict):
         return {"state": "WRONG_TOP_LEVEL_TYPE", "observed_type": type(value).__name__, "outcome": "UNKNOWN"}
+    if any(value.get(key) == "NOT_RUN" for key in ("result", "status", "runtime_proof_status")):
+        return {"state": "EXPLICIT_NOT_RUN", "outcome": "UNKNOWN"}
     # Export schema and harness identity vary across supported Kani builds.
     # A missing or mismatched recognizable identity is a gap, never a pass.
     selectors = []
@@ -221,7 +289,7 @@ def parse_export(path: Path, expected_selector: str) -> dict[str, Any]:
             "outcome": "UNKNOWN", "generated_property_binding": None,
             "review_required": ["selected Check body", "useful reached checks/ensures and covers",
                                 "complete artifact coverage; no proof credit from this envelope parse"] +
-                               (["sort4 expected boundary: exactly one named select_unpredictable Unsupported at library/core/src/hint.rs:871"]
+                               (["sort4 expected SUCCESS:0 failed checks, useful comparator/frame/readbacks/return reached"]
                                 if expected_selector.endswith("helper_contracts::sort4_safety_u64") else [])}
 
 
@@ -356,20 +424,23 @@ def run_root(repo: Path, std: Path, root_id: str, binary: Path, out: Path) -> di
     if not binary.is_file() or not os.access(binary, os.X_OK):
         raise ValueError("exact built Kani executable is missing or not executable")
     out.mkdir(parents=True, exist_ok=False)
-    argv = [str(binary) if x == "<EXACT_C1_KANI_BINARY>" else x for x in row["argv"]]
+    argv = [str(binary) if x == "<EXACT_SEL1_KANI_BINARY>" else x for x in row["argv"]]
     argv = [x.replace("<OUTPUT_ROOT>", str(out.parent)) for x in argv]
     env = os.environ.copy()
     env.update(row["environment"])
     execution = execute(argv, std, env, out)
     export = out / "export.json"
     receipt = {
-        "schema": "kani3300-replay-receipt-v1", "root_id": root_id,
-        "request_sha256": sha256(REQUEST), "c1_sha": C1_SHA, "c1_tree": C1_TREE,
+        "schema": "kani3300-sel1-replay-receipt-v1", "root_id": root_id,
+        "request_sha256": sha256(REQUEST), "tool_sha": TOOL_SHA, "tool_tree": TOOL_TREE,
         "source_identity": source_identity,
         "std_base_commit": STD_SHA, "std_base_commit_tree": STD_COMMIT_TREE,
         "std_library_tree": STD_TREE, "test_patch_sha256": sha256(PATCH),
         "argv": argv, "environment": {k: env.get(k) for k in row["environment"]},
         "expected_result": row["expected_result"], "expected_mode": row["expected_mode"],
+        "expected_failed_checks": row["expected_failed_checks"], "oracle": row["oracle"],
+        "source_unwind": row["source_unwind"], "test_overlay_source_commit": STD_OVERLAY_SHA,
+        "expected_test_overlay_library_tree": STD_OVERLAY_TREE,
         "rss": {"max_bytes": execution.pop("rss_max_bytes"),
                 "status": execution.pop("rss_status")},
         **execution,
@@ -402,7 +473,7 @@ def run_root(repo: Path, std: Path, root_id: str, binary: Path, out: Path) -> di
         return {
             "export": receipt["export"],
             "post_run_validation": {
-                "c1_source_valid": post_source_state,
+                "tool_source_valid": post_source_state,
                 "std_overlay_paths": sorted(post_std_paths),
                 "std_overlay_sha256": post_std_hashes,
                 "std_test_only_overlay_valid": post_std_valid,
