@@ -1,12 +1,8 @@
 #!/usr/bin/env python3
 # Copyright Kani Contributors
 # SPDX-License-Identifier: Apache-2.0 OR MIT
-"""Root-local composition oracle with a narrow, recorded T1b allowance."""
+"""Root-local composition oracle with exact per-root comparisons."""
 from collections import Counter
-
-# Reviewed shared monomorphization in this fixture, never a root/contract target.
-# Do not infer sharing merely from a function being outside the selected harness.
-T1B_SHARED_FUNCTIONS = {"std::ptr::read::<u8>"}
 
 
 class Rejected(ValueError):
@@ -154,25 +150,8 @@ def row_difference(before, after):
     return difference
 
 
-def t1b_check(row):
-    """Only benign safety instrumentation in an explicitly reviewed shared body."""
-    location = row.get("location")
-    if not isinstance(location, str):
-        return False
-    function = location.rpartition(" in function ")[2]
-    prefix = function + ".safety_check."
-    return (function in T1B_SHARED_FUNCTIONS
-            and row["status"] in {"SUCCESS", "UNREACHABLE"}
-            and row["id"].startswith(prefix) and row["id"][len(prefix):].isdigit())
-
-
 def compare_root(isolated, combined):
-    """Return all drift; permit only extra/missing benign shared instrumentation.
-
-    Verdict, failures (including exact metadata), Unsupported, covers, and every
-    useful/root/target check stay exact. Existing IDs may not change metadata or
-    status, even in a shared body. Unknown functions fail closed.
-    """
+    """Return all drift and accept only exact equality of the complete inventories."""
     inventory(isolated)
     inventory(combined)
     require(isolated["expected_root"] == combined["expected_root"], "different root bindings")
@@ -185,20 +164,13 @@ def compare_root(isolated, combined):
     for field in ("verdict", "failure_kind"):
         if isolated[field] != combined[field]:
             differences[field] = {"isolated": isolated[field], "combined": combined[field]}
-    check_diff = differences.get("checks", {"removed": [], "added": []})
-    common_ids = {row["id"] for row in isolated["checks"]} & {
-        row["id"] for row in combined["checks"]}
-    t1b = {direction: [row for row in rows
-                      if t1b_check(row) and row["id"] not in common_ids]
-           for direction, rows in check_diff.items()}
-    accepted = (set(differences) <= {"checks"} and t1b == check_diff)
+    accepted = not differences
     return {"root": isolated["expected_root"], "accepted": accepted,
-            "exact_match": not differences, "differences": differences,
-            "t1b_evidence": t1b}
+            "exact_match": not differences, "differences": differences}
 
 
 def compare_pair(isolated, combined, expected_roots):
-    """Require semantic composition, recording the narrow shared-cache exception."""
+    """Require every selected root's complete inventory to match isolation exactly."""
     singles = compare_selection(isolated, expected_roots)
     joint = compare_selection(combined, expected_roots)
     require(set(singles) == set(joint), "combined selection has different roots")

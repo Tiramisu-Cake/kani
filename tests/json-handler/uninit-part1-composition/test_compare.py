@@ -221,17 +221,19 @@ class MixedInventoryTests(unittest.TestCase):
         row["location"] = "library/core/src/ptr/mod.rs:1754:9 in function std::ptr::read::<u8>"
         return row
 
-    def test_shared_superset_and_subset_are_recorded_as_t1b(self):
+    def test_shared_superset_and_subset_are_diagnostic_but_rejected(self):
         extra = [self.shared_check(), self.shared_check(6, "UNREACHABLE")]
         mixed = copy.deepcopy(self.legal)
         mixed["checks"] += extra
         for before, after, direction in ((self.legal, mixed, "added"),
                                          (mixed, self.legal, "removed")):
             with self.subTest(direction=direction):
-                self.assertTrue(compare_pair(run(before), run(after), self.expected))
+                with self.assertRaisesRegex(Rejected, "mixed-root inventory changed: legal"):
+                    compare_pair(run(before), run(after), self.expected)
                 diff = compare_root(before, after)
                 self.assertFalse(diff["exact_match"])
-                self.assertEqual(diff["t1b_evidence"][direction], extra)
+                self.assertFalse(diff["accepted"])
+                self.assertEqual(diff["differences"]["checks"][direction], extra)
 
     def test_shared_failure_multiset_drift_is_rejected(self):
         baseline = root("legal", [self.shared_check(1, "FAILURE")], "FAILURE")
@@ -558,7 +560,7 @@ class ExecuteReceiptTests(unittest.TestCase):
 class CaptureDiagnosticTests(unittest.TestCase):
     def invoke(self, fail_run=None, compare_error=False, corrupt_receipt=False,
                collect_unbound=True, report_error=False, interrupt=False, shared_extra=False,
-               failure_drift=False, bound_manifest=False):
+               failure_drift=False, bound_manifest=False, stale_binding=False):
         args = SimpleNamespace(kani="must-not-run", keep_output=True,
                                collect_unbound=collect_unbound)
         with tempfile.TemporaryDirectory() as temporary:
@@ -574,6 +576,8 @@ class CaptureDiagnosticTests(unittest.TestCase):
                                 expected_failure_kind=baseline["failure_kind"],
                                 expected_failures=baseline["failed_properties"],
                                 expected_unsupported_inventory=baseline["unsupported_constructs"])
+                    if stale_binding:
+                        case["expected_inventory"] = [check("stale.golden.binding")]
             else:
                 # Exercise the pending guard independently of committed bindings.
                 manifest["roots"][0]["binding"] = "BINDING_PENDING"
@@ -648,13 +652,16 @@ class CaptureDiagnosticTests(unittest.TestCase):
         self.assertEqual(len(report["combined_inventory_observations"]), 4)
         self.assertEqual(errors, "")
 
-    def test_shared_superset_capture_records_t1b_and_completes_all_runs(self):
+    def test_shared_superset_capture_records_mismatch_and_completes_all_runs(self):
         code, report, _, errors, count = self.invoke(shared_extra=True)
         self.assertEqual(code, 2)
         self.assertEqual(count, 11)
-        self.assertEqual(report["mixed_root_oracle"], "MATCH_WITH_T1B")
-        self.assertEqual(report["mixed_root_comparisons"][0]["t1b_evidence"]["added"][0]["id"],
-                         "std::ptr::read::<u8>.safety_check.5")
+        self.assertEqual(report["mixed_root_oracle"], "MISMATCH")
+        self.assertFalse(report["mixed_root_comparisons"][0]["accepted"])
+        self.assertEqual(report["mixed_root_comparisons"][0]["differences"]["checks"]["added"][0],
+                         {"id": "std::ptr::read::<u8>.safety_check.5",
+                          "status": "SUCCESS", "description": "std::ptr::read::<u8>.safety_check.5",
+                          "location": "ptr/mod.rs:1754:9 in function std::ptr::read::<u8>"})
         self.assertEqual(errors, "")
 
     def test_failure_drift_capture_retains_failure_metadata_and_runs_all_orders(self):
@@ -671,7 +678,7 @@ class CaptureDiagnosticTests(unittest.TestCase):
 
     def test_bound_regression_uses_oracle_and_explicit_capture_never_claims_pass(self):
         for shared, failure, collect, expected_code in ((False, False, False, 0),
-                                                      (True, False, False, 0),
+                                                      (True, False, False, 1),
                                                       (False, True, False, 1),
                                                       (False, False, True, 2)):
             with self.subTest(shared=shared, failure=failure, collect=collect):
@@ -682,6 +689,15 @@ class CaptureDiagnosticTests(unittest.TestCase):
                 if code != 1:
                     self.assertEqual(count, 11)
                     self.assertEqual(report["status"], "UNBOUND_CAPTURE" if collect else "PASS")
+
+    def test_explicit_capture_skips_stale_golden_bindings(self):
+        code, report, _, errors, count = self.invoke(
+            collect_unbound=True, bound_manifest=True, stale_binding=True)
+        self.assertEqual((code, count), (2, 11))
+        self.assertEqual(report["status"], "UNBOUND_CAPTURE")
+        self.assertEqual(report["binding_status"], "NOT_CHECKED_CAPTURE")
+        self.assertEqual(report["mixed_root_oracle"], "EXACT_MATCH")
+        self.assertEqual(errors, "")
 
     def test_corrupt_receipt_does_not_mask_original_failure(self):
         code, report, _, errors, _ = self.invoke(fail_run="isolated-pfc_legal",
@@ -716,7 +732,7 @@ class CaptureDiagnosticTests(unittest.TestCase):
         self.assertEqual(code, 2)
         self.assertEqual(count, 11)
         self.assertEqual(report["status"], "UNBOUND_CAPTURE")
-        self.assertEqual(report["binding_status"], "BINDING_PENDING")
+        self.assertEqual(report["binding_status"], "NOT_CHECKED_CAPTURE")
         self.assertEqual(report["order_credit"], "NOT_ESTABLISHED")
         self.assertEqual(errors, "")
 
