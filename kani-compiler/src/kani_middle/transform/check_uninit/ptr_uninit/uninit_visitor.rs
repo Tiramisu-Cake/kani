@@ -132,6 +132,39 @@ impl<'tcx> CheckUninitVisitor<'tcx> {
         ty.kind().is_union() || maybe_uninit_storage(self.tcx, ty).is_some()
     }
 
+    /// Nested aggregates have no value-transfer protocol. Reuse the existing layout
+    /// boundary rather than treating every layout error (or generic argument) as a union.
+    fn needs_nested_call_reset(&self, ty: Ty) -> bool {
+        !self.transfers_shadow(ty)
+            && ty.layout().is_ok()
+            && matches!(PointeeInfo::from_ty(ty), Err(LayoutComputationError::UnionAsField(_)))
+    }
+
+    fn reset_nested_call(&mut self, args: &[Operand], destination: &Place, returns: bool) {
+        // The caller must have snapshotted ALL supported arguments before this helper.
+        // Take the address of the actual Move place while its storage is still live.
+        for operand in args {
+            if let Operand::Move(place) = operand
+                && self.needs_nested_call_reset(place.ty(&self.locals).unwrap())
+            {
+                self.push_target(MemoryInitOp::SetRef {
+                    operand: Operand::Copy(place.clone()),
+                    value: false,
+                    position: InsertPosition::Before,
+                });
+            }
+        }
+        if returns && self.needs_nested_call_reset(destination.ty(&self.locals).unwrap()) {
+            // After a Call means its normal continuation edge, never unwind/abort.
+            // Clear exactly this place's full storage, including padding, not pointees.
+            self.push_target(MemoryInitOp::SetRef {
+                operand: Operand::Copy(destination.clone()),
+                value: false,
+                position: InsertPosition::After,
+            });
+        }
+    }
+
     /// Locate the first union on the projection path, including a union at the end.
     fn enclosing_union(&self, place: &Place) -> Option<Ty> {
         let mut prefix = Place::from(place.local);
@@ -506,7 +539,7 @@ impl MirVisitor for CheckUninitVisitor<'_> {
         }
         // Leave it as an exhaustive match to be notified when a new kind is added.
         match &term.kind {
-            TerminatorKind::Call { func, args, destination, .. } => 'call: {
+            TerminatorKind::Call { func, args, destination, target, .. } => 'call: {
                 self.super_terminator(term, location);
                 let instance = match try_resolve_instance(self.tcx, &self.locals, func) {
                     Ok(instance) => instance,
@@ -568,6 +601,12 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                                 self.push_target(MemoryInitOp::Unsupported {
                                     reason: format!("Kani does not support shadow-carrying argument or return values of intrinsic `{intrinsic:?}`."),
                                 });
+                            }
+                            // black_box is a by-value identity in codegen, even though it
+                            // has no pointer-effect model. Its nested values need the same
+                            // conservative boundary as ordinary calls. Forget stays a no-op.
+                            Intrinsic::BlackBox => {
+                                self.reset_nested_call(args, destination, target.is_some());
                             }
                             intrinsic_name if can_skip_intrinsic(intrinsic_name.clone()) => {
                                 /* Intrinsics that can be safely skipped */
@@ -774,6 +813,10 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                                 }
                             }
                         }
+                        // Include accepted foreign calls and MIR-backed shims: neither has
+                        // a paired nested protocol. Resolver/early Unsupported paths above
+                        // remain unchanged. This also runs when union_args is empty.
+                        self.reset_nested_call(args, destination, target.is_some());
                     }
                     // The shared resolver rejects these before any call-specific effects.
                     InstanceKind::Virtual { .. } | InstanceKind::LlvmIntrinsic => unreachable!(),

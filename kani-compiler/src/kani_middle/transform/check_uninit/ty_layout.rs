@@ -140,12 +140,11 @@ pub(super) fn maybe_uninit_storage(tcx: TyCtxt, ty: Ty) -> Option<Ty> {
 impl PointeeInfo {
     /// Deinitializing a sized call operand clears its entire storage, regardless of field masks.
     pub(super) fn for_deinit(ty: Ty) -> Result<Self, LayoutComputationError> {
-        let size = ty
-            .layout()
-            .map_err(|_| LayoutComputationError::UnknownUnsizedLayout(ty))?
-            .shape()
-            .size
-            .bytes();
+        let layout = ty.layout().map_err(|_| LayoutComputationError::UnknownUnsizedLayout(ty))?;
+        if !layout.shape().is_sized() {
+            return Err(LayoutComputationError::UnknownUnsizedLayout(ty));
+        }
+        let size = layout.shape().size.bytes();
         Ok(Self { pointee_ty: ty, layout: PointeeLayout::Sized { layout: vec![true; size] } })
     }
 
