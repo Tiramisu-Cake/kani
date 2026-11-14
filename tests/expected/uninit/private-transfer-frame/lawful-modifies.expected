@@ -1,3 +1,21 @@
 Checking harness lawful_modifies_preserves_outside...
+frame_target::\
+ - Status: SUCCESS\
+ - Description: "|result: &u16| *result == 29 && *out == 29"
+frame_target::\
+ - Status: SUCCESS\
+ - Description: "Check that *var_8 is assignable"\
+ - Location: tests/expected/uninit/private-transfer-frame/lawful-modifies.rs:26:5
+lawful_modifies_preserves_outside.assertion.1\
+ - Status: SUCCESS\
+ - Description: "assertion failed: frame_target(&mut out, &mut outside) == 29"
+lawful_modifies_preserves_outside.assertion.2\
+ - Status: SUCCESS\
+ - Description: "assertion failed: out == 29"
+lawful_modifies_preserves_outside.assertion.3\
+ - Status: SUCCESS\
+ - Description: "assertion failed: outside == 41"
+SUMMARY:\
+ ** 0 of
 VERIFICATION:- SUCCESSFUL
 Complete - 1 successfully verified harnesses, 0 failures, 1 total.

@@ -1,0 +1,23 @@
+Checking harness recursive_simple_check...
+bounded_transfer::\
+- Status: SUCCESS\
+- Description: "|result: &MaybeUninit<u8>| !initialized || payload_is_42(result)"
+recursive_simple_check.assertion.1\
+- Status: SUCCESS\
+- Description: "assertion failed: payload_is_42(&result)"
+recursive_simple_check.cover.1\
+- Status: SATISFIED\
+- Description: "initialized return consumed"
+recursive_simple_check.cover.2\
+- Status: SATISFIED\
+- Description: "uninitialized storage returned"
+bounded_transfer::\
+- Status: SATISFIED\
+- Description: "base body reached"
+bounded_transfer::\
+- Status: SATISFIED\
+- Description: "unrolled body edge reached"
+SUMMARY:\
+** 0 of
+VERIFICATION:- SUCCESSFUL
+Complete - 1 successfully verified harnesses, 0 failures, 1 total.

@@ -1,3 +1,8 @@
 Checking harness postcondition_reads_initialized_return...
+postcondition_target::\
+ - Status: SUCCESS\
+ - Description: "|result: &MaybeUninit<u8>| unsafe { result.assume_init_read() == 17 }"
+SUMMARY:\
+ ** 0 of
 VERIFICATION:- SUCCESSFUL
 Complete - 1 successfully verified harnesses, 0 failures, 1 total.

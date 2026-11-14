@@ -1,4 +1,17 @@
 Checking harness postcondition_reads_returned_hole...
+std::ptr::read::<u8>.safety_check.1\
+ - Status: FAILURE\
+ - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `*const u8`"
+std::ptr::read::<u8>.safety_check.4\
+ - Status: FAILURE\
+ - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u8`"
+postcondition_target::\
+ - Status: FAILURE\
+ - Description: "|result: &MaybeUninit<u8>| unsafe { result.assume_init_read() == 17 }"
+SUMMARY:\
+ ** 3 of
+Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type `*const u8`
 Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type `u8`
+Failed Checks: |result: &MaybeUninit<u8>| unsafe { result.assume_init_read() == 17 }
 VERIFICATION:- FAILED
 Complete - 0 successfully verified harnesses, 1 failures, 1 total.

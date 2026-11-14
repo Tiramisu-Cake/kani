@@ -1,9 +1,14 @@
-assigns\
-- Status: FAILURE\
-- Description: "Check that *var_7 is assignable"\
-- Location: tests/expected/uninit/maybe-uninit-contract-frame/main.rs:22:5 in function frame_target::{closure#2}::{closure#0}
-
-Failed Checks: Check that *var_7 is assignable\
- maybe-uninit-contract-frame/main.rs", line 22, in frame_target::{closure#2}::{closure#0}
-
+Checking harness frame_negative...
+frame_target::\
+ - Status: FAILURE\
+ - Description: "Check that *var_7 is assignable"\
+ - Location: tests/expected/uninit/maybe-uninit-contract-frame/main.rs:22:5
+frame_target::\
+ - Status: SUCCESS\
+ - Description: "Check that *var_8 is assignable"\
+ - Location: tests/expected/uninit/maybe-uninit-contract-frame/main.rs:23:5
+SUMMARY:\
+ ** 1 of
+Failed Checks: Check that *var_7 is assignable
 VERIFICATION:- FAILED
+Complete - 0 successfully verified harnesses, 1 failures, 1 total.

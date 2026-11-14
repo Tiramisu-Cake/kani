@@ -1,0 +1,11 @@
+Checking harness replace_transfer_uninitialized...
+replace_transfer_uninitialized.assertion.1\
+- Status: SUCCESS\
+- Description: "assertion failed: !initialized || payload_is_42(&result)"
+replace_transfer_uninitialized.cover.1\
+- Status: SATISFIED\
+- Description: "uninitialized storage returned"
+SUMMARY:\
+** 0 of
+VERIFICATION:- SUCCESSFUL
+Complete - 1 successfully verified harnesses, 0 failures, 1 total.
