@@ -511,7 +511,7 @@ mod tests {
         conflicts.push(alignment);
 
         for conflict in conflicts {
-            assert!(!original.compatible(&conflict));
+            assert_ne!(original, conflict);
             for qualifications in [[false, true], [true, false], [true, true], [false, false]] {
                 let mut registry = ImmutableAllocations::default();
                 let symbol = "conflicting-immutable-mask".into();
