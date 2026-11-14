@@ -151,6 +151,8 @@ def prepare_std(repo: str, destination: Path) -> dict[str, Any]:
         destination.mkdir()
     subprocess.run(["git", "clone", "--no-hardlinks", str(repo), str(destination)], check=True)
     git(destination, "checkout", "--detach", STD_SHA)
+    # std needs its submodules (e.g. library/backtrace, library/stdarch) to build.
+    subprocess.run(["git", "-C", str(destination), "submodule", "update", "--init", "--depth", "1"], check=True)
     if git(destination, "rev-parse", "HEAD^{tree}") != STD_COMMIT_TREE:
         raise ValueError("selected std snapshot commit tree mismatch")
     if git(destination, "rev-parse", "HEAD:library") != STD_TREE:
