@@ -177,7 +177,35 @@ stack unwinding support.
 Reading uninitialized memory is
 [considered undefined behavior](https://doc.rust-lang.org/reference/behavior-considered-undefined.html#behavior-considered-undefined) in Rust.
 Kani has partial, experimental support for detecting access to uninitialized memory with the `-Z uninit-checks` option.
-See [this issue](https://github.com/model-checking/kani/issues/3300) for more details.
+The instrumentation tracks a top-level `MaybeUninit<T>` slot, `[MaybeUninit<T>; N]`,
+`[MaybeUninit<T>]`, and `MaybeUninit<[T; N]>` when Kani can compute the element's data mask.
+It tracks initialization through raw copies, typed moves of payload bytes (padding is not
+preserved by typed moves), and direct calls to ordinary functions whose MIR bodies execute, including
+arguments and return values. Qualified whole immutable promoted constants and named
+statics start with their exact byte masks. This requires an immutable, relocation-free
+allocation with a supported `Freeze` origin type and computable layout covering the
+whole allocation; a promoted reference must start at offset zero and span that allocation.
+
+This whole-storage qualification is narrow. Unqualified origins involving a nonzero
+subrange or a relocation can produce conservative false positives. Eligible aliases
+and independently supported static paths can still succeed; this limitation does not
+mean that every subrange or relocation read fails.
+
+General limitations apply to all harnesses using `-Z uninit-checks`, including ordinary
+proofs. Intrinsics without an initialization model, including `select_unpredictable`
+and `core::hint::select_unpredictable`, calls through function pointers and trait
+objects, and call cycles in the delayed initialization analysis remain unsupported.
+Kani's typed marker-dispatched backend hooks do not support by-value shadow argument or return transfers.
+Some function-item trait shims have layout or shadow-transfer limitations; this is
+not a restriction on all direct calls to function items. Shadow transfer under
+`#[kani::stub_verified]` or `#[kani::recursion]` and by-value aggregates containing
+nested `MaybeUninit` or union fields are also outside this support. Conservative
+resets at nested aggregate call boundaries can produce false positives.
+See the [contract limitations](reference/experimental/contracts.md#limitations) for
+contract modes and a nested aggregate example, and [issue #3300](https://github.com/model-checking/kani/issues/3300)
+for the broader work.
+
+This change does not make core::slice::sort::shared::smallsort verifiable with -Z uninit-checks.
 
 ### Destructors
 

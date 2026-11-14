@@ -20,7 +20,7 @@ fn consume(value: Byte) -> u8 {
     unsafe { value.byte }
 }
 
-// Require CI binding to Operand::Copy of an ordinary union.
+// The call copies an ordinary union operand.
 #[custom_mir(dialect = "runtime", phase = "optimized")]
 fn transfer(source: Byte) -> u8 {
     mir! {

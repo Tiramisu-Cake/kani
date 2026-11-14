@@ -9,7 +9,7 @@
 use std::intrinsics::raw_eq;
 use std::mem::MaybeUninit;
 
-// Required binding: left None byte fails, right Some(0) bytes remain legal.
+// The left storage hole fails; initialized zero bytes on the right remain legal.
 #[kani::proof]
 fn zero_and_uninitialized_are_distinct() {
     let left: &[MaybeUninit<u8>; 3] =

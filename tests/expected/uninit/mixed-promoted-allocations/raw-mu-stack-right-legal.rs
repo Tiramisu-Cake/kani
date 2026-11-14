@@ -9,12 +9,12 @@
 use std::intrinsics::raw_eq;
 use std::mem::MaybeUninit;
 
-// A const item borrowed below, not a named static. Actual allocation requires MIR binding.
+// This borrows a const item rather than a named static.
 const PROMOTED: [MaybeUninit<u8>; 3] =
     [MaybeUninit::new(7u8), MaybeUninit::new(0u8), MaybeUninit::new(9u8)];
 
 // Required: tracked flat stack array and anonymous immutable referent.
-// Actual origins, masks, retained operation and both byte checks require CI binding.
+// The raw comparison checks initialization on both stack and immutable operands.
 #[kani::proof]
 fn mixed_raw_mu_stack_right_legal() {
     let mut storage = [MaybeUninit::<u8>::uninit(); 3];

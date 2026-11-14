@@ -22,7 +22,7 @@ fn consume(value: Byte) -> u8 {
 
 const VALUE: Byte = Byte { empty: () };
 
-// Require CI binding to Operand::Constant of an ordinary union.
+// The call uses a constant ordinary union operand.
 #[custom_mir(dialect = "runtime", phase = "optimized")]
 fn transfer() -> u8 {
     mir! {

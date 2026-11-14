@@ -11,8 +11,8 @@ const fn nested_origin() -> [&'static u8; 1] {
 
 static T: [&u8; 1] = nested_origin();
 
-// Candidate mixed-qualification control: actual distinct AllocId keys, shared symbol and
-// qualification must be inspected in CI before claiming this case distinguishes registration.
+// The direct and nested references exercise immutable descriptor qualification
+// across const-evaluated initializer forms.
 #[kani::proof]
 fn const_fn_initializer() {
     let direct: &u8 = &5;

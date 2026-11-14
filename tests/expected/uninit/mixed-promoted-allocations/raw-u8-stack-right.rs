@@ -10,7 +10,7 @@ use std::intrinsics::raw_eq;
 use std::mem::MaybeUninit;
 
 // Required: tracked stack/assume_init temporary and anonymous immutable referent.
-// Actual origins, masks, retained operation and both byte checks require CI binding.
+// The raw comparison checks initialization on both stack and immutable operands.
 #[kani::proof]
 fn mixed_raw_u8_stack_right() {
     let mut storage = MaybeUninit::<[u8; 3]>::uninit();

@@ -21,7 +21,7 @@ impl ReadSlot for [MaybeUninit<u8>] {
 #[kani::proof]
 fn dst_by_value_hole() {
     // Same source form as tests/kani/UnsizedFnParams: the ARGUMENT is *source,
-    // not the Box/fat pointer. Require actual by-value Slice/Move binding in CI.
+    // not the Box/fat pointer, so the slice storage is passed by value.
     let source: Box<[MaybeUninit<u8>]> = Box::new([MaybeUninit::new(0u8), MaybeUninit::uninit()]);
     let _read = (*source).read();
 }

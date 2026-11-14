@@ -1,0 +1,11 @@
+Checking harness ordinary_hook_scalar...
+ordinary_hook_scalar.assertion.1\
+ - Status: SUCCESS\
+ - Description: "assertion failed: destination == 37"
+ordinary_hook_scalar.assertion.2\
+ - Status: SUCCESS\
+ - Description: "assertion failed: source == 37"
+SUMMARY:\
+ ** 0 of
+VERIFICATION:- SUCCESSFUL
+Complete - 1 successfully verified harnesses, 0 failures, 1 total.

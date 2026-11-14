@@ -11,7 +11,7 @@ use std::mem::MaybeUninit;
 
 const ALLOCATION: &[MaybeUninit<u8>; 4] =
     &[MaybeUninit::new(0), MaybeUninit::new(0), MaybeUninit::new(0), MaybeUninit::uninit()];
-// Use three bytes to avoid scalar transmute lowering; CI must confirm retained raw_eq.
+// Three bytes keep the comparison distinct from scalar transmute lowering.
 // Only this subrange origin is used at runtime: offset 1, extent 3, allocation size 4.
 const SUBRANGE: &[MaybeUninit<u8>; 3] =
     unsafe { &*ALLOCATION.as_ptr().add(1).cast::<[MaybeUninit<u8>; 3]>() };

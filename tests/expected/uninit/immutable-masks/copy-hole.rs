@@ -9,7 +9,7 @@
 use std::intrinsics::raw_eq;
 use std::mem::MaybeUninit;
 
-// Required binding: anonymous None -> raw copy -> mutable target -> left raw_eq failure.
+// Copy the anonymous storage hole into mutable storage, then read it with left raw_eq.
 // The other operand must independently pass its byte-initialization check.
 #[kani::proof]
 fn copied_immutable_hole_remains_uninitialized() {

@@ -1,0 +1,12 @@
+Checking harness copy_same_source_to_arg0_hole...
+copy_same_source_to_arg0_hole.assertion.1\
+ - Status: SUCCESS\
+ - Description: "assertion failed: unsafe { initialized.assume_init() } == 0xABCD"
+std::ptr::read::<u32>.safety_check.
+ - Status: FAILURE
+ - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u32`"
+Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type `u32`
+SUMMARY:\
+ ** 1 of
+VERIFICATION:- FAILED
+Complete - 0 successfully verified harnesses, 1 failures, 1 total.

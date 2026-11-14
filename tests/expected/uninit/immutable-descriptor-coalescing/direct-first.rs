@@ -6,7 +6,7 @@
 static T: [&u8; 1] = [&5];
 
 // The direct whole-object reference and the nested relocation may use different AllocId keys
-// for the same emitted byte. Their actual keys, symbol and qualification require CI inspection.
+// for the same emitted byte; the whole-object origin supplies qualification.
 #[kani::proof]
 fn direct_first() {
     let direct: &u8 = &5;

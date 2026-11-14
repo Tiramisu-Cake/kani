@@ -10,7 +10,7 @@ fn touch<T>(_: &T) {}
 
 #[inline(never)]
 fn copy_call<F: Copy + Fn() -> bool>(callback: F) -> bool {
-    // Actual typed closure read: the layout request must be reached in CI.
+    // The typed closure read exercises the captured-field layout.
     let copied = unsafe { std::ptr::addr_of!(callback).read() };
     copied()
 }

@@ -1,0 +1,15 @@
+Checking harness borrowed_slice_cross_slot_hole...
+borrowed_slice_cross_slot_hole.assertion.1\
+ - Status: SUCCESS\
+ - Description: "assertion failed: first_value == 0x5a5a_5a5a"
+borrowed_slice_cross_slot_hole.assertion.2\
+ - Status: SUCCESS\
+ - Description: "assertion failed: crossed_byte == 0x5a"
+std::ptr::read::<u8>.safety_check.
+ - Status: FAILURE
+ - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u8`"
+Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type `u8`
+SUMMARY:\
+ ** 1 of
+VERIFICATION:- FAILED
+Complete - 0 successfully verified harnesses, 1 failures, 1 total.

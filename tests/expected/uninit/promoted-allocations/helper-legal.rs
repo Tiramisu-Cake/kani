@@ -15,7 +15,7 @@ fn compare(left: &[MaybeUninit<u8>; 3], right: &[MaybeUninit<u8>; 3]) -> bool {
 }
 
 // Required lowering: retained raw_eq over both promoted three-byte referents.
-// Promotion, Some/None masks, operand checks and helper propagation require CI binding.
+// Promoted byte masks and stack storage are checked through raw comparison operands.
 // Both MaybeUninit references are valid before raw_eq; no constant storage is mutated.
 // Require both byte checks to succeed and equality to be true.
 #[kani::proof]

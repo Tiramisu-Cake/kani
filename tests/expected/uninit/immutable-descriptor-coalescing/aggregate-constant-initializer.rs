@@ -8,8 +8,8 @@
 const INDIRECT: [&u8; 1] = [&5];
 static T: [&u8; 1] = INDIRECT;
 
-// Candidate mixed-qualification control: actual distinct AllocId keys, shared symbol and
-// qualification must be inspected in CI before claiming this case distinguishes registration.
+// The direct and nested references exercise immutable descriptor qualification
+// across const-evaluated initializer forms.
 #[kani::proof]
 fn aggregate_constant_initializer() {
     let direct: &u8 = &5;

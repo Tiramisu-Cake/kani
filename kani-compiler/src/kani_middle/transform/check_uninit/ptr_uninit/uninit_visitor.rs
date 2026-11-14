@@ -16,7 +16,7 @@ use crate::{
             },
         },
     },
-    kani_middle::{nonnull_pointee, points_to::resolve_call},
+    kani_middle::{kani_functions::KaniFunction, nonnull_pointee, points_to::resolve_call},
 };
 use rustc_attr_ir::lang_items::LangItem;
 use rustc_middle::ty::TyCtxt;
@@ -752,7 +752,7 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                     }
                     InstanceKind::Item | InstanceKind::Shim => {
                         // Non-shadow MIR-backed shims are followed by points-to and the
-                        // local visitor. Only the unchanged Item predicate grants pairing.
+                        // local visitor. Only the shared protocol predicate grants pairing.
                         if instance.is_foreign_item() {
                             match instance.name().as_str() {
                                 "alloc::alloc::__rust_alloc" | "alloc::alloc::__rust_realloc" => {
@@ -1232,6 +1232,11 @@ fn single_field_ty(ty: Ty) -> Option<Ty> {
 
 /// Caller stores and callee loads must agree on exactly the same supported instance domain.
 /// Bodyful shims/intrinsics are not ordinary item calls and have no paired protocol here.
+/// Marker-dispatched hooks replace the MIR call during codegen, so their MIR body cannot
+/// consume argument snapshots or publish a return snapshot even when it exists.
 fn has_transfer_protocol(instance: Instance) -> bool {
-    instance.kind == InstanceKind::Item && !instance.is_foreign_item() && instance.has_body()
+    instance.kind == InstanceKind::Item
+        && !instance.is_foreign_item()
+        && instance.has_body()
+        && !matches!(KaniFunction::try_from(instance), Ok(KaniFunction::Hook(_)))
 }

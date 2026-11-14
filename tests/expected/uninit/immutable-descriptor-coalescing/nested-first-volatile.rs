@@ -6,7 +6,7 @@
 static T: [&u8; 1] = [&5];
 
 // The direct whole-object reference and the nested relocation may use different AllocId keys
-// for the same emitted byte. Their actual keys, symbol and qualification require CI inspection.
+// for the same emitted byte; the whole-object origin supplies qualification.
 // Volatile reads retain the observations without changing either reference origin.
 #[kani::proof]
 fn nested_first_volatile() {
