@@ -60,17 +60,27 @@ impl Descriptor {
             && self.allocation.mutability == Mutability::Not
             && self.allocation.provenance.ptrs.is_empty()
     }
+
+    /// Qualification can differ between keys for one exact emitted object.
+    fn compatible(&self, other: &Self) -> bool {
+        self.allocation == other.allocation
+            && self.mask == other.mask
+            && self.layout == other.layout
+    }
 }
 
 impl ImmutableAllocations {
-    /// A compatible alias retains the first descriptor; conflict is never OR/intersection/overwrite.
+    /// Compatible aliases share exact storage and combine only proven origin qualification.
+    /// A conflicting descriptor never changes the first descriptor or its qualification.
     fn register(
         &mut self,
         symbol: InternedString,
         descriptor: Descriptor,
     ) -> Result<(), Descriptor> {
-        if let Some(previous) = self.symbols.get(&symbol) {
-            if previous != &descriptor && (previous.admitted() || descriptor.admitted()) {
+        if let Some(previous) = self.symbols.get_mut(&symbol) {
+            if previous.compatible(&descriptor) {
+                previous.frozen |= descriptor.frozen;
+            } else if previous.admitted() || descriptor.admitted() {
                 return Err(previous.clone());
             }
         } else {
@@ -209,7 +219,7 @@ impl GotocCtx<'_, '_> {
         self.immutable_allocations.sealed = true;
         // Qualify only after closure: typed origins can be discovered after a coalesced symbol
         // was first requested through an erased view. Rebuild from every requested key and compare
-        // full descriptors, so item order cannot turn missing evidence into a seed.
+        // exact storage before combining qualification, so aliases alone cannot create a seed.
         let bindings: Vec<_> = self
             .immutable_allocations
             .bindings
@@ -454,6 +464,97 @@ mod tests {
         let conflict = descriptor(vec![None, Some(0)], Mutability::Not, true);
         assert!(registry.register(symbol, conflict).is_err());
         assert_eq!(registry.symbols[&symbol], original);
+    }
+
+    #[test]
+    fn compatible_aliases_combine_qualification_in_either_order() {
+        for qualifications in [[false, true], [true, false], [true, true], [false, false]] {
+            let mut registry = ImmutableAllocations::default();
+            let symbol = "coalesced-immutable-mask".into();
+            for frozen in qualifications {
+                let alias = descriptor(vec![Some(0), None], Mutability::Not, frozen);
+                assert!(registry.register(symbol, alias.clone()).is_ok());
+                assert!(registry.register(symbol, alias).is_ok());
+            }
+            let qualified = qualifications.into_iter().any(|frozen| frozen);
+            let expected = descriptor(vec![Some(0), None], Mutability::Not, qualified);
+            assert_eq!(registry.symbols.len(), 1);
+            assert_eq!(registry.symbols[&symbol], expected);
+            assert_eq!(registry.symbols[&symbol].mask, [true, false]);
+            assert_eq!(registry.symbols[&symbol].admitted(), qualified);
+        }
+    }
+
+    #[test]
+    fn incompatible_storage_never_overwrites_or_combines_qualification() {
+        let original = descriptor(vec![Some(0), None], Mutability::Not, false);
+        let mut conflicts = vec![
+            descriptor(vec![Some(1), None], Mutability::Not, false),
+            descriptor(vec![Some(0), Some(0)], Mutability::Not, false),
+            descriptor(vec![Some(0), None, None], Mutability::Not, false),
+        ];
+        // Isolate each compatibility field, including Option bytes before physical zero fill.
+        let mut option_bytes = original.clone();
+        option_bytes.allocation.bytes[1] = Some(0);
+        conflicts.push(option_bytes);
+        let mut mask = original.clone();
+        mask.mask[1] = true;
+        conflicts.push(mask);
+        let mut layout = original.clone();
+        layout.layout = vec![(1, 2)];
+        conflicts.push(layout);
+        let mut mutable = original.clone();
+        mutable.allocation.mutability = Mutability::Mut;
+        conflicts.push(mutable);
+        let mut alignment = original.clone();
+        alignment.allocation.align = 2;
+        conflicts.push(alignment);
+
+        for conflict in conflicts {
+            assert!(!original.compatible(&conflict));
+            for qualifications in [[false, true], [true, false], [true, true], [false, false]] {
+                let mut registry = ImmutableAllocations::default();
+                let symbol = "conflicting-immutable-mask".into();
+                let mut first = original.clone();
+                first.frozen = qualifications[0];
+                let mut next = conflict.clone();
+                next.frozen = qualifications[1];
+                assert!(registry.register(symbol, first.clone()).is_ok());
+                let expected = if first.admitted() || next.admitted() {
+                    Err(first.clone())
+                } else {
+                    Ok(())
+                };
+                assert_eq!(registry.register(symbol, next), expected);
+                assert_eq!(registry.symbols.len(), 1);
+                assert_eq!(registry.symbols[&symbol], first);
+            }
+        }
+    }
+
+    #[test]
+    fn unqualified_conflict_keeps_existing_policy() {
+        let mut registry = ImmutableAllocations::default();
+        let symbol = "unqualified-immutable-mask".into();
+        let first = descriptor(vec![Some(0), None], Mutability::Not, false);
+        let conflict = descriptor(vec![None, Some(0)], Mutability::Not, false);
+        assert!(registry.register(symbol, first.clone()).is_ok());
+        assert!(registry.register(symbol, conflict).is_ok());
+        assert_eq!(registry.symbols[&symbol], first);
+        assert!(!registry.symbols[&symbol].admitted());
+    }
+
+    #[test]
+    fn compatible_mutable_aliases_remain_unadmitted() {
+        let mut registry = ImmutableAllocations::default();
+        let symbol = "mutable-mask".into();
+        for frozen in [false, true] {
+            assert!(
+                registry.register(symbol, descriptor(vec![Some(0)], Mutability::Mut, frozen)).is_ok()
+            );
+        }
+        assert!(registry.symbols[&symbol].frozen);
+        assert!(!registry.symbols[&symbol].admitted());
     }
 
     #[test]
