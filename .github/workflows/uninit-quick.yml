@@ -1,0 +1,41 @@
+# Copyright Kani Contributors
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+# CI-only: fast feedback for uninit-checks work. Builds Kani and runs only the suites that use -Z uninit-checks.
+name: Uninit C2-S3 baseline controls on bf8170b28
+on:
+  push:
+    branches:
+      - 'uninit-ci/**'
+  workflow_dispatch:
+
+env:
+  RUST_BACKTRACE: 1
+  KANI_FAIL_ON_UNEXPECTED_DESCRIPTION: "true"
+
+jobs:
+  uninit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout Kani
+        uses: actions/checkout@v6
+
+      - name: Setup Kani Dependencies
+        uses: ./.github/actions/setup
+        with:
+          os: ubuntu-24.04
+
+      - name: Build Kani
+        run: cargo build-dev
+
+      - name: Baseline targeted controls
+        if: ${{ !cancelled() }}
+        run: |
+          export PATH="$(pwd)/scripts:$PATH"
+          cargo run -p compiletest --quiet -- --suite expected --mode expected nested-aggregate-reset --no-fail-fast --timeout 2400
+
+      - name: Upload oracle artifacts
+        if: ${{ false }}
+        run: true
