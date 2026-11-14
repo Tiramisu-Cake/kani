@@ -1,0 +1,53 @@
+# CI-only diagnostic: per-harness CBMC peak memory for perf/s2n-quic/quic/s2n-quic-core.
+name: Perf s2n-quic-core memory profile
+on:
+  push:
+    branches:
+      - 'uninit-ci/**'
+
+jobs:
+  perf:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout Kani
+        uses: actions/checkout@v6
+
+      - name: Setup Kani Dependencies
+        uses: ./.github/actions/setup
+        with:
+          os: ubuntu-24.04
+
+      - name: s2n-quic-core with per-CBMC memory sampling
+        env:
+          RUST_TEST_THREADS: 1
+        run: |
+          (
+            declare -A peak
+            while sleep 3; do
+              while read -r pid rss; do
+                [ -z "$pid" ] && continue
+                f=$(tr '\0' ' ' < /proc/$pid/cmdline 2>/dev/null | grep -oE '[^ /]+\.out' | tail -1)
+                [ -z "$f" ] && continue
+                if [ -z "${peak[$f]}" ] || [ "$rss" -gt "${peak[$f]}" ]; then peak[$f]=$rss; fi
+              done < <(ps -C cbmc -o pid=,rss=)
+              ext=$(ps -C kissat -o rss= | sort -n | tail -1)
+              [ -n "$ext" ] && [ "$ext" -gt 2000000 ] && echo "KISSAT rss_kb=$ext"
+              avail=$(awk '/MemAvailable/{print int($2/1024)}' /proc/meminfo)
+              if [ "$avail" -lt 1200 ]; then
+                v=$(ps -C cbmc -o pid= --sort=-rss | head -1)
+                echo "MEMWATCH LOW avail_mb=$avail killing cbmc $v"; [ -n "$v" ] && kill -9 $v
+              fi
+              for k in "${!peak[@]}"; do echo "$k ${peak[$k]}"; done > /tmp/cbmc-peaks.txt
+            done
+          ) &
+          wd=$!
+          cargo build-dev -- --release
+          for o in tests/perf/overlays/*/; do cp -r "$o"* "tests/perf/$(basename "$o")/"; done
+          cargo run -p compiletest -- --suite perf --mode cargo-kani-test s2n-quic-core --no-fail-fast --timeout 2400 2>&1 \
+            | grep --line-buffered -E "^test |test result:|MEMWATCH" || true
+          sleep 5; kill $wd || true
+          echo "=== CBMC peak RSS (KB) per goto file, top 15"
+          sort -k2 -n -r /tmp/cbmc-peaks.txt | head -15
