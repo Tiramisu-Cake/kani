@@ -1,8 +1,8 @@
 Checking harness raw_slice_cross_slot_initialized...
-raw_slice_cross_slot_initialized.assertion.1\
+raw_slice_cross_slot_initialized.assertion.\
  - Status: SUCCESS\
  - Description: "assertion failed: crossed_byte == 0x5a"
-raw_slice_cross_slot_initialized.assertion.2\
+raw_slice_cross_slot_initialized.assertion.\
  - Status: SUCCESS\
  - Description: "assertion failed: byte == 0x5a"
 SUMMARY:\

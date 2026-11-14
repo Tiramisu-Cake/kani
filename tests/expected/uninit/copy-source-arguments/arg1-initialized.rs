@@ -28,7 +28,7 @@ fn copy_same_source_to_arg1(source: MaybeUninit<u32>) -> (u32, u32) {
         let original: u32;
         {
             pointer = std::ptr::addr_of!(source);
-            Call(selected = read_second(Copy(source), Copy(source)), ReturnTo(after_call), UnwindUnreachable())
+            Call(selected = read_second(source, source), ReturnTo(after_call), UnwindUnreachable())
         }
         after_call = {
             Call(original = read_original(pointer), ReturnTo(done), UnwindUnreachable())

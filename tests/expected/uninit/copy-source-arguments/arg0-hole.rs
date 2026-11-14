@@ -20,7 +20,7 @@ fn copy_same_source_to_arg0(source: MaybeUninit<u32>) -> u32 {
         type RET = u32;
         let selected: u32;
         {
-            Call(selected = read_first(Copy(source), Copy(source)), ReturnTo(done), UnwindUnreachable())
+            Call(selected = read_first(source, source), ReturnTo(done), UnwindUnreachable())
         }
         done = {
             RET = Move(selected);
