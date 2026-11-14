@@ -7,59 +7,60 @@
 #![allow(internal_features)]
 
 use std::intrinsics::mir::*;
-use std::mem::MaybeUninit;
+
+#[derive(Clone, Copy)]
+union Slot {
+    byte: u8,
+    #[allow(dead_code)]
+    hole: (),
+}
 
 #[repr(C)]
 struct Nested {
-    payload: MaybeUninit<u8>,
+    payload: Slot,
     #[allow(dead_code)]
     marker: u8,
 }
 
 #[inline(never)]
+unsafe fn read_payload(pointer: *const u8) -> u8 {
+    unsafe { *pointer }
+}
+
+#[inline(never)]
 #[custom_mir(dialect = "runtime", phase = "optimized")]
-fn relay(_value: Nested) {
+fn consume_nested(_value: Nested) {
     mir! {
         { Return() }
     }
 }
 
+// Keep the actual source allocation live after Call(Move(source)). The saved
+// u8 pointer is formed before the Move, without a pointer to the parent Nested
+// or a layout-changing cast that would seed the delayed whole-aggregate guard.
 #[inline(never)]
-unsafe fn read_payload(value: *const MaybeUninit<u8>) -> u8 {
-    unsafe { (*value).assume_init() }
-}
-
-// Assemble source field-by-field so the nested aggregate assignment guard does
-// not stop the test before Call(Move(source)). Keep source storage live through
-// the saved-pointer read. A scalar black_box retains the observed payload.
 #[custom_mir(dialect = "runtime", phase = "optimized")]
-unsafe fn read_moved_from_source(seed: MaybeUninit<u8>) -> u8 {
+unsafe fn read_moved_from_source(seed: Slot) -> u8 {
     mir! {
         type RET = u8;
         let source: Nested;
-        let saved: *const MaybeUninit<u8>;
+        let saved: *const u8;
         let _unit: ();
-        let observed: u8;
 
         {
             source.payload = Move(seed);
             source.marker = 3;
-            saved = std::ptr::addr_of!(source.payload);
-            Call(_unit = relay(Move(source)), ReturnTo(after_move), UnwindUnreachable())
+            saved = std::ptr::addr_of!(source.payload.byte);
+            Call(_unit = consume_nested(Move(source)), ReturnTo(after_move), UnwindUnreachable())
         }
-
         after_move = {
-            Call(observed = read_payload(saved), ReturnTo(done), UnwindUnreachable())
+            Call(RET = read_payload(saved), ReturnTo(done), UnwindUnreachable())
         }
-
-        done = {
-            RET = observed;
-            Return()
-        }
+        done = { Return() }
     }
 }
 
 #[kani::proof]
 fn moved_from_nested_payload_read_is_rejected() {
-    std::hint::black_box(unsafe { read_moved_from_source(MaybeUninit::new(42)) });
+    std::hint::black_box(unsafe { read_moved_from_source(Slot { byte: 42 }) });
 }

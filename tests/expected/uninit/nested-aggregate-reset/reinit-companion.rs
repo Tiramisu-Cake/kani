@@ -7,39 +7,37 @@
 #![allow(internal_features)]
 
 use std::intrinsics::mir::*;
-use std::mem::MaybeUninit;
+
+#[derive(Clone, Copy)]
+union Slot {
+    byte: u8,
+    #[allow(dead_code)]
+    hole: (),
+}
 
 #[repr(C)]
 struct Nested {
-    payload: MaybeUninit<u8>,
+    payload: Slot,
     #[allow(dead_code)]
     marker: u8,
 }
 
 #[inline(never)]
+unsafe fn read_payload(pointer: *const u8) -> u8 {
+    unsafe { *pointer }
+}
+
+#[inline(never)]
 #[custom_mir(dialect = "runtime", phase = "optimized")]
-fn relay(value: Nested) -> Nested {
+fn make_nested(payload: Slot) -> Nested {
     mir! {
         type RET = Nested;
-        let payload: MaybeUninit<u8>;
-
         {
-            payload = Move(value.payload);
             RET.payload = Move(payload);
             RET.marker = 0;
             Return()
         }
     }
-}
-
-#[inline(never)]
-unsafe fn read_payload(value: *const MaybeUninit<u8>) -> u8 {
-    unsafe { (*value).assume_init() }
-}
-
-#[inline(never)]
-unsafe fn write_payload(value: *mut MaybeUninit<u8>, byte: u8) {
-    unsafe { (*value).write(byte) };
 }
 
 #[inline(never)]
@@ -50,70 +48,65 @@ fn consume_nested(_value: Nested) {
     }
 }
 
+#[inline(never)]
+unsafe fn write_payload(pointer: *mut u8, byte: u8) {
+    unsafe { *pointer = byte };
+}
+
+#[inline(never)]
 #[custom_mir(dialect = "runtime", phase = "optimized")]
-unsafe fn repair_destination(hole: MaybeUninit<u8>, repair: MaybeUninit<u8>) -> u8 {
+unsafe fn repair_destination(seed: Slot, hole: Slot, repair: u8) -> u8 {
     mir! {
         type RET = u8;
         let destination: Nested;
-        let source: Nested;
-        let pointer: *const MaybeUninit<u8>;
-        let observed: u8;
+        let saved: *mut u8;
+        let _unit: ();
 
         {
-            source.payload = Move(hole);
-            source.marker = 1;
-            Call(destination = relay(Move(source)), ReturnTo(after_return), UnwindUnreachable())
+            destination.payload = Move(seed);
+            destination.marker = 1;
+            saved = std::ptr::addr_of_mut!(destination.payload.byte);
+            Call(destination = make_nested(Move(hole)), ReturnTo(after_return), UnwindUnreachable())
         }
-
         after_return = {
-            destination.payload = Move(repair);
-            pointer = std::ptr::addr_of!(destination.payload);
-            Call(observed = read_payload(pointer), ReturnTo(done), UnwindUnreachable())
+            Call(_unit = write_payload(saved, repair), ReturnTo(read), UnwindUnreachable())
         }
-
-        done = {
-            RET = observed;
-            Return()
+        read = {
+            Call(RET = read_payload(saved), ReturnTo(done), UnwindUnreachable())
         }
+        done = { Return() }
     }
 }
 
+#[inline(never)]
 #[custom_mir(dialect = "runtime", phase = "optimized")]
-unsafe fn repair_moved_source(seed: MaybeUninit<u8>, repair: u8) -> u8 {
+unsafe fn repair_moved_source(seed: Slot, repair: u8) -> u8 {
     mir! {
         type RET = u8;
         let source: Nested;
-        let saved: *mut MaybeUninit<u8>;
-        let observed: u8;
+        let saved: *mut u8;
         let _unit: ();
 
         {
             source.payload = Move(seed);
             source.marker = 3;
-            saved = std::ptr::addr_of_mut!(source.payload);
+            saved = std::ptr::addr_of_mut!(source.payload.byte);
             Call(_unit = consume_nested(Move(source)), ReturnTo(after_move), UnwindUnreachable())
         }
-
         after_move = {
-            Call(_unit = write_payload(saved, repair), ReturnTo(after_repair), UnwindUnreachable())
+            Call(_unit = write_payload(saved, repair), ReturnTo(read), UnwindUnreachable())
         }
-
-        after_repair = {
-            Call(observed = read_payload(saved), ReturnTo(done), UnwindUnreachable())
+        read = {
+            Call(RET = read_payload(saved), ReturnTo(done), UnwindUnreachable())
         }
-
-        done = {
-            RET = observed;
-            Return()
-        }
+        done = { Return() }
     }
 }
 
 #[kani::proof]
 fn nested_reset_allows_later_destination_and_source_writes() {
-    let destination_value =
-        unsafe { repair_destination(MaybeUninit::uninit(), MaybeUninit::new(55)) };
-    let source_value = unsafe { repair_moved_source(MaybeUninit::new(42), 77) };
+    let destination_value = unsafe { repair_destination(Slot { byte: 11 }, Slot { hole: () }, 55) };
+    let source_value = unsafe { repair_moved_source(Slot { byte: 42 }, 77) };
     assert_eq!(destination_value, 55);
     assert_eq!(source_value, 77);
 }
