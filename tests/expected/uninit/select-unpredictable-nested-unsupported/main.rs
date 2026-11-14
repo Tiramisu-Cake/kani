@@ -15,6 +15,8 @@ struct Nested {
     bytes: [MaybeUninit<u8>; 2],
 }
 
+// Constructing Nested rejects its nested union before the select call is reached.
+// This covers the general nested-layout boundary, not select-specific refusal.
 #[kani::proof]
 fn nested_shadow_layout_remains_unsupported() {
     let initialized =
