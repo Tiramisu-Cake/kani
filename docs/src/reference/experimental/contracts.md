@@ -82,12 +82,16 @@ recursion bound does not bound this analysis.
 
 Initialization shadow transfer is also not implemented for by-value aggregates
 containing nested `MaybeUninit` or union slots, including call arguments and
-return values. This differs from passing a supported top-level slot. Such paths
-are not guaranteed to fail closed: they may produce false positives or miss
-uninitialized reads. For example, repairing a moved source and returning an
-initialized slot inside a tuple may still report an uninitialized read. That
-result is a known false positive, not evidence of undefined behavior. Returning
-the slot directly avoids this nested aggregate boundary.
+return values. This differs from passing a supported top-level slot. Whole-value
+assignments rejected by the nested-union layout check remain unsupported.
+For sized aggregates rejected by that check, calls with value-transfer effects
+conservatively reset the full storage shadow to uninitialized: the destination
+after a normal return, and a moved argument's source before the call. These
+resets do not transfer initialization state and may produce false positives.
+For example, repairing a moved source and returning an initialized slot inside
+a tuple may still report an uninitialized read. That result is a known false
+positive, not evidence of undefined behavior. Returning the slot directly avoids
+this nested aggregate boundary.
 
 There is far more to learn about contracts.
 We highly recommend reading our [blog post about contracts](https://model-checking.github.io/kani-verifier-blog/2024/01/29/function-contracts.html) (from which this `gcd` example is taken). We also recommend looking at the `contracts` module in our [documentation](../../crates/index.md).
