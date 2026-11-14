@@ -12,6 +12,7 @@ use std::mem::MaybeUninit;
 #[repr(C)]
 struct Nested {
     payload: MaybeUninit<u8>,
+    #[allow(dead_code)]
     marker: u8,
 }
 
@@ -21,13 +22,11 @@ fn relay(value: Nested) -> Nested {
     mir! {
         type RET = Nested;
         let payload: MaybeUninit<u8>;
-        let marker: u8;
 
         {
             payload = Move(value.payload);
-            marker = value.marker;
             RET.payload = Move(payload);
-            RET.marker = marker;
+            RET.marker = 0;
             Return()
         }
     }
@@ -44,8 +43,11 @@ unsafe fn write_payload(value: *mut MaybeUninit<u8>, byte: u8) {
 }
 
 #[inline(never)]
-fn consume_nested(value: Nested) {
-    std::hint::black_box(value.marker);
+#[custom_mir(dialect = "runtime", phase = "optimized")]
+fn consume_nested(_value: Nested) {
+    mir! {
+        { Return() }
+    }
 }
 
 #[custom_mir(dialect = "runtime", phase = "optimized")]

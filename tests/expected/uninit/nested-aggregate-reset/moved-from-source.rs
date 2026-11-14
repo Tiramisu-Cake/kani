@@ -12,12 +12,16 @@ use std::mem::MaybeUninit;
 #[repr(C)]
 struct Nested {
     payload: MaybeUninit<u8>,
+    #[allow(dead_code)]
     marker: u8,
 }
 
 #[inline(never)]
-fn relay(value: Nested) {
-    std::hint::black_box(value.marker);
+#[custom_mir(dialect = "runtime", phase = "optimized")]
+fn relay(_value: Nested) {
+    mir! {
+        { Return() }
+    }
 }
 
 #[inline(never)]
