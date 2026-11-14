@@ -150,6 +150,41 @@ pub fn checked_body(tcx: TyCtxt, instance: Instance) -> Option<Body> {
     instance.body()
 }
 
+/// Whether codegen and reachability use the Rust fallback for an intrinsic.
+/// Keep this predicate shared until stable MIR exposes fallback selection directly.
+pub fn has_intrinsic_fallback(instance: Instance) -> bool {
+    let TyKind::RigidTy(RigidTy::FnDef(def, _)) = instance.ty().kind() else { return false };
+    def.as_intrinsic()
+        .is_some_and(|intrinsic| !intrinsic.must_be_overridden() && instance.has_body())
+}
+
+/// The one intrinsic whose fallback participates in ordinary uninit call transfers.
+/// Layout admission belongs to the local uninit visitor; this only selects the body
+/// and validates the monomorphized `(bool, T, T) -> T` signature.
+pub fn select_unpredictable_fallback(tcx: TyCtxt, instance: Instance) -> Option<Ty> {
+    if instance.kind != rustc_public::mir::mono::InstanceKind::Intrinsic
+        || instance.intrinsic_name().as_deref() != Some("select_unpredictable")
+        || !has_intrinsic_fallback(instance)
+    {
+        return None;
+    }
+    let TyKind::RigidTy(RigidTy::FnDef(def, _)) = instance.ty().kind() else { return None };
+    if def.name() != "core::intrinsics::select_unpredictable" {
+        return None;
+    }
+    let sig = instance.ty().kind().fn_sig()?.skip_binder();
+    let [condition, left, right] = sig.inputs() else { return None };
+    if condition.kind() != TyKind::RigidTy(RigidTy::Bool)
+        || left != right
+        || *left != sig.output()
+        || sig.c_variadic
+        || checked_body(tcx, instance).is_none()
+    {
+        return None;
+    }
+    Some(*left)
+}
+
 /// [checked_body] for a function definition, as loaded by `FnDef::body()`.
 pub fn checked_fn_def_body(tcx: TyCtxt, def: FnDef) -> Option<Body> {
     if !def.has_body() {

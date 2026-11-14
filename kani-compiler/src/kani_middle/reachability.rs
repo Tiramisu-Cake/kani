@@ -279,13 +279,10 @@ impl MonoItemsFnCollector<'_, '_> {
             InstanceKind::Intrinsic => {
                 // Intrinsics may have a fallback body.
                 assert!(is_direct_call, "Expected direct call {instance:?}");
-                let TyKind::RigidTy(RigidTy::FnDef(def, _)) = instance.ty().kind() else {
-                    unreachable!("Expected function type for intrinsic: {instance:?}")
-                };
                 // The compiler is currently transitioning how to handle intrinsic fallback body.
                 // Until https://github.com/rust-lang/project-stable-mir/issues/79 is implemented
                 // we have to check `must_be_overridden` and `has_body`.
-                !def.as_intrinsic().unwrap().must_be_overridden() && instance.has_body()
+                crate::kani_middle::has_intrinsic_fallback(instance)
             }
             InstanceKind::Shim | InstanceKind::Item => true,
         };

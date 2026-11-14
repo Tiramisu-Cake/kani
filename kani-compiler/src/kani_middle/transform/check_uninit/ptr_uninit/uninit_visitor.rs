@@ -16,7 +16,7 @@ use crate::{
             },
         },
     },
-    kani_middle::{nonnull_pointee, points_to::resolve_call},
+    kani_middle::{nonnull_pointee, points_to::resolve_call, select_unpredictable_fallback},
 };
 use rustc_attr_ir::lang_items::LangItem;
 use rustc_middle::ty::TyCtxt;
@@ -62,6 +62,17 @@ impl TargetFinder for CheckUninitVisitor<'_> {
                 }
             };
             if bb_idx == 0 {
+                let select_supported = if is_select_unpredictable(self.instance) {
+                    match self.validate_select_fallback(self.instance) {
+                        Ok(()) => true,
+                        Err(reason) => {
+                            self.push_target(MemoryInitOp::Unsupported { reason });
+                            false
+                        }
+                    }
+                } else {
+                    false
+                };
                 let union_args: Vec<_> = body
                     .locals()
                     .iter()
@@ -70,7 +81,7 @@ impl TargetFinder for CheckUninitVisitor<'_> {
                     .take(body.arg_count())
                     .filter(|(_, local)| self.transfers_shadow(local.ty))
                     .collect();
-                if self.instance.kind != InstanceKind::Intrinsic
+                if (self.instance.kind != InstanceKind::Intrinsic || select_supported)
                     && (!union_args.is_empty() || self.transfers_shadow(body.locals()[0].ty))
                 {
                     let unsized_transfer = union_args.iter().any(|(_, local)| {
@@ -85,7 +96,7 @@ impl TargetFinder for CheckUninitVisitor<'_> {
                             reason: "Kani does not support unsized by-value shadow argument/return transfers."
                                 .to_string(),
                         });
-                    } else if has_transfer_protocol(self.instance) {
+                    } else if has_transfer_protocol(self.tcx, self.instance) {
                         for (idx, _) in &union_args {
                             self.push_target(MemoryInitOp::LoadArgument {
                                 operand: Operand::Copy(Place::from(*idx)),
@@ -130,6 +141,63 @@ impl<'tcx> CheckUninitVisitor<'tcx> {
 
     fn transfers_shadow(&self, ty: Ty) -> bool {
         ty.kind().is_union() || maybe_uninit_storage(self.tcx, ty).is_some()
+    }
+
+    /// Reject the whole intrinsic transfer before emitting any protocol operations.
+    /// In particular a storage payload must use the existing typed mask, including
+    /// false padding bytes; layout existence alone is not sufficient.
+    fn validate_select_fallback(&self, instance: Instance) -> Result<(), String> {
+        let reject = |reason: String| {
+            format!("Kani does not support memory initialization of intrinsic `select_unpredictable` for `{}`: {reason}", instance.ty())
+        };
+        let ty = select_unpredictable_fallback(self.tcx, instance).ok_or_else(|| {
+            reject("no usable standard fallback with signature (bool, T, T) -> T.".to_string())
+        })?;
+        if !ty.layout().is_ok_and(|layout| layout.shape().is_sized()) {
+            return Err(reject(format!("unsupported payload `{ty}`: not sized.")));
+        }
+        let info = if maybe_uninit_storage(self.tcx, ty).is_some() {
+            PointeeInfo::for_typed_storage(self.tcx, ty)
+        } else {
+            PointeeInfo::from_ty(ty)
+        }
+        .map_err(|reason| reject(format!("unsupported payload `{ty}`: {reason}")))?;
+        if info.layout().argument_size().is_none() {
+            return Err(reject(format!("unsupported payload `{ty}`: no sized transfer mask.")));
+        }
+        Ok(())
+    }
+
+    fn store_call_arguments(&mut self, instance: Instance, args: &[Operand]) {
+        let union_args: Vec<_> = args
+            .iter()
+            .enumerate()
+            .filter(|(_, arg)| self.transfers_shadow(arg.ty(&self.locals).unwrap()))
+            .collect();
+        if !union_args.is_empty() {
+            self.push_target(MemoryInitOp::BeginArgumentTransfer {
+                function: instance.ty(),
+                argument_count: union_args.len(),
+            });
+            for (idx, operand) in union_args.iter().copied() {
+                self.push_target(MemoryInitOp::StoreArgument {
+                    operand: operand.clone(),
+                    argument_no: idx + 1,
+                    function: instance.ty(),
+                });
+            }
+            // Snapshot ALL witnesses before clearing ANY moved source, even the
+            // arm that the fallback will not choose. Copy sources remain live.
+            for (_, operand) in union_args {
+                if let Operand::Move(place) = operand {
+                    self.push_target(MemoryInitOp::SetRef {
+                        operand: Operand::Copy(place.clone()),
+                        value: false,
+                        position: InsertPosition::Before,
+                    });
+                }
+            }
+        }
     }
 
     /// Locate the first union on the projection path, including a union at the end.
@@ -516,9 +584,26 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                         break 'call;
                     }
                 };
-                // Intrinsics use their explicit models and value-transfer guard below.
-                // Only ordinary calls need a paired argument/return protocol.
-                let paired = has_transfer_protocol(instance);
+                if is_select_unpredictable(instance) {
+                    if let Err(reason) = self.validate_select_fallback(instance) {
+                        self.push_target(MemoryInitOp::Unsupported { reason });
+                        break 'call;
+                    }
+                    let sig = instance.ty().kind().fn_sig().unwrap().skip_binder();
+                    if args.len() != sig.inputs().len()
+                        || args.iter().zip(sig.inputs()).any(|(arg, ty)| {
+                            arg.ty(&self.locals).unwrap() != *ty
+                        })
+                        || destination.ty(&self.locals).unwrap() != sig.output()
+                    {
+                        self.push_target(MemoryInitOp::Unsupported {
+                            reason: "Kani does not support memory initialization of intrinsic `select_unpredictable` with mismatched call operands.".to_string(),
+                        });
+                        break 'call;
+                    }
+                }
+                // Only ordinary items and the validated select fallback are paired.
+                let paired = has_transfer_protocol(self.tcx, instance);
                 let destination_ty = destination.ty(&self.locals).unwrap();
                 let shadow_return = self.transfers_shadow(destination_ty);
                 let shadow_args =
@@ -556,7 +641,13 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                         position: InsertPosition::After,
                     });
                 }
+                if paired {
+                    self.store_call_arguments(instance, args);
+                }
                 match instance.kind {
+                    InstanceKind::Intrinsic if paired => {
+                        // The fallback body is the sole owner of the selected result.
+                    }
                     InstanceKind::Intrinsic => {
                         match Intrinsic::from_instance(&instance) {
                             // Forget consumes without reading or returning any payload bytes.
@@ -713,7 +804,7 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                     }
                     InstanceKind::Item | InstanceKind::Shim => {
                         // Non-shadow MIR-backed shims are followed by points-to and the
-                        // local visitor. Only the unchanged Item predicate grants pairing.
+                        // local visitor. Only ordinary items and the select fallback are paired.
                         if instance.is_foreign_item() {
                             match instance.name().as_str() {
                                 "alloc::alloc::__rust_alloc" | "alloc::alloc::__rust_realloc" => {
@@ -738,40 +829,6 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                                     });
                                 }
                                 _ => {}
-                            }
-                        } else if paired {
-                            let union_args: Vec<_> = args
-                                .iter()
-                                .enumerate()
-                                .filter(|(_, arg)| {
-                                    self.transfers_shadow(arg.ty(&self.locals).unwrap())
-                                })
-                                .collect();
-                            if !union_args.is_empty() {
-                                self.push_target(MemoryInitOp::BeginArgumentTransfer {
-                                    function: instance.ty(),
-                                    argument_count: union_args.len(),
-                                });
-                                for (idx, operand) in union_args.iter().copied() {
-                                    self.push_target(MemoryInitOp::StoreArgument {
-                                        operand: operand.clone(),
-                                        argument_no: idx + 1,
-                                        function: instance.ty(),
-                                    });
-                                }
-                                // Snapshot ALL argument witnesses before clearing ANY source.
-                                // Assignment moves, Copy operands and forget's intrinsic model
-                                // do not take this path. A usual by-value call moves a temporary,
-                                // so the original address-taken storage retains its state.
-                                for (_, operand) in union_args {
-                                    if let Operand::Move(place) = operand {
-                                        self.push_target(MemoryInitOp::SetRef {
-                                            operand: Operand::Copy(place.clone()),
-                                            value: false,
-                                            position: InsertPosition::Before,
-                                        });
-                                    }
-                                }
                             }
                         }
                     }
@@ -813,7 +870,9 @@ impl MirVisitor for CheckUninitVisitor<'_> {
             }
             TerminatorKind::Return => {
                 let return_place = Place::from(0);
-                if has_transfer_protocol(self.instance)
+                if has_transfer_protocol(self.tcx, self.instance)
+                    && (!is_select_unpredictable(self.instance)
+                        || self.validate_select_fallback(self.instance).is_ok())
                     && self.transfers_shadow(return_place.ty(&self.locals).unwrap())
                     && return_place
                         .ty(&self.locals)
@@ -1188,7 +1247,13 @@ fn single_field_ty(ty: Ty) -> Option<Ty> {
 }
 
 /// Caller stores and callee loads must agree on exactly the same supported instance domain.
-/// Bodyful shims/intrinsics are not ordinary item calls and have no paired protocol here.
-fn has_transfer_protocol(instance: Instance) -> bool {
-    instance.kind == InstanceKind::Item && !instance.is_foreign_item() && instance.has_body()
+/// Shims and other intrinsics retain their existing protocol boundaries.
+fn has_transfer_protocol(tcx: TyCtxt, instance: Instance) -> bool {
+    (instance.kind == InstanceKind::Item && !instance.is_foreign_item() && instance.has_body())
+        || select_unpredictable_fallback(tcx, instance).is_some()
+}
+
+fn is_select_unpredictable(instance: Instance) -> bool {
+    instance.kind == InstanceKind::Intrinsic
+        && instance.intrinsic_name().as_deref() == Some("select_unpredictable")
 }

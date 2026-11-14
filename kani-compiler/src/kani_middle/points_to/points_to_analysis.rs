@@ -370,6 +370,18 @@ impl<'tcx> Analysis<'tcx> for PointsToAnalysis<'_, 'tcx> {
             let instance = rustc_internal::internal(self.tcx, instance);
             match instance.def {
                 // Intrinsics could introduce aliasing edges we care about, so need to handle them.
+                InstanceKind::Intrinsic(_)
+                    if crate::kani_middle::select_unpredictable_fallback(
+                        self.tcx,
+                        rustc_internal::stable(instance),
+                    )
+                    .is_some() =>
+                {
+                    // Follow the same fallback as codegen. Its assignments and returns join
+                    // both value arms' referents, without introducing a condition edge or
+                    // the address of either caller argument slot.
+                    self.apply_regular_call_effect(state, instance, args, destination, location);
+                }
                 InstanceKind::Intrinsic(_) => {
                     match Intrinsic::from_instance(&rustc_internal::stable(instance)) {
                         intrinsic if is_identity_aliasing_intrinsic(intrinsic.clone()) => {
