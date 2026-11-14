@@ -1,0 +1,9 @@
+Checking harness true_selected_arm_still_deinitializes_source_a...
+- Status: SUCCESS\
+- Description: "true arm selected value is preserved"
+- Status: FAILURE\
+- Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u8`"
+** 1 of
+Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type `u8`
+VERIFICATION:- FAILED
+Complete - 0 successfully verified harnesses, 1 failures, 1 total.

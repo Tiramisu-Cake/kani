@@ -1,0 +1,6 @@
+Checking harness overwriting_selected_hole_reinitializes_result...
+- Status: SUCCESS\
+- Description: "overwrite initializes selected result"
+** 0 of
+VERIFICATION:- SUCCESSFUL
+Complete - 1 successfully verified harnesses, 0 failures, 1 total.

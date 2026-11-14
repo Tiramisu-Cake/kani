@@ -1,0 +1,6 @@
+Checking harness copy_sources_remain_initialized...
+- Status: SUCCESS\
+- Description: "Copy operands retain selected and source values"
+** 0 of
+VERIFICATION:- SUCCESSFUL
+Complete - 1 successfully verified harnesses, 0 failures, 1 total.
