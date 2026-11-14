@@ -1,0 +1,47 @@
+# CI-only diagnostic: run the perf suite with a memory watchdog to find which test exhausts runner memory.
+name: Perf memory watchdog (B3 v4 diagnostic)
+on:
+  push:
+    branches:
+      - 'uninit-ci/**'
+
+jobs:
+  perf:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 200
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout Kani
+        uses: actions/checkout@v6
+
+      - name: Setup Kani Dependencies
+        uses: ./.github/actions/setup
+        with:
+          os: ubuntu-24.04
+
+      - name: Perf suite with memory watchdog
+        env:
+          RUST_TEST_THREADS: 1
+        run: |
+          (
+            t=0
+            while sleep 5; do
+              t=$((t+5))
+              avail=$(awk '/MemAvailable/{print int($2/1024)}' /proc/meminfo)
+              if [ $((t % 60)) -eq 0 ]; then
+                top=$(ps -eo rss=,comm= --sort=-rss | head -1)
+                echo "MEMWATCH t=${t}s avail_mb=$avail top=[$top]"
+              fi
+              if [ "$avail" -lt 1500 ]; then
+                echo "MEMWATCH LOW t=${t}s avail_mb=$avail"
+                ps -eo pid=,rss=,etimes=,args= --sort=-rss | head -6 | cut -c1-400
+                victim=$(ps -eo pid=,comm= --sort=-rss | awk '$2=="cbmc"{print $1; exit}')
+                [ -n "$victim" ] && echo "MEMWATCH killing cbmc pid=$victim" && kill -9 "$victim"
+                sleep 10
+              fi
+            done
+          ) &
+          wd=$!
+          ./scripts/kani-perf.sh 2>&1 | grep --line-buffered -E "^test |MEMWATCH|panicked|error:|Killed|failures:|test result:" || true
+          kill $wd || true
