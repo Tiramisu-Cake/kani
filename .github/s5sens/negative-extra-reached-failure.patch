@@ -1,0 +1,9 @@
+--- a/tests/expected/uninit/maybe-uninit-contract-frame/main.rs
++++ b/tests/expected/uninit/maybe-uninit-contract-frame/main.rs
+@@ -27,5 +27,6 @@
+ fn frame_negative() {
+     let mut out = 0;
+     let mut outside = 0;
++    assert!(kani::any::<bool>(), "s5 independent reached failure");
+     frame_target(&mut out, &mut outside);
+ }

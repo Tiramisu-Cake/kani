@@ -1,0 +1,8 @@
+--- a/tests/expected/uninit/private-transfer-frame/lawful-modifies.rs
++++ b/tests/expected/uninit/private-transfer-frame/lawful-modifies.rs
+@@ -33,5 +33,4 @@
+     let mut outside = 41u16;
+     assert_eq!(frame_target(&mut out, &mut outside), 29);
+     assert_eq!(out, 29);
+-    assert_eq!(outside, 41);
+ }
