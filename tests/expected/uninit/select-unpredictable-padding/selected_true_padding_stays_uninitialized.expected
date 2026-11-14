@@ -2,8 +2,8 @@ Checking harness selected_true_padding_stays_uninitialized...
 - Status: SUCCESS\
 - Description: "true-arm typed fields are readable before padding check"
 - Status: FAILURE\
-- Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u8`"
+- Description: "Undefined Behavior: Reading from an uninitialized pointer of type `*const u8`"
 ** 1 of
-Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type `u8`
+Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type `*const u8`
 VERIFICATION:- FAILED
 Complete - 0 successfully verified harnesses, 1 failures, 1 total.

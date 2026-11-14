@@ -10,6 +10,8 @@ use std::mem::MaybeUninit;
 
 #[derive(Clone, Copy)]
 struct Nested {
+    // The nested storage is a layout-refusal control; deliberately do not read it.
+    #[allow(dead_code)]
     bytes: [MaybeUninit<u8>; 2],
 }
 
