@@ -1,0 +1,55 @@
+# CI-only: C2-S6 hook/fn-item diagnostic observation on exact S5 source (no expected files, no blessing).
+name: C2-S6 hook and fn-item observation
+on:
+  push:
+    branches:
+      - 'uninit-ci/**'
+
+jobs:
+  observe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout Kani
+        uses: actions/checkout@v6
+
+      - name: Setup Kani Dependencies
+        uses: ./.github/actions/setup
+        with:
+          os: ubuntu-24.04
+
+      - name: Build Kani
+        run: cargo build-dev
+
+      - name: Observe
+        shell: bash {0}
+        run: |
+          export PATH="$(pwd)/scripts:$PATH" NO_COLOR=1
+          out=/tmp/s6-observe; mkdir -p $out
+          cp tests/expected/uninit/transfer-qualification/legal-ordinary.rs .github/s6obs/companion-legal-ordinary.rs
+          cp tests/expected/uninit/maybe-uninit-argument-return/main.rs .github/s6obs/companion-mu-argret.rs
+          for src in .github/s6obs/*.rs; do
+            n=$(basename "$src" .rs); d=$out/$n; mkdir -p $d; cp "$src" $d/; cd $d
+            flags=$(grep -h "kani-flags:" $n.rs | sed 's/.*kani-flags://')
+            cf=$(grep -h "compile-flags:" $n.rs | sed 's/.*compile-flags://')
+            echo "=================== $n  flags:$flags"
+            RUSTFLAGS="$cf --emit mir" timeout 900 kani $n.rs $flags --keep-temps > run.out 2>&1; echo "exit=$?" | tee exit
+            grep -E "^Checking harness|^error|^ \*\* [0-9]+ of|^Failed Checks:|^VERIFICATION|^ - Status: FAILURE|^Complete -" run.out | head -25
+            grep -A3 "^Failed Checks:" run.out | head -20
+            echo "--- MIR call sites (bounded)"
+            cat *kani.mir 2>/dev/null | grep -nE "untracked_deref|invoke|answer|hole|FnOnce|call_once|shim|mem_init|store_argument|load_argument|begin_call|StoreArgument|LoadArgument" | cut -c1-220 | head -40
+            echo "--- goto: harness calls to untracked_deref / call_once"
+            for g in *.out; do case "$g" in run.out) continue;; esac; goto-instrument --show-goto-functions "$g" 2>/dev/null | grep -nE "untracked_deref|call_once|invoke|::hole|::answer" | cut -c1-220 | head -20; done
+            rm -rf target; find . -name '*.out' ! -name run.out -size +5M -delete
+            cd - >/dev/null
+          done
+
+      - name: Upload observations
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: s6-observe
+          path: /tmp/s6-observe/
+          retention-days: 7
