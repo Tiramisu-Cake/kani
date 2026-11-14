@@ -1,0 +1,46 @@
+# CI-only diagnostic: per-harness CBMC formula size for perf s2n-quic-core.
+name: s2n-quic-core per-harness formula size
+on:
+  push:
+    branches:
+      - 'uninit-ci/**'
+
+jobs:
+  run:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout Kani
+        uses: actions/checkout@v6
+
+      - name: Setup Kani Dependencies
+        uses: ./.github/actions/setup
+        with:
+          os: ubuntu-24.04
+
+      - name: Build Kani (release, as perf)
+        run: cargo build-dev -- --release
+
+      - name: s2n-quic-core verbose
+        shell: bash {0}
+        run: |
+          export PATH="$(pwd)/scripts:$PATH"
+          git submodule update --init --depth 1 tests/perf/s2n-quic
+          for o in tests/perf/overlays/*/; do cp -r "$o"* "tests/perf/$(basename "$o")/"; done
+          (
+            while sleep 3; do
+              avail=$(awk '/MemAvailable/{print int($2/1024)}' /proc/meminfo)
+              if [ "$avail" -lt 1200 ]; then
+                v=$(ps -C cbmc -o pid= --sort=-rss | head -1)
+                echo "MEMWATCH LOW avail_mb=$avail killing cbmc $v"; [ -n "$v" ] && kill -9 $v; sleep 5
+              fi
+            done
+          ) &
+          wd=$!
+          cd tests/perf/s2n-quic/quic/s2n-quic-core
+          /usr/bin/time -v cargo kani --target-dir /tmp/s2n-target --tests --output-format old > /tmp/s2n.out 2>&1; echo "cargo-kani exit=$?"
+          grep -E "^Checking harness|variables, [0-9]+ clauses|^size of program expression|^VERIFICATION|^Complete -|Maximum resident" /tmp/s2n.out
+          echo "=== tail"; tail -40 /tmp/s2n.out | cut -c1-300
+          kill $wd || true
