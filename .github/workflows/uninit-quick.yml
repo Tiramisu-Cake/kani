@@ -1,0 +1,70 @@
+# CI-only: bounded per-root observation for C2-S5 (p2, postcondition-hole, replace_transfer) on the exact base.
+name: C2-S5 per-root observation
+on:
+  push:
+    branches:
+      - 'uninit-ci/**'
+
+jobs:
+  observe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout Kani
+        uses: actions/checkout@v6
+
+      - name: Setup Kani Dependencies
+        uses: ./.github/actions/setup
+        with:
+          os: ubuntu-24.04
+
+      - name: Build Kani
+        run: cargo build-dev
+
+      - name: Observe three roots
+        shell: bash {0}
+        run: |
+          export PATH="$(pwd)/scripts:$PATH"
+          python3 - <<'PY'
+          import json, os, pathlib, shutil, subprocess
+          root = pathlib.Path.cwd()
+          out = pathlib.Path("/tmp/s5-observe"); out.mkdir()
+          env = os.environ.copy(); env["NO_COLOR"] = "1"
+          oracles = json.load(open("tests/json-handler/uninit-contract-oracles/oracles.json"))
+          for case in oracles["cases"]:
+              if case["id"] not in ("p2", "postcondition-hole"):
+                  continue
+              d = out / case["id"]; d.mkdir()
+              argv = ["kani", str(root / case["input"]), "-Z", "uninit-checks", "-Z", "function-contracts",
+                      "-Z", "export-json", "-Z", "unstable-options", "--harness", case["root"], "--exact",
+                      "--jobs", "1", "--target-dir", str(d / "target"), "--export-json", str(d / "export.json"),
+                      "--output-format=regular", "--cbmc-args", "--object-bits", "12"]
+              e = dict(env); e["RUSTFLAGS"] = "--edition 2021 -D warnings"
+              r = subprocess.run(argv, cwd=root, env=e, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=900)
+              (d / "regular.out").write_bytes(r.stdout); (d / "argv.json").write_text(json.dumps(argv))
+              (d / "exit").write_text(str(r.returncode)); shutil.rmtree(d / "target", ignore_errors=True)
+              print(case["id"], "exit", r.returncode)
+          d = out / "replace_transfer"; d.mkdir()
+          shutil.copyfile("tests/json-handler/uninit-contract-mode-boundaries/replace.rs", d / "replace.rs")
+          argv = ["kani", str(d / "replace.rs"), "-Z", "uninit-checks", "-Z", "function-contracts", "-Z", "stubbing",
+                  "-Z", "export-json", "-Z", "unstable-options", "--exact", "--harness", "replace_transfer",
+                  "--harness-timeout", "120", "--export-json", str(d / "export.json"), "--output-format=regular",
+                  "--cbmc-args", "--object-bits", "12"]
+          r = subprocess.run(argv, cwd=d, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=900)
+          (d / "regular.out").write_bytes(r.stdout); (d / "argv.json").write_text(json.dumps(argv))
+          (d / "exit").write_text(str(r.returncode)); shutil.rmtree(d / "target", ignore_errors=True)
+          for p in d.glob("*.out"):
+              if p.name != "regular.out": p.unlink()
+          print("replace_transfer exit", r.returncode)
+          PY
+          for f in /tmp/s5-observe/*/regular.out; do echo "=== $f"; grep -E "^Checking harness|^ \*\* [0-9]+ of|^Failed Checks:|^VERIFICATION" "$f"; done
+
+      - name: Upload observations
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: s5-observe
+          path: /tmp/s5-observe/
+          retention-days: 7
