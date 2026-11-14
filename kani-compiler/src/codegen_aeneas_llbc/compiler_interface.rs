@@ -67,6 +67,9 @@ impl LlbcCodegenBackend {
         _check_contract: Option<InternalDefId>,
         mut transformer: BodyTransformation,
     ) -> (Vec<MonoItem>, Option<AssignsContract>) {
+        // This backend owns its transformer, but delayed writes use the same
+        // scoped API as goto codegen, including the PubFns path.
+        let mut transformer = transformer.delayed_scope();
         let (items, call_graph) = with_timer(
             || collect_reachable_items(tcx, &mut transformer, starting_items),
             "codegen reachability analysis",

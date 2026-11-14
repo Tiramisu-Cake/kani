@@ -89,6 +89,11 @@ impl GotocCodegenBackend {
         transformer: &mut BodyTransformation,
         thread_pool: &ThreadPool,
     ) -> (MinimalGotocCtx, Vec<MonoItem>, Option<AssignsContract>) {
+        // Restore only after reachability, codegen, and contract/model emission.
+        // Export workers receive owned, materialized symbols rather than MIR.
+        let mut delayed_scope = transformer.delayed_scope();
+        let transformer = &mut *delayed_scope;
+
         // This runs reachability analysis before global passes are applied.
         //
         // Alternatively, we could run reachability only once after the global passes are applied

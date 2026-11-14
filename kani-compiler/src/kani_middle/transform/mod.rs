@@ -28,6 +28,7 @@ use crate::kani_middle::transform::loop_contracts::LoopContractPass;
 use crate::kani_middle::transform::stubs::{ExternFnStubPass, FnStubPass};
 use crate::kani_queries::QueryDb;
 use automatic::{AutomaticArbitraryPass, AutomaticHarnessPass};
+use delayed_cache::DelayedCache;
 use dump_mir_pass::DumpMirPass;
 use rustc_hir::def::DefKind;
 use rustc_middle::ty::{EarlyBinder, TyCtxt, TypingEnv};
@@ -36,6 +37,7 @@ use rustc_public::mir::{Body, Local};
 use rustc_public::rustc_internal;
 use std::collections::HashMap;
 use std::fmt::Debug;
+use std::ops::{Deref, DerefMut};
 
 use crate::kani_middle::transform::rustc_intrinsics::RustcIntrinsicsPass;
 pub use internal_mir::RustcInternalMir;
@@ -71,6 +73,7 @@ mod check_uninit;
 pub(crate) use check_uninit::immutable_origin_type_supported;
 mod check_values;
 mod contracts;
+mod delayed_cache;
 mod dump_mir_pass;
 mod internal_mir;
 mod kani_intrinsics;
@@ -92,6 +95,8 @@ pub struct BodyTransformation {
     inst_passes: Vec<Box<dyn ClonableTransformPass>>,
     /// Cache transformation results.
     cache: HashMap<Instance, TransformationResult>,
+    /// Originals of entries replaced by delayed instrumentation in the current model.
+    delayed_cache: DelayedCache<Instance, TransformationResult>,
     /// The locals to add to the loop modifies clause of a loop, by the instance of the body that
     /// contains the loop and the instance of the register function that the loop latch calls, as
     /// recorded by the passes (see [TransformPass::take_generated_loop_modifies]).
@@ -108,6 +113,7 @@ impl BodyTransformation {
             stub_passes: vec![],
             inst_passes: vec![],
             cache: Default::default(),
+            delayed_cache: DelayedCache::default(),
             generated_loop_modifies: Default::default(),
             loop_modifies_bindings: Default::default(),
         };
@@ -147,6 +153,19 @@ impl BodyTransformation {
         transformer.add_pass(queries, LoopContractPass::new(tcx, queries, unit));
         transformer.add_pass(queries, RustcIntrinsicsPass::new(queries));
         transformer
+    }
+
+    /// Keep delayed replacements visible until the current model is fully materialized.
+    /// Regular transformations and their loop metadata remain cached between models.
+    pub fn delayed_scope(&mut self) -> DelayedTransformationScope<'_> {
+        self.delayed_cache.begin();
+        DelayedTransformationScope { transformer: self }
+    }
+
+    /// Replace only after `body()` has applied the regular transformations. Both
+    /// delayed instrumentation and failed-root Unsupported use the same journal.
+    fn replace_delayed_body(&mut self, instance: Instance, body: Body) {
+        self.delayed_cache.replace(&mut self.cache, instance, TransformationResult(body, true));
     }
 
     /// Equivalent to `body()`, but avoids cloning the returned `Body`.
@@ -211,6 +230,32 @@ impl BodyTransformation {
                 TransformationType::Stubbing => self.stub_passes.push(Box::new(pass)),
             }
         }
+    }
+}
+
+/// Restores delayed mutations on normal return, recoverable early return, or unwind.
+/// The exclusive borrow prevents another model from starting before this scope ends.
+pub struct DelayedTransformationScope<'a> {
+    transformer: &'a mut BodyTransformation,
+}
+
+impl Deref for DelayedTransformationScope<'_> {
+    type Target = BodyTransformation;
+
+    fn deref(&self) -> &Self::Target {
+        self.transformer
+    }
+}
+
+impl DerefMut for DelayedTransformationScope<'_> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.transformer
+    }
+}
+
+impl Drop for DelayedTransformationScope<'_> {
+    fn drop(&mut self) {
+        self.transformer.delayed_cache.restore(&mut self.transformer.cache);
     }
 }
 
@@ -386,4 +431,47 @@ mod clone {
         ClonableGlobalPassMid,
         crate::kani_middle::transform::GlobalPass
     );
+}
+
+#[cfg(test)]
+mod delayed_scope_tests {
+    use super::BodyTransformation;
+    use std::panic::{AssertUnwindSafe, catch_unwind};
+
+    // No compiler context or fabricated Instance/Body is needed to exercise
+    // the actual scope guard. Entry ownership is covered by delayed_cache tests.
+    fn transformer() -> BodyTransformation {
+        BodyTransformation {
+            stub_passes: vec![],
+            inst_passes: vec![],
+            cache: Default::default(),
+            delayed_cache: Default::default(),
+            generated_loop_modifies: Default::default(),
+            loop_modifies_bindings: Default::default(),
+        }
+    }
+
+    #[test]
+    fn normal_and_early_return_close_scope() {
+        fn early_return(transformer: &mut BodyTransformation) -> bool {
+            let _scope = transformer.delayed_scope();
+            false
+        }
+
+        let mut transformer = transformer();
+        drop(transformer.delayed_scope());
+        assert!(!early_return(&mut transformer));
+        drop(transformer.delayed_scope());
+    }
+
+    #[test]
+    fn unwind_closes_scope_before_transformer_reuse() {
+        let mut transformer = transformer();
+        let result = catch_unwind(AssertUnwindSafe(|| {
+            let _scope = transformer.delayed_scope();
+            panic!("simulated codegen unwind");
+        }));
+        assert!(result.is_err());
+        drop(transformer.delayed_scope());
+    }
 }

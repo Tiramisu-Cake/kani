@@ -184,7 +184,7 @@ class BindingManifestTests(unittest.TestCase):
         with self.assertRaisesRegex(Rejected, "Unsupported inventory"):
             check_single(actual, expected)
 
-    def test_cycle_diagnostic_drift_is_not_accepted_as_t1b(self):
+    def test_cycle_diagnostic_drift_is_rejected(self):
         baseline, expected = self.bound_cycle()
         changed = copy.deepcopy(baseline)
         for bucket in ("checks", "failed_properties", "unsupported_constructs"):
@@ -195,7 +195,7 @@ class BindingManifestTests(unittest.TestCase):
             check_single(changed, expected)
         self.assertFalse(compare_root(baseline, changed)["accepted"])
 
-    def test_shared_t1b_check_can_be_recorded_without_changing_binding(self):
+    def test_shared_check_drift_is_rejected_with_full_rows(self):
         baseline = observation("immutable_legal", [])
         combined = copy.deepcopy(baseline)
         combined["checks"] = [{
@@ -205,9 +205,9 @@ class BindingManifestTests(unittest.TestCase):
             "location": "library/core/src/ptr/mod.rs:1:1 in function std::ptr::read::<u8>",
         }]
         result = compare_root(baseline, combined)
-        self.assertTrue(result["accepted"])
+        self.assertFalse(result["accepted"])
         self.assertFalse(result["exact_match"])
-        self.assertEqual(len(result["t1b_evidence"]["added"]), 1)
+        self.assertEqual(result["differences"]["checks"]["added"], combined["checks"])
 
 
 if __name__ == "__main__":

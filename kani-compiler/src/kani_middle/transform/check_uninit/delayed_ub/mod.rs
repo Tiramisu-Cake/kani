@@ -15,7 +15,7 @@ use crate::kani_middle::{
     },
     reachability::CallGraph,
     transform::{
-        BodyTransformation, GlobalPass, TransformationResult,
+        BodyTransformation, GlobalPass,
         body::{CheckType, InsertPosition, MutableBody, SourceInstruction},
         check_uninit::UninitInstrumenter,
     },
@@ -188,9 +188,7 @@ impl GlobalPass for DelayedUbPass {
                 // If some instrumentation has been performed, update the cached body in the local transformer.
                 if instrumentation_added {
                     modified = true;
-                    transformer.cache.entry(instance).and_modify(|transformation_result| {
-                        *transformation_result = TransformationResult(body, true);
-                    });
+                    transformer.replace_delayed_body(instance, body);
                 }
             }
 
@@ -211,7 +209,7 @@ impl GlobalPass for DelayedUbPass {
                     None,
                     &error.reason,
                 );
-                transformer.cache.insert(instance, TransformationResult(body.into(), true));
+                transformer.replace_delayed_body(instance, body.into());
                 modified = true;
             }
         }

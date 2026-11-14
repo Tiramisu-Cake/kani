@@ -306,7 +306,7 @@ def main():
     parser.add_argument("--keep-output", action="store_true",
                         help="retain temporary exports and regular logs")
     parser.add_argument("--collect-unbound", action="store_true",
-                        help="explicit pre-binding capture; prints complete observations and exits 2")
+                        help="observe fresh isolated/mixed runs without golden bindings; prints observations and exits 2")
     args = parser.parse_args()
     return capture(args)
 
@@ -342,7 +342,7 @@ def capture(args):
             receipts.append(receipt)
             step = "isolated-" + case["name"] + ": compare/binding"
             isolated_root = compare_selection(result, {case["name"]: case})[case["name"]]
-            if not binding_pending:
+            if not args.collect_unbound:
                 check_single(isolated_root, {"binding": case["binding"],
                                              "expected_verdict": case["expected_verdict"],
                                              "checks": case["expected_inventory"],
@@ -371,12 +371,12 @@ def capture(args):
                             f"mixed-root inventory changed: {name} in {order['id']}")
         step = "write capture report"
         report = {"status": "UNBOUND_CAPTURE" if args.collect_unbound else "PASS",
-                  "binding_status": "BINDING_PENDING" if binding_pending else "REGRESSION_BOUND",
+                  "binding_status": "NOT_CHECKED_CAPTURE" if args.collect_unbound
+                      else "REGRESSION_BOUND",
                   "root_inventory_observations": isolated,
                   "combined_inventory_observations": combined_observations,
                   "mixed_root_comparisons": comparisons,
                   "mixed_root_oracle": "MISMATCH" if any(not item["accepted"] for item in comparisons)
-                      else "MATCH_WITH_T1B" if any(not item["exact_match"] for item in comparisons)
                       else "EXACT_MATCH",
                   "order_credit": "NOT_ESTABLISHED",
                   "producer_order": manifest["producer_order_receipt"]["status"],

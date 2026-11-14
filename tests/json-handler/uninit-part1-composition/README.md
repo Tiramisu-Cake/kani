@@ -32,17 +32,19 @@ path. All four R4 mixed selections retain that cycle inventory exactly. Evidence
 pins the capture digests and source commits; R4's CI wrapper commit differs from
 the source commit only in workflow files. No output is learned during a run.
 The ordinary `./test.sh` path fails closed before invoking Kani if any binding
-is pending. The coordinator's pre-C1 capture
-path is `./test.sh --collect-unbound --keep-output`; it runs isolated roots,
+is pending. The fresh observation path is `./test.sh --collect-unbound --keep-output`;
+it skips comparisons against manifest golden inventories even when they are marked
+bound, then runs isolated roots,
 then all seven selectors in both orders and the focused cycle/legal pair in
 both orders. It prints and retains `capture.json`, each invocation's
 `receipt.json`, exports, and regular output. Capture exits 2 with
-`UNBOUND_CAPTURE`, never PASS, including when bindings are already reviewed.
+`UNBOUND_CAPTURE`, never PASS, and reports `binding_status: NOT_CHECKED_CAPTURE`.
 Inventory differences do not stop capture: it records all per-root/order diffs
 in `mixed_root_comparisons` and continues through all 11 invocations. Each diff
-retains exact added/removed rows, an `accepted` oracle result, and `t1b_evidence`.
-`mixed_root_oracle` distinguishes `EXACT_MATCH`, `MATCH_WITH_T1B`, and `MISMATCH`;
-even a captured `MISMATCH` exits 2 and supplies no regression credit. Process,
+retains exact added/removed rows and an `accepted` oracle result.
+`mixed_root_oracle` is `EXACT_MATCH` or `MISMATCH`. Every added or removed check,
+and every metadata, status, verdict, failure, Unsupported, or cover difference,
+is a mismatch. A captured `MISMATCH` still exits 2 and supplies no regression credit. Process,
 schema, incomplete-output, and root-binding errors still stop the run.
 Any caught stop reports its invocation/order and
 phase plus the exception type and reason on stderr, before and after regular
@@ -57,28 +59,14 @@ identities to `roots.json` with status
 `./test.sh` as the C1 qualification. No output is auto-learned or written into
 the manifest. The runner rejects incomplete exports/selections, un-attributable
 inventories, failure counter/kind drift, wrong-root results, and
-unsupported/failure metadata drift. The mixed-root oracle requires the same
-verdict, exact multiset of failures (IDs, descriptions, locations and remaining
-metadata), Unsupported inventory, and useful checks/covers as isolation. Root
-harness and target-function checks stay exact, including their statuses;
-reached covers retain their exact identities, descriptions and locations.
-It does not accept a match based on the word `FAILED`.
-
-**Known limitation T1b:** DelayedUbPass writes instrumentation into the unit's
-shared cache. Mixed roots can therefore gain or lose SUCCESS/UNREACHABLE safety
-checks in a shared monomorphized function. The explicit reviewed allowlist is
-currently only `std::ptr::read::<u8>`: both its exact regular-output function
-location and its `.safety_check.N` property ID must match. Extra/missing rows
-there are accepted and retained as T1b evidence. Existing IDs may not change
-status, description or location; failures, Unsupported, assertions, reachability
-checks and covers are never exempted. Other functions fail closed until
-explicitly reviewed. In capture r2 (`43502450916`), `immutable_legal` acquired
-six successful checks `.safety_check.5`–`.10` in that shared function, with the
-same SUCCESS verdict and zero failures. This oracle allowance does not repair
-T1b or qualify shared-cache isolation; that remains a separate upstream
-mechanism (R3 answer 7/11). Isolated binding review remains exact. Fixtures
-currently have no covers; a future reviewed binding with covers must also
-supply `expected_covers`.
+unsupported/failure metadata drift. The mixed-root oracle requires exact full
+multiset equality for checks, failed-property metadata, Unsupported properties,
+and covers, plus equal verdict and failure kind. Root harness and target-function
+checks stay exact, including status and metadata; reached covers retain their
+exact identities, descriptions, and locations. Every inventory change is
+rejected, including changes to shared safety instrumentation. Fixtures currently
+have no covers; a future reviewed
+binding with covers must also supply `expected_covers`.
 
 The A/B and B/A labels describe only selector argument order. Source/CLI order
 does not establish producer or codegen order. `ROOT-ORDER-MAP.json` records
