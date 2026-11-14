@@ -1,0 +1,96 @@
+# Copyright Kani Contributors
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+# CI-only: fast feedback for uninit-checks work. Builds Kani and runs only the suites that use -Z uninit-checks.
+name: C2-S5 candidate (units, uninit quick, json-handler, sensitivity)
+on:
+  push:
+    branches:
+      - 'uninit-ci/**'
+  workflow_dispatch:
+
+env:
+  RUST_BACKTRACE: 1
+  KANI_FAIL_ON_UNEXPECTED_DESCRIPTION: "true"
+
+jobs:
+  uninit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout Kani
+        uses: actions/checkout@v6
+
+      - name: Setup Kani Dependencies
+        uses: ./.github/actions/setup
+        with:
+          os: ubuntu-24.04
+
+      - name: Format check
+        run: ./scripts/kani-fmt.sh --check
+
+      - name: Build Kani
+        if: ${{ !cancelled() }}
+        run: cargo build-dev
+
+      - name: Clippy (-D warnings)
+        if: ${{ !cancelled() }}
+        run: cargo clippy --workspace --tests -- -D warnings
+
+      - name: Unit tests (S2/S4)
+        if: ${{ !cancelled() }}
+        run: |
+          cargo test -p kani-compiler delayed_cache::tests
+          cargo test -p kani-compiler delayed_scope_tests
+          cargo test -p kani-compiler immutable_allocations::tests
+
+      - name: Uninit suites
+        if: ${{ !cancelled() }}
+        run: |
+          export PATH="$(pwd)/scripts:$PATH"
+          rc=0
+          export RUST_TEST_THREADS=2
+          ( while sleep 30; do free -m | awk '/Mem:/{print "MEM used_mb="$3" avail_mb="$7}'; done ) &
+          mp=$!
+          run() { echo "::group::$*"; cargo run -p compiletest --quiet -- "$@" --no-fail-fast --timeout 2400 || rc=1; echo "::endgroup::"; }
+          run --suite kani --mode kani Uninit Quantifiers TailCall
+          run --suite expected --mode expected uninit quantifier-capture arbitrary
+          run --suite ui --mode expected quantifier-safety-checks explicit-tail-calls
+          run --suite script-based-pre --mode exec mem-init-reinstrumentation autoharness_explicit_tail_call
+          run --suite json-handler --mode exec
+          kill $mp || true
+          exit $rc
+
+      - name: Sensitivity mutations (each must make its selector FAIL)
+        if: ${{ !cancelled() }}
+        shell: bash {0}
+        run: |
+          export PATH="$(pwd)/scripts:$PATH"
+          declare -A sel=(
+            [positive-remove-useful-assertion]=uninit/private-transfer-frame/lawful-modifies
+            [golden-invert-required-count]=uninit/private-transfer-frame/lawful-modifies
+            [negative-extra-reached-failure]=uninit/maybe-uninit-contract-frame/main
+            [negative-repair-user-write]=uninit/maybe-uninit-contract-frame/main )
+          rc=0
+          for id in positive-remove-useful-assertion negative-extra-reached-failure negative-repair-user-write golden-invert-required-count; do
+            git apply .github/s5sens/$id.patch || { echo "MUTATION $id APPLY_FAILED"; rc=1; continue; }
+            out=$(cargo run -p compiletest --quiet -- --suite expected --mode expected "${sel[$id]}" --force-rerun --no-fail-fast --timeout 900 2>&1)
+            code=$?
+            echo "$out" | grep -E "^test |test result:|expected output to contain|^ \*\* [0-9]+ of|VERIFICATION:-" | head -12
+            if [ $code -ne 0 ] && echo "$out" | grep -q "FAILED"; then echo "MUTATION $id DETECTED (compiletest exit $code)"; else echo "MUTATION $id NOT_DETECTED (exit $code)"; rc=1; fi
+            git apply -R .github/s5sens/$id.patch
+          done
+          exit $rc
+
+      - name: Upload oracle artifacts
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: uninit-contract-oracles
+          path: |
+            /tmp/kani-uninit-contract-oracles-*/
+            /tmp/tmp*/mode-boundary-results/
+            /tmp/kani-uninit-part1-composition-*/
+          if-no-files-found: warn
+          retention-days: 7

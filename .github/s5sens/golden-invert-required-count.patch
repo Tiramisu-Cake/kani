@@ -1,0 +1,10 @@
+--- a/tests/expected/uninit/private-transfer-frame/lawful-modifies.expected
++++ b/tests/expected/uninit/private-transfer-frame/lawful-modifies.expected
+@@ -16,6 +16,6 @@
+  - Status: SUCCESS\
+  - Description: "assertion failed: outside == 41"
+ SUMMARY:\
+- ** 0 of
++ ** 1 of
+ VERIFICATION:- SUCCESSFUL
+ Complete - 1 successfully verified harnesses, 0 failures, 1 total.
