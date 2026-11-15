@@ -1,0 +1,59 @@
+{
+  "files_sha256": {
+    ".github/workflows/kani3300-replay.yml": "1cfd808b76f249523af7a3e485ac23bb2286747ec722a8099d7a4866e6ed6474",
+    "scripts/kani3300-replay/CI-REQUEST.json": "180b8447384a9f4f9113cbf271b049c766c6c40b873f98720ff7a45f473ee357",
+    "scripts/kani3300-replay/replay.py": "aa5d3484421c8266ff2aebfeafabc395740133b4625c28e345b5c7fcfbb78ec0",
+    "scripts/kani3300-replay/sel1-c2-source-binding.json": "8123dea5b9d1b2de7894bcfbc6f9a82e5110f2e51737dc8a03f98760b6a3c28f",
+    "scripts/kani3300-replay/sel1-test-only.patch": "473526895d6d57a99bd356a060195745cc6aba9ee2b70fcc7ae90fecb6676f06",
+    "scripts/kani3300-replay/test_replay.py": "403c3a4ef093e8b53c16af53cfffb251b1246e19e8a1a6313627d2b46514ffc8"
+  },
+  "final_source_binding": "BOUND_ACCEPTED_FREEZE",
+  "formal_proof_credit": "NOT_ESTABLISHED",
+  "local_template_base": "14bc57fdb99960240c4944845a3d985c8af4dcf7",
+  "publication": "COORDINATOR_ONLY_AFTER_STAGE_REVIEW",
+  "request_sha256": "180b8447384a9f4f9113cbf271b049c766c6c40b873f98720ff7a45f473ee357",
+  "retry": "NONE",
+  "runtime": "NOT_RUN",
+  "schema": "sel1-c2-replay-bound-manifest-v2",
+  "source_binding_coverage": "570 regenerated exact paths / 7 subtrees; dynamic discovery matched548 test paths plus22 required files",
+  "source_sha": "14bc57fdb99960240c4944845a3d985c8af4dcf7",
+  "source_tree": "1efb6e4dfa69d346df8e23741d11839b1932403d",
+  "stage": "replay",
+  "status": "BOUND_FREEZE_GATE_A_ACCEPTANCE_REQUIRED",
+  "std": {
+    "author_committer": "Tiramisu-Cake <igkharin@gmail.com>\nTiramisu-Cake <igkharin@gmail.com>",
+    "branch": "prep/kani3300-sel1-swap",
+    "clean": "NOT_REASSERTED_FOR_HISTORICAL_WORKTREE",
+    "clone": "/root/verify-rust-std-kani3300-sel1-swap",
+    "commit": "6075e7ce17179f45642c9ffe8fe09e3ec9395726",
+    "files_sha256": {
+      "library/core/src/slice/sort/shared/smallsort/verify.rs": "506644ad92ed4872af19bd1d302b439ff5e1d4dd850e9e9f149d429286065a95",
+      "library/core/src/slice/sort/shared/smallsort/verify/helper_contracts.rs": "22de8b24f6adf35b633b2962d9873a349041a18cca9d580944d2d4a3c9ad0655",
+      "library/core/src/slice/sort/shared/smallsort/verify/helper_contracts_wide.rs": "b2d71e6e61b4130a95dda6daac3cd5f0970f9daf7b0f7bfa8a9f99d9c3c29844",
+      "library/core/src/slice/sort/shared/smallsort/verify/replay_gateb_prime.rs": "c585f3d0c74879cb21e8f09204f52d59b7aa4948a2e17541a94e162b3ffb10a1",
+      "library/core/src/slice/sort/shared/smallsort/verify/replay_uninit_controls.rs": "c186a086dadba038ff5ad7ca823e52e1e807758a92b1a46cf4c807fc07d96a39"
+    },
+    "frozen_std": "70ba5befc617627073738e26cb1466bd4fb76e41",
+    "library_tree": "12e87bd4a4e141a8f829d8a0519efc09260c5059",
+    "package_parent": "01d75b8e839c751e7ab679fdaaa5fba6384983b6",
+    "patches_sha256": {
+      "std-sel1-delta.patch": "b01e811f856503a5f9f11883d99245e7ffb1a4d8c399d3dd7e15f6c6d18cbf50",
+      "std-swap-only.patch": "bc4d40a8ef7cf32207456348e76caef91ae6d7426baaac9320da3447b5a8092f",
+      "std-test-only.patch": "473526895d6d57a99bd356a060195745cc6aba9ee2b70fcc7ae90fecb6676f06"
+    },
+    "production_std_changed": false,
+    "raw_control_commit": "6075e7ce17179f45642c9ffe8fe09e3ec9395726",
+    "raw_origin": {
+      "binding_path": "research/challenge-8/kani-k1/kani3300/final-gate/REPLAY-CI-OVERLAY.json",
+      "module_sha256": "c186a086dadba038ff5ad7ca823e52e1e807758a92b1a46cf4c807fc07d96a39",
+      "overlay_commit": "3f0aebb87f325a2f07b6fa6fbcce9315ef713690",
+      "overlay_tree": "bc999547dbd98466255eb9d19b59f4cc5382110a",
+      "patch_sha256": "f2689c76720e95f98a88bdd17a2bf4cf13a7348d40dedcf9c009aa0b20db0df5",
+      "reused_module_verbatim": true,
+      "source_path": "research/challenge-8/kani-k1/kani3300/final-gate/replay-test-only.patch"
+    },
+    "status": "HISTORICAL_TEST_ONLY_INPUT_REUSED_NEW_RUNTIME_NOT_RUN",
+    "swap_commit": "da47945f47c6d61e6e207a749299a74f840a01f0",
+    "tree": "a7795c5a49a4f3f00b774356c0ae3fb2a89c6825"
+  }
+}
