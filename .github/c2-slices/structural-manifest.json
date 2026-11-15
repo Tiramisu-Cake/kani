@@ -1,0 +1,103 @@
+{
+  "source": ".github/c2-slices/structural-mixed.rs",
+  "source_sha256": "9aa067f674e9cd27b7b4822795208ff4ca940554e65b6ffe32c316cb0b6e7970",
+  "object_bits": 12,
+  "jobs": 1,
+  "roots": [
+    {
+      "name": "immutable_legal",
+      "mode": "Assert",
+      "target": null,
+      "root_line": 15,
+      "expected_verdict": "SUCCESS"
+    },
+    {
+      "name": "immutable_hole_negative",
+      "mode": "Assert",
+      "target": null,
+      "root_line": 22,
+      "expected_verdict": "FAILURE"
+    },
+    {
+      "name": "ordinary_ensures_legal",
+      "mode": "Assert+ensures",
+      "target": null,
+      "root_line": 33,
+      "expected_verdict": "SUCCESS"
+    },
+    {
+      "name": "pfc_legal",
+      "mode": "PFC",
+      "target": "pfc_contract",
+      "root_line": 46,
+      "expected_verdict": "SUCCESS"
+    },
+    {
+      "name": "pfc_negative",
+      "mode": "PFC",
+      "target": "pfc_negative_contract",
+      "root_line": 58,
+      "expected_verdict": "FAILURE"
+    },
+    {
+      "name": "cycle_root",
+      "mode": "PFC+recursion",
+      "target": "cycle_relay",
+      "root_line": 80,
+      "expected_verdict": "FAILURE"
+    },
+    {
+      "name": "unrelated_legal_after_cycle",
+      "mode": "Assert",
+      "target": null,
+      "root_line": 85,
+      "expected_verdict": "SUCCESS"
+    }
+  ],
+  "orders": [
+    {
+      "id": "all_A_then_B",
+      "selectors": [
+        "immutable_legal",
+        "immutable_hole_negative",
+        "ordinary_ensures_legal",
+        "pfc_legal",
+        "pfc_negative",
+        "cycle_root",
+        "unrelated_legal_after_cycle"
+      ]
+    },
+    {
+      "id": "all_B_then_A",
+      "selectors": [
+        "unrelated_legal_after_cycle",
+        "cycle_root",
+        "pfc_negative",
+        "pfc_legal",
+        "ordinary_ensures_legal",
+        "immutable_hole_negative",
+        "immutable_legal"
+      ]
+    },
+    {
+      "id": "cycle_then_legal",
+      "selectors": [
+        "cycle_root",
+        "unrelated_legal_after_cycle"
+      ]
+    },
+    {
+      "id": "legal_then_cycle",
+      "selectors": [
+        "unrelated_legal_after_cycle",
+        "cycle_root"
+      ]
+    }
+  ],
+  "source_origin": "3b382c812a1b8541946e6dc732cf04497ebcf995:tests/json-handler/uninit-part1-composition/mixed.rs",
+  "producer_order": "ORDER_UNCONTROLLED",
+  "order_credit": "NOT_ESTABLISHED",
+  "binding_status": "NOT_CHECKED_CAPTURE",
+  "expected_invocations": 11,
+  "expected_comparisons": 18
+}

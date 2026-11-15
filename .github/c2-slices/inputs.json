@@ -1,0 +1,159 @@
+{
+  "source_sha": "8e299aa6243bc5f06a29c51e98aafa9564478220",
+  "source_tree": "9829702c1aa0ecb73c860fc0ad5451757917d6cb",
+  "source_parent": "3f5242bb1539fb88196d7e503b722f0905f2b46c",
+  "g0_input": "6ad6714f02035ebe3a6a3f6159cc773eecaf37a1",
+  "test_manifest_sha256": "0ad9d9d4e63df5e85b24a0ab271d78834716fa6c33c6009b2f17aba1938c0220",
+  "recipe_commit": "0998b98867932b307bd99109dc8f2741cac507b1",
+  "recipe_path": ".github/workflows/uninit-quick.yml",
+  "recipe_sha256": "7ee68ca99923e6c14c92fd14a0364535737b1d06a47c906e3eac2796ab9b8230",
+  "qualification_kind": "F7_STRUCTURAL_ISOLATION_PLUS_CUMULATIVE_QUICK",
+  "integration_status": "PENDING_NATIVE_EXACT_HEAD7",
+  "integration_heads": [
+    7
+  ],
+  "runtime": "NOT_RUN",
+  "accepted_parent_run": "43720042056",
+  "accepted_recipe_overlay": "ece902633e72af24dcd1157ee7b457d27840027c",
+  "B1_dependency": "6fe484b30043b3696b5f1ccc4bea0e42891ad012",
+  "additional_units": {
+    "argument-size-units": {
+      "filter": "argument_size_tests",
+      "native_names": [
+        "kani_middle::transform::check_uninit::ty_layout::argument_size_tests::transfer_requires_complete_sized_storage"
+      ]
+    },
+    "marker-category-units": {
+      "filter": "marker_category_tests",
+      "native_names": [
+        "kani_middle::kani_functions::marker_category_tests::typed_marker_categories_remain_distinct"
+      ]
+    },
+    "compiler-all-units": {
+      "filter": null,
+      "native_names": [
+        "codegen_cprover_gotoc::context::immutable_allocations::tests::compatible_aliases_combine_qualification_in_either_order",
+        "codegen_cprover_gotoc::context::immutable_allocations::tests::compatible_mutable_aliases_remain_unadmitted",
+        "codegen_cprover_gotoc::context::immutable_allocations::tests::compatible_reuse_and_conflict_preserve_first_descriptor",
+        "codegen_cprover_gotoc::context::immutable_allocations::tests::empty_mask_has_no_seed_index_or_object_query",
+        "codegen_cprover_gotoc::context::immutable_allocations::tests::incompatible_storage_never_overwrites_or_combines_qualification",
+        "codegen_cprover_gotoc::context::immutable_allocations::tests::mutable_or_unqualified_is_not_admitted",
+        "codegen_cprover_gotoc::context::immutable_allocations::tests::seed_preserves_labeled_reset_completion_and_original_edges",
+        "codegen_cprover_gotoc::context::immutable_allocations::tests::unqualified_conflict_keeps_existing_policy",
+        "codegen_cprover_gotoc::context::immutable_allocations::tests::zero_is_initialized_hole_is_not",
+        "codegen_cprover_gotoc::overrides::hooks::quantifier_safety_tests::nested_quantifiers_preserve_check_dependencies",
+        "codegen_cprover_gotoc::overrides::hooks::quantifier_safety_tests::quantifier_scanner_covers_safety_property_classes",
+        "codegen_cprover_gotoc::overrides::hooks::quantifier_safety_tests::quantifier_scanner_finds_nested_statement_expressions",
+        "codegen_cprover_gotoc::overrides::hooks::quantifier_safety_tests::quantifier_scanner_ignores_other_assertions",
+        "codegen_cprover_gotoc::utils::float_utils::tests::check_f32_bounds",
+        "codegen_cprover_gotoc::utils::float_utils::tests::check_f64_bounds",
+        "codegen_cprover_gotoc::utils::float_utils::tests::generate_bounds",
+        "kani_compiler::tests::normalize_encodings_joins_both_forms",
+        "kani_compiler::tests::required_args_cover_soundness_invariants",
+        "kani_compiler::tests::required_args_do_not_clobber_linker",
+        "kani_compiler::tests::required_args_do_not_duplicate_crate_attr",
+        "kani_middle::codegen_order::tests::handles_rating_extremes",
+        "kani_middle::codegen_order::tests::handles_trivial_inputs",
+        "kani_middle::codegen_order::tests::orders_highest_rated_first",
+        "kani_middle::codegen_units::autoharness_filter_tests::both_matching",
+        "kani_middle::codegen_units::autoharness_filter_tests::both_none",
+        "kani_middle::codegen_units::autoharness_filter_tests::complex_path_patterns",
+        "kani_middle::codegen_units::autoharness_filter_tests::crate_specific_filtering",
+        "kani_middle::codegen_units::autoharness_filter_tests::exact_match",
+        "kani_middle::codegen_units::autoharness_filter_tests::exclude_precedence_identical_patterns",
+        "kani_middle::codegen_units::autoharness_filter_tests::exclude_precedence_overlapping_patterns",
+        "kani_middle::codegen_units::autoharness_filter_tests::exclude_specific_module",
+        "kani_middle::codegen_units::autoharness_filter_tests::impl_paths_with_spaces",
+        "kani_middle::codegen_units::autoharness_filter_tests::include_specific_module",
+        "kani_middle::codegen_units::autoharness_filter_tests::multiple_exclude_patterns",
+        "kani_middle::codegen_units::autoharness_filter_tests::multiple_include_patterns",
+        "kani_middle::codegen_units::autoharness_filter_tests::only_excluded",
+        "kani_middle::codegen_units::autoharness_filter_tests::only_included",
+        "kani_middle::codegen_units::autoharness_filter_tests::root_crate_paths",
+        "kani_middle::codegen_units::autoharness_filter_tests::test_exact_match_with_crate",
+        "kani_middle::kani_functions::marker_category_tests::typed_marker_categories_remain_distinct",
+        "kani_middle::points_to::points_to_analysis::active_call_tests::caller_location_is_diagnostic_only_and_survives_repeated_entry",
+        "kani_middle::points_to::points_to_analysis::active_call_tests::diagnostic_is_bounded_without_limiting_analysis_depth",
+        "kani_middle::points_to::points_to_analysis::active_call_tests::diagnostic_uses_display_without_exposing_internal_identity",
+        "kani_middle::points_to::points_to_analysis::active_call_tests::diamond_and_repeated_completed_calls_are_allowed",
+        "kani_middle::points_to::points_to_analysis::active_call_tests::discarded_override_has_no_source_body_edges",
+        "kani_middle::points_to::points_to_analysis::active_call_tests::exact_instance_and_body_selection_are_part_of_identity",
+        "kani_middle::points_to::points_to_analysis::active_call_tests::independent_roots_in_both_orders_do_not_share_errors",
+        "kani_middle::points_to::points_to_analysis::active_call_tests::mutual_cycle_retains_original_root_and_active_stack",
+        "kani_middle::points_to::points_to_analysis::active_call_tests::self_cycle_is_an_error_without_pushing_another_frame",
+        "kani_middle::resolve::tests::simple_last_two_items_of_path_match::dyn_bound_parens_cross_module",
+        "kani_middle::resolve::tests::simple_last_two_items_of_path_match::dyn_bound_parens_in_module",
+        "kani_middle::resolve::tests::simple_last_two_items_of_path_match::generic_args_with_segmented_params",
+        "kani_middle::resolve::tests::simple_last_two_items_of_path_match::impl_self_type_dyn_args_match",
+        "kani_middle::resolve::tests::simple_last_two_items_of_path_match::impl_self_type_dyn_args_mismatch",
+        "kani_middle::resolve::tests::simple_last_two_items_of_path_match::impl_self_type_dyn_second_position",
+        "kani_middle::resolve::tests::simple_last_two_items_of_path_match::impl_self_type_fn_ptr_args_decline",
+        "kani_middle::resolve::tests::simple_last_two_items_of_path_match::impl_self_type_non_generic_no_fallback",
+        "kani_middle::resolve::tests::simple_last_two_items_of_path_match::impl_self_type_tuple_args_not_stripped",
+        "kani_middle::resolve::tests::simple_last_two_items_of_path_match::length_one_item_prefix",
+        "kani_middle::resolve::tests::simple_last_two_items_of_path_match::length_three_item_prefix",
+        "kani_middle::resolve::tests::simple_last_two_items_of_path_match::multibyte_path_char_boundary",
+        "kani_middle::resolve::tests::simple_last_two_items_of_path_match::multibyte_path_char_const_generic",
+        "kani_middle::resolve::tests::simple_last_two_items_of_path_match::multibyte_path_component_kept",
+        "kani_middle::resolve::tests::simple_last_two_items_of_path_match::strip_redundant_parens_arrow_list_unchanged",
+        "kani_middle::resolve::tests::simple_last_two_items_of_path_match::tuple_parens_preserved",
+        "kani_middle::resolve::tests::simple_last_two_items_of_path_match::whitespace_insensitive_primary_match",
+        "kani_middle::resolve::tests::simple_last_two_items_of_path_match::wrong_generic_arg",
+        "kani_middle::transform::check_uninit::ty_layout::argument_size_tests::transfer_requires_complete_sized_storage",
+        "kani_middle::transform::delayed_cache::tests::empty_scope_preserves_regular_cache",
+        "kani_middle::transform::delayed_cache::tests::first_snapshot_restores_body_and_modified_flag",
+        "kani_middle::transform::delayed_cache::tests::preserves_warm_untouched_and_new_regular_entries",
+        "kani_middle::transform::delayed_cache::tests::rejects_unclosed_scope",
+        "kani_middle::transform::delayed_cache::tests::rejects_unscoped_replacement",
+        "kani_middle::transform::delayed_cache::tests::removes_previously_absent_failed_root_and_repeats_cleanly",
+        "kani_middle::transform::delayed_scope_tests::normal_and_early_return_close_scope",
+        "kani_middle::transform::delayed_scope_tests::unwind_closes_scope_before_transformer_reuse"
+      ],
+      "expected_passed": 76,
+      "source": "Static #[test] declarations and explicit reviewed module paths; native discovery NOT_RUN",
+      "includes_relevant_groups": 28,
+      "F7_units_absent": 0
+    },
+    "delayed-cache-units": {
+      "filter": "delayed_cache::tests",
+      "native_names": [
+        "kani_middle::transform::delayed_cache::tests::first_snapshot_restores_body_and_modified_flag",
+        "kani_middle::transform::delayed_cache::tests::preserves_warm_untouched_and_new_regular_entries",
+        "kani_middle::transform::delayed_cache::tests::removes_previously_absent_failed_root_and_repeats_cleanly",
+        "kani_middle::transform::delayed_cache::tests::empty_scope_preserves_regular_cache",
+        "kani_middle::transform::delayed_cache::tests::rejects_unclosed_scope",
+        "kani_middle::transform::delayed_cache::tests::rejects_unscoped_replacement"
+      ]
+    },
+    "delayed-scope-units": {
+      "filter": "delayed_scope_tests",
+      "native_names": [
+        "kani_middle::transform::delayed_scope_tests::normal_and_early_return_close_scope",
+        "kani_middle::transform::delayed_scope_tests::unwind_closes_scope_before_transformer_reuse"
+      ]
+    }
+  },
+  "effective_targeted_unit_count": 28,
+  "packet_unit_expected_count_note": "Inherited9+9+1+1=20 plus F7 journal6/scope2=28; all compiler units76, exact native names required.",
+  "sensitivity": {
+    "status": "REQUIRED_4_OF_4",
+    "manifest": "sensitivity-manifest.json",
+    "clean_expected_suite_required": true,
+    "acceptance": "All four independent --force-rerun intended golden mismatches with completed native verdict/N; no compile/timeout/Unsupported detection.",
+    "manifest_sha256": "454cc2c6af75eaf8ec0435d7743ff8252f5c4cff71c0e38ea6f8d3ccea0674bb",
+    "classification_basis": "Completed native verdict/N plus intended golden mismatch; repaired-write local var_N labels may renumber. See accepted5 run43715788377."
+  },
+  "effective_all_compiler_unit_count": 76,
+  "structural": {
+    "manifest_sha256": "130db6482a280fdf5f9d653202f00f342c6d3deb217c105750ff1c04527d0789",
+    "status": "REQUIRED_18_OF_18_EXACT_FRESH_MIXED_VS_OWN_ISOLATED",
+    "invocations": 11,
+    "comparisons": 18,
+    "producer_order": "ORDER_UNCONTROLLED",
+    "order_credit": "NOT_ESTABLISHED",
+    "golden_binding": "NOT_CHECKED_CAPTURE",
+    "historical_baseline_run": "43621472749",
+    "historical_candidate_run": "43621476331",
+    "fresh_native_result": "NOT_RUN"
+  }
+}
