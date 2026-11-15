@@ -9,7 +9,7 @@ use crate::kani_middle::{
     transform::{
         body::{InsertPosition, MutableBody, SourceInstruction},
         check_uninit::{
-            TargetFinder,
+            PointeeInfo, PointeeLayout, TargetFinder,
             relevant_instruction::{InitRelevantInstruction, MemoryInitOp},
         },
     },
@@ -43,6 +43,30 @@ impl TargetFinder for InstrumentationVisitor<'_, '_> {
                 before_instruction: vec![],
                 after_instruction: vec![],
             };
+            if bb_idx == 0 {
+                // Arguments have no defining assignment in this body. A valid ordinary
+                // value initializes its own data bytes on entry, even when aliasing
+                // overapproximation causes later reads to be tracked. Address the slot,
+                // not a reference/raw pointer's referent. Union/MU storage and nested
+                // unsupported layouts retain their existing transfer rules/diagnostics.
+                for (local, decl) in body.locals().iter().enumerate().skip(1).take(body.arg_count())
+                {
+                    let place = Place::from(local);
+                    if self.needs_set(&place)
+                        && !decl.ty.kind().is_union()
+                        && matches!(
+                            PointeeInfo::from_ty(decl.ty).as_ref().map(PointeeInfo::layout),
+                            Ok(PointeeLayout::Sized { .. })
+                        )
+                    {
+                        self.push_target(MemoryInitOp::SetRef {
+                            operand: Operand::Copy(place),
+                            value: true,
+                            position: InsertPosition::Before,
+                        });
+                    }
+                }
+            }
             self.visit_basic_block(bb);
         }
         self.targets
@@ -73,6 +97,29 @@ impl<'a, 'tcx> InstrumentationVisitor<'a, 'tcx> {
     fn push_target(&mut self, source_op: MemoryInitOp) {
         self.current_target.push_operation(source_op);
     }
+
+    /// Whether a write to this storage can supply a checked alias at the same depth.
+    fn needs_set(&self, place: &Place) -> bool {
+        let mut self_ancestors =
+            self.points_to.resolve_place_stable(place.clone(), self.current_instance, self.tcx);
+        let mut target_ancestors = self.analysis_targets.clone();
+        // The graph is field/context insensitive and can be cyclic. Repeating a pair
+        // cannot reveal a new intersection; preserve the existing terminating walk.
+        let mut visited_pairs = Vec::new();
+        while !self_ancestors.is_empty() || !target_ancestors.is_empty() {
+            if self_ancestors.intersection(&target_ancestors).next().is_some() {
+                return true;
+            }
+            let state = (self_ancestors, target_ancestors);
+            if visited_pairs.contains(&state) {
+                break;
+            }
+            self_ancestors = self.points_to.ancestors(&state.0);
+            target_ancestors = self.points_to.ancestors(&state.1);
+            visited_pairs.push(state);
+        }
+        false
+    }
 }
 
 impl MirVisitor for InstrumentationVisitor<'_, '_> {
@@ -95,16 +142,14 @@ impl MirVisitor for InstrumentationVisitor<'_, '_> {
         if let SourceInstruction::Statement { bb, .. } = self.current_target.source {
             // We don't have to push the previous target, since it already happened in the statement
             // handling code.
-            self.current_target = InitRelevantInstruction {
-                source: SourceInstruction::Terminator { bb },
-                after_instruction: vec![],
-                before_instruction: vec![],
-            };
+            // Keep entry setters when bb0 has no statements. Other blocks have no
+            // pending operations here, since visit_statement already flushed them.
+            self.current_target.source = SourceInstruction::Terminator { bb };
         } else {
             unreachable!()
         }
-        // The local uninitialized-memory visitor owns unsupported-call checks. It runs
-        // even without delayed-UB targets, and preserves checks on the call's operands.
+        // Unsupported calls are owned by the local visitor, which runs independently
+        // of delayed-UB seeds and preserves the operand reads before its diagnostic.
         self.super_terminator(term, location);
         // Push the current target from the terminator onto the list.
         self.targets.push(self.current_target.clone());
@@ -156,35 +201,7 @@ impl MirVisitor for InstrumentationVisitor<'_, '_> {
         // if we don't set-instrument `val_2` we will get a false-positive.
         //
         // See `tests/expected/uninit/delayed-ub-overapprox.rs` for a more specific example.
-        let needs_set = {
-            let mut has_common_ancestor = false;
-            let mut self_ancestors =
-                self.points_to.resolve_place_stable(place.clone(), self.current_instance, self.tcx);
-            let mut target_ancestors = self.analysis_targets.clone();
-
-            // The points-to graph can contain cycles (the analysis is field- and
-            // context-insensitive, so e.g. a `Vec` can end up "pointing to" itself), in which
-            // case the ancestor sets never become empty and this walk used to loop forever. Each
-            // iteration is a deterministic function of the current pair of sets, so once a pair
-            // repeats, no new intersection can be found: stop and report no common ancestor,
-            // which is the answer the walk gives on every graph where it terminates.
-            let mut visited_pairs = Vec::new();
-            while !self_ancestors.is_empty() || !target_ancestors.is_empty() {
-                if self_ancestors.intersection(&target_ancestors).next().is_some() {
-                    has_common_ancestor = true;
-                    break;
-                }
-                let state = (self_ancestors, target_ancestors);
-                if visited_pairs.contains(&state) {
-                    break;
-                }
-                self_ancestors = self.points_to.ancestors(&state.0);
-                target_ancestors = self.points_to.ancestors(&state.1);
-                visited_pairs.push(state);
-            }
-
-            has_common_ancestor
-        };
+        let needs_set = self.needs_set(place);
 
         // If we are mutating the place, initialize it.
         if ptx.is_mutating() && needs_set {

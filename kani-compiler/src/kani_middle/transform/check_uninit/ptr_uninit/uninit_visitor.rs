@@ -279,7 +279,7 @@ impl MirVisitor for CheckUninitVisitor<'_> {
         match &term.kind {
             TerminatorKind::Call { func, args, destination, .. } => 'call: {
                 self.super_terminator(term, location);
-                let instance = match try_resolve_instance(&self.locals, func) {
+                let instance = match try_resolve_instance(self.tcx, &self.locals, func) {
                     Ok(instance) => instance,
                     Err(reason) => {
                         self.push_target(MemoryInitOp::Unsupported { reason });
@@ -760,8 +760,12 @@ fn try_remove_topmost_deref(place: &Place) -> Option<Place> {
 }
 
 /// Try retrieving instance for the given function operand.
-fn try_resolve_instance(locals: &[LocalDecl], func: &Operand) -> Result<Instance, String> {
-    resolve_call(func.ty(locals).unwrap())
+fn try_resolve_instance(
+    tcx: TyCtxt,
+    locals: &[LocalDecl],
+    func: &Operand,
+) -> Result<Instance, String> {
+    resolve_call(tcx, func.ty(locals).unwrap())
 }
 
 /// Conservative admission guard for generated ABIs, not an expansion of the shadow model.
