@@ -1,7 +1,7 @@
 name: B3 T1 deterministic perf models (NO SAT)
 on:
   push:
-    branches: ['uninit-ci/b3-t1**']
+    branches: ['uninit-ci/b3-t1**', '!uninit-ci/b3-t1b**']
 permissions:
   contents: read
 jobs:

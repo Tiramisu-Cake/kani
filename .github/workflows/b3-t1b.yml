@@ -1,0 +1,52 @@
+# Copyright Kani Contributors
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+name: B3 T1b existing-model text comparison (NO BUILD, NO SAT)
+on:
+  push:
+    branches: ['uninit-ci/b3-t1b**']
+permissions:
+  contents: read
+  actions: read
+jobs:
+  compare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Initialize partial result and reject retries
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/b3-t1b-artifacts"
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          dest = Path(os.environ['RUNNER_TEMP']) / 'b3-t1b-artifacts/RESULT.json'
+          dest.write_text(json.dumps({'status': 'INVALID', 'stage': 'DOWNLOAD_NOT_COMPLETED', 'source_run': '43701550489'}))
+          if os.environ['GITHUB_RUN_ATTEMPT'] != '1':
+              raise SystemExit('No retries allowed')
+          PY
+      - name: Download existing T1 capture outside checkout
+        uses: actions/download-artifact@v4
+        with:
+          name: b3-t1-43701550489-1
+          run-id: 43701550489
+          github-token: ${{ github.token }}
+          repository: Tiramisu-Cake/kani
+          path: ${{ runner.temp }}/b3-t1-input
+      - name: Validate, install identical display tool, dump and compare
+        timeout-minutes: 48
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .github/b3-t1b/run.py "$RUNNER_TEMP/b3-t1-input" "$RUNNER_TEMP/b3-t1b-artifacts"
+      - name: Upload complete or partial evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: b3-t1b-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/b3-t1b-artifacts
+          if-no-files-found: error
+          compression-level: 1
