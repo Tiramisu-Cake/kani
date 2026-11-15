@@ -1,0 +1,6 @@
+Checking harness selected_true_maybe_uninit_fields_are_legal...
+- Status: SUCCESS\
+- Description: "true-arm MaybeUninit fields remain initialized"
+** 0 of
+VERIFICATION:- SUCCESSFUL
+Complete - 1 successfully verified harnesses, 0 failures, 1 total.

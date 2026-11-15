@@ -1,0 +1,7 @@
+Checking harness copy_intrinsic_operands_preserve_both_sources...
+- Status: SUCCESS\
+- Description: "Copy sources and selected result retain their values"
+** 0 of
+** 2 of 2 cover properties satisfied
+VERIFICATION:- SUCCESSFUL
+Complete - 1 successfully verified harnesses, 0 failures, 1 total.

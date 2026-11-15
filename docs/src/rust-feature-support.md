@@ -192,9 +192,13 @@ and independently supported static paths can still succeed; this limitation does
 mean that every subrange or relocation read fails.
 
 General limitations apply to all harnesses using `-Z uninit-checks`, including ordinary
-proofs. Intrinsics without an initialization model, including `select_unpredictable`
-and `core::hint::select_unpredictable`, calls through function pointers and trait
-objects, and call cycles in the delayed initialization analysis remain unsupported.
+proofs. The standard `core::intrinsics::select_unpredictable` and the public
+`core::hint::select_unpredictable` wrapper use the Rust fallback body when it is
+available and not required to be overridden. Support requires a sized payload with
+an existing supported initialization layout and transfer mask; this does not extend
+to arbitrary nested or unsized payloads. Other intrinsics without an initialization
+model, calls through function pointers and trait objects, and call cycles in the
+delayed initialization analysis remain unsupported.
 Kani's typed marker-dispatched backend hooks do not support by-value shadow argument or return transfers.
 Some function-item trait shims have layout or shadow-transfer limitations; this is
 not a restriction on all direct calls to function items. Shadow transfer under

@@ -1,0 +1,7 @@
+Checking harness unmodeled_shadow_intrinsic_stays_unsupported...
+- Status: FAILURE\
+- Description: "Kani does not support shadow-carrying argument or return values of intrinsic `BlackBox`."
+** 1 of
+Failed Checks: Kani does not support shadow-carrying argument or return values of intrinsic `BlackBox`.
+VERIFICATION:- FAILED
+Complete - 0 successfully verified harnesses, 1 failures, 1 total.

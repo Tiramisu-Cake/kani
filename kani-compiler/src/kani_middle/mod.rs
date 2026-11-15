@@ -150,6 +150,53 @@ pub fn checked_body(tcx: TyCtxt, instance: Instance) -> Option<Body> {
     instance.body()
 }
 
+/// Whether codegen and reachability use the Rust fallback for an intrinsic.
+/// Keep this predicate shared until stable MIR exposes fallback selection directly.
+pub fn has_intrinsic_fallback(instance: Instance) -> bool {
+    let TyKind::RigidTy(RigidTy::FnDef(def, _)) = instance.ty().kind() else { return false };
+    def.as_intrinsic()
+        .is_some_and(|intrinsic| !intrinsic.must_be_overridden() && instance.has_body())
+}
+
+/// The one intrinsic whose fallback participates in ordinary uninit call transfers.
+/// Layout admission belongs to the local uninit visitor; this only selects the body
+/// and validates the monomorphized `(bool, T, T) -> T` signature.
+pub fn select_unpredictable_fallback(tcx: TyCtxt, instance: Instance) -> Option<Ty> {
+    use rustc_hir::definitions::DefPathData;
+
+    if instance.kind != rustc_public::mir::mono::InstanceKind::Intrinsic
+        || instance.intrinsic_name().as_deref() != Some("select_unpredictable")
+        || !has_intrinsic_fallback(instance)
+    {
+        return None;
+    }
+    let TyKind::RigidTy(RigidTy::FnDef(def, _)) = instance.ty().kind() else { return None };
+    // The displayed name can use std's re-export, even for this exact core item.
+    // Match its definition path, as for multi_char_eq_searcher_kind below, rather
+    // than accepting an additional printed spelling or arbitrary bodyful intrinsic.
+    let path = tcx.def_path(rustc_internal::internal(tcx, def.def_id()));
+    if tcx.crate_name(path.krate) != rustc_span::sym::core {
+        return None;
+    }
+    let [module, item] = path.data.as_slice() else { return None };
+    let DefPathData::TypeNs(module) = &module.data else { return None };
+    let DefPathData::ValueNs(item) = &item.data else { return None };
+    if module.as_str() != "intrinsics" || item.as_str() != "select_unpredictable" {
+        return None;
+    }
+    let sig = instance.ty().kind().fn_sig()?.skip_binder();
+    let [condition, left, right] = sig.inputs() else { return None };
+    if condition.kind() != TyKind::RigidTy(RigidTy::Bool)
+        || left != right
+        || *left != sig.output()
+        || sig.c_variadic
+        || checked_body(tcx, instance).is_none()
+    {
+        return None;
+    }
+    Some(*left)
+}
+
 /// [checked_body] for a function definition, as loaded by `FnDef::body()`.
 pub fn checked_fn_def_body(tcx: TyCtxt, def: FnDef) -> Option<Body> {
     if !def.has_body() {

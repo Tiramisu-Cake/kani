@@ -1,0 +1,6 @@
+Checking harness legal_selected_false_arm_with_unselected_hole...
+- Status: SUCCESS\
+- Description: "selected false MaybeUninit arm is initialized"
+** 0 of
+VERIFICATION:- SUCCESSFUL
+Complete - 1 successfully verified harnesses, 0 failures, 1 total.
