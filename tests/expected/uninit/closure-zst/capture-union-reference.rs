@@ -1,0 +1,46 @@
+// Copyright Kani Contributors
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+// compile-flags: --edition 2021 -D warnings
+// kani-flags: -Z uninit-checks -Z unstable-options --output-format=regular --cbmc-args --object-bits 12
+
+use std::mem::MaybeUninit;
+
+#[inline(never)]
+fn select(a: MaybeUninit<u8>, b: MaybeUninit<u8>, first: bool) -> MaybeUninit<u8> {
+    if first { a } else { b }
+}
+
+// Borrow the entire capture, preventing field-only capture in these controls.
+#[inline(never)]
+fn touch<T>(_: &T) {}
+
+// The typed raw read explicitly requests the closure's own initialization mask.
+// Copy excludes duplicating an exclusive reference or an owned destructor.
+#[inline(never)]
+fn copy_and_call<F: Copy + Fn(&MaybeUninit<u8>) -> bool>(
+    callback: F,
+    payload: &MaybeUninit<u8>,
+) -> bool {
+    let copied = unsafe { std::ptr::read(std::ptr::addr_of!(callback)) };
+    copied(payload)
+}
+
+#[derive(Clone, Copy)]
+union ByteUnion {
+    byte: u8,
+    #[allow(dead_code)] // Keep wider inactive storage without reading it.
+    word: u32,
+}
+
+#[kani::proof]
+fn capture_union_reference() {
+    let payload = select(MaybeUninit::new(17), MaybeUninit::uninit(), true);
+    let storage = ByteUnion { byte: 17 };
+    let capture = &storage;
+    let callback = move |value: &MaybeUninit<u8>| {
+        touch(&capture);
+        unsafe { capture.byte == value.assume_init_read() }
+    };
+    assert!(std::mem::size_of_val(&callback) > 0);
+    assert!(copy_and_call(callback, &payload));
+}

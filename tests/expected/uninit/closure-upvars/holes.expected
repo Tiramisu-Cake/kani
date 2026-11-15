@@ -1,0 +1,11 @@
+Checking harness two_refs_initialized...
+VERIFICATION:- SUCCESSFUL
+Checking harness two_refs_preserve_hole...
+Undefined Behavior: Reading from an uninitialized pointer of type `*const u8`
+Undefined Behavior: Reading from an uninitialized pointer of type `u8`
+VERIFICATION:- FAILED
+Checking harness capture_padding_stays_false...
+Undefined Behavior: Reading from an uninitialized pointer of type `*const u8`
+Undefined Behavior: Reading from an uninitialized pointer of type `u8`
+VERIFICATION:- FAILED
+Complete - 1 successfully verified harnesses, 2 failures, 3 total.

@@ -1,0 +1,8 @@
+Checking harness generated_modifies_no_shadow...
+generated_modifies_no_shadow.assertion.1\
+ - Status: SUCCESS\
+ - Description: "assertion failed: unsafe { out.assume_init() } == 7"
+SUMMARY:\
+ ** 0 of
+VERIFICATION:- SUCCESSFUL
+Complete - 1 successfully verified harnesses, 0 failures, 1 total.

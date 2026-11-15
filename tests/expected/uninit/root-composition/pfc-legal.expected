@@ -1,0 +1,8 @@
+Checking harness pfc_legal...
+pfc_contract::\
+- Status: SUCCESS\
+- Description: "|result: &MaybeUninit<u8>| unsafe { result.assume_init_read() == 31 }"
+SUMMARY:\
+** 0 of
+VERIFICATION:- SUCCESSFUL
+Complete - 1 successfully verified harnesses, 0 failures, 1 total.

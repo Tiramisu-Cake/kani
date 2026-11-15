@@ -1,0 +1,11 @@
+Checking harness unrelated_legal_after_cycle...
+unrelated_legal_after_cycle.assertion.1\
+- Status: SUCCESS\
+- Description: "assertion failed: unsafe { left.assume_init_read() } == 59"
+unrelated_legal_after_cycle.assertion.2\
+- Status: SUCCESS\
+- Description: "assertion failed: unsafe { right.assume_init_read() } == 61"
+SUMMARY:\
+** 0 of
+VERIFICATION:- SUCCESSFUL
+Complete - 1 successfully verified harnesses, 0 failures, 1 total.
