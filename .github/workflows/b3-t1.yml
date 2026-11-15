@@ -1,0 +1,35 @@
+name: B3 T1 deterministic perf models (NO SAT)
+on:
+  push:
+    branches: ['uninit-ci/b3-t1**']
+permissions:
+  contents: read
+jobs:
+  compare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          path: source
+          persist-credentials: false
+      - name: Copy orchestration outside the switching source tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp -a "$GITHUB_WORKSPACE/source/.github/b3-t1" "$RUNNER_TEMP/b3-t1"
+      - name: A1 then B1 then fresh A2; capture only
+        timeout-minutes: 225
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 "$RUNNER_TEMP/b3-t1/run.py" "$GITHUB_WORKSPACE/source" "$RUNNER_TEMP/b3-t1-artifacts"
+      - name: Upload complete or partial evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: b3-t1-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/b3-t1-artifacts
+          if-no-files-found: error
+          compression-level: 1
