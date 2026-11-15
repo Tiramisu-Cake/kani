@@ -65,12 +65,13 @@ def collect_arm(arm, source, locks, tools):
     if any(e["event"] in {"capture-error", "exception"} for e in events):
         raise ValueError("capture error or exception; inspect command events")
     # A stock script lacks set -e; a failed build must not be hidden by later compiletest output.
+    # compiletest reports failed tests with std::process::exit(1) (tools/compiletest/src/main.rs).
     for e in events:
         if e["event"] == "exit" and e["exit"] != 0:
             argv = e["argv"]
             allowed = ("kani" in argv and e["exit"] == 1) or (
-                "compiletest" in argv and e["exit"] == 101) or (
-                len(argv) > 1 and argv[1].endswith("kani-perf.sh") and e["exit"] == 101) or (
+                "compiletest" in argv and e["exit"] == 1) or (
+                len(argv) > 1 and argv[1].endswith("kani-perf.sh") and e["exit"] == 1) or (
                 any(a.endswith("scripts/kani") for a in argv) and e["exit"] == 1)
             if not allowed:
                 raise ValueError(f"unexpected failed command: {argv}: {e['exit']}")
@@ -182,7 +183,7 @@ def main(source, out):
         check_locks(source, baseline_locks)
         # Exact stock workload, release build + overlays + compiletest. Expected compiletest
         # failure is retained (shim does not report proofs). No retry/||true/pipe used here.
-        run(["bash", "scripts/kani-perf.sh"], arm / "perf.log", source, expected=(101,))
+        run(["bash", "scripts/kani-perf.sh"], arm / "perf.log", source, expected=(1,))
         check_locks(source, baseline_locks)
         control = source / "t1-control"
         control.mkdir()
