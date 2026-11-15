@@ -334,6 +334,11 @@ impl<'a> UninitInstrumenter<'a> {
             MemoryInitOp::Check { operand }
             | MemoryInitOp::CheckSliceChunk { operand, .. }
             | MemoryInitOp::CheckRef { operand } => operand.ty(body.locals()).unwrap(),
+            MemoryInitOp::CheckAs { operand, pointee_ty }
+                if operand.ty(body.locals()).unwrap().kind().is_ref() =>
+            {
+                *pointee_ty
+            }
             MemoryInitOp::CheckAs { .. } => operation.operand_ty(body),
             _ => unreachable!(),
         };

@@ -194,7 +194,7 @@ prefetch_write_instruction | No | |
 ptr_guaranteed_eq | Yes | |
 ptr_guaranteed_ne | Yes | |
 ptr_offset_from | Partial | Doesn't check [all UB conditions](https://doc.rust-lang.org/std/primitive.pointer.html#safety-4) |
-raw_eq | Partial | Cannot detect [uninitialized memory](#uninitialized-memory) |
+raw_eq | Partial | With `-Z uninit-checks`, checks initialization of modeled operand byte extents using their shadow state, including padding bytes. All compared bytes must be initialized. Support depends on the modeled layout and origin; see [Uninitialized memory](../rust-feature-support.md#uninitialized-memory). |
 round_ties_even_f16 | No | |
 round_ties_even_f32 | Yes | |
 round_ties_even_f64 | Yes | |
