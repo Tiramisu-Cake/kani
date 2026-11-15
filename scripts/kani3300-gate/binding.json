@@ -1,0 +1,314 @@
+{
+  "schema": "kani3300-gate-binding-v2",
+  "state": "C2_FROZEN",
+  "export_sha": "ad499e41dd2db9ccd432f89721638a1f3a0bbd44",
+  "export_tree": "9829702c1aa0ecb73c860fc0ad5451757917d6cb",
+  "files": {
+    "scripts/kani-regression.sh": "b7dcc0c1418b4a79edc19073acf3d1a8ecb70e1b81e65d334812b594d4d4163b",
+    ".github/actions/setup/action.yml": "6ee9af29eb091ce92cb819deb205f1f07895e8bbdb02d0c5e510de85025dc307",
+    ".github/workflows/kani.yml": "92b7c9cc33de52171fd628aedeb2fc9e2b06c4c6db81f6b7e9c41b9fd9d4a303",
+    "rust-toolchain.toml": "8ae6767838d7384b2b764bda9262793d4861a798e49e57dc965fe37ead8e65df",
+    "kani-dependencies": "94bfe751e4574561519bd26a99196280eb018c30d9db408416b231ddb6f8b7bc",
+    "Cargo.lock": "5ef47692b5b5c270e7828258efa6e7cd5da8f660096e56880759ae81c7fbff1f",
+    "Cargo.toml": "b4579d8dd4dee83ff4c04abb8e9b5cb4599489fd61bcd671177daed2a804c459",
+    ".gitmodules": "bed047cc36087a49620c1d0035dc09895b33c66b8364c561e349cc5e090c8863",
+    ".cargo/config.toml": "8a7317c9b5e38ee2e842086a154e99f9bae4e2bc1118cae9e5b7cd5ee7c3547c",
+    "scripts/setup/al2/install_cbmc.sh": "d807eb1b83a5e118b739f04e7c1f2217ca97df066d8c285b5466b1045d3546d6",
+    "scripts/setup/al2/install_deps.sh": "6519d6a4bf5f05f3cb869c911ca9eebb3ba09ecb174700c2b493d0335281d434",
+    "scripts/setup/install_kissat.sh": "d7f6fb4d3cae5a94144a54bf0bf07db9f174fad6db6a1ba70ad62f9fc86f1dd9",
+    "scripts/setup/install_rustup.sh": "ce02a8a4042b4f6d2b8ffc0905f50284e77d7772b2ed3a2760cdb17db728adb5",
+    "scripts/setup/macos/install_cbmc.sh": "f6738acc049bf672e66e019ad9d40a34a5ea699a85e2a8c1928da7c72bd3996c",
+    "scripts/setup/macos/install_deps.sh": "6275eee58ebe7860d26d63fec39525b6fbbfcd79e2a7f2ac475a0f8d93a13436",
+    "scripts/setup/ubuntu-20.04/install_cbmc.sh": "4d889a4b6a2c3d33022d206061529e3602f52074a1fdb0615c0fd50c086e3197",
+    "scripts/setup/ubuntu-20.04/install_deps.sh": "b7b330905a65974b7448145c8500bbf301694d200285fac898d0c8c05c5f26cf",
+    "scripts/setup/ubuntu-20.04/install_doc_deps.sh": "15197fa4b218cc7607e0597ceb755213f5a8ea949a1d0b570071939f7dbec8b2",
+    "scripts/setup/ubuntu/install_cbmc.sh": "378294d7c13cc0d3c90403cf31a5c577d5292d2f5aee3274977a4446060eda54",
+    "scripts/setup/ubuntu/install_deps.sh": "820a436228d735c1231d09a791de1cb56958d9be42778bb422735183c749bc50",
+    "scripts/setup/ubuntu/install_doc_deps.sh": "15197fa4b218cc7607e0597ceb755213f5a8ea949a1d0b570071939f7dbec8b2",
+    "library/kani/kani_lib.c": "4a3c653c5cf540de061dc6044b85cad196b1321119f936621e692e13a88cd6b6"
+  },
+  "subtrees": {
+    "kani-compiler": "c738897777875c87a0b52ecf91ff171521b93314",
+    "kani-driver": "f05085b98bda414ea7ceb9de96317cceeb39863f",
+    "library": "eeae80b128033f335183b587eab19ec83ddcfcd5",
+    "tests": "945332aaccc96ccf92e93662f1f2a33ae5fd14ce",
+    "docs": "edb41c0886dbda689cfef16ac1649701e547a862",
+    "tools": "cb64e63b96b699a01af0fd90f26a35b99cbd4a99",
+    "scripts": "17ce41a6b9744224defd3a87247736f82992e550",
+    "cprover_bindings": "b34b3530248caf9fdef522f7ef960f7cb99beb6d",
+    ".github/actions/setup": "f3392b185d8272979f6861b1aa3de1086acc15b5"
+  },
+  "submodule_pins": {
+    "charon": "1b6df08a04fd2edaeedd4046b917253a1bf25de5",
+    "firecracker": "cd36c699f3cb3d531289aadee26c45c1306edcfc",
+    "tests/perf/s2n-quic": "be829a473881163369f7df4c739232ebbd1e7d27"
+  },
+  "symlinks": {
+    "scripts/setup/macos-10.15": "macos",
+    "scripts/setup/macos-11": "macos",
+    "scripts/setup/macos-12": "macos",
+    "scripts/setup/macos-13": "macos",
+    "scripts/setup/macos-14": "macos",
+    "scripts/setup/macos-15": "macos",
+    "scripts/setup/macos-15-intel": "macos",
+    "scripts/setup/ubuntu-22.04": "ubuntu",
+    "scripts/setup/ubuntu-24.04": "ubuntu",
+    "scripts/setup/ubuntu-24.04-arm": "ubuntu"
+  },
+  "stages": [
+    {
+      "id": "cbmc",
+      "line": 27,
+      "command": "check-cbmc-version.py --major ${CBMC_MAJOR} --minor ${CBMC_MINOR}",
+      "mode": "",
+      "counts_required": false
+    },
+    {
+      "id": "kissat",
+      "line": 28,
+      "command": "check_kissat_version.sh",
+      "mode": "",
+      "counts_required": false
+    },
+    {
+      "id": "fmt",
+      "line": 31,
+      "command": "${SCRIPT_DIR}/kani-fmt.sh --check",
+      "mode": "",
+      "counts_required": false
+    },
+    {
+      "id": "build-dev",
+      "line": 34,
+      "command": "cargo build-dev",
+      "mode": "",
+      "counts_required": false
+    },
+    {
+      "id": "unit:cprover_bindings",
+      "line": 37,
+      "command": "cargo test -p cprover_bindings",
+      "mode": "",
+      "counts_required": true
+    },
+    {
+      "id": "unit:kani-compiler",
+      "line": 38,
+      "command": "cargo test -p kani-compiler",
+      "mode": "",
+      "counts_required": true
+    },
+    {
+      "id": "unit:kani-driver",
+      "line": 39,
+      "command": "cargo test -p kani-driver",
+      "mode": "",
+      "counts_required": true
+    },
+    {
+      "id": "unit:kani_metadata",
+      "line": 40,
+      "command": "cargo test -p kani_metadata",
+      "mode": "",
+      "counts_required": true
+    },
+    {
+      "id": "unit:compiletest",
+      "line": 41,
+      "command": "cargo test -p compiletest",
+      "mode": "",
+      "counts_required": true
+    },
+    {
+      "id": "unit:kani-cov",
+      "line": 42,
+      "command": "cargo test -p kani-cov",
+      "mode": "",
+      "counts_required": true
+    },
+    {
+      "id": "unit:kani",
+      "line": 44,
+      "command": "cargo test -p kani --features concrete_playback",
+      "mode": "",
+      "counts_required": true
+    },
+    {
+      "id": "unit:kani_macros",
+      "line": 47,
+      "command": "RUSTFLAGS=--cfg=kani_sysroot cargo test -p kani_macros --features syn/extra-traits --lib",
+      "mode": "",
+      "counts_required": true
+    },
+    {
+      "id": "compiletest-config",
+      "line": 70,
+      "command": "cargo run -p compiletest --quiet -- --suite kani --mode cargo-kani --dry-run --verbose",
+      "mode": "",
+      "counts_required": false
+    },
+    {
+      "id": "build-cov",
+      "line": 74,
+      "command": "cargo build -p kani-cov",
+      "mode": "",
+      "counts_required": false
+    },
+    {
+      "id": "suite:kani",
+      "line": 98,
+      "command": "cargo run -p compiletest --quiet -- --suite $suite --mode $mode --quiet --no-fail-fast --timeout \"$timeout_secs\"",
+      "mode": "kani",
+      "counts_required": true
+    },
+    {
+      "id": "suite:expected",
+      "line": 98,
+      "command": "cargo run -p compiletest --quiet -- --suite $suite --mode $mode --quiet --no-fail-fast --timeout \"$timeout_secs\"",
+      "mode": "expected",
+      "counts_required": true
+    },
+    {
+      "id": "suite:ui",
+      "line": 98,
+      "command": "cargo run -p compiletest --quiet -- --suite $suite --mode $mode --quiet --no-fail-fast --timeout \"$timeout_secs\"",
+      "mode": "expected",
+      "counts_required": true
+    },
+    {
+      "id": "suite:std-checks",
+      "line": 98,
+      "command": "cargo run -p compiletest --quiet -- --suite $suite --mode $mode --quiet --no-fail-fast --timeout \"$timeout_secs\"",
+      "mode": "cargo-kani",
+      "counts_required": true
+    },
+    {
+      "id": "suite:firecracker",
+      "line": 98,
+      "command": "cargo run -p compiletest --quiet -- --suite $suite --mode $mode --quiet --no-fail-fast --timeout \"$timeout_secs\"",
+      "mode": "kani",
+      "counts_required": true
+    },
+    {
+      "id": "suite:prusti",
+      "line": 98,
+      "command": "cargo run -p compiletest --quiet -- --suite $suite --mode $mode --quiet --no-fail-fast --timeout \"$timeout_secs\"",
+      "mode": "kani",
+      "counts_required": true
+    },
+    {
+      "id": "suite:smack",
+      "line": 98,
+      "command": "cargo run -p compiletest --quiet -- --suite $suite --mode $mode --quiet --no-fail-fast --timeout \"$timeout_secs\"",
+      "mode": "kani",
+      "counts_required": true
+    },
+    {
+      "id": "suite:cargo-kani",
+      "line": 98,
+      "command": "cargo run -p compiletest --quiet -- --suite $suite --mode $mode --quiet --no-fail-fast --timeout \"$timeout_secs\"",
+      "mode": "cargo-kani",
+      "counts_required": true
+    },
+    {
+      "id": "suite:cargo-ui",
+      "line": 98,
+      "command": "cargo run -p compiletest --quiet -- --suite $suite --mode $mode --quiet --no-fail-fast --timeout \"$timeout_secs\"",
+      "mode": "cargo-kani",
+      "counts_required": true
+    },
+    {
+      "id": "suite:script-based-pre",
+      "line": 98,
+      "command": "cargo run -p compiletest --quiet -- --suite $suite --mode $mode --quiet --no-fail-fast --timeout \"$timeout_secs\"",
+      "mode": "exec",
+      "counts_required": true
+    },
+    {
+      "id": "suite:coverage",
+      "line": 98,
+      "command": "cargo run -p compiletest --quiet -- --suite $suite --mode $mode --quiet --no-fail-fast --timeout \"$timeout_secs\"",
+      "mode": "coverage-based",
+      "counts_required": true
+    },
+    {
+      "id": "suite:cargo-coverage",
+      "line": 98,
+      "command": "cargo run -p compiletest --quiet -- --suite $suite --mode $mode --quiet --no-fail-fast --timeout \"$timeout_secs\"",
+      "mode": "cargo-coverage",
+      "counts_required": true
+    },
+    {
+      "id": "suite:kani-docs",
+      "line": 98,
+      "command": "cargo run -p compiletest --quiet -- --suite $suite --mode $mode --quiet --no-fail-fast --timeout \"$timeout_secs\"",
+      "mode": "cargo-kani",
+      "counts_required": true
+    },
+    {
+      "id": "suite:kani-fixme",
+      "line": 98,
+      "command": "cargo run -p compiletest --quiet -- --suite $suite --mode $mode --quiet --no-fail-fast --timeout \"$timeout_secs\"",
+      "mode": "kani-fixme",
+      "counts_required": true
+    },
+    {
+      "id": "suite:json-handler",
+      "line": 98,
+      "command": "cargo run -p compiletest --quiet -- --suite $suite --mode $mode --quiet --no-fail-fast --timeout \"$timeout_secs\"",
+      "mode": "exec",
+      "counts_required": true
+    },
+    {
+      "id": "firecracker-codegen",
+      "line": 111,
+      "command": "\"$SCRIPT_DIR\"/codegen-firecracker.sh",
+      "mode": "",
+      "counts_required": false
+    },
+    {
+      "id": "cargo-smoke",
+      "line": 116,
+      "command": "cargo kani --manifest-path \"$FEATURES_MANIFEST_PATH\" --harness trivial_success",
+      "mode": "",
+      "counts_required": false
+    },
+    {
+      "id": "cargo-clean",
+      "line": 117,
+      "command": "cargo clean --manifest-path \"$FEATURES_MANIFEST_PATH\"",
+      "mode": "",
+      "counts_required": false
+    },
+    {
+      "id": "warnings-build",
+      "line": 126,
+      "command": "RUSTFLAGS=\"-D warnings\" cargo build --target-dir /tmp/kani_build_warnings --no-default-features --features cprover",
+      "mode": "",
+      "counts_required": false
+    }
+  ],
+  "platforms": [
+    "ubuntu-24.04",
+    "ubuntu-24.04-arm",
+    "macos-15"
+  ],
+  "pins": {
+    "rust": "nightly-2026-10-23",
+    "cbmc": "6.11.0",
+    "kissat": "4.0.1",
+    "cvc5": "1.3.0",
+    "macos_z3": "5.3.1",
+    "ubuntu_z3": "distribution package; actual version required"
+  },
+  "caps": {
+    "job_seconds": 21600,
+    "regression_seconds": 20400,
+    "reserve_seconds": 600,
+    "test_seconds": 2400,
+    "event_bytes": 268435456,
+    "metadata_bytes": 16777216,
+    "package_bytes": 402653184,
+    "retention_days": 14
+  }
+}
