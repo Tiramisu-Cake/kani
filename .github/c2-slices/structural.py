@@ -90,11 +90,12 @@ def run(ci, out):
             before = digest(source)
             require(before == manifest['source_sha256'], 'input changed before invocation')
             started = time.time()
-            ci.execute(action, command(ci.ROOT, manifest, row, base), out, timeout=180)
+            # Run from the sibling-checkout parent so Kani renders the input as control/.github/...
+            ci.execute(action, command(ci.ROOT, manifest, row, base), out, timeout=180, cwd=ci.ROOT.parent)
             record = json.loads((base / 'result.json').read_text())
             receipt = dict(id=row['id'], original_exit=record['exit'], termination_reason=record['termination_reason'],
                            argv=record['argv'], environment=record['environment'], expected_exit=row['expected_exit'],
-                           started_epoch=started, finished_epoch=time.time(), build_prefix=str(ci.ROOT.parent), cwd=str(ci.ROOT),
+                           started_epoch=started, finished_epoch=time.time(), build_prefix=str(ci.ROOT.parent), cwd=str(ci.ROOT.parent),
                            source_sha256=before, input_sha256_after=digest(source))
             for name in ('export.json', 'stdout.txt', 'stderr.txt'):
                 path = base / name

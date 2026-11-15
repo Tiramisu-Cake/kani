@@ -155,10 +155,11 @@ def check_output(output, expected):
     return problems
 
 
-def execute(name, argv, out, expected=None, timeout=None):
+def execute(name, argv, out, expected=None, timeout=None, cwd=None):
+    cwd = Path(cwd) if cwd is not None else ROOT
     base = out / name
     base.mkdir(parents=True, exist_ok=True)
-    record = {"name": name, "argv": argv, "cwd": str(ROOT), "exit": None,
+    record = {"name": name, "argv": argv, "cwd": str(cwd), "exit": None,
               "termination_reason": "RUNNING", "result": "UNKNOWN", "expected": expected,
               "started_unix": time.time(), "environment": {key: os.environ.get(key) for key in
                   ("RUST_TEST_THREADS", "RUST_BACKTRACE", "KANI_FAIL_ON_UNEXPECTED_DESCRIPTION", "PATH", "RUSTFLAGS", "NO_COLOR", "KANI_LOG")}}
@@ -167,7 +168,7 @@ def execute(name, argv, out, expected=None, timeout=None):
     child = None
     try:
         with (base / "stdout.txt").open("w") as stdout, (base / "stderr.txt").open("w") as stderr:
-            child = subprocess.Popen(argv, cwd=ROOT, stdout=stdout, stderr=stderr, start_new_session=True)
+            child = subprocess.Popen(argv, cwd=cwd, stdout=stdout, stderr=stderr, start_new_session=True)
             record["exit"] = child.wait(timeout=timeout)
         record["termination_reason"] = "SIGNAL" if record["exit"] < 0 else "EXIT"
     except (subprocess.TimeoutExpired, KeyboardInterrupt) as error:
