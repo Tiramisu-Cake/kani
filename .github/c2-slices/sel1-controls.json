@@ -1,0 +1,927 @@
+{
+  "candidate": "14bc57fdb99960240c4944845a3d985c8af4dcf7",
+  "candidate_tree": "1efb6e4dfa69d346df8e23741d11839b1932403d",
+  "compile_flags": "Per source compile-flags comment (edition2021; runtime-optimized custom MIR uses panic=abort).",
+  "existing_regressions": [
+    "tests/expected/uninit/unresolved-calls/ all plain/seeded pairs including pending ops and empty entry loads",
+    "tests/expected/uninit/delayed-ub-unsupported-call/",
+    "tests/expected/uninit/maybe-uninit-call-pairing-unsupported/",
+    "tests/expected/uninit/maybe-uninit-call-pairing/",
+    "tests/expected/uninit/maybe-uninit-call-move/",
+    "tests/expected/uninit/maybe-uninit-typed-argument-padding/",
+    "tests/expected/uninit/maybe-uninit-typed-return-padding/",
+    "tests/expected/uninit/intrinsics/",
+    "tests/json-handler/uninit-contract-mode-boundaries/",
+    "tests/json-handler/uninit-part1-composition/ (S5 repaired; no DRIFT exemptions)"
+  ],
+  "expected_matching_limit": "Each multi-harness Rust source is shared through controls.inc; a per-selector .rs wrapper selects --harness NAME --exact and has its own .expected with one harness total. Single-root groups remain main.rs/expected. Count/status/description cannot be borrowed from another harness output. Expected patterns still use substring matching and never full total-property inventories.",
+  "groups": 12,
+  "native_argv_template": [
+    "<EXACT_SEL1_KANI_BINARY>",
+    "<row.file>",
+    "-Z",
+    "uninit-checks",
+    "--harness",
+    "<row.selector>",
+    "--exact",
+    "--jobs",
+    "1",
+    "--output-format=regular"
+  ],
+  "prior_candidate": "39a6521bf1b042358801cf613fd340623f35f851",
+  "schema": "kani3300-sel1-controls-v1",
+  "selector_count": 29,
+  "selectors": [
+    {
+      "expected_failed_properties": 0,
+      "expected_file": "tests/expected/uninit/select-unpredictable-copy-overwrite/copy_sources_remain_initialized.expected",
+      "expected_identity": {
+        "blob": "48fbaa7ccce0081537ac1030e17bd7b7a8821bc7",
+        "mode": "100644",
+        "sha256": "a91f5a1d2077f4e9c8e2bfe958cad8b6149e064fac90618ec1c320d52998ed01"
+      },
+      "expected_result": "SUCCESS",
+      "failure_descriptions": [],
+      "failure_kind": null,
+      "file": "tests/expected/uninit/select-unpredictable-copy-overwrite/copy_sources_remain_initialized.rs",
+      "oracle": "Run isolated exact harness; validate failed count and source-bound intended read/refusal, own SUCCESS assertions and final verdict. Do not accept setup errors/timeout/OOM or unrelated Unsupported.",
+      "required_success_descriptions": [
+        "Copy operands retain selected and source values"
+      ],
+      "selector": "copy_sources_remain_initialized",
+      "shared_identity": {
+        "blob": "555768c35587d3b638878859d67534421182d007",
+        "mode": "100644",
+        "sha256": "140f1ba8096efe4cc7541e8e22064576e9316d76f32f316d62cb4c87089bdc0f"
+      },
+      "shared_source": "tests/expected/uninit/select-unpredictable-copy-overwrite/controls.inc",
+      "source_identity": {
+        "blob": "de43899b217f118f1728f5bdce09d04e564b89ad",
+        "mode": "100644",
+        "sha256": "1d16a2635346360da0b3057f5040e00711e5030724b95fee16658aba87cf6956"
+      },
+      "state": "NOT_RUN"
+    },
+    {
+      "expected_failed_properties": 0,
+      "expected_file": "tests/expected/uninit/select-unpredictable-copy-overwrite/overwriting_selected_hole_reinitializes_result.expected",
+      "expected_identity": {
+        "blob": "7c801d1e9c703be475e2a50541f79907136da9b8",
+        "mode": "100644",
+        "sha256": "2f15c9e5977aa475613a1665d06c1152c6f992c3df75effe00d06d11f9785721"
+      },
+      "expected_result": "SUCCESS",
+      "failure_descriptions": [],
+      "failure_kind": null,
+      "file": "tests/expected/uninit/select-unpredictable-copy-overwrite/overwriting_selected_hole_reinitializes_result.rs",
+      "oracle": "Run isolated exact harness; validate failed count and source-bound intended read/refusal, own SUCCESS assertions and final verdict. Do not accept setup errors/timeout/OOM or unrelated Unsupported.",
+      "required_success_descriptions": [
+        "overwrite initializes selected result"
+      ],
+      "selector": "overwriting_selected_hole_reinitializes_result",
+      "shared_identity": {
+        "blob": "555768c35587d3b638878859d67534421182d007",
+        "mode": "100644",
+        "sha256": "140f1ba8096efe4cc7541e8e22064576e9316d76f32f316d62cb4c87089bdc0f"
+      },
+      "shared_source": "tests/expected/uninit/select-unpredictable-copy-overwrite/controls.inc",
+      "source_identity": {
+        "blob": "31305944b7c0d35d68bacc5087ac90f6259e09d5",
+        "mode": "100644",
+        "sha256": "d41ba9c33570634dfe8e21b88f960b15ca09a25b8c197ee040519da605edc5b3"
+      },
+      "state": "NOT_RUN"
+    },
+    {
+      "expected_failed_properties": 1,
+      "expected_file": "tests/expected/uninit/select-unpredictable-copy-overwrite/overwrite_hole.expected",
+      "expected_identity": {
+        "blob": "4c82bbaba5fab3ef18f35d9376d83331b2715397",
+        "mode": "100644",
+        "sha256": "3c9e4b471023d9314f9825d087b7b3101613d8ecaec7b52cd620713c2d8fa73b"
+      },
+      "expected_result": "FAILURE",
+      "failure_descriptions": [
+        "Undefined Behavior: Reading from an uninitialized pointer of type `u8`"
+      ],
+      "failure_kind": "Uninit",
+      "file": "tests/expected/uninit/select-unpredictable-copy-overwrite/overwrite_hole.rs",
+      "oracle": "Run isolated exact harness; validate failed count and source-bound intended read/refusal, own SUCCESS assertions and final verdict. Do not accept setup errors/timeout/OOM or unrelated Unsupported.",
+      "required_success_descriptions": [
+        "destination starts initialized"
+      ],
+      "selector": "overwrite_hole",
+      "shared_identity": {
+        "blob": "555768c35587d3b638878859d67534421182d007",
+        "mode": "100644",
+        "sha256": "140f1ba8096efe4cc7541e8e22064576e9316d76f32f316d62cb4c87089bdc0f"
+      },
+      "shared_source": "tests/expected/uninit/select-unpredictable-copy-overwrite/controls.inc",
+      "source_identity": {
+        "blob": "6dfb44804450cb31fdf94f18b495d68a5fecd73a",
+        "mode": "100644",
+        "sha256": "8ffc4b12370d82da594012803d259034c68a6128130edc497dedcaea6fb61b5e"
+      },
+      "state": "NOT_RUN"
+    },
+    {
+      "expected_failed_properties": 1,
+      "expected_file": "tests/expected/uninit/select-unpredictable-delayed-padding/write_through_selected_pointer_leaves_true_source_padding_hole.expected",
+      "expected_identity": {
+        "blob": "217f8fc7e77f50fe494c1c66bfdff3a9affa2500",
+        "mode": "100644",
+        "sha256": "a858b6b58d3ebb76197d77d3e5c5b61a86d92bf943a066fedfefb982f0508d73"
+      },
+      "expected_result": "FAILURE",
+      "failure_descriptions": [
+        "Undefined Behavior: Reading from an uninitialized pointer of type `u64`"
+      ],
+      "failure_kind": "Uninit",
+      "file": "tests/expected/uninit/select-unpredictable-delayed-padding/write_through_selected_pointer_leaves_true_source_padding_hole.rs",
+      "oracle": "Run isolated exact harness; validate failed count and source-bound intended read/refusal, own SUCCESS assertions and final verdict. Do not accept setup errors/timeout/OOM or unrelated Unsupported.",
+      "required_success_descriptions": [
+        "selected alias points to the condition's source"
+      ],
+      "selector": "write_through_selected_pointer_leaves_true_source_padding_hole",
+      "shared_identity": {
+        "blob": "6b93051b1fa451682d5fed917bf8d229f6f19f7c",
+        "mode": "100644",
+        "sha256": "e7ec00e58fe3dbad94074cccb0dfd5ffed1cb8e2b5a8affc666ba2711bd62530"
+      },
+      "shared_source": "tests/expected/uninit/select-unpredictable-delayed-padding/controls.inc",
+      "source_identity": {
+        "blob": "ca65264bd2416afc12fe1c23141aec47cfd02f1a",
+        "mode": "100644",
+        "sha256": "6dee7c881c1216cd07f6e9d3bf3bbcdd2290f8b1bdfc482b3d2d31bf4c99b8ed"
+      },
+      "source_operation": "Selected pointer write exposes original u64 padding, or selected MU<Padded> byte1 read; distinguish typed fields from padding and true/false branches.",
+      "state": "NOT_RUN"
+    },
+    {
+      "expected_failed_properties": 1,
+      "expected_file": "tests/expected/uninit/select-unpredictable-delayed-padding/write_through_selected_pointer_leaves_false_source_padding_hole.expected",
+      "expected_identity": {
+        "blob": "2da3f21ae73854c12944b3c5157df4ff34c947f1",
+        "mode": "100644",
+        "sha256": "a05140dc734e96b2af78c64f5e48e6166ae7c8a598833089493e5d0e622138ee"
+      },
+      "expected_result": "FAILURE",
+      "failure_descriptions": [
+        "Undefined Behavior: Reading from an uninitialized pointer of type `u64`"
+      ],
+      "failure_kind": "Uninit",
+      "file": "tests/expected/uninit/select-unpredictable-delayed-padding/write_through_selected_pointer_leaves_false_source_padding_hole.rs",
+      "oracle": "Run isolated exact harness; validate failed count and source-bound intended read/refusal, own SUCCESS assertions and final verdict. Do not accept setup errors/timeout/OOM or unrelated Unsupported.",
+      "required_success_descriptions": [
+        "selected alias points to the condition's source"
+      ],
+      "selector": "write_through_selected_pointer_leaves_false_source_padding_hole",
+      "shared_identity": {
+        "blob": "6b93051b1fa451682d5fed917bf8d229f6f19f7c",
+        "mode": "100644",
+        "sha256": "e7ec00e58fe3dbad94074cccb0dfd5ffed1cb8e2b5a8affc666ba2711bd62530"
+      },
+      "shared_source": "tests/expected/uninit/select-unpredictable-delayed-padding/controls.inc",
+      "source_identity": {
+        "blob": "224c0efd8b43f9409a718785512fdfed4fb3ad69",
+        "mode": "100644",
+        "sha256": "d8cd35d7243525f1404216d82f89a32621e5de951eba4521769aeeb1d53bac8b"
+      },
+      "source_operation": "Selected pointer write exposes original u64 padding, or selected MU<Padded> byte1 read; distinguish typed fields from padding and true/false branches.",
+      "state": "NOT_RUN"
+    },
+    {
+      "expected_failed_properties": 0,
+      "expected_file": "tests/expected/uninit/select-unpredictable-hint-wrapper/hint_wrapper_u8_uses_all_internal_selects.expected",
+      "expected_identity": {
+        "blob": "24c9ae772bc9c06c0ab976bfb13217e3ff19ccdd",
+        "mode": "100644",
+        "sha256": "f8ae20bbcbe963c1f88b29921d3e0c4236f93c1af42881eb3fa3d7adff89a50e"
+      },
+      "expected_result": "SUCCESS",
+      "failure_descriptions": [],
+      "failure_kind": null,
+      "file": "tests/expected/uninit/select-unpredictable-hint-wrapper/hint_wrapper_u8_uses_all_internal_selects.rs",
+      "oracle": "Run isolated exact harness; validate failed count and source-bound intended read/refusal, own SUCCESS assertions and final verdict. Do not accept setup errors/timeout/OOM or unrelated Unsupported.",
+      "required_success_descriptions": [],
+      "selector": "hint_wrapper_u8_uses_all_internal_selects",
+      "shared_identity": {
+        "blob": "9f3390c7c03b943ccfe21c00b6e921efcdd96f32",
+        "mode": "100644",
+        "sha256": "f58501d6ad5ae14a06fd5dc7c91d4fe55b1aaa7e6492e0dd9719a5ea5ad08011"
+      },
+      "shared_source": "tests/expected/uninit/select-unpredictable-hint-wrapper/controls.inc",
+      "source_identity": {
+        "blob": "429c059656eb0f7565c80e486e0e9384e1ab0a38",
+        "mode": "100644",
+        "sha256": "f4d0c7df659477b9e50f9956d3f828e3afb4ea9bd6ac0981d2f7cff8837e55bc"
+      },
+      "state": "NOT_RUN"
+    },
+    {
+      "expected_failed_properties": 0,
+      "expected_file": "tests/expected/uninit/select-unpredictable-hint-wrapper/hint_wrapper_pointer_preserves_selected_alias_and_payload.expected",
+      "expected_identity": {
+        "blob": "bb61bf8cc9be885370c4934f63358a841fafc14b",
+        "mode": "100644",
+        "sha256": "cb80a4f8a532d2ff2c82f5153eceb1999c6202e822b8d9d2d786503773a6e19f"
+      },
+      "expected_result": "SUCCESS",
+      "failure_descriptions": [],
+      "failure_kind": null,
+      "file": "tests/expected/uninit/select-unpredictable-hint-wrapper/hint_wrapper_pointer_preserves_selected_alias_and_payload.rs",
+      "oracle": "Run isolated exact harness; validate failed count and source-bound intended read/refusal, own SUCCESS assertions and final verdict. Do not accept setup errors/timeout/OOM or unrelated Unsupported.",
+      "required_success_descriptions": [],
+      "selector": "hint_wrapper_pointer_preserves_selected_alias_and_payload",
+      "shared_identity": {
+        "blob": "9f3390c7c03b943ccfe21c00b6e921efcdd96f32",
+        "mode": "100644",
+        "sha256": "f58501d6ad5ae14a06fd5dc7c91d4fe55b1aaa7e6492e0dd9719a5ea5ad08011"
+      },
+      "shared_source": "tests/expected/uninit/select-unpredictable-hint-wrapper/controls.inc",
+      "source_identity": {
+        "blob": "d2165c4e9ec87c8f0e6cc21ea47da24a67e780a9",
+        "mode": "100644",
+        "sha256": "442bc0a7d724a30cf2ad90135a3f4404d3e2aad484cf1fdfbec27e93c3e3d37a"
+      },
+      "state": "NOT_RUN"
+    },
+    {
+      "expected_failed_properties": 0,
+      "expected_file": "tests/expected/uninit/select-unpredictable-maybe-uninit/legal_selected_true_arm_with_unselected_hole.expected",
+      "expected_identity": {
+        "blob": "d8cba830be19e21dca4312ca9bc161ae2679e39e",
+        "mode": "100644",
+        "sha256": "12675bfc02b8c1f7f7304d2b4702506f8bef9ac6dde2865f111dd64c7b6fe18f"
+      },
+      "expected_result": "SUCCESS",
+      "failure_descriptions": [],
+      "failure_kind": null,
+      "file": "tests/expected/uninit/select-unpredictable-maybe-uninit/legal_selected_true_arm_with_unselected_hole.rs",
+      "oracle": "Run isolated exact harness; validate failed count and source-bound intended read/refusal, own SUCCESS assertions and final verdict. Do not accept setup errors/timeout/OOM or unrelated Unsupported.",
+      "required_success_descriptions": [
+        "selected true MaybeUninit arm is initialized"
+      ],
+      "selector": "legal_selected_true_arm_with_unselected_hole",
+      "shared_identity": {
+        "blob": "bde1d4b54fb15f6ebc6e2493cf67b43c43ef45f2",
+        "mode": "100644",
+        "sha256": "12e8ae4d2839a9e212621aeca578a1c55ba478a02edbd86cb8033a8a47658360"
+      },
+      "shared_source": "tests/expected/uninit/select-unpredictable-maybe-uninit/controls.inc",
+      "source_identity": {
+        "blob": "6f6c3da4caeca0b2fbbc8089c8489c7d9a103741",
+        "mode": "100644",
+        "sha256": "6eaaaf80d7384829f200d2cecc6556d5096aad68749b69be8eecb7e325983d7b"
+      },
+      "state": "NOT_RUN"
+    },
+    {
+      "expected_failed_properties": 0,
+      "expected_file": "tests/expected/uninit/select-unpredictable-maybe-uninit/legal_selected_false_arm_with_unselected_hole.expected",
+      "expected_identity": {
+        "blob": "4b82478b179ba2c403489c236ad84a097a5e31af",
+        "mode": "100644",
+        "sha256": "652a9adfb6da4b52fc560758660f382f4ceb1828b547b1b6dd915cb959b2da99"
+      },
+      "expected_result": "SUCCESS",
+      "failure_descriptions": [],
+      "failure_kind": null,
+      "file": "tests/expected/uninit/select-unpredictable-maybe-uninit/legal_selected_false_arm_with_unselected_hole.rs",
+      "oracle": "Run isolated exact harness; validate failed count and source-bound intended read/refusal, own SUCCESS assertions and final verdict. Do not accept setup errors/timeout/OOM or unrelated Unsupported.",
+      "required_success_descriptions": [
+        "selected false MaybeUninit arm is initialized"
+      ],
+      "selector": "legal_selected_false_arm_with_unselected_hole",
+      "shared_identity": {
+        "blob": "bde1d4b54fb15f6ebc6e2493cf67b43c43ef45f2",
+        "mode": "100644",
+        "sha256": "12e8ae4d2839a9e212621aeca578a1c55ba478a02edbd86cb8033a8a47658360"
+      },
+      "shared_source": "tests/expected/uninit/select-unpredictable-maybe-uninit/controls.inc",
+      "source_identity": {
+        "blob": "97c9b50258068596e436e893b510e9419ffb954c",
+        "mode": "100644",
+        "sha256": "11a45d537ff1e86d74018af36ac69bdcc6438658685ef2a0035778be46af1825"
+      },
+      "state": "NOT_RUN"
+    },
+    {
+      "expected_failed_properties": 1,
+      "expected_file": "tests/expected/uninit/select-unpredictable-maybe-uninit/copied_unselected_false_hole_remains_false.expected",
+      "expected_identity": {
+        "blob": "59d298822f9e3b64ef9b5c9eb411d57b9d0a3275",
+        "mode": "100644",
+        "sha256": "c589161a94ef83dc913797252881425849d56a39d920de5218782092a1bb78ae"
+      },
+      "expected_result": "FAILURE",
+      "failure_descriptions": [
+        "Undefined Behavior: Reading from an uninitialized pointer of type `u8`"
+      ],
+      "failure_kind": "Uninit",
+      "file": "tests/expected/uninit/select-unpredictable-maybe-uninit/copied_unselected_false_hole_remains_false.rs",
+      "oracle": "Run isolated exact harness; validate failed count and source-bound intended read/refusal, own SUCCESS assertions and final verdict. Do not accept setup errors/timeout/OOM or unrelated Unsupported.",
+      "required_success_descriptions": [
+        "selected true value remains initialized"
+      ],
+      "selector": "copied_unselected_false_hole_remains_false",
+      "shared_identity": {
+        "blob": "bde1d4b54fb15f6ebc6e2493cf67b43c43ef45f2",
+        "mode": "100644",
+        "sha256": "12e8ae4d2839a9e212621aeca578a1c55ba478a02edbd86cb8033a8a47658360"
+      },
+      "shared_source": "tests/expected/uninit/select-unpredictable-maybe-uninit/controls.inc",
+      "source_identity": {
+        "blob": "1d61544ea16c7fc6c52b652d00d71642cf5b22da",
+        "mode": "100644",
+        "sha256": "b36c8cdfea79e3c4383206e7eed26af91cc43c9eae3d2912976ac1c985c3a898"
+      },
+      "state": "NOT_RUN"
+    },
+    {
+      "expected_failed_properties": 1,
+      "expected_file": "tests/expected/uninit/select-unpredictable-maybe-uninit/copied_unselected_true_hole_remains_false.expected",
+      "expected_identity": {
+        "blob": "531d128236a75b5787dfb2efe7a50bc936e6f3ec",
+        "mode": "100644",
+        "sha256": "82394026d11826ee91ca195f7c3a3fd7904f92395e1621ccc8c53b9d05ba0199"
+      },
+      "expected_result": "FAILURE",
+      "failure_descriptions": [
+        "Undefined Behavior: Reading from an uninitialized pointer of type `u8`"
+      ],
+      "failure_kind": "Uninit",
+      "file": "tests/expected/uninit/select-unpredictable-maybe-uninit/copied_unselected_true_hole_remains_false.rs",
+      "oracle": "Run isolated exact harness; validate failed count and source-bound intended read/refusal, own SUCCESS assertions and final verdict. Do not accept setup errors/timeout/OOM or unrelated Unsupported.",
+      "required_success_descriptions": [
+        "selected false value remains initialized"
+      ],
+      "selector": "copied_unselected_true_hole_remains_false",
+      "shared_identity": {
+        "blob": "bde1d4b54fb15f6ebc6e2493cf67b43c43ef45f2",
+        "mode": "100644",
+        "sha256": "12e8ae4d2839a9e212621aeca578a1c55ba478a02edbd86cb8033a8a47658360"
+      },
+      "shared_source": "tests/expected/uninit/select-unpredictable-maybe-uninit/controls.inc",
+      "source_identity": {
+        "blob": "a663715ec90c5b71e82aaad753e069bd718745c6",
+        "mode": "100644",
+        "sha256": "bd0671a7fcc403c4f44fbaa67827dedfe28a0ab776651214c04cdccb3bf780c9"
+      },
+      "state": "NOT_RUN"
+    },
+    {
+      "expected_failed_properties": 1,
+      "expected_file": "tests/expected/uninit/select-unpredictable-maybe-uninit/selected_true_hole_fails.expected",
+      "expected_identity": {
+        "blob": "762ad8644a62c2543a084ca75d00c8ad892e05fb",
+        "mode": "100644",
+        "sha256": "9eadafa2f9e40c8a56f8b5ba02f079b771837bfadf5327ece10e1f66c8c398f2"
+      },
+      "expected_result": "FAILURE",
+      "failure_descriptions": [
+        "Undefined Behavior: Reading from an uninitialized pointer of type `u8`"
+      ],
+      "failure_kind": "Uninit",
+      "file": "tests/expected/uninit/select-unpredictable-maybe-uninit/selected_true_hole_fails.rs",
+      "oracle": "Run isolated exact harness; validate failed count and source-bound intended read/refusal, own SUCCESS assertions and final verdict. Do not accept setup errors/timeout/OOM or unrelated Unsupported.",
+      "required_success_descriptions": [
+        "unselected Copy arm remains initialized"
+      ],
+      "selector": "selected_true_hole_fails",
+      "shared_identity": {
+        "blob": "bde1d4b54fb15f6ebc6e2493cf67b43c43ef45f2",
+        "mode": "100644",
+        "sha256": "12e8ae4d2839a9e212621aeca578a1c55ba478a02edbd86cb8033a8a47658360"
+      },
+      "shared_source": "tests/expected/uninit/select-unpredictable-maybe-uninit/controls.inc",
+      "source_identity": {
+        "blob": "52d18d0bbd26026a5ac3fb021bce85640f942484",
+        "mode": "100644",
+        "sha256": "b3cc801250f7ff013a3d818eb1a7e2add97e63db0142bd27a8ae26a0fd7334e5"
+      },
+      "state": "NOT_RUN"
+    },
+    {
+      "expected_failed_properties": 1,
+      "expected_file": "tests/expected/uninit/select-unpredictable-maybe-uninit/selected_false_hole_fails.expected",
+      "expected_identity": {
+        "blob": "d63193ff83188dcc41d4fb2decda88f5a3744901",
+        "mode": "100644",
+        "sha256": "f13e3cd4cc7db5bc37e06d742e2ab3810903514af515b294b6f3aa3e7de36482"
+      },
+      "expected_result": "FAILURE",
+      "failure_descriptions": [
+        "Undefined Behavior: Reading from an uninitialized pointer of type `u8`"
+      ],
+      "failure_kind": "Uninit",
+      "file": "tests/expected/uninit/select-unpredictable-maybe-uninit/selected_false_hole_fails.rs",
+      "oracle": "Run isolated exact harness; validate failed count and source-bound intended read/refusal, own SUCCESS assertions and final verdict. Do not accept setup errors/timeout/OOM or unrelated Unsupported.",
+      "required_success_descriptions": [
+        "unselected Copy arm remains initialized"
+      ],
+      "selector": "selected_false_hole_fails",
+      "shared_identity": {
+        "blob": "bde1d4b54fb15f6ebc6e2493cf67b43c43ef45f2",
+        "mode": "100644",
+        "sha256": "12e8ae4d2839a9e212621aeca578a1c55ba478a02edbd86cb8033a8a47658360"
+      },
+      "shared_source": "tests/expected/uninit/select-unpredictable-maybe-uninit/controls.inc",
+      "source_identity": {
+        "blob": "6aa2a0e2a2aacccbecaae37fee838d8b7bd023eb",
+        "mode": "100644",
+        "sha256": "12cbec7cec09aa49c4945b42cac7f903ea8983acca3d4eeae263842034102c2c"
+      },
+      "state": "NOT_RUN"
+    },
+    {
+      "expected_failed_properties": 0,
+      "expected_file": "tests/expected/uninit/select-unpredictable-moves/copy_intrinsic_operands_preserve_both_sources.expected",
+      "expected_identity": {
+        "blob": "5b06d25c29503e9ad8ee64477d2fbc41a4d6a59c",
+        "mode": "100644",
+        "sha256": "e2ead81a484278355177498901fda2ac24877dc5b9e3a4298c2f7b0dd24f3225"
+      },
+      "expected_result": "SUCCESS",
+      "failure_descriptions": [],
+      "failure_kind": null,
+      "file": "tests/expected/uninit/select-unpredictable-moves/copy_intrinsic_operands_preserve_both_sources.rs",
+      "oracle": "Run isolated exact harness; validate failed count and source-bound intended read/refusal, own SUCCESS assertions and final verdict. Do not accept setup errors/timeout/OOM or unrelated Unsupported.",
+      "required_success_descriptions": [
+        "Copy sources and selected result retain their values"
+      ],
+      "selector": "copy_intrinsic_operands_preserve_both_sources",
+      "shared_identity": {
+        "blob": "d7f5f884113968095872d18598ccca2208233366",
+        "mode": "100644",
+        "sha256": "d28bfb724485d1cd4de012897aba8975112fe0dd324c5952169a962770b98a8f"
+      },
+      "shared_source": "tests/expected/uninit/select-unpredictable-moves/controls.inc",
+      "source_identity": {
+        "blob": "6ecdff3310e7d7ac565a32500ac02fd168eeff5f",
+        "mode": "100644",
+        "sha256": "f6acb5abdb49b11f80dd37a389fee7a5dd56251a56451cdf32f241901161b7a7"
+      },
+      "source_operation": "Direct intrinsic call; bare-place Copy operands or explicit Move(a),Move(b); selected consume precedes the separately observed A/B moved-source payload read. Returns only ordinary u8 tuple.",
+      "state": "NOT_RUN"
+    },
+    {
+      "expected_failed_properties": 1,
+      "expected_file": "tests/expected/uninit/select-unpredictable-moves/true_selected_arm_still_deinitializes_source_a.expected",
+      "expected_identity": {
+        "blob": "a26bfc322adfdee01ccccf505d89b01fd51554bd",
+        "mode": "100644",
+        "sha256": "32cdf7f742fb0c09755535c06c68708f68f7138e74425ef8c6fa60af166b35e1"
+      },
+      "expected_result": "FAILURE",
+      "failure_descriptions": [
+        "Undefined Behavior: Reading from an uninitialized pointer of type `u8`"
+      ],
+      "failure_kind": "Uninit",
+      "file": "tests/expected/uninit/select-unpredictable-moves/true_selected_arm_still_deinitializes_source_a.rs",
+      "oracle": "Run isolated exact harness; validate failed count and source-bound intended read/refusal, own SUCCESS assertions and final verdict. Do not accept setup errors/timeout/OOM or unrelated Unsupported.",
+      "required_success_descriptions": [
+        "true arm selected value is preserved"
+      ],
+      "selector": "true_selected_arm_still_deinitializes_source_a",
+      "shared_identity": {
+        "blob": "d7f5f884113968095872d18598ccca2208233366",
+        "mode": "100644",
+        "sha256": "d28bfb724485d1cd4de012897aba8975112fe0dd324c5952169a962770b98a8f"
+      },
+      "shared_source": "tests/expected/uninit/select-unpredictable-moves/controls.inc",
+      "source_identity": {
+        "blob": "3417231914ad3fc760efef3ca7ede59a721974be",
+        "mode": "100644",
+        "sha256": "efbf0a4c15edfeb11cd7b791d1d127388aa43c989456fbe8caa9894b6224137d"
+      },
+      "source_operation": "Direct intrinsic call; bare-place Copy operands or explicit Move(a),Move(b); selected consume precedes the separately observed A/B moved-source payload read. Returns only ordinary u8 tuple.",
+      "state": "NOT_RUN"
+    },
+    {
+      "expected_failed_properties": 1,
+      "expected_file": "tests/expected/uninit/select-unpredictable-moves/false_selected_arm_still_deinitializes_source_a.expected",
+      "expected_identity": {
+        "blob": "cb8717eac9353191607146e352d11e0852d9179f",
+        "mode": "100644",
+        "sha256": "cd0248ee835efb76d8b923384941e95d1c131b1b9685d6f7598859b517924d23"
+      },
+      "expected_result": "FAILURE",
+      "failure_descriptions": [
+        "Undefined Behavior: Reading from an uninitialized pointer of type `u8`"
+      ],
+      "failure_kind": "Uninit",
+      "file": "tests/expected/uninit/select-unpredictable-moves/false_selected_arm_still_deinitializes_source_a.rs",
+      "oracle": "Run isolated exact harness; validate failed count and source-bound intended read/refusal, own SUCCESS assertions and final verdict. Do not accept setup errors/timeout/OOM or unrelated Unsupported.",
+      "required_success_descriptions": [
+        "false arm selected value is preserved"
+      ],
+      "selector": "false_selected_arm_still_deinitializes_source_a",
+      "shared_identity": {
+        "blob": "d7f5f884113968095872d18598ccca2208233366",
+        "mode": "100644",
+        "sha256": "d28bfb724485d1cd4de012897aba8975112fe0dd324c5952169a962770b98a8f"
+      },
+      "shared_source": "tests/expected/uninit/select-unpredictable-moves/controls.inc",
+      "source_identity": {
+        "blob": "bfa845f1c28c92ae9d07b4f03f38b7a1f4990cf4",
+        "mode": "100644",
+        "sha256": "1c7ac3d386a606d169fbb0400aad3b336995de8dcdd199539c270eece6203209"
+      },
+      "source_operation": "Direct intrinsic call; bare-place Copy operands or explicit Move(a),Move(b); selected consume precedes the separately observed A/B moved-source payload read. Returns only ordinary u8 tuple.",
+      "state": "NOT_RUN"
+    },
+    {
+      "expected_failed_properties": 1,
+      "expected_file": "tests/expected/uninit/select-unpredictable-moves/true_selected_arm_still_deinitializes_source_b.expected",
+      "expected_identity": {
+        "blob": "78658ac8ef50e5cfbe508cad1c8136b8cfbe47f1",
+        "mode": "100644",
+        "sha256": "bc51ee13da6346eaf90739168ee32df9800993bf53f82c31541778b5a522e770"
+      },
+      "expected_result": "FAILURE",
+      "failure_descriptions": [
+        "Undefined Behavior: Reading from an uninitialized pointer of type `u8`"
+      ],
+      "failure_kind": "Uninit",
+      "file": "tests/expected/uninit/select-unpredictable-moves/true_selected_arm_still_deinitializes_source_b.rs",
+      "oracle": "Run isolated exact harness; validate failed count and source-bound intended read/refusal, own SUCCESS assertions and final verdict. Do not accept setup errors/timeout/OOM or unrelated Unsupported.",
+      "required_success_descriptions": [
+        "true arm selected value is preserved"
+      ],
+      "selector": "true_selected_arm_still_deinitializes_source_b",
+      "shared_identity": {
+        "blob": "d7f5f884113968095872d18598ccca2208233366",
+        "mode": "100644",
+        "sha256": "d28bfb724485d1cd4de012897aba8975112fe0dd324c5952169a962770b98a8f"
+      },
+      "shared_source": "tests/expected/uninit/select-unpredictable-moves/controls.inc",
+      "source_identity": {
+        "blob": "8a5f9c5ff4208d321dc10a96b20adb204e964529",
+        "mode": "100644",
+        "sha256": "37a9f53d535ae38e1fcc5aff58843bbc41f9ce524727ca7df535f3225a3db3b5"
+      },
+      "source_operation": "Direct intrinsic call; bare-place Copy operands or explicit Move(a),Move(b); selected consume precedes the separately observed A/B moved-source payload read. Returns only ordinary u8 tuple.",
+      "state": "NOT_RUN"
+    },
+    {
+      "expected_failed_properties": 1,
+      "expected_file": "tests/expected/uninit/select-unpredictable-moves/false_selected_arm_still_deinitializes_source_b.expected",
+      "expected_identity": {
+        "blob": "a9f890aa9c281db25334ffc9b9a799bf46d10949",
+        "mode": "100644",
+        "sha256": "8995e1b692763753acf984d1ae53eb66724defd7fef92ec590ddea25395dfb47"
+      },
+      "expected_result": "FAILURE",
+      "failure_descriptions": [
+        "Undefined Behavior: Reading from an uninitialized pointer of type `u8`"
+      ],
+      "failure_kind": "Uninit",
+      "file": "tests/expected/uninit/select-unpredictable-moves/false_selected_arm_still_deinitializes_source_b.rs",
+      "oracle": "Run isolated exact harness; validate failed count and source-bound intended read/refusal, own SUCCESS assertions and final verdict. Do not accept setup errors/timeout/OOM or unrelated Unsupported.",
+      "required_success_descriptions": [
+        "false arm selected value is preserved"
+      ],
+      "selector": "false_selected_arm_still_deinitializes_source_b",
+      "shared_identity": {
+        "blob": "d7f5f884113968095872d18598ccca2208233366",
+        "mode": "100644",
+        "sha256": "d28bfb724485d1cd4de012897aba8975112fe0dd324c5952169a962770b98a8f"
+      },
+      "shared_source": "tests/expected/uninit/select-unpredictable-moves/controls.inc",
+      "source_identity": {
+        "blob": "a590f3a7d1d33cdef49aea3532c53c5ad3a495a5",
+        "mode": "100644",
+        "sha256": "d4106a36f70f1db9c2a270d4a3426f1e0362d5ba42f77ed62a3a2c1fb79fab9d"
+      },
+      "source_operation": "Direct intrinsic call; bare-place Copy operands or explicit Move(a),Move(b); selected consume precedes the separately observed A/B moved-source payload read. Returns only ordinary u8 tuple.",
+      "state": "NOT_RUN"
+    },
+    {
+      "coverage_scope": "General nested-layout fail-closed boundary; does not establish execution of the select-specific refusal branch",
+      "expected_failed_properties": 1,
+      "expected_file": "tests/expected/uninit/select-unpredictable-nested-unsupported/expected",
+      "expected_first_rejection": "Nested aggregate assignment while constructing the first arm, before MaybeUninit::new and select call",
+      "expected_identity": {
+        "blob": "5f8050f8f30bd048bcd84a355391b184f99142b7",
+        "mode": "100644",
+        "sha256": "735ea23dcafceac839b09796cc323ec602655b4e6f311af7ddd9185be5c8f427"
+      },
+      "expected_result": "FAILURE",
+      "failure_descriptions": [
+        "Checking memory initialization of type Nested is not supported. Cannot determine layout for a type that contains union of type",
+        "MaybeUninit<u8> as a field."
+      ],
+      "failure_kind": "Unsupported",
+      "file": "tests/expected/uninit/select-unpredictable-nested-unsupported/main.rs",
+      "oracle": "Exactly one nested_shadow_layout_remains_unsupported.unsupported_construct.1 FAILURE with Nested/UnionAsField diagnostic, **1 of and FAILED verdict. Reject unrelated Unsupported/setup/timeout errors. Do not credit later select checks as reached.",
+      "prior_observation": {
+        "assurance": "Owner-provided excerpt",
+        "note": "Total119 is an observation only, not a new golden inventory.",
+        "observed_failure_count": 1,
+        "run": "43611512375",
+        "source": "ec85b782a1b7156ad434cfac25403acd4e326dc1",
+        "summary_total_checks": 119
+      },
+      "required_success_descriptions": [],
+      "selector": "nested_shadow_layout_remains_unsupported",
+      "source_basis": "uninit_visitor.rs::visit_statement Assign -> PointeeInfo::from_ty -> LayoutComputationError::UnionAsField; ty_layout.rs data_bytes_for_ty rejects union as a nested field",
+      "source_identity": {
+        "blob": "9b0278acd9cf54a49c84ed0de372df9db8531c98",
+        "mode": "100644",
+        "sha256": "66470bb55f66734c8b824732a17ed2636bfdc8b555ed3fb36063947b0fcb777a"
+      },
+      "state": "NOT_RUN"
+    },
+    {
+      "expected_failed_properties": 0,
+      "expected_file": "tests/expected/uninit/select-unpredictable-padding/selected_true_maybe_uninit_fields_are_legal.expected",
+      "expected_identity": {
+        "blob": "6ce9b3760e7541caf085610b8df74ef393746716",
+        "mode": "100644",
+        "sha256": "adfaebd1f048740ebb16cc0780c3e8e90a096d714b9f711ec2b464a85faca5ed"
+      },
+      "expected_result": "SUCCESS",
+      "failure_descriptions": [],
+      "failure_kind": null,
+      "file": "tests/expected/uninit/select-unpredictable-padding/selected_true_maybe_uninit_fields_are_legal.rs",
+      "oracle": "Run isolated exact harness; validate failed count and source-bound intended read/refusal, own SUCCESS assertions and final verdict. Do not accept setup errors/timeout/OOM or unrelated Unsupported.",
+      "required_success_descriptions": [
+        "true-arm MaybeUninit fields remain initialized"
+      ],
+      "selector": "selected_true_maybe_uninit_fields_are_legal",
+      "shared_identity": {
+        "blob": "31901d8ed5b5793b9c9bf43f09341feb0eb5f349",
+        "mode": "100644",
+        "sha256": "c81f3fdb0220f9394eff3f69d9b996c07705e209edf55caab5124645a6590df0"
+      },
+      "shared_source": "tests/expected/uninit/select-unpredictable-padding/controls.inc",
+      "source_identity": {
+        "blob": "590fe00cee66ac097b55e5715c614433a23e2cac",
+        "mode": "100644",
+        "sha256": "9433f1e6ffae41be7a29bad719bc280a57e22942f3076fb8067299b8997add89"
+      },
+      "source_operation": "Selected pointer write exposes original u64 padding, or selected MU<Padded> byte1 read; distinguish typed fields from padding and true/false branches.",
+      "state": "NOT_RUN"
+    },
+    {
+      "expected_failed_properties": 0,
+      "expected_file": "tests/expected/uninit/select-unpredictable-padding/selected_false_maybe_uninit_fields_are_legal.expected",
+      "expected_identity": {
+        "blob": "6943923a4e4d11ff89c7ff7c8fe2154ec8e27793",
+        "mode": "100644",
+        "sha256": "9e57f5afbbc216d6e8b3e10bf77c858fe1991c61af153e4725a92191166e9625"
+      },
+      "expected_result": "SUCCESS",
+      "failure_descriptions": [],
+      "failure_kind": null,
+      "file": "tests/expected/uninit/select-unpredictable-padding/selected_false_maybe_uninit_fields_are_legal.rs",
+      "oracle": "Run isolated exact harness; validate failed count and source-bound intended read/refusal, own SUCCESS assertions and final verdict. Do not accept setup errors/timeout/OOM or unrelated Unsupported.",
+      "required_success_descriptions": [
+        "false-arm MaybeUninit fields remain initialized"
+      ],
+      "selector": "selected_false_maybe_uninit_fields_are_legal",
+      "shared_identity": {
+        "blob": "31901d8ed5b5793b9c9bf43f09341feb0eb5f349",
+        "mode": "100644",
+        "sha256": "c81f3fdb0220f9394eff3f69d9b996c07705e209edf55caab5124645a6590df0"
+      },
+      "shared_source": "tests/expected/uninit/select-unpredictable-padding/controls.inc",
+      "source_identity": {
+        "blob": "52da1db713c3dc6b11588326e5c8e1dee9a91bb7",
+        "mode": "100644",
+        "sha256": "c850c60fe1d95cadee3662351f97b114e4cb48458cb0f3f31d0bb309cd14269d"
+      },
+      "source_operation": "Selected pointer write exposes original u64 padding, or selected MU<Padded> byte1 read; distinguish typed fields from padding and true/false branches.",
+      "state": "NOT_RUN"
+    },
+    {
+      "expected_failed_properties": 1,
+      "expected_file": "tests/expected/uninit/select-unpredictable-padding/selected_true_padding_stays_uninitialized.expected",
+      "expected_identity": {
+        "blob": "162e3da540aac37538d79e13e268a39a1f2f048a",
+        "mode": "100644",
+        "sha256": "5e6e561fa8319a522b33e2a976280271c33c7f8bbc87898455fb3b8d53cfa9a6"
+      },
+      "expected_result": "FAILURE",
+      "failure_descriptions": [
+        "Undefined Behavior: Reading from an uninitialized pointer of type `*const u8`"
+      ],
+      "failure_kind": "Uninit",
+      "file": "tests/expected/uninit/select-unpredictable-padding/selected_true_padding_stays_uninitialized.rs",
+      "oracle": "Run isolated exact harness; validate failed count and source-bound intended read/refusal, own SUCCESS assertions and final verdict. Do not accept setup errors/timeout/OOM or unrelated Unsupported.",
+      "required_success_descriptions": [
+        "true-arm typed fields are readable before padding check"
+      ],
+      "selector": "selected_true_padding_stays_uninitialized",
+      "shared_identity": {
+        "blob": "31901d8ed5b5793b9c9bf43f09341feb0eb5f349",
+        "mode": "100644",
+        "sha256": "c81f3fdb0220f9394eff3f69d9b996c07705e209edf55caab5124645a6590df0"
+      },
+      "shared_source": "tests/expected/uninit/select-unpredictable-padding/controls.inc",
+      "source_identity": {
+        "blob": "71b700cc074250b3cf83190772aae0f9c6ea274f",
+        "mode": "100644",
+        "sha256": "0dfa68e15ec580529557c71c9086f702248dd4f1afe3da2a1f66a921c1715082"
+      },
+      "source_operation": "Selected pointer write exposes original u64 padding, or selected MU<Padded> byte1 read; distinguish typed fields from padding and true/false branches.",
+      "state": "NOT_RUN"
+    },
+    {
+      "expected_failed_properties": 1,
+      "expected_file": "tests/expected/uninit/select-unpredictable-padding/selected_false_padding_stays_uninitialized.expected",
+      "expected_identity": {
+        "blob": "531c9fc21ead4ba1d0e2ce26d61111b83e3c236c",
+        "mode": "100644",
+        "sha256": "a7ee16653926881984715ae3395a46907c103771580994bafcb9d7c52c4d1a03"
+      },
+      "expected_result": "FAILURE",
+      "failure_descriptions": [
+        "Undefined Behavior: Reading from an uninitialized pointer of type `*const u8`"
+      ],
+      "failure_kind": "Uninit",
+      "file": "tests/expected/uninit/select-unpredictable-padding/selected_false_padding_stays_uninitialized.rs",
+      "oracle": "Run isolated exact harness; validate failed count and source-bound intended read/refusal, own SUCCESS assertions and final verdict. Do not accept setup errors/timeout/OOM or unrelated Unsupported.",
+      "required_success_descriptions": [
+        "false-arm typed fields are readable before padding check"
+      ],
+      "selector": "selected_false_padding_stays_uninitialized",
+      "shared_identity": {
+        "blob": "31901d8ed5b5793b9c9bf43f09341feb0eb5f349",
+        "mode": "100644",
+        "sha256": "c81f3fdb0220f9394eff3f69d9b996c07705e209edf55caab5124645a6590df0"
+      },
+      "shared_source": "tests/expected/uninit/select-unpredictable-padding/controls.inc",
+      "source_identity": {
+        "blob": "e35cdf4f5d6c4bb0b97a729ad2208bee3bd12a23",
+        "mode": "100644",
+        "sha256": "5d49eebcf7ef17afe45ef7ee13d5de71fecbc97434d1adb4f916cd683920476c"
+      },
+      "source_operation": "Selected pointer write exposes original u64 padding, or selected MU<Padded> byte1 read; distinguish typed fields from padding and true/false branches.",
+      "state": "NOT_RUN"
+    },
+    {
+      "expected_failed_properties": 1,
+      "expected_file": "tests/expected/uninit/select-unpredictable-pointer-hole-false/expected",
+      "expected_identity": {
+        "blob": "0b20f35ef31fe32802d877527ecdc3a8c096907b",
+        "mode": "100644",
+        "sha256": "63743f39456d0d97cb6679a76e36458597c65c2c42f30ee115841814f1cf8f93"
+      },
+      "expected_result": "FAILURE",
+      "failure_descriptions": [
+        "Undefined Behavior: Reading from an uninitialized pointer of type `*const u8`"
+      ],
+      "failure_kind": "Uninit",
+      "file": "tests/expected/uninit/select-unpredictable-pointer-hole-false/main.rs",
+      "oracle": "Run isolated exact harness; validate failed count and source-bound intended read/refusal, own SUCCESS assertions and final verdict. Do not accept setup errors/timeout/OOM or unrelated Unsupported.",
+      "required_success_descriptions": [
+        "selected raw pointer names the condition's arm"
+      ],
+      "selector": "selected_hole_in_false_arm_fails",
+      "source_identity": {
+        "blob": "cc0886a33e5b12869238c366f0519ba3537cebd5",
+        "mode": "100644",
+        "sha256": "0806ced6352c654962bec9d73b8701419ba49ffaeec8810ad994685d09048853"
+      },
+      "state": "NOT_RUN"
+    },
+    {
+      "expected_failed_properties": 1,
+      "expected_file": "tests/expected/uninit/select-unpredictable-pointer-hole-true/expected",
+      "expected_identity": {
+        "blob": "ddafcebfcdc78690e22e286b20e8be9047dce72d",
+        "mode": "100644",
+        "sha256": "84a0875400597b8547b402397b4ca14900591620aa29fef9ed9a7a70e5a0e03d"
+      },
+      "expected_result": "FAILURE",
+      "failure_descriptions": [
+        "Undefined Behavior: Reading from an uninitialized pointer of type `*const u8`"
+      ],
+      "failure_kind": "Uninit",
+      "file": "tests/expected/uninit/select-unpredictable-pointer-hole-true/main.rs",
+      "oracle": "Run isolated exact harness; validate failed count and source-bound intended read/refusal, own SUCCESS assertions and final verdict. Do not accept setup errors/timeout/OOM or unrelated Unsupported.",
+      "required_success_descriptions": [
+        "selected raw pointer names the condition's arm"
+      ],
+      "selector": "selected_hole_in_true_arm_fails",
+      "source_identity": {
+        "blob": "9d8da9eccbad181a3869d5d91712e48f326e20da",
+        "mode": "100644",
+        "sha256": "f2fe8ee388fa55a801a81a5cc2d0f5d872c9365b3789fa78ec032edf960b26fb"
+      },
+      "state": "NOT_RUN"
+    },
+    {
+      "expected_failed_properties": 0,
+      "expected_file": "tests/expected/uninit/select-unpredictable-pointer-values/selected_initialized_pointer_values.expected",
+      "expected_identity": {
+        "blob": "84902052388c3bae12fe904d7b35484bb736a8eb",
+        "mode": "100644",
+        "sha256": "63e88668877ca3d51d2e2f13895257823b3f6a9bf193c406bf8d4db7c4605970"
+      },
+      "expected_result": "SUCCESS",
+      "failure_descriptions": [],
+      "failure_kind": null,
+      "file": "tests/expected/uninit/select-unpredictable-pointer-values/selected_initialized_pointer_values.rs",
+      "oracle": "Run isolated exact harness; validate failed count and source-bound intended read/refusal, own SUCCESS assertions and final verdict. Do not accept setup errors/timeout/OOM or unrelated Unsupported.",
+      "required_success_descriptions": [],
+      "selector": "selected_initialized_pointer_values",
+      "shared_identity": {
+        "blob": "f5bd1af975f17ac63bb4f66c23724de81c68b505",
+        "mode": "100644",
+        "sha256": "a1c795311535200798299e17e9cd1bd0849c7d518d118c27797255119fc62bd2"
+      },
+      "shared_source": "tests/expected/uninit/select-unpredictable-pointer-values/controls.inc",
+      "source_identity": {
+        "blob": "b6a98f1e7983fb20909825b28668fe91f1704e6f",
+        "mode": "100644",
+        "sha256": "079dd7d7edbc82aa271abde182d4ee8169f6c47356dece3432207e121281ef00"
+      },
+      "state": "NOT_RUN"
+    },
+    {
+      "expected_failed_properties": 0,
+      "expected_file": "tests/expected/uninit/select-unpredictable-pointer-values/selected_null_or_dangling_without_dereference.expected",
+      "expected_identity": {
+        "blob": "ce7a60a98151ab490a4e9f6e67ef89c74209450d",
+        "mode": "100644",
+        "sha256": "1568bfc85fe91e2f1e69029050d909f5e4eb0769987f98eee08eaacdeb03c99e"
+      },
+      "expected_result": "SUCCESS",
+      "failure_descriptions": [],
+      "failure_kind": null,
+      "file": "tests/expected/uninit/select-unpredictable-pointer-values/selected_null_or_dangling_without_dereference.rs",
+      "oracle": "Run isolated exact harness; validate failed count and source-bound intended read/refusal, own SUCCESS assertions and final verdict. Do not accept setup errors/timeout/OOM or unrelated Unsupported.",
+      "required_success_descriptions": [],
+      "selector": "selected_null_or_dangling_without_dereference",
+      "shared_identity": {
+        "blob": "f5bd1af975f17ac63bb4f66c23724de81c68b505",
+        "mode": "100644",
+        "sha256": "a1c795311535200798299e17e9cd1bd0849c7d518d118c27797255119fc62bd2"
+      },
+      "shared_source": "tests/expected/uninit/select-unpredictable-pointer-values/controls.inc",
+      "source_identity": {
+        "blob": "14ad9b82b268716e797ef70e70721cc264a5fdda",
+        "mode": "100644",
+        "sha256": "47980ce0c7f61cca31f9af78962aaa9f518694650d4eeaf6b9b0f09484757650"
+      },
+      "state": "NOT_RUN"
+    },
+    {
+      "expected_failed_properties": 1,
+      "expected_file": "tests/expected/uninit/select-unpredictable-unmodeled-intrinsic/expected",
+      "expected_identity": {
+        "blob": "6eb1d68a374d41674db77e0788209f153df3c3b1",
+        "mode": "100644",
+        "sha256": "5007656f4f22fe65c81a9ba713609c931fd8e2f9ea19a0346a4989e103229e17"
+      },
+      "expected_result": "FAILURE",
+      "failure_descriptions": [
+        "Kani does not support shadow-carrying argument or return values of intrinsic `BlackBox`."
+      ],
+      "failure_kind": "Unsupported",
+      "file": "tests/expected/uninit/select-unpredictable-unmodeled-intrinsic/main.rs",
+      "oracle": "Run isolated exact harness; validate failed count and source-bound intended read/refusal, own SUCCESS assertions and final verdict. Do not accept setup errors/timeout/OOM or unrelated Unsupported.",
+      "required_success_descriptions": [],
+      "selector": "unmodeled_shadow_intrinsic_stays_unsupported",
+      "source_identity": {
+        "blob": "47632a59da400046fcd0e531ae248eed203d2c19",
+        "mode": "100644",
+        "sha256": "bb24c6a6498c5d099013d731dca473a264ee7e6509d834717891c159e1ef7fae"
+      },
+      "state": "NOT_RUN"
+    },
+    {
+      "expected_failed_properties": 0,
+      "expected_file": "tests/expected/uninit/select-unpredictable-values/expected",
+      "expected_identity": {
+        "blob": "a48d6c2213867eb68c80ac8cf80e45e3178f277e",
+        "mode": "100644",
+        "sha256": "712c48579a881ea9cce5fbe751311cd76556e2557cdec87ec0efd695db0237f4"
+      },
+      "expected_result": "SUCCESS",
+      "failure_descriptions": [],
+      "failure_kind": null,
+      "file": "tests/expected/uninit/select-unpredictable-values/main.rs",
+      "oracle": "Run isolated exact harness; validate failed count and source-bound intended read/refusal, own SUCCESS assertions and final verdict. Do not accept setup errors/timeout/OOM or unrelated Unsupported.",
+      "required_success_descriptions": [
+        "core and std select paths preserve the chosen value"
+      ],
+      "selector": "selected_scalar_values",
+      "source_identity": {
+        "blob": "7a8167e8adb10477939c64bf4de0a9dc3697136b",
+        "mode": "100644",
+        "sha256": "d3ab232773462b894826583c1369d461ed8755eccbb2bd8275c0252db6a052a6"
+      },
+      "state": "NOT_RUN"
+    }
+  ],
+  "state": "BOUND_REVIEWED_CANDIDATE_NOT_RUN",
+  "static_only_controls": [
+    "No Rust fixture can disable/override the standard intrinsic fallback or make T unsized while retaining its signature; shared classifier/guard reviewed statically. Compiler-state override/bodyless paths must stay Unsupported.",
+    "Existing conflict diagnostics, B1 fn-pointer/trait-object and pending loads/checks are unchanged; request full original suites, no golden or check weakening."
+  ],
+  "std_controls": "Six additional named ON selectors in CI-REQUEST.json/TARGET-GATE-MAP.md; source hashes in STD-OVERLAY.json."
+}
