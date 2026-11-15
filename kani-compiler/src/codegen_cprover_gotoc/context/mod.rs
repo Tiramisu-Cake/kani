@@ -8,6 +8,7 @@
 
 mod current_fn;
 mod goto_ctx;
+mod immutable_allocations;
 mod vtable_ctx;
 
 pub use current_fn::LoopDecreases;

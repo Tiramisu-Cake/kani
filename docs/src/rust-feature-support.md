@@ -177,6 +177,17 @@ stack unwinding support.
 Reading uninitialized memory is
 [considered undefined behavior](https://doc.rust-lang.org/reference/behavior-considered-undefined.html#behavior-considered-undefined) in Rust.
 Kani has partial, experimental support for detecting access to uninitialized memory with the `-Z uninit-checks` option.
+
+Qualified whole immutable promoted constants and named
+statics start with their exact byte masks. This requires an immutable, relocation-free
+allocation with a supported `Freeze` origin type and computable layout covering the
+whole allocation; a promoted reference must start at offset zero and span that allocation.
+
+This whole-storage qualification is narrow. Unqualified origins involving a nonzero
+subrange or a relocation can produce conservative false positives. Eligible aliases
+and independently supported static paths can still succeed; this limitation does not
+mean that every subrange or relocation read fails.
+
 See [this issue](https://github.com/model-checking/kani/issues/3300) for more details.
 
 ### Destructors

@@ -1,0 +1,10 @@
+Checking harness direct_first...
+ - Status: SUCCESS\
+ - Description: "assertion failed: direct_value == 5"
+ - Status: SUCCESS\
+ - Description: "assertion failed: nested_value == 5"
+ - Status: SUCCESS\
+ - Description: "assertion failed: direct_value == nested_value"
+** 0 of
+VERIFICATION:- SUCCESSFUL
+Complete - 1 successfully verified harnesses, 0 failures, 1 total.

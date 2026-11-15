@@ -68,6 +68,7 @@ fn build_missing_body(tcx: TyCtxt, instance: Instance) -> Body {
 mod automatic;
 pub(crate) mod body;
 mod check_uninit;
+pub(crate) use check_uninit::immutable_origin_type_supported;
 mod check_values;
 mod contracts;
 mod dump_mir_pass;
