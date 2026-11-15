@@ -15,6 +15,22 @@ req,roots=census.load()
 w=yaml.safe_load(WORKFLOW.read_text())
 assert w['on']=={'push':{'branches':['uninit-ci/ch8-b-census-*']}}
 assert w['permissions']=={'contents':'read'}
+class Loader(yaml.SafeLoader):
+    pass
+Loader.yaml_implicit_resolvers = {k:[(tag,pattern) for tag,pattern in values if tag!='tag:yaml.org,2002:bool'] for k,values in Loader.yaml_implicit_resolvers.items()}
+import fnmatch
+matched=[]
+for p in (ROOT/'.github/workflows').glob('*.yml'):
+    events=yaml.load(p.read_text(),Loader=Loader).get('on',{})
+    push=events.get('push') if isinstance(events,dict) else None
+    if push is None: continue
+    branches=push.get('branches',['**'])
+    active=False
+    for pattern in branches:
+        if fnmatch.fnmatchcase('uninit-ci/ch8-b-census-example',pattern.lstrip('!')):
+            active=not pattern.startswith('!')
+    if active: matched.append(p.name)
+assert matched==['ch8-b-census.yml'], 'extra workflow push triggers: '+repr(matched)
 job=w['jobs']['census']
 assert job['timeout-minutes']==req['job_minutes']==210
 assert job['runs-on']==req['os']

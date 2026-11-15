@@ -4,6 +4,8 @@ Coordinator request: one B dispatch (lane cap3; item1 cap18; combined cap32),
 not reserved or charged here. No retry. User authorization is package preparation;
 coordinator alone reviews current ledger/slots, reserves, publishes and creates the
 same-tree non-skip trigger on `uninit-ci/ch8-b-census-*`. Package commits use `[skip ci]`.
+Three stock push workflows have an exact negative filter for the census branch only,
+so the future trigger accepts one workflow run. The pristine export keeps all upstream workflows.
 Never push this work branch as a trigger. No Cloud or compiler patch is included.
 
 Inputs: unchanged std `872d5a43380752786415bc00d2a12ce0e930cb37`, pristine Kani

@@ -11,6 +11,7 @@ on:
     # We don't want to re-trigger this workflow when tagging an existing commit.
     branches:
       - '**'
+      - '!uninit-ci/ch8-b-census-*'
 
 jobs:
   format-check:

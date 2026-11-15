@@ -93,6 +93,16 @@ class CensusTests(unittest.TestCase):
         self.execution['stop']=None; self.data['harnesses'][0]['checks']['total']=20
         self.assertFalse(self.classify()['complete'])
 
+    def test_observed_unsupported_survives_unknown_checks(self):
+        self.fail("Kani currently doesn't support checking validity of `copy_nonoverlapping` for `u8`")
+        h=self.data['harnesses'][0]
+        h['checks']['unknown']=['p.2']; h['checks']['total']+=1; h['n_properties']+=1
+        result=self.classify()
+        self.assertEqual(result['classification'],'copy Unsupported')
+        self.assertFalse(result['complete'])
+        self.assertEqual(result['harness']['checks']['unknown'],['p.2'])
+        self.assertEqual(len(result['harness']['failed_properties']),1)
+
     def test_missing_receipt_fallback_and_partial(self):
         with tempfile.TemporaryDirectory() as td:
             out=Path(td)
