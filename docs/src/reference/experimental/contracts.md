@@ -72,14 +72,25 @@ By leveraging the stubbing feature, we can replace the (expensive) `gcd` call wi
 
 ## Limitations
 
-The limitations of
-[uninitialized memory support](../../rust-feature-support.md#uninitialized-memory)
+The [uninitialized memory support and general limitations](../../rust-feature-support.md#uninitialized-memory)
 apply to ordinary proof harnesses as well as contract checks. Supported top-level
 `MaybeUninit` storage can transfer initialization state through direct ordinary MIR-body calls,
-including arguments and return values, when its data mask is computable.
-Whole immutable masks require the qualification described there; unqualified nonzero-subrange
+including arguments and return values, when its data mask is computable. Whole
+immutable masks require the qualification described there; unqualified nonzero-subrange
 or relocation origins may produce conservative false positives, while eligible aliases
 and independently supported static paths can succeed.
+
+Tracking the initialization state of `MaybeUninit` and union values passed across a
+call is not yet supported when the callee is replaced by its contract
+(`#[kani::stub_verified]`, Replace mode) or checked recursively
+(`#[kani::recursion]`, RecursiveCheck mode). Observed conservative failures at these
+boundaries do not qualify shadow transfer in those modes. A local
+`#[kani::proof_for_contract]` companion required to validate a verified stub is only
+executed when selected; its presence alone does not establish successful checking.
+With `-Z uninit-checks`, a harness is rejected as unsupported if delayed
+initialization analysis encounters an interprocedural call cycle. This can affect
+ordinary proof harnesses and `#[kani::proof_for_contract]` checks; a runtime
+recursion bound does not bound this analysis.
 
 Initialization shadow transfer is also not implemented for by-value aggregates
 containing nested `MaybeUninit` or union slots, including call arguments and
