@@ -1,0 +1,98 @@
+# Copyright Kani Contributors
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+name: C2 slices 04 STORAGE protocol and F6 qualification
+on:
+  push:
+    branches:
+      - 'uninit-ci/**'
+  workflow_dispatch:
+
+env:
+  RUST_BACKTRACE: 1
+  KANI_FAIL_ON_UNEXPECTED_DESCRIPTION: "true"
+  RUST_TEST_THREADS: 2
+
+jobs:
+  uninit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout exact overlay
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 3
+
+      - name: Source identities before
+        id: source_guard
+        run: python3 .github/c2-slices/slice04_ci.py before
+        env:
+          C2_EVIDENCE_DIR: ${{ runner.temp }}/c2-slices-04-evidence
+
+      - name: Setup Kani Dependencies
+        uses: ./.github/actions/setup
+        with:
+          os: ubuntu-24.04
+
+      - name: Format check
+        run: python3 .github/c2-slices/slice04_ci.py fmt
+        env:
+          C2_EVIDENCE_DIR: ${{ runner.temp }}/c2-slices-04-evidence
+
+      - name: Build Kani
+        if: ${{ !cancelled() && steps.source_guard.outcome == 'success' }}
+        run: python3 .github/c2-slices/slice04_ci.py build
+        env:
+          C2_EVIDENCE_DIR: ${{ runner.temp }}/c2-slices-04-evidence
+
+      - name: Clippy workspace and tests (-D warnings)
+        if: ${{ !cancelled() && steps.source_guard.outcome == 'success' }}
+        run: python3 .github/c2-slices/slice04_ci.py clippy
+        env:
+          C2_EVIDENCE_DIR: ${{ runner.temp }}/c2-slices-04-evidence
+
+      - name: ActiveCalls units (exactly 9)
+        if: ${{ !cancelled() && steps.source_guard.outcome == 'success' }}
+        run: python3 .github/c2-slices/slice04_ci.py units
+        env:
+          C2_EVIDENCE_DIR: ${{ runner.temp }}/c2-slices-04-evidence
+
+      - name: Immutable allocations units (exactly 9)
+        if: ${{ !cancelled() && steps.source_guard.outcome == 'success' }}
+        run: python3 .github/c2-slices/slice04_ci.py immutable-units
+        env:
+          C2_EVIDENCE_DIR: ${{ runner.temp }}/c2-slices-04-evidence
+
+      - name: Argument size unit (exactly 1)
+        if: ${{ !cancelled() && steps.source_guard.outcome == 'success' }}
+        run: python3 .github/c2-slices/slice04_ci.py argument-size-units
+        env:
+          C2_EVIDENCE_DIR: ${{ runner.temp }}/c2-slices-04-evidence
+
+      - name: Marker category unit (exactly 1)
+        if: ${{ !cancelled() && steps.source_guard.outcome == 'success' }}
+        run: python3 .github/c2-slices/slice04_ci.py marker-category-units
+        env:
+          C2_EVIDENCE_DIR: ${{ runner.temp }}/c2-slices-04-evidence
+
+      - name: Cumulative Quick and stage 4 manifest (413 unique selectors)
+        if: ${{ !cancelled() && steps.source_guard.outcome == 'success' }}
+        run: python3 .github/c2-slices/slice04_ci.py suites
+        env:
+          C2_EVIDENCE_DIR: ${{ runner.temp }}/c2-slices-04-evidence
+
+      - name: Source identities after
+        if: ${{ always() }}
+        run: python3 .github/c2-slices/slice04_ci.py after
+        env:
+          C2_EVIDENCE_DIR: ${{ runner.temp }}/c2-slices-04-evidence
+
+      - name: Upload native outputs, original exits and identities
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: c2-slices-04-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/c2-slices-04-evidence/
+          if-no-files-found: error
+          retention-days: 14

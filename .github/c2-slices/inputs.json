@@ -1,0 +1,41 @@
+{
+  "source_sha": "345cedfd67df679e326474385308349d609fc43d",
+  "source_tree": "e13784fc67ec6bb1b15f30dc851ef7460738e3eb",
+  "source_parent": "5ca51679e3f433718807a2e44add0d5abac128e7",
+  "g0_input": "7655cf954224f4123ffcbb7c0c170c01c2aa04f1",
+  "test_manifest_sha256": "34cb661d3e0bd467a60e5a97a3b6f40860e695f55c1bdfce40d8310219cb8232",
+  "recipe_commit": "0998b98867932b307bd99109dc8f2741cac507b1",
+  "recipe_path": ".github/workflows/uninit-quick.yml",
+  "recipe_sha256": "7ee68ca99923e6c14c92fd14a0364535737b1d06a47c906e3eac2796ab9b8230",
+  "qualification_kind": "TARGETED_INTEGRATION_PLUS_NO_REGRESSION",
+  "integration_status": "PENDING_NATIVE_EXACT_HEAD4",
+  "integration_heads": [
+    4,
+    5
+  ],
+  "runtime": "NOT_RUN",
+  "accepted_parent_run": "43706759714",
+  "accepted_recipe_overlay": "34b8008f12ac909d53803ddb1a4da956c498c19f",
+  "B1_dependency": "6fe484b30043b3696b5f1ccc4bea0e42891ad012",
+  "additional_units": {
+    "argument-size-units": {
+      "filter": "argument_size_tests",
+      "native_names": [
+        "kani_middle::transform::check_uninit::ty_layout::argument_size_tests::transfer_requires_complete_sized_storage"
+      ]
+    },
+    "marker-category-units": {
+      "filter": "marker_category_tests",
+      "native_names": [
+        "kani_middle::kani_functions::marker_category_tests::typed_marker_categories_remain_distinct"
+      ]
+    }
+  },
+  "effective_targeted_unit_count": 20,
+  "packet_unit_expected_count_note": "Packet scalar18 is inherited; effective exact filters are9+9+1+1=20.",
+  "sensitivity": {
+    "status": "DEFERRED_HEAD5",
+    "reason": "Full8 strong oracle cases absent on head4; no substitute mutations.",
+    "required": "4/4 --force-rerun on first full strong-oracle head5"
+  }
+}
