@@ -1,0 +1,115 @@
+# Copyright Kani Contributors
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+name: Kani 3300 C2 Gate B-prime replay (preparation candidate)
+
+on:
+  push:
+    branches: ['ci/kani3300-c2-gateb-w15']
+
+permissions:
+  contents: read
+
+jobs:
+  replay:
+    # Coordinator-owned fork lane only. This candidate is intentionally not dispatchable.
+    if: ${{ github.repository == 'Tiramisu-Cake/kani' }}
+    runs-on: ubuntu-24.04
+    # One 60-minute job per row; three serial jobs bound the proposed envelope to 180 minutes.
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        root:
+          - merge-raw-closure-on
+          - merge-profile-closure-on
+          - sort4-closure-on
+    steps:
+      - name: Checkout CI-only overlay
+        uses: actions/checkout@v6
+        with:
+          path: overlay
+          fetch-depth: 0
+
+      - name: Python-only wrapper preflight
+        working-directory: overlay/scripts/kani3300-replay
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: python3 -m unittest -v test_replay.py
+
+      - name: Read exact export revision
+        id: export
+        run: |
+          python3 - <<'PY'
+          import json, os
+          req = json.load(open('overlay/scripts/kani3300-replay/CI-REQUEST.json'))
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as out:
+              out.write('sha=' + req['tool_export_sha'] + '\n')
+          PY
+
+      - name: Checkout exact frozen C2 export
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ steps.export.outputs.sha }}
+          path: export
+
+      - name: Verify immutable C2 source bindings
+        run: python3 overlay/scripts/kani3300-replay/replay.py verify-source --repo export
+
+      - name: Setup pinned Kani dependencies
+        uses: ./export/.github/actions/setup
+        with:
+          os: ubuntu-24.04
+          kani_dir: export
+
+      - name: Build this exact C2 checkout
+        working-directory: export
+        run: cargo build-dev -- --release
+
+      - name: Prepare isolated selected std snapshot
+        run: >-
+          python3 overlay/scripts/kani3300-replay/replay.py prepare-std
+          --repo https://github.com/Tiramisu-Cake/verify-rust-std.git
+          --destination "$RUNNER_TEMP/kani3300-std"
+
+      - name: Execute one exact replay row
+        run: >-
+          python3 overlay/scripts/kani3300-replay/replay.py run-root
+          --repo "$GITHUB_WORKSPACE/export"
+          --std "$RUNNER_TEMP/kani3300-std"
+          --root "${{ matrix.root }}"
+          --binary "$GITHUB_WORKSPACE/export/scripts/kani"
+          --out "$RUNNER_TEMP/kani3300-receipt/${{ matrix.root }}"
+
+      - name: Materialize NOT_RUN fallback receipt
+        if: always()
+        env:
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          out = Path(os.environ['RUNNER_TEMP']) / 'kani3300-receipt' / '${{ matrix.root }}'
+          out.mkdir(parents=True, exist_ok=True)
+          receipt = out / 'receipt.json'
+          if not receipt.exists():
+              receipt.write_text(json.dumps({
+                  'schema': 'kani3300-gateb-prime-receipt-v1',
+                  'root_id': '${{ matrix.root }}',
+                  'outcome': 'UNKNOWN',
+                  'runtime_proof_status': 'NOT_RUN',
+                  'rss': {'max_bytes': None, 'status': 'UNKNOWN'},
+                  'job_status': os.environ['JOB_STATUS'],
+                  'note': 'setup/build/preflight/runner failed before a complete root receipt; no result inferred'
+              }, indent=2, sort_keys=True) + '\n')
+          (out / 'job-status.json').write_text(json.dumps({'status': os.environ['JOB_STATUS']}) + '\n')
+          PY
+
+      - name: Upload bounded receipts and retained failure artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kani3300-c2-gateb-${{ matrix.root }}
+          path: ${{ runner.temp }}/kani3300-receipt/${{ matrix.root }}/
+          if-no-files-found: error
+          retention-days: 7
