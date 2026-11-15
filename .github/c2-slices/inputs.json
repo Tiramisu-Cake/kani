@@ -1,0 +1,21 @@
+{
+  "source_sha": "b0a5a4fff9122ae4dabcc9808568c0d15fbe9b12",
+  "source_tree": "03e33b5a3a8b3aa1fd5505467bbe869d1001b44e",
+  "source_parent": "d82752c8bc878398e672bffaa631ca6a28430acc",
+  "g0_input": "ff3ce29e4f6694f28b0d6fcf025e70cfeae8f378",
+  "test_manifest_sha256": "7ac850683a20fca1f22d7daa5b7fcf5380e480859049ccad6cddf18cbcc79893",
+  "recipe_commit": "0998b98867932b307bd99109dc8f2741cac507b1",
+  "recipe_path": ".github/workflows/uninit-quick.yml",
+  "recipe_sha256": "7ee68ca99923e6c14c92fd14a0364535737b1d06a47c906e3eac2796ab9b8230",
+  "qualification_kind": "TARGETED_IMMUTABLE_AND_CUMULATIVE_REGRESSION",
+  "integration_status": "PENDING",
+  "integration_heads": [
+    3,
+    4,
+    5
+  ],
+  "runtime": "NOT_RUN",
+  "accepted_parent_run": "43696666260",
+  "accepted_recipe_overlay": "4f5dc3732c8fbaa94c814c41d184534148a1d312",
+  "B1_dependency": "6fe484b30043b3696b5f1ccc4bea0e42891ad012"
+}
