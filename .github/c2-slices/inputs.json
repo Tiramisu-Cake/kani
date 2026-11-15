@@ -1,0 +1,24 @@
+{
+  "source_sha": "5ca51679e3f433718807a2e44add0d5abac128e7",
+  "source_tree": "689644ab2140794e17948dac6e7beb48bc9ea7bb",
+  "source_parent": "932fb8395a58f8c86c0d702ba2cae835823b2962",
+  "g0_input": "98e54033950bb0a1b0423d93932f83f7dc0d5288",
+  "test_manifest_sha256": "f004e31a6b9ad7ef1c52ac14df4bbf03e42c7138ffbec6f306e1ab375c6f1e1c",
+  "recipe_commit": "0998b98867932b307bd99109dc8f2741cac507b1",
+  "recipe_path": ".github/workflows/uninit-quick.yml",
+  "recipe_sha256": "7ee68ca99923e6c14c92fd14a0364535737b1d06a47c906e3eac2796ab9b8230",
+  "qualification_kind": "NO_REGRESSION",
+  "integration_status": "PENDING",
+  "integration_heads": [
+    4
+  ],
+  "runtime": "NOT_RUN",
+  "accepted_parent_run": "43701587141",
+  "accepted_recipe_overlay": "536f1d20d127987cdd860bc6367acc9fff90c5cb",
+  "B1_dependency": "6fe484b30043b3696b5f1ccc4bea0e42891ad012",
+  "inherited_owner1_integration_heads": [
+    4,
+    5
+  ],
+  "nested_offset_integration_status": "PENDING_HEAD4"
+}
