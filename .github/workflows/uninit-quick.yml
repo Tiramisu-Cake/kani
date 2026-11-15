@@ -2,6 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 name: SEL1-C2 Quick (reviewed candidate)
 on:
+  push:
+    branches: ['uninit-ci/sel1-c2-quick-w15-r3']
   workflow_dispatch:
 
 defaults:
@@ -10,7 +12,6 @@ defaults:
 
 env:
   SEL1_C2_SOURCE_DIR: ${{ github.workspace }}/export
-  C2_EVIDENCE_DIR: ${{ runner.temp }}/sel1-c2-quick-evidence
   RUST_BACKTRACE: 1
   KANI_FAIL_ON_UNEXPECTED_DESCRIPTION: "true"
   RUST_TEST_THREADS: 2
