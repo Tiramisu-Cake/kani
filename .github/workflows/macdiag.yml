@@ -1,0 +1,33 @@
+# CI-only diagnostic 2: bash 3.2 BASH_ENV $0 and printf NUL behavior on macos-15.
+name: Gate A observer macOS diagnostic 2
+on:
+  push:
+    branches:
+      - 'uninit-ci/**'
+jobs:
+  diag:
+    runs-on: macos-15
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Probe
+        shell: bash {0}
+        run: |
+          d=$(mktemp -d); mkdir -p $d/scripts; cd $d
+          printf 'echo "ENV0=[$0] SRC=[${BASH_SOURCE[0]}] OWNER=[${KANI_GATE_OWNER_PID-}]" >&2\n' > hook.bash
+          printf '#!/usr/bin/env bash\necho "SCRIPT0=[$0]"\n' > scripts/kani-regression.sh
+          BASH_ENV=$d/hook.bash bash scripts/kani-regression.sh
+          echo "--- printf NUL"; printf 'a\000b\036c' | od -c | head -2
+          echo "--- printf %s NUL in trap"; bash -c 'trap '\''printf '\''\'\'''\''X\000%s\000'\''\'\'''\'' DEBUG "$?"'\'' DEBUG; true' | od -c | head -3
+          echo "--- hook with DEBUG trap, no \$0 guard"
+          cat > hook2.bash <<'H'
+          if [[ -z ${KANI_GATE_OWNER_PID-} ]]; then
+            export KANI_GATE_OWNER_PID=$$
+            trap 'printf "\036K\000%s\000%s\000%s\000" DEBUG "$?" "$BASH_COMMAND"' DEBUG
+            trap 'printf "\036K\000%s\000%s\000%s\000" EXIT "$?" "$BASH_COMMAND"' EXIT
+          fi
+          H
+          printf '#!/usr/bin/env bash\nset -e\nprintf "start\\n"\nbash scripts/child.sh\n' > scripts/kani-regression.sh
+          printf 'printf "child\\n"\n' > scripts/child.sh
+          BASH_ENV=$d/hook2.bash bash scripts/kani-regression.sh | od -c | head -12
