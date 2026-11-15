@@ -17,7 +17,9 @@
     "const_zst_arr",
     "tail_typed_copy",
     "tail_nondet",
-    "runtime_control"
+    "runtime_control",
+    "union_array_typed_copy",
+    "zst_union_arm"
   ],
   "hashes": {
     "TASK.md": "36f37ada4bf9d218cbac9962f86e4ca82af0c559aa7aedc5d68b45f968793289",
@@ -27,6 +29,8 @@
     "roots/runtime_control.rs": "ae447b4ff6aa75ae6f8e2ea96967262aa7b8091da32f888c3172320cfea46321",
     "roots/static_zst_arr.rs": "22e7a7d6784eb2cc57e4d0852bf1ae30e43aa483b90d843e6a0359ded9d97b41",
     "roots/tail_nondet.rs": "720b495b3d2ff2fd1803cda45d8710da2cc437ff20001b12246589a0fab58505",
-    "roots/tail_typed_copy.rs": "47d14130d50333685c701ade8398d520eec7be216786f8a6be6823f058664cc8"
+    "roots/tail_typed_copy.rs": "47d14130d50333685c701ade8398d520eec7be216786f8a6be6823f058664cc8",
+    "roots/union_array_typed_copy.rs": "6f9f4230538cab6232c1bcaa30ca9b9fd92a8708303627454e2fceafc5c562a1",
+    "roots/zst_union_arm.rs": "152372c88000ecddd7ecdb5e60f265a385f791b0658306fb5a8484dc7c97ae12"
   }
 }
