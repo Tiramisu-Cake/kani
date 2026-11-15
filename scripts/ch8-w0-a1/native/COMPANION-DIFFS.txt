@@ -1,0 +1,74 @@
+Original issue source bytes are unchanged. The following diffs describe separately named companions only.
+
+--- issue-5020-nonnull.rs
++++ issue-5020-initialized-companion.rs
+@@ -1,17 +1,16 @@
+-use std::alloc::{alloc, dealloc, Layout};
+ use std::ptr::NonNull;
+ 
+-#[repr(C)] struct S { a: u64, p: NonNull<u8> } // p at bytes 8..16
+-
+-// Initialize only `a`, then read the whole value.
+-unsafe fn read_half_init<X>() {
+-    let lay = Layout::new::<X>();
+-    let base = alloc(lay);
+-    base.write_bytes(1, 8);
+-    let x: X = std::ptr::read(base as *const X); // UB: bytes 8..16 uninit
+-    std::mem::forget(x);
+-    dealloc(base, lay);
++#[repr(C)]
++struct S {
++    a: u64,
++    p: NonNull<u8>,
+ }
+ 
+ #[cfg_attr(kani, kani::proof)]
+-fn nonnull_field() { unsafe { read_half_init::<S>() } }
++fn initialized_same_type_companion() {
++    let x = S { a: 7, p: NonNull::dangling() };
++    let y = unsafe { std::ptr::read(&x) };
++    assert_eq!(y.a, 7);
++    assert_eq!(y.p, x.p);
++}
++
+
+--- issue-4854-autoharness.rs
++++ issue-4854-explicit-proof-companion.rs
+@@ -1,9 +1,11 @@
+ use std::mem::MaybeUninit;
+ use std::ptr;
+-const MEMCPY_RET: MaybeUninit<*const i32> = {
+-    let ptr2 = MaybeUninit::new(ptr::null());
+-    ptr2
+-};
+-fn reassemble_ptr_fragments_in_static() {
+-    unsafe { MEMCPY_RET.assume_init() };
++
++const MEMCPY_RET: MaybeUninit<*const i32> = MaybeUninit::new(ptr::null());
++
++#[kani::proof]
++fn explicit_proof_observes_initialized_null() {
++    let value = unsafe { MEMCPY_RET.assume_init() };
++    assert_eq!(value, ptr::null());
+ }
++
+
+--- issue-5151-empty-drop.rs
++++ issue-5151-initialized-slot-companion.rs
+@@ -1,10 +1,13 @@
+ use core::mem::MaybeUninit;
++
+ struct D(u8);
+ impl Drop for D { fn drop(&mut self) {} }
+ 
+ #[kani::proof]
+-fn drop_uninit_in_array() {
++fn drop_initialized_slot_in_array() {
+     let mut a: [MaybeUninit<D>; 2] = [const { MaybeUninit::uninit() }; 2];
+     a[0].write(D(1));
+-    unsafe { core::ptr::drop_in_place(a.as_mut_ptr().cast::<D>().add(1)) }; // slot 1 uninit
++    a[1].write(D(2));
++    unsafe { core::ptr::drop_in_place(a.as_mut_ptr().cast::<D>().add(1)) };
+ }
++
+

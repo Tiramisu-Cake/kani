@@ -1,0 +1,254 @@
+# CI-only; coordinator publishes same-tree non-skip trigger.
+name: Challenge 8 W0 A1 bounded safety probes
+'on':
+  push:
+    branches:
+    - uninit-ci/ch8-w0-a1-r1-*
+    - uninit-ci/ch8-w0-a1-r2-*
+permissions:
+  contents: read
+concurrency:
+  group: ch8-w0-a1
+  cancel-in-progress: false
+jobs:
+  r1:
+    if: ${{ github.repository == 'Tiramisu-Cake/kani' && startsWith(github.ref, 'refs/heads/uninit-ci/ch8-w0-a1-r1-') }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        root:
+        - stable_freeze_u64_n32
+        - unstable_general_nocopy_u64_n32
+        - unstable_network_u64_n32
+        - stable_freeze_u64_n8
+        - stable_freeze_u64_n16
+        - unstable_general_nocopy_u64_n8
+        - unstable_general_nocopy_u64_n16
+        - unstable_network_u64_n18
+    steps:
+    - name: Checkout exact CI control
+      uses: actions/checkout@v6
+      with:
+        ref: ${{ github.sha }}
+        path: control
+        fetch-depth: 2
+        persist-credentials: false
+    - name: Require first attempt and same-tree trigger
+      working-directory: control
+      run: |-
+        python3 - <<'PYCODE'
+        import os, subprocess, time, json
+        from pathlib import Path
+        assert os.environ['GITHUB_RUN_ATTEMPT'] == '1', 'No retries authorized'
+        head = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
+        assert head == os.environ['GITHUB_SHA']
+        assert subprocess.check_output(['git', 'rev-parse', 'HEAD^{tree}']) == subprocess.check_output(['git', 'rev-parse', 'HEAD^1^{tree}']), 'Trigger must be same-tree child of package'
+        assert '[skip ci]' in subprocess.check_output(['git', 'show', '-s', '--format=%B', 'HEAD^'], text=True)
+        with open(os.environ['GITHUB_ENV'], 'a') as f:
+            f.write('A1_JOB_BEGIN=' + str(time.time()) + '\n')
+            available = next(int(line.split()[1])*1024 for line in Path('/proc/meminfo').read_text().splitlines() if line.startswith('MemAvailable:'))
+            threshold = available - 2*1024**3
+            assert threshold > 0, 'Insufficient RAM for OS reserve'
+            f.write('A1_RSS_LIMIT_BYTES=' + str(threshold) + '\n')
+            f.write('A1_MEM_AVAILABLE_BYTES=' + str(available) + '\n')
+            receipt_root = Path(os.environ['RUNNER_TEMP']) / 'ch8-a1-receipt'
+            receipt_root.mkdir(parents=True, exist_ok=True)
+            (receipt_root / 'memory-policy.json').write_text(json.dumps({'available_bytes':available, 'reserve_bytes':2*1024**3, 'threshold_bytes':threshold, 'policy':'FROZEN_FOR_JOB_BEFORE_SETUP'}) + '\n')
+        PYCODE
+    - name: Python wrapper preflight
+      working-directory: control/scripts/ch8-w0-a1
+      env:
+        PYTHONDONTWRITEBYTECODE: '1'
+      run: python3 -m unittest -v test_a1.py
+    - name: Read literal export pin
+      id: pin
+      run: |-
+        python3 - <<'PYCODE'
+        import json, os
+        req = json.load(open('control/scripts/ch8-w0-a1/CI-REQUEST.json'))
+        with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+            f.write('sha=' + req['pins']['sel1']['sha'] + '\n')
+        PYCODE
+    - name: Checkout exact export
+      uses: actions/checkout@v6
+      with:
+        ref: ${{ steps.pin.outputs.sha }}
+        path: export
+        fetch-depth: 2
+        persist-credentials: false
+    - name: Bind pristine export
+      run: python3 control/scripts/ch8-w0-a1/a1.py verify-source --repo export --pin "sel1"
+    - name: Setup this pin dependencies
+      uses: ./export/.github/actions/setup
+      with:
+        os: ubuntu-24.04
+        kani_dir: export
+    - name: Build exact export
+      working-directory: export
+      run: cargo build-dev -- --release
+    - name: Prepare isolated std
+      run: python3 control/scripts/ch8-w0-a1/a1.py prepare-std --repo https://github.com/Tiramisu-Cake/verify-rust-std.git
+        --destination "$RUNNER_TEMP/ch8-a1-std"
+    - name: Run exact cases once
+      run: |-
+        python3 - <<'PYCODE'
+        import os, time
+        assert time.time() - float(os.environ['A1_JOB_BEGIN']) <= 2340, 'Cannot retain 10min verifier plus 10min upload reserve'
+        PYCODE
+        python3 control/scripts/ch8-w0-a1/a1.py run --repo "$GITHUB_WORKSPACE/export" --pin sel1 --stage r1 --row "${{ matrix.root }}" --std "$RUNNER_TEMP/ch8-a1-std" --binary "$GITHUB_WORKSPACE/export/scripts/kani" --out "$RUNNER_TEMP/ch8-a1-receipt/${{ matrix.root }}"
+    - name: Fallback NOT_RUN receipts
+      if: always()
+      env:
+        JOB_STATUS: ${{ job.status }}
+      run: |-
+        python3 - <<'PYCODE'
+        import json, os
+        from pathlib import Path
+        req = json.load(open('control/scripts/ch8-w0-a1/CI-REQUEST.json'))
+        root = Path(os.environ['RUNNER_TEMP']) / 'ch8-a1-receipt'
+        rows = [r for r in req['r1']['rows'] if r['id'] == '${{ matrix.root }}'] if 'r1' == 'r1' else req['r2']['rows']
+        for row in rows:
+            out = root / row['id'] if 'r1' == 'r1' else root / 'sel1' / row['id']
+            out.mkdir(parents=True, exist_ok=True)
+            receipt = out / 'receipt.json'
+            if not receipt.exists():
+                receipt.write_text(json.dumps({'schema':'ch8-a1-fallback-v1','id':row['id'],'pin':'sel1','stage':'r1','outcome':'UNKNOWN','runtime_proof_status':'NOT_RUN','complete':False,'job_status':os.environ['JOB_STATUS'],'note':'No complete invocation receipt; setup/runner loss must be reviewed'}, indent=2) + '\n')
+        (root / 'job-status.json').write_text(json.dumps({'job_status':os.environ['JOB_STATUS']}) + '\n')
+        PYCODE
+    - name: Bound receipt upload
+      if: always()
+      run: python3 control/scripts/ch8-w0-a1/a1.py bound-artifacts --out "$RUNNER_TEMP/ch8-a1-receipt"
+    - name: Upload bounded receipts
+      if: always()
+      uses: actions/upload-artifact@v4
+      env:
+        RECEIPT_ROOT: ${{ runner.temp }}/ch8-a1-receipt
+      with:
+        name: ch8-a1-r1-${{ matrix.root }}-${{ github.run_id }}-${{ github.run_attempt }}
+        path: ${{ env.RECEIPT_ROOT }}/
+        if-no-files-found: error
+        retention-days: 7
+  r2:
+    if: ${{ github.repository == 'Tiramisu-Cake/kani' && startsWith(github.ref, 'refs/heads/uninit-ci/ch8-w0-a1-r2-') }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        pin:
+        - baseline
+        - sel1
+    steps:
+    - name: Checkout exact CI control
+      uses: actions/checkout@v6
+      with:
+        ref: ${{ github.sha }}
+        path: control
+        fetch-depth: 2
+        persist-credentials: false
+    - name: Require first attempt and same-tree trigger
+      working-directory: control
+      run: |-
+        python3 - <<'PYCODE'
+        import os, subprocess, time, json
+        from pathlib import Path
+        assert os.environ['GITHUB_RUN_ATTEMPT'] == '1', 'No retries authorized'
+        head = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
+        assert head == os.environ['GITHUB_SHA']
+        assert subprocess.check_output(['git', 'rev-parse', 'HEAD^{tree}']) == subprocess.check_output(['git', 'rev-parse', 'HEAD^1^{tree}']), 'Trigger must be same-tree child of package'
+        assert '[skip ci]' in subprocess.check_output(['git', 'show', '-s', '--format=%B', 'HEAD^'], text=True)
+        with open(os.environ['GITHUB_ENV'], 'a') as f:
+            f.write('A1_JOB_BEGIN=' + str(time.time()) + '\n')
+            available = next(int(line.split()[1])*1024 for line in Path('/proc/meminfo').read_text().splitlines() if line.startswith('MemAvailable:'))
+            threshold = available - 2*1024**3
+            assert threshold > 0, 'Insufficient RAM for OS reserve'
+            f.write('A1_RSS_LIMIT_BYTES=' + str(threshold) + '\n')
+            f.write('A1_MEM_AVAILABLE_BYTES=' + str(available) + '\n')
+            receipt_root = Path(os.environ['RUNNER_TEMP']) / 'ch8-a1-receipt'
+            receipt_root.mkdir(parents=True, exist_ok=True)
+            (receipt_root / 'memory-policy.json').write_text(json.dumps({'available_bytes':available, 'reserve_bytes':2*1024**3, 'threshold_bytes':threshold, 'policy':'FROZEN_FOR_JOB_BEFORE_SETUP'}) + '\n')
+        PYCODE
+    - name: Python wrapper preflight
+      working-directory: control/scripts/ch8-w0-a1
+      env:
+        PYTHONDONTWRITEBYTECODE: '1'
+      run: python3 -m unittest -v test_a1.py
+    - name: Read literal export pin
+      id: pin
+      run: |-
+        python3 - <<'PYCODE'
+        import json, os
+        req = json.load(open('control/scripts/ch8-w0-a1/CI-REQUEST.json'))
+        with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+            f.write('sha=' + req['pins']['${{ matrix.pin }}']['sha'] + '\n')
+        PYCODE
+    - name: Checkout exact export
+      uses: actions/checkout@v6
+      with:
+        ref: ${{ steps.pin.outputs.sha }}
+        path: export
+        fetch-depth: 2
+        persist-credentials: false
+    - name: Bind pristine export
+      run: python3 control/scripts/ch8-w0-a1/a1.py verify-source --repo export --pin "${{ matrix.pin }}"
+    - name: Setup this pin dependencies
+      uses: ./export/.github/actions/setup
+      with:
+        os: ubuntu-24.04
+        kani_dir: export
+    - name: Build exact export
+      working-directory: export
+      run: cargo build-dev -- --release
+    - name: Run exact cases once
+      run: |-
+        python3 - <<'PYCODE'
+        import json, os, subprocess, time
+        from pathlib import Path
+        assert time.time() - float(os.environ['A1_JOB_BEGIN']) <= 1140, 'Cannot retain six 10min verifiers plus 10min upload reserve'
+        req = json.load(open('control/scripts/ch8-w0-a1/CI-REQUEST.json'))
+        exits = []
+        for row in req['r2']['rows']:
+            out = Path(os.environ['RUNNER_TEMP']) / 'ch8-a1-receipt' / '${{ matrix.pin }}' / row['id']
+            argv = ['python3', 'control/scripts/ch8-w0-a1/a1.py', 'run', '--repo', str(Path(os.environ['GITHUB_WORKSPACE']) / 'export'), '--pin', '${{ matrix.pin }}', '--stage', 'r2', '--row', row['id'], '--binary', str(Path(os.environ['GITHUB_WORKSPACE']) / 'export/scripts/kani'), '--out', str(out)]
+            exits.append({'row': row['id'], 'wrapper_exit': subprocess.run(argv).returncode})
+        summary = Path(os.environ['RUNNER_TEMP']) / 'ch8-a1-receipt' / '${{ matrix.pin }}' / 'row-exits.json'
+        summary.parent.mkdir(parents=True, exist_ok=True)
+        summary.write_text(json.dumps(exits, indent=2) + '\n')
+        raise SystemExit(1 if any(x['wrapper_exit'] for x in exits) else 0)
+        PYCODE
+    - name: Fallback NOT_RUN receipts
+      if: always()
+      env:
+        JOB_STATUS: ${{ job.status }}
+      run: |-
+        python3 - <<'PYCODE'
+        import json, os
+        from pathlib import Path
+        req = json.load(open('control/scripts/ch8-w0-a1/CI-REQUEST.json'))
+        root = Path(os.environ['RUNNER_TEMP']) / 'ch8-a1-receipt'
+        rows = [r for r in req['r1']['rows'] if r['id'] == '${{ matrix.root }}'] if 'r2' == 'r1' else req['r2']['rows']
+        for row in rows:
+            out = root / row['id'] if 'r2' == 'r1' else root / '${{ matrix.pin }}' / row['id']
+            out.mkdir(parents=True, exist_ok=True)
+            receipt = out / 'receipt.json'
+            if not receipt.exists():
+                receipt.write_text(json.dumps({'schema':'ch8-a1-fallback-v1','id':row['id'],'pin':'${{ matrix.pin }}','stage':'r2','outcome':'UNKNOWN','runtime_proof_status':'NOT_RUN','complete':False,'job_status':os.environ['JOB_STATUS'],'note':'No complete invocation receipt; setup/runner loss must be reviewed'}, indent=2) + '\n')
+        (root / 'job-status.json').write_text(json.dumps({'job_status':os.environ['JOB_STATUS']}) + '\n')
+        PYCODE
+    - name: Bound receipt upload
+      if: always()
+      run: python3 control/scripts/ch8-w0-a1/a1.py bound-artifacts --out "$RUNNER_TEMP/ch8-a1-receipt"
+    - name: Upload bounded receipts
+      if: always()
+      uses: actions/upload-artifact@v4
+      env:
+        RECEIPT_ROOT: ${{ runner.temp }}/ch8-a1-receipt
+      with:
+        name: ch8-a1-r2-${{ matrix.pin }}-${{ github.run_id }}-${{ github.run_attempt }}
+        path: ${{ env.RECEIPT_ROOT }}/
+        if-no-files-found: error
+        retention-days: 7

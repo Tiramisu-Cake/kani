@@ -1,0 +1,346 @@
+diff --git a/library/core/src/slice/sort/shared/smallsort/verify.rs b/library/core/src/slice/sort/shared/smallsort/verify.rs
+index 9ed9be525b3181a964ef9d7a994af76287e1ca0e..de9cb0d60dea1ef3b69025a002b20535f2f9f283 100644
+--- a/library/core/src/slice/sort/shared/smallsort/verify.rs
++++ b/library/core/src/slice/sort/shared/smallsort/verify.rs
+@@ -84,9 +84,15 @@ mod merge;
+ #[cfg(kani_smallsort_controls)]
+ mod mutations;
+ mod network;
++#[cfg(kani_smallsort_controls)]
++mod replay_gateb_prime;
++#[cfg(kani_smallsort_controls)]
++mod replay_uninit_controls;
+ mod scratch_geometry;
+ mod smoke;
+ mod tag_permutation;
+ mod trait_contracts;
+ pub(super) mod trait_model;
+ mod types;
++#[cfg(kani_smallsort_controls)]
++mod wave0_a1;
+diff --git a/library/core/src/slice/sort/shared/smallsort/verify/helper_contracts.rs b/library/core/src/slice/sort/shared/smallsort/verify/helper_contracts.rs
+index 52977f4b1f39637dc16c1620390a16c47dc48edb..336fe652773e58618c0275ed5d47a3f1c9179ef8 100644
+--- a/library/core/src/slice/sort/shared/smallsort/verify/helper_contracts.rs
++++ b/library/core/src/slice/sort/shared/smallsort/verify/helper_contracts.rs
+@@ -36,7 +36,9 @@ fn exercise_swap<T: kani::Arbitrary + Copy + PartialEq>() {
+     // SAFETY: both positions are initialized, aligned, readable and writable
+     // and belong to this allocation.
+     // Equality is allowed by the real helper's safety condition.
+-    unsafe { swap_if_less(v.as_mut_ptr(), a, b, &mut arbitrary_less::<T>) };
++    unsafe {
++        swap_if_less(v.as_mut_ptr(), a, b, &mut |a: &T, b: &T| arbitrary_less::<T>(a, b))
++    };
+     for i in 0..4 {
+         kani::assert(i == a || i == b || v[i] == before[i], "helper contract swap frame");
+     }
+@@ -196,7 +198,11 @@ fn sort4_safety_u64() {
+     let mut dst = crate::mem::MaybeUninit::<[u64; 4]>::uninit();
+     // SAFETY: four initialized source values and a distinct allocation writable for four
+     // destination values. The destination need not be initialized before the call.
+-    unsafe { sort4_stable(src.as_ptr(), dst.as_mut_ptr().cast(), &mut arbitrary_less::<u64>) };
++    unsafe {
++        sort4_stable(src.as_ptr(), dst.as_mut_ptr().cast(), &mut |a: &u64, b: &u64| {
++            arbitrary_less::<u64>(a, b)
++        })
++    };
+     for i in 0..4 {
+         kani::assert(src[i] == before[i], "helper contract sort4 source frame");
+     }
+diff --git a/library/core/src/slice/sort/shared/smallsort/verify/helper_contracts_wide.rs b/library/core/src/slice/sort/shared/smallsort/verify/helper_contracts_wide.rs
+index b0c6777added9c36716c8aa4a6616facc1a00899..432a9c0d4bc8eb0b5bd22ecf089b21015a57f8ef 100644
+--- a/library/core/src/slice/sort/shared/smallsort/verify/helper_contracts_wide.rs
++++ b/library/core/src/slice/sort/shared/smallsort/verify/helper_contracts_wide.rs
+@@ -114,7 +114,7 @@ fn merge_safety_u64_len8_scratch48_src32_dst0() {
+     unsafe {
+         let base = scratch.as_mut_ptr().cast::<u64>();
+         let source = crate::slice::from_raw_parts(base.add(32), 8);
+-        bidirectional_merge(source, base, &mut tail_less_u64);
++        bidirectional_merge(source, base, &mut |a: &u64, b: &u64| tail_less_u64(a, b));
+     }
+     for i in 0..8 {
+         // SAFETY: the initialized source must be framed by the merge.
+diff --git a/library/core/src/slice/sort/shared/smallsort/verify/replay_gateb_prime.rs b/library/core/src/slice/sort/shared/smallsort/verify/replay_gateb_prime.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..b66ce6ee72d95814278c1d9cb323dc3e4ed3ee50
+--- /dev/null
++++ b/library/core/src/slice/sort/shared/smallsort/verify/replay_gateb_prime.rs
+@@ -0,0 +1,52 @@
++//! Gate B-prime: concrete closure comparator companion, enabled only for replay controls.
++//! This proves its own bounded target, not the generic fn-pointer `merge_profile<P>`.
++
++use super::merge::profiles::{
++    LtU8, Profile, merge_halves_sorted, merge_regions, model_count, model_sorted,
++};
++use crate::mem::MaybeUninit;
++use crate::slice::sort::shared::smallsort::{SMALL_SORT_GENERAL_SCRATCH_LEN, bidirectional_merge};
++use crate::{kani, ptr};
++
++// The original profile's canonical comparator guard is discharged by construction:
++// no comparator parameter or fn-pointer coercion exists; the closure calls lt_u8 directly.
++// The remaining clauses are exactly merge_profile::<LtU8>'s clauses.
++#[cfg(kani_smallsort_controls)]
++#[kani::requires(merge_regions::<u8>(v, dst) && merge_halves_sorted::<LtU8>(v))]
++#[kani::modifies(ptr::slice_from_raw_parts_mut(dst, v.len()))]
++#[kani::ensures(|_| model_sorted::<LtU8>(dst, v.len()))]
++#[kani::ensures(|_| model_count::<LtU8>(v.as_ptr(), v.len()) == model_count::<LtU8>(dst, v.len()))]
++pub(crate) unsafe fn merge_profile_closure_u8(v: &[u8], dst: *mut u8) {
++    // SAFETY: the unchanged profile region/sorted-halves premises establish the source
++    // and destination geometry; lt_u8 is the fixed canonical key order (x >> 1).
++    unsafe { bidirectional_merge(v, dst, &mut |a: &u8, b: &u8| super::merge::lt_u8(a, b)) }
++}
++
++#[cfg(kani_smallsort_controls)]
++#[kani::proof_for_contract(merge_profile_closure_u8)]
++#[kani::unwind(34)]
++fn merge_profile_closure_scratch48_u8_n9() {
++    const N: usize = 9;
++    const { assert!(N >= 2 && N <= 32) };
++    LtU8::set_probe(kani::any());
++    let input: [u8; N] = kani::any();
++    let mut dst: [u8; N] = kani::any();
++    let stable: bool = kani::any();
++    let mut stable_scratch = [MaybeUninit::<u8>::uninit(); SMALL_SORT_GENERAL_SCRATCH_LEN];
++    let mut general_scratch = MaybeUninit::<[u8; SMALL_SORT_GENERAL_SCRATCH_LEN]>::uninit();
++    let src = if stable {
++        stable_scratch.as_mut_ptr() as *mut u8
++    } else {
++        general_scratch.as_mut_ptr() as *mut u8
++    };
++    // SAFETY: copy initializes only prefix N of the selected 48-slot backing before
++    // forming a slice; dst is separate and initialized. The enclosing PFC checks the
++    // concrete companion's unchanged region and sorted-half contract.
++    unsafe {
++        ptr::copy_nonoverlapping(input.as_ptr(), src, N);
++        let v = crate::slice::from_raw_parts(src, N);
++        merge_profile_closure_u8(v, dst.as_mut_ptr());
++    }
++    kani::cover(!stable, "general scratch48 merge contract checked");
++    kani::cover(stable, "stable scratch48 merge contract checked");
++}
+diff --git a/library/core/src/slice/sort/shared/smallsort/verify/replay_uninit_controls.rs b/library/core/src/slice/sort/shared/smallsort/verify/replay_uninit_controls.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..890b2597c237578a33e55c534fd35324da224c13
+--- /dev/null
++++ b/library/core/src/slice/sort/shared/smallsort/verify/replay_uninit_controls.rs
+@@ -0,0 +1,49 @@
++//! Opt-in raw-helper uninitialized-read controls. Preparation only; NOT_RUN.
++//!
++//! Run with the organizer --no-assert-contracts profile: the negative calls
++//! the actual Original helper body and intentionally violates its source
++//! initializedness requirement. It is a checker control, not a contract proof.
++
++use super::super::sort4_stable;
++use crate::mem::MaybeUninit;
++use crate::{kani, ptr};
++
++fn read_less_u64(a: &u64, b: &u64) -> bool {
++    // The negative intentionally exercises the live read of an unwritten
++    // source value; no initialized reference is constructed before the helper.
++    unsafe {
++        ptr::read_volatile(a);
++        ptr::read_volatile(b);
++    }
++    kani::any()
++}
++
++fn exercise_sort4_raw<const INITIALIZE_SLOT_ONE: bool>() {
++    let mut src = [MaybeUninit::<u64>::uninit(); 4];
++    src[0].write(kani::any());
++    if INITIALIZE_SLOT_ONE {
++        src[1].write(kani::any());
++    }
++    src[2].write(kani::any());
++    src[3].write(kani::any());
++    let mut dst = MaybeUninit::<[u64; 4]>::uninit();
++    let raw = src.as_mut_ptr().cast::<u64>();
++    kani::cover(true, "sort4 raw helper entered");
++    // The legal instance supplies four initialized source values. The negative
++    // leaves precisely slot 1 unwritten in the same valid MU allocation.
++    // Both use the identical source/destination geometry and actual helper.
++    unsafe { sort4_stable(raw, dst.as_mut_ptr().cast(), &mut read_less_u64) };
++    kani::cover(true, "sort4 raw helper returned");
++}
++
++#[kani::proof]
++#[kani::unwind(16)]
++fn sort4_raw_all_initialized_u64() {
++    exercise_sort4_raw::<true>();
++}
++
++#[kani::proof]
++#[kani::unwind(16)]
++fn sort4_raw_hole_negative_u64() {
++    exercise_sort4_raw::<false>();
++}
+diff --git a/library/core/src/slice/sort/shared/smallsort/verify/wave0_a1.rs b/library/core/src/slice/sort/shared/smallsort/verify/wave0_a1.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..8226194452b6330ed81161d8e48f078433485f42
+--- /dev/null
++++ b/library/core/src/slice/sort/shared/smallsort/verify/wave0_a1.rs
+@@ -0,0 +1,166 @@
++//! A1 bounded scale probes: actual trait entry points with arbitrary-bool comparators.
++//! These roots are opt-in and intentionally make no sortedness or permutation claim.
++
++use super::{StableSmallSortTypeImpl, UnstableSmallSortTypeImpl};
++use crate::kani;
++use crate::mem::MaybeUninit;
++use crate::ptr;
++use crate::slice::sort::shared::FreezeMarker;
++
++/// Transparent, Freeze, eight-byte payload wrapper. It has neither Copy nor Drop.
++#[repr(transparent)]
++struct A1FreezeNonCopy(u64);
++
++fn require_freeze<T: FreezeMarker>() {}
++
++fn cut_merge_order_violation() -> ! {
++    // Exact existing helper-contract replacement: cover the boundary before cutting the abort.
++    kani::cover(true, "helper contract merge order violation reachable");
++    kani::assume(false);
++    unreachable!()
++}
++
++macro_rules! noncopy_values {
++    ($($ignored:ident),+ $(,)?) => {
++        [$( { let _ = stringify!($ignored); A1FreezeNonCopy(kani::any()) } ),+]
++    };
++}
++
++macro_rules! stable_u64_case {
++    ($name:ident, $n:literal) => {
++        #[kani::proof]
++        #[kani::stub(super::super::panic_on_ord_violation, cut_merge_order_violation)]
++        #[kani::unwind(34)]
++        fn $name() {
++            let mut backing: [u64; $n + 2] = kani::any();
++            let original = backing;
++            let values = &mut backing[1..$n + 1];
++            let mut scratch = [MaybeUninit::<u64>::uninit(); 48];
++            assert!(values.len() == $n && scratch.len() == 48);
++            assert!(<u64 as StableSmallSortTypeImpl>::small_sort_threshold() == 32);
++            assert!(!kani::mem::same_allocation(
++                values.as_ptr(),
++                scratch.as_ptr().cast::<u64>(),
++            ));
++            let mut less = |left: &u64, right: &u64| {
++                // SAFETY: the actual comparator arguments are initialized sort elements.
++                unsafe {
++                    ptr::read_volatile(left);
++                    ptr::read_volatile(right);
++                }
++                kani::cover(true, "stable comparator reads both actual arguments");
++                kani::any()
++            };
++            kani::cover(true, "stable actual-body call begins");
++            <u64 as StableSmallSortTypeImpl>::small_sort(values, &mut scratch, &mut less);
++            kani::cover(true, "stable actual-body call returns");
++            for value in values.iter() {
++                // SAFETY: every active output was initialized before sorting.
++                unsafe { ptr::read_volatile(value); }
++            }
++            assert!(backing[0] == original[0] && backing[$n + 1] == original[$n + 1]);
++            kani::cover(true, "all active stable outputs were volatile-read");
++        }
++    };
++}
++
++macro_rules! unstable_noncopy_case {
++    ($name:ident, $n:literal, $($slot:ident),+ $(,)?) => {
++        #[kani::proof]
++        #[kani::stub(super::super::panic_on_ord_violation, cut_merge_order_violation)]
++        #[kani::unwind(34)]
++        fn $name() {
++            require_freeze::<A1FreezeNonCopy>();
++            let mut backing: [A1FreezeNonCopy; $n + 2] = noncopy_values!($($slot),+);
++            let left_guard = backing[$n].0;
++            let right_guard = backing[$n + 1].0;
++            let values = &mut backing[..$n];
++            assert!(values.len() == $n);
++            assert!(<A1FreezeNonCopy as UnstableSmallSortTypeImpl>::small_sort_threshold() == 32);
++            assert!(crate::mem::size_of::<A1FreezeNonCopy>() * 48 <= 4096);
++            let mut less = |left: &A1FreezeNonCopy, right: &A1FreezeNonCopy| {
++                // SAFETY: the actual comparator arguments are initialized sort elements.
++                unsafe {
++                    ptr::read_volatile(&left.0);
++                    ptr::read_volatile(&right.0);
++                }
++                kani::cover(true, "Freeze non-Copy comparator reads both actual arguments");
++                kani::any()
++            };
++            kani::cover(true, "Freeze non-Copy general actual-body call begins");
++            <A1FreezeNonCopy as UnstableSmallSortTypeImpl>::small_sort(
++                values,
++                &mut less,
++            );
++            kani::cover(true, "Freeze non-Copy general actual-body call returns");
++            for value in values.iter() {
++                // SAFETY: every active payload was initialized before sorting.
++                unsafe { ptr::read_volatile(&value.0); }
++            }
++            assert!(backing[$n].0 == left_guard && backing[$n + 1].0 == right_guard);
++            kani::cover(true, "all active general outputs were volatile-read");
++        }
++    };
++}
++
++macro_rules! unstable_network_case {
++    ($name:ident, $n:literal) => {
++        #[kani::proof]
++        #[kani::stub(super::super::panic_on_ord_violation, cut_merge_order_violation)]
++        #[kani::unwind(34)]
++        fn $name() {
++            let mut backing: [u64; 32] = kani::any();
++            let original = backing;
++            let mut less = |left: &u64, right: &u64| {
++                // SAFETY: the actual comparator arguments are initialized sort elements.
++                unsafe {
++                    ptr::read_volatile(left);
++                    ptr::read_volatile(right);
++                }
++                kani::cover(true, "network comparator reads both actual arguments");
++                kani::any()
++            };
++            assert!(<u64 as UnstableSmallSortTypeImpl>::small_sort_threshold() == 32);
++            assert!(super::super::has_efficient_in_place_swap::<u64>());
++            assert!(crate::mem::size_of::<u64>() * 32 <= 4096);
++            kani::cover(true, "Freeze Copy network actual-body call begins");
++            <u64 as UnstableSmallSortTypeImpl>::small_sort(
++                &mut backing[..$n],
++                &mut less,
++            );
++            kani::cover(true, "Freeze Copy network actual-body call returns");
++            for value in &backing[..$n] {
++                // SAFETY: every active output was initialized before sorting.
++                unsafe { ptr::read_volatile(value); }
++            }
++            for index in $n..32 {
++                assert!(backing[index] == original[index], "network input frame");
++            }
++            kani::cover(true, "all active network outputs were volatile-read");
++        }
++    };
++}
++
++stable_u64_case!(stable_freeze_u64_n8, 8);
++stable_u64_case!(stable_freeze_u64_n16, 16);
++stable_u64_case!(stable_freeze_u64_n32, 32);
++
++unstable_noncopy_case!(
++    unstable_general_nocopy_u64_n8,
++    8,
++    a, b, c, d, e, f, g, h, i, j,
++);
++unstable_noncopy_case!(
++    unstable_general_nocopy_u64_n16,
++    16,
++    a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r,
++);
++unstable_noncopy_case!(
++    unstable_general_nocopy_u64_n32,
++    32,
++    a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p,
++    q, r, s, t, u, v, w, x, y, z, aa, ab, ac, ad, ae, af, ag, ah,
++);
++
++unstable_network_case!(unstable_network_u64_n18, 18);
++unstable_network_case!(unstable_network_u64_n32, 32);
