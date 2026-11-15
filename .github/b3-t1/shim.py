@@ -71,7 +71,8 @@ def cbmc(args):
            "argv": args, "input_sha256": record["sha256"], "exit": 86, "sat": "NOT_RUN"})
     # Valid parser input, no result array/prover status. Kani reports Failure/Other(86)
     # and continues (stock perf has no --fail-fast). Never manufacture verification success.
-    print(json.dumps([{"messageType": "ERROR", "messageText": "B3 T1 CAPTURE ONLY; SAT NOT_RUN; exit 86"}]))
+    # Kani's CBMC output parser is line-based: "[" and "]" alone on a line, items closed by "  }".
+    print(json.dumps([{"messageType": "ERROR", "messageText": "B3 T1 CAPTURE ONLY; SAT NOT_RUN; exit 86"}], indent=2))
     return 86
 
 
