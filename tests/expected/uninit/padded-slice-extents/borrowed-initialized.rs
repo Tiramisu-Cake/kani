@@ -34,7 +34,8 @@ fn borrowed_slice_cross_slot_initialized() {
     unsafe { slots.as_mut_ptr().cast::<u8>().write_bytes(0x5a, initialized_prefix) };
     let borrowed: &[MaybeUninit<Padded>] = &slots;
     let second = unsafe { borrowed.get_unchecked(1) };
-    let crossed_byte = unsafe { second.as_ptr().cast::<u8>().add(value_offset + 2).read_volatile() };
+    let crossed_byte =
+        unsafe { second.as_ptr().cast::<u8>().add(value_offset + 2).read_volatile() };
     let byte = unsafe { second.as_ptr().cast::<u8>().add(value_offset + 3).read() };
     assert_eq!(crossed_byte, 0x5a);
     assert_eq!(byte, 0x5a);

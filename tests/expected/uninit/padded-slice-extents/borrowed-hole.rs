@@ -39,7 +39,8 @@ fn borrowed_slice_cross_slot_hole() {
     let first_value = unsafe { std::ptr::addr_of!((*first.as_ptr()).value).read_volatile() };
     assert_eq!(first_value, 0x5a5a_5a5a);
     let second = unsafe { borrowed.get_unchecked(1) };
-    let crossed_byte = unsafe { second.as_ptr().cast::<u8>().add(value_offset + 2).read_volatile() };
+    let crossed_byte =
+        unsafe { second.as_ptr().cast::<u8>().add(value_offset + 2).read_volatile() };
     assert_eq!(crossed_byte, 0x5a);
     let _hole = unsafe { second.as_ptr().cast::<u8>().add(value_offset + 3).read() };
 }

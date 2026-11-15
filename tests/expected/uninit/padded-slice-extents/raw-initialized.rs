@@ -35,7 +35,8 @@ fn raw_slice_cross_slot_initialized() {
     let raw_slice = std::ptr::slice_from_raw_parts(slots.as_ptr(), slots.len());
     let borrowed = unsafe { &*raw_slice };
     let second = unsafe { borrowed.get_unchecked(1) };
-    let crossed_byte = unsafe { second.as_ptr().cast::<u8>().add(value_offset + 2).read_volatile() };
+    let crossed_byte =
+        unsafe { second.as_ptr().cast::<u8>().add(value_offset + 2).read_volatile() };
     let byte = unsafe { second.as_ptr().cast::<u8>().add(value_offset + 3).read() };
     assert_eq!(crossed_byte, 0x5a);
     assert_eq!(byte, 0x5a);
