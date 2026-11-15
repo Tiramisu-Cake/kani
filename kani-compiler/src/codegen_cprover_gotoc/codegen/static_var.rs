@@ -20,12 +20,13 @@ impl GotocCtx<'_, '_> {
         let alloc = def.eval_initializer().unwrap();
         let symbol_name = Instance::from(def).mangled_name();
         self.codegen_alloc_in_memory(
-            alloc,
+            alloc.clone(),
             symbol_name,
             self.codegen_span_stable(def.span()),
             is_interior_mut(self.tcx, def.ty()),
             false,
         );
+        self.register_immutable_static(def, &alloc);
     }
 
     /// Mutates the Goto-C symbol table to add a forward-declaration of the static variable.

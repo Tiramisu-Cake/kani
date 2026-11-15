@@ -70,5 +70,10 @@ By leveraging the stubbing feature, we can replace the (expensive) `gcd` call wi
 > functions), or avoid calling the stubbed function from the `Arbitrary`
 > implementation.
 
+Whole immutable masks require the qualification described in the
+[uninitialized memory support](../../rust-feature-support.md#uninitialized-memory); unqualified nonzero-subrange
+or relocation origins may produce conservative false positives, while eligible aliases
+and independently supported static paths can succeed.
+
 There is far more to learn about contracts.
 We highly recommend reading our [blog post about contracts](https://model-checking.github.io/kani-verifier-blog/2024/01/29/function-contracts.html) (from which this `gcd` example is taken). We also recommend looking at the `contracts` module in our [documentation](../../crates/index.md).
