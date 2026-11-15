@@ -12,6 +12,7 @@ import subprocess
 import sys
 import textwrap
 import tempfile
+import tomllib
 import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -50,6 +51,17 @@ def main() -> int:
         ast.parse(script.read_text(), filename=str(script))
     for script in SCRIPTS.glob("*.sh"):
         subprocess.run(["bash", "-n", str(script)], check=True)
+    arm_a = (SCRIPTS / "run_arm_a.sh").read_text()
+    package = tomllib.loads((ROOT / "kani-compiler/Cargo.toml").read_text())
+    assert package["package"]["name"] == "kani-compiler"
+    # With no explicit [[bin]] section Cargo uses src/main.rs and the package name.
+    assert not package.get("bin")
+    assert (ROOT / "kani-compiler/src/main.rs").is_file()
+    assert "./scripts/kani-fmt.sh --check" in arm_a
+    assert "cargo fmt --all" not in arm_a
+    assert "cargo test -p kani-compiler --bin kani-compiler" in arm_a
+    assert "cargo test -p kani-compiler --lib" not in arm_a
+    assert "kani_middle" not in arm_a
     inline_scripts = [textwrap.dedent(code) for code in re.findall(r"python3 - <<'PY'\n(.*?)\n\s+PY", text, re.S)]
     for inline in inline_scripts:
         ast.parse(inline)

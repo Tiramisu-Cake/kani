@@ -8,10 +8,10 @@ export KANI_REPO="$repo"
 export PATH="$repo/scripts:$PATH"
 cd "$repo"
 
-cargo fmt --all -- --check
+./scripts/kani-fmt.sh --check
 cargo build-dev
 cargo clippy --workspace --tests -- -D warnings
-cargo test -p kani-compiler --lib
+cargo test -p kani-compiler --bin kani-compiler
 cargo build -p compiletest
 
 compiletest="$repo/target/debug/compiletest"
