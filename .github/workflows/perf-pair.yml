@@ -1,0 +1,35 @@
+# Copyright Kani Contributors
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+# CI-only: the upstream Kani CI perf job, unchanged except for a memory log, run on a pushed head.
+name: Perf pair (upstream perf job + memory log)
+on:
+  push:
+    branches:
+      - 'ci/b3-perf-pair-**'
+
+env:
+  RUST_BACKTRACE: 1
+
+jobs:
+  perf:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 380
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout Kani
+        uses: actions/checkout@v6
+
+      - name: Setup Kani Dependencies
+        uses: ./.github/actions/setup
+        with:
+          os: ubuntu-24.04
+
+      - name: Execute Kani performance tests
+        uses: nick-fields/retry@v4
+        with:
+          timeout_minutes: 180
+          max_attempts: 2
+          command: bash .github/perfpair/run.sh
+        env:
+          RUST_TEST_THREADS: 1
