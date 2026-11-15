@@ -1,0 +1,5 @@
+Checking harness immutable_relocation_hole...
+Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type
+VERIFICATION:- FAILED
+Verification failed for - immutable_relocation_hole
+Complete - 0 successfully verified harnesses, 1 failures, 1 total.

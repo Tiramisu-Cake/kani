@@ -137,6 +137,8 @@ pub enum KaniModel {
     CheckUpperExpFmt,
     #[strum(serialize = "CheckUpperHexFmtModel")]
     CheckUpperHexFmt,
+    #[strum(serialize = "BeginArgumentTransferModel")]
+    BeginArgumentTransfer,
     #[strum(serialize = "CopyInitStateModel")]
     CopyInitState,
     #[strum(serialize = "CopyInitStateSingleModel")]
@@ -406,5 +408,29 @@ pub fn validate_kani_functions(kani_funcs: &HashMap<KaniFunction, FnDef>) {
     // See https://github.com/model-checking/kani/issues/3906 for why this is required.
     if missing != 0 {
         tracing::error!("Failed to find `{missing}` Kani functions")
+    }
+}
+
+#[cfg(test)]
+mod marker_category_tests {
+    use super::*;
+
+    #[test]
+    fn typed_marker_categories_remain_distinct() {
+        for hook in KaniHook::iter() {
+            let marker: &'static str = hook.into();
+            assert_eq!(try_get_kani_function(marker), Some(KaniFunction::Hook(hook)));
+        }
+        for model in KaniModel::iter() {
+            let marker: &'static str = model.into();
+            assert_eq!(try_get_kani_function(marker), Some(KaniFunction::Model(model)));
+        }
+        for intrinsic in KaniIntrinsic::iter() {
+            let marker: &'static str = intrinsic.into();
+            assert_eq!(try_get_kani_function(marker), Some(KaniFunction::Intrinsic(intrinsic)));
+        }
+        for marker in ["ShadowTransferControl", "UnknownHook", "kani_register_loop_contract", ""] {
+            assert_eq!(try_get_kani_function(marker), None);
+        }
     }
 }

@@ -1,0 +1,11 @@
+Checking harness copy_same_source_to_arg1_initialized...
+copy_same_source_to_arg1_initialized.assertion.1\
+ - Status: SUCCESS\
+ - Description: "assertion failed: selected == 0x5678"
+copy_same_source_to_arg1_initialized.assertion.2\
+ - Status: SUCCESS\
+ - Description: "assertion failed: original_after_call == 0x5678"
+SUMMARY:\
+ ** 0 of
+VERIFICATION:- SUCCESSFUL
+Complete - 1 successfully verified harnesses, 0 failures, 1 total.

@@ -1,0 +1,4 @@
+Checking harness nested_pat_does_not_initialize_prefix_padding...
+Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type `u8`
+VERIFICATION:- FAILED
+Complete - 0 successfully verified harnesses, 1 failures, 1 total.

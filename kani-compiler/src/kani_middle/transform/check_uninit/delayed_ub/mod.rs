@@ -177,6 +177,7 @@ impl GlobalPass for DelayedUbPass {
                     tcx,
                 );
                 let (instrumentation_added, body) = UninitInstrumenter::run(
+                    tcx,
                     body,
                     instance,
                     self.safety_check_type.clone(),

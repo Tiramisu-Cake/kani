@@ -1,0 +1,8 @@
+Checking harness marked_body_initialized...
+marked_body_initialized.assertion.1\
+ - Status: SUCCESS\
+ - Description: "assertion failed: unsafe { initialized.assume_init_read() } == 29"
+SUMMARY:\
+ ** 0 of
+VERIFICATION:- SUCCESSFUL
+Complete - 1 successfully verified harnesses, 0 failures, 1 total.

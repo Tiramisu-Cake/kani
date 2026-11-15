@@ -1,0 +1,3 @@
+Checking harness typed_padding_hole...
+Failed Checks: Undefined Behavior: Reading from an uninitialized pointer
+VERIFICATION:- FAILED

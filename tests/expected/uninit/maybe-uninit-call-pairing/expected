@@ -1,0 +1,21 @@
+Checking harness initialized_argument_return_control...
+VERIFICATION:- SUCCESSFUL
+Checking harness nested_same_size_calls_preserve_selected_uninit...
+Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type `u16`
+VERIFICATION:- FAILED
+Verification failed for - nested_same_size_calls_preserve_selected_uninit
+Checking harness repeated_call_unread_uninit_then_initialized_return...
+VERIFICATION:- SUCCESSFUL
+Checking harness selected_first_argument_reads_uninit...
+Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type `u16`
+VERIFICATION:- FAILED
+Verification failed for - selected_first_argument_reads_uninit
+Checking harness selected_last_argument_reads_uninit...
+Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type `u16`
+VERIFICATION:- FAILED
+Verification failed for - selected_last_argument_reads_uninit
+Checking harness selected_middle_argument_reads_uninit...
+Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type `u16`
+VERIFICATION:- FAILED
+Verification failed for - selected_middle_argument_reads_uninit
+Complete - 2 successfully verified harnesses, 4 failures, 6 total.

@@ -55,6 +55,16 @@ pub enum PointeeLayout {
 }
 
 impl PointeeLayout {
+    /// Size of the complete storage accepted by the sized argument/return protocol.
+    /// `maybe_size` also returns element sizes and must not be used for this admission.
+    pub(super) fn argument_size(&self) -> Option<usize> {
+        match self {
+            Self::Sized { layout } => Some(layout.len()),
+            Self::Union { field_layouts } => field_layouts.iter().map(Vec::len).max(),
+            Self::Slice { .. } | Self::TraitObject => None,
+        }
+    }
+
     /// Returns the size of the layout, if available.
     pub fn maybe_size(&self) -> Option<usize> {
         match self {
@@ -128,6 +138,44 @@ pub(super) fn maybe_uninit_storage(tcx: TyCtxt, ty: Ty) -> Option<Ty> {
 }
 
 impl PointeeInfo {
+    /// Deinitializing a sized call operand clears its entire storage, regardless of field masks.
+    pub(super) fn for_deinit(ty: Ty) -> Result<Self, LayoutComputationError> {
+        let layout = ty.layout().map_err(|_| LayoutComputationError::UnknownUnsizedLayout(ty))?;
+        if !layout.shape().is_sized() {
+            return Err(LayoutComputationError::UnknownUnsizedLayout(ty));
+        }
+        let size = layout.shape().size.bytes();
+        Ok(Self { pointee_ty: ty, layout: PointeeLayout::Sized { layout: vec![true; size] } })
+    }
+
+    /// Typed slot transfers preserve only payload data, at the rustc stride of each slot.
+    pub(super) fn for_typed_storage(tcx: TyCtxt, ty: Ty) -> Result<Self, LayoutComputationError> {
+        let inner = maybe_uninit_storage(tcx, ty).unwrap();
+        let data_chunks = data_bytes_for_ty(&MachineInfo::target(), inner, 0)?;
+        let layout = match ty.kind() {
+            TyKind::RigidTy(RigidTy::Slice(slot)) => {
+                let stride = slot.layout().unwrap().shape().size.bytes();
+                PointeeLayout::Slice { element_layout: generate_byte_mask(stride, data_chunks) }
+            }
+            TyKind::RigidTy(RigidTy::Array(_, _)) => {
+                let shape = ty.layout().unwrap().shape();
+                let FieldsShape::Array { stride, count } = shape.fields else { unreachable!() };
+                let slot_mask = generate_byte_mask(stride.bytes(), data_chunks);
+                let mut layout = vec![false; shape.size.bytes()];
+                for index in 0..usize::try_from(count).unwrap() {
+                    let offset = index * stride.bytes();
+                    layout[offset..offset + stride.bytes()].copy_from_slice(&slot_mask);
+                }
+                PointeeLayout::Sized { layout }
+            }
+            _ => {
+                let size = ty.layout().unwrap().shape().size.bytes();
+                PointeeLayout::Sized { layout: generate_byte_mask(size, data_chunks) }
+            }
+        };
+        Ok(Self { pointee_ty: ty, layout })
+    }
+
     /// Layout for copying storage or writing every byte with a bytewise intrinsic.
     pub(super) fn for_storage(tcx: TyCtxt, ty: Ty) -> Result<Self, LayoutComputationError> {
         let inner = maybe_uninit_storage(tcx, ty).unwrap();
@@ -488,4 +536,24 @@ fn tys_layout_cmp_to_size(from_ty: &Ty, to_ty: &Ty, cmp: impl Fn(bool, bool) -> 
         }
     };
     false
+}
+
+#[cfg(test)]
+mod argument_size_tests {
+    use super::PointeeLayout;
+
+    #[test]
+    fn transfer_requires_complete_sized_storage() {
+        assert_eq!(PointeeLayout::Sized { layout: vec![] }.argument_size(), Some(0));
+        assert_eq!(
+            PointeeLayout::Union { field_layouts: vec![vec![], vec![true, false]] }.argument_size(),
+            Some(2)
+        );
+        // Even a known nonzero element size cannot stand in for a by-value slice size.
+        let slice = PointeeLayout::Slice { element_layout: vec![true, false] };
+        assert_eq!(slice.maybe_size(), Some(2));
+        assert_eq!(slice.argument_size(), None);
+        assert_eq!(PointeeLayout::Slice { element_layout: vec![] }.argument_size(), None);
+        assert_eq!(PointeeLayout::TraitObject.argument_size(), None);
+    }
 }

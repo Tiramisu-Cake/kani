@@ -18,9 +18,6 @@ macro_rules! kani_mem_init {
         #[kanitool::fn_marker = "KaniMemoryInitializationState"]
         static mut MEM_INIT_STATE: MemoryInitializationState = MemoryInitializationState::new();
 
-        /// Global object for tracking union initialization state across function boundaries.
-        static mut ARGUMENT_BUFFER: Option<ArgumentBuffer> = None;
-
         /// Bytewise mask, representing which bytes of a type are data and which are padding.
         /// For example, for a type like this:
         /// ```
@@ -38,13 +35,43 @@ macro_rules! kani_mem_init {
             pub tracked_object_id: usize,
             pub tracked_offset: usize,
             pub value: bool,
+            /// Shadow initialization state currently being transferred across a function boundary.
+            /// Keep it in the marked state object so DFCC treats it as verifier-private state.
+            pub argument_buffer_active: bool,
+            pub argument_buffer_selected_argument: usize,
+            pub argument_buffer_signature: usize,
+            pub argument_buffer_count: usize,
+            pub argument_buffer_written: usize,
+            pub argument_buffer_remaining: usize,
+            pub argument_buffer_last_stored: usize,
+            pub argument_buffer_last_loaded: usize,
+            pub argument_buffer_has_witness: bool,
+            pub argument_buffer_value: bool,
+            pub argument_buffer_relative_offset: usize,
+            pub argument_buffer_layout_size: usize,
         }
 
         impl MemoryInitializationState {
             /// This is a dummy initialization function -- the values will be eventually overwritten by a
             /// call to `initialize_memory_initialization_state`.
             pub const fn new() -> Self {
-                Self { tracked_object_id: 0, tracked_offset: 0, value: false }
+                Self {
+                    tracked_object_id: 0,
+                    tracked_offset: 0,
+                    value: false,
+                    argument_buffer_active: false,
+                    argument_buffer_selected_argument: 0,
+                    argument_buffer_signature: 0,
+                    argument_buffer_count: 0,
+                    argument_buffer_written: 0,
+                    argument_buffer_remaining: 0,
+                    argument_buffer_last_stored: 0,
+                    argument_buffer_last_loaded: 0,
+                    argument_buffer_has_witness: false,
+                    argument_buffer_value: false,
+                    argument_buffer_relative_offset: 0,
+                    argument_buffer_layout_size: 0,
+                }
             }
 
             /// Return currently tracked memory initialization state if `ptr` points to the currently
@@ -94,21 +121,46 @@ macro_rules! kani_mem_init {
                 }
             }
 
-            /// Copy memory initialization state by non-deterministically switching the tracked object and
-            /// adjusting the tracked offset.
+            /// Copy memory initialization state by non-deterministically switching the tracked object
+            /// and adjusting the tracked offset. Only bytes selected by `layout` preserve their state.
             #[kanitool::disable_checks(pointer)]
             pub fn copy<const LAYOUT_SIZE: usize>(
                 &mut self,
                 from_ptr: *const u8,
                 to_ptr: *const u8,
                 num_elts: usize,
+                layout: Layout<LAYOUT_SIZE>,
             ) {
                 let from_obj = super::mem::pointer_object(from_ptr);
                 let from_offset = super::mem::pointer_offset(from_ptr);
-
                 let to_obj = super::mem::pointer_object(to_ptr);
                 let to_offset = super::mem::pointer_offset(to_ptr);
+                self.copy_by_id::<LAYOUT_SIZE>(
+                    from_obj,
+                    from_offset,
+                    to_obj,
+                    to_offset,
+                    num_elts,
+                    layout,
+                );
+            }
 
+            /// Copy initialization state using object identities and offsets captured while the
+            /// source pointer was live. This also supports return-value transfers, whose source
+            /// stack slot is no longer live when the caller consumes the argument buffer.
+            #[kanitool::disable_checks(pointer)]
+            pub fn copy_by_id<const LAYOUT_SIZE: usize>(
+                &mut self,
+                from_obj: usize,
+                from_offset: usize,
+                to_obj: usize,
+                to_offset: usize,
+                num_elts: usize,
+                layout: Layout<LAYOUT_SIZE>,
+            ) {
+                if LAYOUT_SIZE == 0 {
+                    return;
+                }
                 if self.tracked_object_id == from_obj
                     && self.tracked_offset >= from_offset
                     && self.tracked_offset < from_offset + num_elts * LAYOUT_SIZE
@@ -116,27 +168,19 @@ macro_rules! kani_mem_init {
                     let should_reset: bool = super::any();
                     if should_reset {
                         self.tracked_object_id = to_obj;
-                        self.tracked_offset += to_offset - from_offset;
-                        // Note that this preserves the value.
+                        self.tracked_offset = to_offset + (self.tracked_offset - from_offset);
+                        // A preserve mask never initializes a source byte. It discards padding.
+                        self.value &= layout[(self.tracked_offset - to_offset) % LAYOUT_SIZE];
+                        return;
                     }
-                } else {
-                    self.bless::<LAYOUT_SIZE>(to_ptr, 1);
                 }
-            }
-
-            /// Set currently tracked memory initialization state to `true` if `ptr` points to the
-            /// currently tracked object and the tracked offset lies within `LAYOUT_SIZE * num_elts`
-            /// bytes of `ptr`.
-            #[kanitool::disable_checks(pointer)]
-            pub fn bless<const LAYOUT_SIZE: usize>(&mut self, ptr: *const u8, num_elts: usize) {
-                let obj = super::mem::pointer_object(ptr);
-                let offset = super::mem::pointer_offset(ptr);
-
-                if self.tracked_object_id == obj
-                    && self.tracked_offset >= offset
-                    && self.tracked_offset < offset + num_elts * LAYOUT_SIZE
+                // If this path did not follow the source byte, do not retain the old state of
+                // overwritten destination bytes. Their new state is checked on the source path.
+                if self.tracked_object_id == to_obj
+                    && self.tracked_offset >= to_offset
+                    && self.tracked_offset < to_offset + num_elts * LAYOUT_SIZE
                 {
-                    self.value = true;
+                    self.value = layout[(self.tracked_offset - to_offset) % LAYOUT_SIZE];
                 }
             }
 
@@ -198,6 +242,9 @@ macro_rules! kani_mem_init {
                 MEM_INIT_STATE.tracked_object_id = super::any();
                 MEM_INIT_STATE.tracked_offset = super::any();
                 MEM_INIT_STATE.value = false;
+                MEM_INIT_STATE.argument_buffer_active = false;
+                MEM_INIT_STATE.argument_buffer_selected_argument = usize::MAX;
+                MEM_INIT_STATE.argument_buffer_has_witness = false;
             }
         }
 
@@ -346,66 +393,159 @@ macro_rules! kani_mem_init {
                     from_ptr as *const u8,
                     to_ptr as *const u8,
                     num_elts,
+                    [true; LAYOUT_SIZE],
                 );
             }
         }
 
-        /// Copy initialization state of `size_of::<T>` bytes from one pointer to the other. Note that in
-        /// this case `LAYOUT_SIZE == size_of::<T>`.
+        /// Transfer one typed value's initialization state, preserving only bytes selected by `layout`.
+        /// In this case `LAYOUT_SIZE == size_of::<T>`.
         #[kanitool::disable_checks(pointer)]
         #[kanitool::fn_marker = "CopyInitStateSingleModel"]
-        fn copy_init_state_single<const LAYOUT_SIZE: usize, T>(from: *const T, to: *const T) {
-            copy_init_state::<LAYOUT_SIZE, T>(from, to, 1);
+        fn copy_init_state_single<const LAYOUT_SIZE: usize, T>(
+            from: *const T,
+            to: *const T,
+            layout: Layout<LAYOUT_SIZE>,
+        ) {
+            if LAYOUT_SIZE == 0 {
+                return;
+            }
+            let (from_ptr, _) = from.to_raw_parts();
+            let (to_ptr, _) = to.to_raw_parts();
+            unsafe {
+                MEM_INIT_STATE.copy::<LAYOUT_SIZE>(
+                    from_ptr as *const u8,
+                    to_ptr as *const u8,
+                    1,
+                    layout,
+                );
+            }
         }
 
-        /// Information about currently tracked argument, used for passing union initialization
-        /// state across function boundaries. This struct is written to by the caller and read from
-        /// by the callee.
-        #[derive(Clone, Copy)]
-        struct ArgumentBuffer {
-            selected_argument: usize,
-            saved_address: *const (),
-            layout_size: usize,
+        /// Start one current-call protocol. No selected witness is different from no protocol.
+        /// The callee consumes every load before executing its body, so nested/recursive calls
+        /// need no stack of buffers. A normal return creates a separate, mandatory index-0 pair.
+        #[kanitool::fn_marker = "BeginArgumentTransferModel"]
+        fn begin_argument_transfer(signature: usize, argument_count: usize) {
+            unsafe {
+                assert!(!MEM_INIT_STATE.argument_buffer_active, "unfinished shadow transfer");
+                assert!(argument_count > 0);
+                MEM_INIT_STATE.argument_buffer_active = true;
+                MEM_INIT_STATE.argument_buffer_signature = signature;
+                MEM_INIT_STATE.argument_buffer_count = argument_count;
+                MEM_INIT_STATE.argument_buffer_written = 0;
+                MEM_INIT_STATE.argument_buffer_remaining = argument_count;
+                MEM_INIT_STATE.argument_buffer_last_stored = 0;
+                MEM_INIT_STATE.argument_buffer_last_loaded = 0;
+                MEM_INIT_STATE.argument_buffer_selected_argument = usize::MAX;
+                MEM_INIT_STATE.argument_buffer_has_witness = false;
+            }
         }
 
-        /// Non-deterministically store information about currently tracked argument in the argument
-        /// buffer.
+        /// Snapshot the witness while the source is live and BEFORE Call(Move) deinitializes it.
+        /// All shadow arguments compete for one slot; no source state is reread at callee entry.
         #[kanitool::disable_checks(pointer)]
         #[kanitool::fn_marker = "StoreArgumentModel"]
-        fn store_argument<const LAYOUT_SIZE: usize, T>(from: *const T, selected_argument: usize) {
+        fn store_argument<const LAYOUT_SIZE: usize, T>(
+            from: *const T,
+            selected_argument: usize,
+            signature: usize,
+        ) {
             let (from_ptr, _) = from.to_raw_parts();
-            let should_store: bool = super::any();
-            if should_store {
-                unsafe {
-                    ARGUMENT_BUFFER = Some(ArgumentBuffer {
-                        selected_argument,
-                        saved_address: from_ptr,
-                        layout_size: LAYOUT_SIZE,
-                    })
+            let from_object = super::mem::pointer_object(from_ptr);
+            let from_offset = super::mem::pointer_offset(from_ptr);
+            unsafe {
+                if selected_argument == 0 {
+                    assert!(!MEM_INIT_STATE.argument_buffer_active, "unfinished shadow transfer");
+                    MEM_INIT_STATE.argument_buffer_active = true;
+                    MEM_INIT_STATE.argument_buffer_signature = signature;
+                    MEM_INIT_STATE.argument_buffer_count = 0;
+                    MEM_INIT_STATE.argument_buffer_remaining = 1;
+                    MEM_INIT_STATE.argument_buffer_written = 1;
+                    MEM_INIT_STATE.argument_buffer_last_loaded = 0;
+                } else {
+                    assert!(
+                        MEM_INIT_STATE.argument_buffer_active,
+                        "missing shadow transfer protocol"
+                    );
+                    assert!(MEM_INIT_STATE.argument_buffer_signature == signature);
+                    assert!(MEM_INIT_STATE.argument_buffer_count > 0);
+                    assert!(
+                        MEM_INIT_STATE.argument_buffer_written
+                            < MEM_INIT_STATE.argument_buffer_count
+                    );
+                    assert!(MEM_INIT_STATE.argument_buffer_last_stored < selected_argument);
+                    MEM_INIT_STATE.argument_buffer_last_stored = selected_argument;
+                    MEM_INIT_STATE.argument_buffer_written += 1;
+                }
+                // Return zero is mandatory; arguments are a demonic choice, including none.
+                if selected_argument == 0 || super::any() {
+                    MEM_INIT_STATE.argument_buffer_selected_argument = selected_argument;
+                    MEM_INIT_STATE.argument_buffer_layout_size = LAYOUT_SIZE;
+                    MEM_INIT_STATE.argument_buffer_has_witness = MEM_INIT_STATE.tracked_object_id
+                        == from_object
+                        && MEM_INIT_STATE.tracked_offset >= from_offset
+                        && MEM_INIT_STATE.tracked_offset - from_offset < LAYOUT_SIZE;
+                    MEM_INIT_STATE.argument_buffer_relative_offset =
+                        MEM_INIT_STATE.tracked_offset.wrapping_sub(from_offset);
+                    MEM_INIT_STATE.argument_buffer_value = MEM_INIT_STATE.value;
                 }
             }
         }
 
-        /// Load information from the argument buffer (if the argument position matches) via copying
-        /// the memory initialization information from an address in the caller to an address in the
-        /// callee. Otherwise, mark that the argument as initialized, as it will be checked by
-        /// another non-deterministic branch. Reset the argument buffer after loading from it.
+        /// Consume the current protocol only. Unselected arguments get data-byte initialization
+        /// because another demonic path selects their source. Missing/mismatched protocol and
+        /// missing return zero are errors, never an initialized fallback.
         #[kanitool::disable_checks(pointer)]
         #[kanitool::fn_marker = "LoadArgumentModel"]
-        fn load_argument<const LAYOUT_SIZE: usize, T>(to: *const T, selected_argument: usize) {
+        fn load_argument<const LAYOUT_SIZE: usize, T>(
+            to: *const T,
+            selected_argument: usize,
+            signature: usize,
+            argument_count: usize,
+            layout: Layout<LAYOUT_SIZE>,
+        ) {
             let (to_ptr, _) = to.to_raw_parts();
-            if let Some(buffer) = unsafe { ARGUMENT_BUFFER } {
-                if buffer.selected_argument == selected_argument {
-                    assert!(buffer.layout_size == LAYOUT_SIZE);
-                    copy_init_state_single::<LAYOUT_SIZE, ()>(buffer.saved_address, to_ptr);
-                    unsafe {
-                        ARGUMENT_BUFFER = None;
-                    }
-                    return;
-                }
-            }
             unsafe {
-                MEM_INIT_STATE.bless::<LAYOUT_SIZE>(to_ptr as *const u8, 1);
+                assert!(MEM_INIT_STATE.argument_buffer_active, "missing shadow transfer protocol");
+                assert!(MEM_INIT_STATE.argument_buffer_signature == signature);
+                assert!(MEM_INIT_STATE.argument_buffer_count == argument_count);
+                assert!(MEM_INIT_STATE.argument_buffer_remaining > 0);
+                if selected_argument == 0 {
+                    assert!(argument_count == 0);
+                    assert!(MEM_INIT_STATE.argument_buffer_written == 1);
+                    assert!(
+                        MEM_INIT_STATE.argument_buffer_selected_argument == 0,
+                        "missing shadow return"
+                    );
+                } else {
+                    assert!(argument_count > 0);
+                    assert!(MEM_INIT_STATE.argument_buffer_written == argument_count);
+                    assert!(MEM_INIT_STATE.argument_buffer_last_loaded < selected_argument);
+                    MEM_INIT_STATE.argument_buffer_last_loaded = selected_argument;
+                }
+                let selected =
+                    MEM_INIT_STATE.argument_buffer_selected_argument == selected_argument;
+                if selected {
+                    assert!(MEM_INIT_STATE.argument_buffer_layout_size == LAYOUT_SIZE);
+                    MEM_INIT_STATE.argument_buffer_selected_argument = usize::MAX;
+                }
+                if selected && MEM_INIT_STATE.argument_buffer_has_witness && super::any() {
+                    let relative_offset = MEM_INIT_STATE.argument_buffer_relative_offset;
+                    MEM_INIT_STATE.tracked_object_id = super::mem::pointer_object(to_ptr);
+                    MEM_INIT_STATE.tracked_offset =
+                        super::mem::pointer_offset(to_ptr) + relative_offset;
+                    MEM_INIT_STATE.value =
+                        MEM_INIT_STATE.argument_buffer_value && layout[relative_offset];
+                } else {
+                    MEM_INIT_STATE.set::<LAYOUT_SIZE>(to_ptr as *const u8, layout, true);
+                }
+                MEM_INIT_STATE.argument_buffer_remaining -= 1;
+                if MEM_INIT_STATE.argument_buffer_remaining == 0 {
+                    assert!(MEM_INIT_STATE.argument_buffer_selected_argument == usize::MAX);
+                    MEM_INIT_STATE.argument_buffer_active = false;
+                    MEM_INIT_STATE.argument_buffer_has_witness = false;
+                }
             }
         }
     };

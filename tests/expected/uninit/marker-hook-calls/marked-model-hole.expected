@@ -1,0 +1,12 @@
+Checking harness marked_model_hole...
+marked_model_hole.assertion.1\
+ - Status: SUCCESS\
+ - Description: "assertion failed: unsafe { source.assume_init_read() } == 11"
+marked_model_hole.\
+ - Status: FAILURE\
+ - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u8`"
+SUMMARY:\
+ ** 1 of
+Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type `u8`
+VERIFICATION:- FAILED
+Complete - 0 successfully verified harnesses, 1 failures, 1 total.

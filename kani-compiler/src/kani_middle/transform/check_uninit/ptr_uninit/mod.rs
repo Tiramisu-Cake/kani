@@ -65,6 +65,7 @@ impl TransformPass for UninitPass {
 
         // Call a helper that performs the actual instrumentation.
         let (instrumentation_added, body) = UninitInstrumenter::run(
+            tcx,
             new_body.into(),
             instance,
             self.safety_check_type.clone(),

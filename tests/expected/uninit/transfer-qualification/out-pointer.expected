@@ -1,0 +1,6 @@
+Checking harness out_pointer_fully_written...
+VERIFICATION:- SUCCESSFUL
+Checking harness out_pointer_preserves_middle_hole...
+Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type `u8`
+VERIFICATION:- FAILED
+Complete - 1 successfully verified harnesses, 1 failures, 2 total.

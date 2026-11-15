@@ -1,0 +1,4 @@
+Checking harness argument_return...
+Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type `u16`
+VERIFICATION:- FAILED
+Complete - 0 successfully verified harnesses, 1 failures, 1 total.

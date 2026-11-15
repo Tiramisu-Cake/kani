@@ -1,0 +1,3 @@
+Checking harness reset_hole...
+Failed Checks: Undefined Behavior: Reading from an uninitialized pointer
+VERIFICATION:- FAILED

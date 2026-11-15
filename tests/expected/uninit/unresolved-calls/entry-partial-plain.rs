@@ -16,8 +16,10 @@ fn identity(value: u32) -> u32 {
     value
 }
 
-// No statements in bb0: preserve the entry LoadArgument and the Check
-// collected from the union field used as the call argument.
+// The first MIR block is empty: entry LoadArgument and the u32 union-field
+// read share the unresolved Call target. Only the byte field is runtime
+// initialized, so the u32 read spans initialized and uninitialized bytes; no
+// ordinary-union constant is used.
 #[custom_mir(dialect = "runtime", phase = "optimized")]
 #[inline(never)]
 unsafe fn indirect(value: Word, f: fn(u32) -> u32) -> u32 {
@@ -29,5 +31,5 @@ unsafe fn indirect(value: Word, f: fn(u32) -> u32) -> u32 {
 
 #[kani::proof]
 fn check() {
-    let _ = unsafe { indirect(Word { byte: 42 }, identity) };
+    let _ = unsafe { indirect(Word { byte: kani::any() }, identity) };
 }

@@ -1,0 +1,11 @@
+Checking harness borrowed_slice_cross_slot_initialized...
+borrowed_slice_cross_slot_initialized.assertion.\
+ - Status: SUCCESS\
+ - Description: "assertion failed: crossed_byte == 0x5a"
+borrowed_slice_cross_slot_initialized.assertion.\
+ - Status: SUCCESS\
+ - Description: "assertion failed: byte == 0x5a"
+SUMMARY:\
+ ** 0 of
+VERIFICATION:- SUCCESSFUL
+Complete - 1 successfully verified harnesses, 0 failures, 1 total.

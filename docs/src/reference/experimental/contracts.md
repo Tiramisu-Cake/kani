@@ -70,10 +70,29 @@ By leveraging the stubbing feature, we can replace the (expensive) `gcd` call wi
 > functions), or avoid calling the stubbed function from the `Arbitrary`
 > implementation.
 
-Whole immutable masks require the qualification described in the
-[uninitialized memory support](../../rust-feature-support.md#uninitialized-memory); unqualified nonzero-subrange
+## Limitations
+
+The limitations of
+[uninitialized memory support](../../rust-feature-support.md#uninitialized-memory)
+apply to ordinary proof harnesses as well as contract checks. Supported top-level
+`MaybeUninit` storage can transfer initialization state through direct ordinary MIR-body calls,
+including arguments and return values, when its data mask is computable.
+Whole immutable masks require the qualification described there; unqualified nonzero-subrange
 or relocation origins may produce conservative false positives, while eligible aliases
 and independently supported static paths can succeed.
+
+Initialization shadow transfer is also not implemented for by-value aggregates
+containing nested `MaybeUninit` or union slots, including call arguments and
+return values. This differs from passing a supported top-level slot. Whole-value
+assignments rejected by the nested-union layout check remain unsupported.
+For sized aggregates rejected by that check, calls with value-transfer effects
+conservatively reset the full storage shadow to uninitialized: the destination
+after a normal return, and a moved argument's source before the call. These
+resets do not transfer initialization state and may produce false positives.
+For example, repairing a moved source and returning an initialized slot inside
+a tuple may still report an uninitialized read. That result is a known false
+positive, not evidence of undefined behavior. Returning the slot directly avoids
+this nested aggregate boundary.
 
 There is far more to learn about contracts.
 We highly recommend reading our [blog post about contracts](https://model-checking.github.io/kani-verifier-blog/2024/01/29/function-contracts.html) (from which this `gcd` example is taken). We also recommend looking at the `contracts` module in our [documentation](../../crates/index.md).

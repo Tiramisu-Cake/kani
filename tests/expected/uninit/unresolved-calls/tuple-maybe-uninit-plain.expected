@@ -1,0 +1,5 @@
+Checking harness tuple_maybe_uninit_layout_is_unsupported...
+Failed Checks: Checking memory initialization of type (std::mem::MaybeUninit<u16>,) is not supported.
+VERIFICATION:- FAILED
+Verification failed for - tuple_maybe_uninit_layout_is_unsupported
+Complete - 0 successfully verified harnesses, 1 failures, 1 total.

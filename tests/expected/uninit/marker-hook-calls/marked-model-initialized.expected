@@ -1,0 +1,11 @@
+Checking harness marked_model_initialized...
+marked_model_initialized.assertion.1\
+ - Status: SUCCESS\
+ - Description: "assertion failed: unsafe { source.assume_init_read() } == 11"
+marked_model_initialized.assertion.2\
+ - Status: SUCCESS\
+ - Description: "assertion failed: unsafe { result.byte } == 41"
+SUMMARY:\
+ ** 0 of
+VERIFICATION:- SUCCESSFUL
+Complete - 1 successfully verified harnesses, 0 failures, 1 total.

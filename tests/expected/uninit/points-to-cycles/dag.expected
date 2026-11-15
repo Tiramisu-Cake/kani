@@ -1,0 +1,6 @@
+Checking harness diamond_two_inputs...
+VERIFICATION:- SUCCESSFUL
+Checking harness repeated_callee_preserves_hole...
+Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type
+VERIFICATION:- FAILED
+Complete - 1 successfully verified harnesses, 1 failures, 2 total.
