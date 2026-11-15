@@ -127,7 +127,7 @@ def main(source, out):
     shim_dir.mkdir()
     for name in ("cargo", "cbmc", "goto-cc", "goto-instrument", "kissat"):
         (shim_dir / name).symlink_to(bundle / "shim.py")
-    os.environ.update(T1_REAL_CARGO=real["cargo"], T1_REAL_GOTO_CC=real["goto-cc"],
+    os.environ.update(T1_REAL_CARGO=real["cargo"], T1_REAL_CBMC=real["cbmc"], T1_REAL_GOTO_CC=real["goto-cc"],
                       T1_REAL_GOTO_INSTRUMENT=real["goto-instrument"],
                       RUST_TEST_THREADS="1", KANI_PERF_TEST_TIMEOUT="2400")
     os.environ["PATH"] = str(shim_dir) + ":" + os.environ["PATH"]

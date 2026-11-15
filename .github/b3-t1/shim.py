@@ -61,7 +61,9 @@ def finish_row(row, target, code):
 
 
 def cbmc(args):
-    # No passthrough, including --version: real version is recorded before PATH injection.
+    # kani-driver checks `cbmc --version` before each run; only that call reaches the real binary.
+    if args == ["--version"]:
+        return execute([os.environ["T1_REAL_CBMC"], *args]).returncode
     models = [Path(a) for a in args if a.endswith(".out") and Path(a).is_file()]
     if len(models) != 1 or "--json-ui" not in args:
         raise ValueError(f"unexpected CBMC invocation: {args}")
