@@ -60,6 +60,13 @@ def bind(repo, pin):
     return {'sha': pin['sha'], 'tree': pin['tree'], 'tracked_clean': True}
 
 
+def binary_hashes(export):
+    export = Path(export).resolve()
+    binaries = {str(p.relative_to(export)): digest(p) for p in (export/'target/kani/bin').glob('*') if p.is_file()}
+    assert binaries, 'no built binaries found'
+    return binaries
+
+
 def clean_env():
     env = dict(os.environ)
     # No inherited cfg, feature flags, compiler wrappers, cargo target or injected Kani/CBMC flags.
@@ -270,6 +277,8 @@ def run_census(args, req, roots):
     assert std.parent == export.parent and std != export, 'sibling std/export layout required'
     binding = {'std': bind(std, req['std']), 'kani': bind(export, req['kani'])}
     seed(out, roots)
+    before_binaries = json.loads((out/'binary-hashes.json').read_text())
+    assert before_binaries == binary_hashes(export), 'binary changed between build and census'
     available = next(int(l.split()[1]) * 1024 for l in Path('/proc/meminfo').read_text().splitlines() if l.startswith('MemAvailable:'))
     req = dict(req, aggregate_rss_bytes=min(req['aggregate_rss_bytes'], available - req['os_reserve_bytes']))
     assert req['aggregate_rss_bytes'] > 0, 'no RAM after OS reserve'
@@ -308,7 +317,10 @@ def run_census(args, req, roots):
         futures = [pool.submit(lane, i, r) for i, r in enumerate(slots)]
         for f in futures:
             f.result()
-    write(out / 'post-source.json', {'std': bind(std, req['std']), 'kani': bind(export, req['kani'])})
+    after_binaries = binary_hashes(export)
+    write(out/'post-binary-hashes.json', after_binaries)
+    assert before_binaries == after_binaries, 'binary changed during census'
+    write(out / 'post-source.json', {'std': bind(std, req['std']), 'kani': bind(export, req['kani']), 'binary_hashes_unchanged': True})
 
 
 def finalize(out, roots, status):
@@ -349,9 +361,7 @@ def main():
         write(out/'build.json', execution)
         assert execution['exit'] == 0 and execution['stop'] is None, 'build incomplete'
         bind(args.export, req['kani'])
-        binaries = {str(p.relative_to(Path(args.export))): digest(p) for p in (Path(args.export)/'target/kani/bin').glob('*') if p.is_file() and not p.is_symlink()}
-        assert binaries, 'no built binaries found'
-        write(out/'binary-hashes.json', binaries)
+        write(out/'binary-hashes.json', binary_hashes(args.export))
     elif args.action == 'run':
         run_census(args, req, roots)
     else:

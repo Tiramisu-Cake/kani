@@ -124,6 +124,16 @@ class CensusTests(unittest.TestCase):
         self.assertEqual(result['harness']['checks']['unknown'],['p.2'])
         self.assertEqual(len(result['harness']['failed_properties']),1)
 
+    def test_binary_hash_snapshot_detects_changes_and_missing(self):
+        with tempfile.TemporaryDirectory() as td:
+            root=Path(td); folder=root/'target/kani/bin'; folder.mkdir(parents=True)
+            with self.assertRaises(AssertionError): c.binary_hashes(root)
+            exe=folder/'kani-driver'; exe.write_bytes(b'fixture-v1')
+            first=c.binary_hashes(root)
+            self.assertEqual(first,c.binary_hashes(root))
+            exe.write_bytes(b'fixture-v2')
+            self.assertNotEqual(first,c.binary_hashes(root))
+
     def test_missing_receipt_fallback_and_partial(self):
         with tempfile.TemporaryDirectory() as td:
             out=Path(td)
