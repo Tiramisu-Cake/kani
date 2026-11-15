@@ -1,0 +1,135 @@
+# Copyright Kani Contributors
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+name: SEL1-C2 Gate A (exact frozen export)
+on:
+  push:
+    branches: ["uninit-ci/sel1-c2-gatea-*"]
+permissions:
+  contents: read
+concurrency:
+  group: kani3300-sel1-c2-gatea
+  cancel-in-progress: false
+jobs:
+  regression:
+    if: ${{ github.repository == 'Tiramisu-Cake/kani' }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        os: [ubuntu-24.04, ubuntu-24.04-arm, macos-15]
+    defaults:
+      run:
+        shell: bash
+    env:
+      GATE_OUTPUT: ${{ github.workspace }}/artifacts/${{ matrix.os }}
+    steps:
+      - name: Record conservative deadline origin
+        run: |
+          python3 -c 'import os,time; open(os.environ["GITHUB_ENV"], "a").write("GATE_STARTED_EPOCH="+str(time.time()-60)+"\n")'
+      # The overlay is checked out beside (not around) the export: an enclosing Cargo workspace
+      # would capture the export's standalone test packages (std-checks "believes it's in a workspace").
+      - name: Control checkout at exact dispatched overlay SHA
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
+          path: control
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Initialize lifecycle
+        id: init
+        working-directory: control
+        run: |
+          python3 scripts/kani3300-gate/lifecycle.py init --binding scripts/kani3300-gate/binding.json --output "$GATE_OUTPUT" --platform '${{ matrix.os }}' --started-epoch "$GATE_STARTED_EPOCH"
+      - name: Independent frozen source checkout
+        id: export
+        uses: actions/checkout@v6
+        with:
+          ref: 14bc57fdb99960240c4944845a3d985c8af4dcf7
+          path: export
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Source identity before setup
+        id: preflight
+        working-directory: control
+        run: |
+          python3 scripts/kani3300-gate/lifecycle.py check --binding scripts/kani3300-gate/binding.json --source-dir ../export --output "$GATE_OUTPUT" --phase pre-setup
+      - name: Frozen source dependency setup
+        id: setup
+        uses: ./export/.github/actions/setup
+        with:
+          os: ${{ matrix.os }}
+          kani_dir: export
+      - name: Source identity after setup (including failed setup)
+        id: postsetup
+        if: always() && steps.preflight.outcome == 'success'
+        working-directory: control
+        run: |
+          python3 scripts/kani3300-gate/lifecycle.py check --binding scripts/kani3300-gate/binding.json --source-dir ../export --output "$GATE_OUTPUT" --phase post-setup
+      - name: Observer synthetic shell qualification
+        id: observer
+        if: success()
+        working-directory: control
+        run: python3 scripts/kani3300-gate/receipt.py self-test
+      - name: Compute bounded regression time with receipt reserve
+        id: budget
+        if: success()
+        working-directory: control
+        run: |
+          seconds=$(python3 scripts/kani3300-gate/lifecycle.py budget --output "$GATE_OUTPUT")
+          echo "seconds=$seconds" >> "$GITHUB_OUTPUT"
+      - name: One unchanged full regression
+        id: regression
+        if: success()
+        working-directory: export
+        run: |
+          python3 ../control/scripts/kani3300-gate/receipt.py run --binding ../control/scripts/kani3300-gate/binding.json --output "$GATE_OUTPUT" --timeout '${{ steps.budget.outputs.seconds }}'
+      - name: Source identity after regression
+        id: postregression
+        if: always() && steps.preflight.outcome == 'success'
+        working-directory: control
+        run: |
+          python3 scripts/kani3300-gate/lifecycle.py check --binding scripts/kani3300-gate/binding.json --source-dir ../export --output "$GATE_OUTPUT" --phase post-regression
+      - name: Preserve partial receipt or create explicit fallback
+        if: always()
+        working-directory: control
+        run: |
+          python3 scripts/kani3300-gate/lifecycle.py finalize --binding scripts/kani3300-gate/binding.json --output "$GATE_OUTPUT" --source-dir ../export --setup-status '${{ steps.setup.outcome }}' --preflight-status '${{ steps.preflight.outcome }}' --observer-status '${{ steps.observer.outcome }}' --regression-status '${{ steps.regression.outcome }}'
+      - name: Upload bounded platform package
+        env:
+          GATE_ARCH: ${{ runner.arch }}
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: sel1-c2-gatea-${{ matrix.os }}-${{ env.GATE_ARCH }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/${{ matrix.os }}/
+          retention-days: 14
+          if-no-files-found: error
+  summary:
+    if: ${{ always() && github.repository == 'Tiramisu-Cake/kani' }}
+    needs: [regression]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Download available platform receipts
+        uses: actions/download-artifact@v8
+        with:
+          pattern: sel1-c2-gatea-*
+          path: receipts
+      - name: Require all three complete platform rows
+        if: always()
+        run: python3 scripts/kani3300-gate/lifecycle.py aggregate --binding scripts/kani3300-gate/binding.json --receipts-dir receipts --output summary --matrix-result '${{ needs.regression.result }}'
+      - name: Upload matrix summary even on gaps
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: sel1-c2-gatea-summary-${{ github.run_id }}-${{ github.run_attempt }}
+          path: summary/
+          retention-days: 14
+          if-no-files-found: error
