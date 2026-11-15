@@ -15,7 +15,7 @@ import time
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'b3-t1'))
 from compare import (load_arm, _object_no_duplicates, _contained_file, sha256,
                      Invalid, MODEL_KINDS, EXCLUDED_AB_TOOLS)
-from analysis import normalize, classify, control
+from function_dump import extract_functions
 
 ARMS = ('A1', 'A2', 'B1')
 MODES = ('symbol-table', 'goto-functions')
@@ -188,66 +188,43 @@ def execute(root, out, result):
             entry['arms'][arm] = {'input_sha256': rec['sha256'], 'modes': {}}
             for mode in MODES:
                 stem = f'dumps/{ident(key)}.{arm}.{mode}'
-                raw = runner.command([tool, '--show-' + mode, root / arm / rec['path'], '--verbosity', '4'], stem)
+                model = root / arm / rec['path']
+                verbosity = '6' if mode == 'goto-functions' else '4'
+                raw = runner.command([tool, '--show-' + mode, model, '--verbosity', verbosity], stem)
+                require(not raw.with_name(raw.stem + '.stderr.txt').read_bytes(), f'nonempty display stderr: {stem}')
+                require(raw.stat().st_size > 0, f'empty display stdout: {stem}')
+                if mode == 'goto-functions':
+                    body, banner, counts = extract_functions(raw.read_bytes(), str(model))
+                    content = out / (stem + '.functions.txt')
+                    content.write_bytes(body)
+                    status = out / (stem + '.status.txt')
+                    status.write_bytes(banner)
                 if (arm, key) in samples:
-                    repeat = runner.command([tool, '--show-' + mode, root / arm / rec['path'], '--verbosity', '4'], stem + '.repeat')
+                    repeat = runner.command([tool, '--show-' + mode, model, '--verbosity', verbosity], stem + '.repeat')
+                    require(not repeat.with_name(repeat.stem + '.stderr.txt').read_bytes(), 'nonempty repeat stderr')
+                    if mode == 'goto-functions':
+                        extract_functions(repeat.read_bytes(), str(model))
                     equal = sha256(raw) == sha256(repeat)
                     result['determinism'].append({'key': key, 'arm': arm, 'mode': mode, 'equal': equal,
                                                   'first_sha256': sha256(raw), 'repeat_sha256': sha256(repeat)})
                     require(equal, 'display tool is not deterministic on identical input')
-                # Preserve all whitespace and line endings. Only AllocId is rewritten.
-                raw_text = raw.read_bytes().decode('utf-8', errors='strict')
-                normalized = normalize(raw_text)
-                path = out / 'normalized' / f'{ident(key)}.{arm}.{mode}.txt'
-                path.parent.mkdir(parents=True, exist_ok=True)
-                path.write_bytes(normalized.encode('utf-8'))
                 entry['arms'][arm]['modes'][mode] = {
                     'raw': str(raw.relative_to(out)), 'raw_sha256': sha256(raw),
-                    'normalized': str(path.relative_to(out)), 'normalized_sha256': sha256(path)}
+                    'verbosity': verbosity}
+                if mode == 'goto-functions':
+                    entry['arms'][arm]['modes'][mode].update(
+                        content=str(content.relative_to(out)), content_sha256=sha256(content),
+                        status=str(status.relative_to(out)), status_sha256=sha256(status), **counts)
         write(out / 'INDEX.json', index)
         result['dumped_logical_models'] = n + 1
         write(out / 'RESULT.json', result)
         if n % 10 == 0:
             print(f'T1b dumped {n + 1}/{len(keys)} logical models', flush=True)
-    stage('COMPARE_AA_THEN_AB')
-    result.update(AA_EQUAL_AFTER_NORMALIZATION={'equal': 0, 'total': 131}, AA_DIFF=[], B_DIFF=[], B_PAIR_DIFFS=[])
-
-    def texts(key, arm):
-        return [(out / index[key]['arms'][arm]['modes'][m]['normalized']).read_bytes().decode('utf-8') for m in MODES]
-
-    # Complete all A/A classifications before inspecting B.
-    stable = set()
-    for key in keys:
-        a, a2 = texts(key, 'A1'), texts(key, 'A2')
-        if a == a2:
-            stable.add(key)
-            if index[key]['kind'] == 'final':
-                result['AA_EQUAL_AFTER_NORMALIZATION']['equal'] += 1
-        else:
-            detail = classify(a[0], a2[0], a[1], a2[1])
-            paths = [diff(out, key, 'A1-A2', m, x, y) for m, x, y in zip(MODES, a, a2) if x != y]
-            result['AA_DIFF'].append({'key': key, **detail, 'diffs': paths})
-    for key in keys:
-        a, a2, b = texts(key, 'A1'), texts(key, 'A2'), texts(key, 'B1')
-        for name, left in (('A1', a), ('A2', a2)):
-            if left != b:
-                detail = classify(left[0], b[0], left[1], b[1])
-                paths = [diff(out, key, name + '-B1', m, x, y) for m, x, y in zip(MODES, left, b) if x != y]
-                record = {'key': key, 'pair': name + '-B1', 'aa_equal': key in stable, **detail, 'diffs': paths}
-                result['B_PAIR_DIFFS'].append(record)
-                if name == 'A1' and key in stable:
-                    result['B_DIFF'].append(record)
-    a, a2, b = texts(control_key, 'A1'), texts(control_key, 'A2'), texts(control_key, 'B1')
-    gate = control(a[0], b[0], a[1], b[1])
-    result['control'] = {'key': control_key, **gate, 'aa_equal': a == a2, 'ab_different': a != b}
-    if not (a == a2 and a != b and gate['valid']):
-        result.update(status='INVALID', error='INVALID_CONTROL')
-    elif result['AA_DIFF']:
-        result['status'] = 'INCONCLUSIVE_AA'
-    else:
-        perf = [r for r in result['B_DIFF'] if not r['key'].startswith(('final/control/', 'linked/control/', 'symtab/control/'))]
-        result['status'] = ('MODELS_EQUAL' if not perf else
-                            'WRAPPER_ONLY' if all(r['class'] == 'WRAPPER_ONLY' for r in perf) else 'OTHER_CHANGES')
+    require(len(keys) == 393, 'expected 393 logical models')
+    require(len(result['determinism']) == 6, 'expected six raw repeat checks')
+    result.update(status='CAPTURE_COMPLETE_OFFLINE_REQUIRED',
+                  function_dumps=3 * len(keys), symbol_dumps=3 * len(keys),
+                  classification='NOT_RUN: use t0 b3p/t1b/offline.py --r2 after download')
     stage('COMPLETE')
 
 
@@ -255,9 +232,11 @@ def main(argv):
     out = Path(argv[2]).resolve()
     out.mkdir(parents=True, exist_ok=True)
     result = {'status': 'INVALID', 'stage': 'START', 'source_run': RUN_ID, 'source_artifact': ARTIFACT,
-              'normalization': 'Only AllocId(N, ThreadLocalIndex), first occurrence per dump',
+              'schema': 'b3-t1b-r2-capture-v1',
+              'normalization': 'None in capture; exact input-path status line split from functions only',
               'coordinator_review_required': True, 'no_harmlessness_or_proof_credit': True,
-              'task_base': 'b2737f00565bfa73649290cecd31ac42c4097598',
+              'task_base': '43b065bb9d0fc78cb66aef81584a8241a85f461d',
+              'ci_parent': '1a8faa3b60ee9a19534cdb57315e8887f5666301',
               'source_ci_sha': 'cfa4b0c5296b1f7735b0d4a138d339431dfbf93d',
               'ci_sha': os.environ.get('GITHUB_SHA'), 'run_id': os.environ.get('GITHUB_RUN_ID'),
               'run_attempt': os.environ.get('GITHUB_RUN_ATTEMPT')}

@@ -1,9 +1,9 @@
 # Copyright Kani Contributors
 # SPDX-License-Identifier: Apache-2.0 OR MIT
-name: B3 T1b existing-model text comparison (NO BUILD, NO SAT)
+name: B3 T1b-r2 existing-model body capture (NO BUILD, NO SAT)
 on:
   push:
-    branches: ['uninit-ci/b3-t1b**']
+    branches: ['uninit-ci/b3-t1b-r2**']
 permissions:
   contents: read
   actions: read
@@ -36,7 +36,7 @@ jobs:
           github-token: ${{ github.token }}
           repository: Tiramisu-Cake/kani
           path: ${{ runner.temp }}/b3-t1-input
-      - name: Validate, install identical display tool, dump and compare
+      - name: Validate, install identical display tool, dump for offline classification
         timeout-minutes: 48
         shell: bash
         run: |
@@ -46,7 +46,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: b3-t1b-${{ github.run_id }}-${{ github.run_attempt }}
+          name: b3-t1b-r2-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/b3-t1b-artifacts
           if-no-files-found: error
           compression-level: 1
