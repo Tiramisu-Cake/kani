@@ -40,7 +40,9 @@ UNIT_PACKAGES = [x.split(":", 1)[1] for x in STAGES if x.startswith("unit:")]
 SUITES = [x.split(":", 1)[1] for x in STAGES if x.startswith("suite:")]
 
 HOOK = r'''__kani_gate_pid=${BASHPID:-$$}
-if [[ $0 == scripts/kani-regression.sh && -z ${KANI_GATE_OWNER_PID-} ]]; then
+# Bash 3.2 (macOS) reports $0 as "bash" while reading BASH_ENV, so the top-level shell is
+# identified only by the owner variable: the observer starts the regression shell directly.
+if [[ -z ${KANI_GATE_OWNER_PID-} ]]; then
   export KANI_GATE_OWNER_PID=$__kani_gate_pid
   trap 'printf '\''\036KANI_GATE\000%s\000%s\000%s\000%s\000%s\000%s\000%s\000%s\000%s\000'\'' DEBUG "$?" "${BASH_SOURCE[0]}" "$LINENO" "$BASH_COMMAND" "${suite-}" "${mode-}" "$SECONDS" "${BASHPID:-$$}"' DEBUG
   trap 'printf '\''\036KANI_GATE\000%s\000%s\000%s\000%s\000%s\000%s\000%s\000%s\000%s\000'\'' EXIT "$?" "${BASH_SOURCE[0]}" "$LINENO" "$BASH_COMMAND" "${suite-}" "${mode-}" "$SECONDS" "${BASHPID:-$$}"' EXIT
