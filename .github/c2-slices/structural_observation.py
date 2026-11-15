@@ -131,8 +131,9 @@ def observation(data, regular, selectors, case_by_name, receipt):
         name = harness["name"]
         require(name in selectors and name in case_by_name, "wrong selected root")
         case = case_by_name[name]
+        # Sibling checkouts: the overlay input lives under control/, the tool source under export/.
         require(CHECKER.normalize(harness["file"], receipt["build_prefix"]) ==
-                ".github/c2-slices/structural-mixed.rs",
+                "control/.github/c2-slices/structural-mixed.rs",
                 f"selected root came from wrong input: {name}")
         require(harness["line"] == case["root_line"], f"root line drift: {name}")
         require(harness["outcome"].get("kind") == "COMPLETED", f"root incomplete: {name}")

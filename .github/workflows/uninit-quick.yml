@@ -3,7 +3,7 @@
 name: SEL1-C2 Quick (reviewed candidate)
 on:
   push:
-    branches: ['uninit-ci/sel1-c2-quick-w15-r4']
+    branches: ['uninit-ci/sel1-c2-quick-w15-r5']
   workflow_dispatch:
 
 defaults:

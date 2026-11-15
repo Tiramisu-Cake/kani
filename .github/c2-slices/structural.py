@@ -94,7 +94,7 @@ def run(ci, out):
             record = json.loads((base / 'result.json').read_text())
             receipt = dict(id=row['id'], original_exit=record['exit'], termination_reason=record['termination_reason'],
                            argv=record['argv'], environment=record['environment'], expected_exit=row['expected_exit'],
-                           started_epoch=started, finished_epoch=time.time(), build_prefix=str(ci.ROOT), cwd=str(ci.ROOT),
+                           started_epoch=started, finished_epoch=time.time(), build_prefix=str(ci.ROOT.parent), cwd=str(ci.ROOT),
                            source_sha256=before, input_sha256_after=digest(source))
             for name in ('export.json', 'stdout.txt', 'stderr.txt'):
                 path = base / name
