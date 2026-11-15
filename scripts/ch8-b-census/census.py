@@ -178,8 +178,10 @@ def classify(data, row, execution, req):
         expected = dict(memory_safety=True, overflow=True, unwinding=True, undefined_function=True,
                         assertion_reach_checks=True, ignore_global_asm=False, extra_pointer_checks=False,
                         assert_contracts=False, prove_safety_only=False)
+        assert isinstance(cfg['checks'], dict) and all(type(cfg['checks'].get(k)) is bool for k in expected), 'check-flag-types'
         assert cfg['checks'] == expected and cfg['cbmc_args'] == ['--object-bits', '12'] and cfg['coverage_enabled'] is False, 'checks'
         selection = data['harness_selection']
+        assert isinstance(selection, dict) and type(selection.get('matched_count')) is int and type(selection.get('exact')) is bool, 'selection-types'
         assert selection == dict(requested_filters=[row['selector']], exact=True, unmatched_filters=[], matched_count=1), 'selection'
         assert data['run_state'] == 'COMPLETE' and data['outcome'] == {'kind': 'COMPLETED'}, 'run-state'
         hs = data['harnesses']
@@ -190,7 +192,14 @@ def classify(data, row, execution, req):
         retained['harness'] = h
         checks, covers = h['checks'], h['covers']
         property_partial = False
-        for obj in (checks, covers):
+        for obj, specific in ((checks, ('failure',)), (covers, ('satisfied','unsatisfiable'))):
+            assert isinstance(obj, dict), 'property-object'
+            for k in specific + ('unreachable','undetermined','error','unknown','other'):
+                assert isinstance(obj.get(k), list), 'property-bucket-type'
+                if k != 'other':
+                    assert all(isinstance(v, str) and v for v in obj[k]) and len(set(obj[k])) == len(obj[k]), 'property-id-types'
+            ids = [v for k in specific + ('unreachable','undetermined','error','unknown') for v in obj[k]]
+            assert len(set(ids)) == len(ids), 'duplicate-property-ids'
             assert type(obj['total']) is int and obj['total'] >= 0, 'property-total'
             for k in ('unreachable', 'undetermined', 'error', 'unknown', 'other'):
                 assert isinstance(obj[k], list), 'property-buckets'
@@ -202,8 +211,11 @@ def classify(data, row, execution, req):
         assert type(checks['success']) is int and checks['success'] >= 0, 'success-count'
         assert checks['total'] == checks['success'] + sum(len(checks[k]) for k in ('failure','unreachable','undetermined','error','unknown','other')), 'check-partition'
         assert covers['total'] == sum(len(covers[k]) for k in ('satisfied', 'unsatisfiable', 'unreachable','undetermined','error','unknown','other')), 'cover-partition'
+        assert type(h['n_properties']) is int, 'property-count-type'
         assert h['n_properties'] == checks['total'] + covers['total'] and checks['total'] > 0, 'properties'
+        assert all(isinstance(p, dict) and all(isinstance(p.get(k), str) for k in ('id','description','class','status')) for p in failed + unsupported), 'property-entry-types'
         assert {p['id'] for p in failed} == set(checks['failure']), 'failed-property-ids'
+        assert {p['id'] for p in unsupported if p['status']=='FAILURE'} == {p['id'] for p in failed if p['class']=='unsupported_construct'}, 'unsupported-failure-partition'
         assert all(p['status'] == 'FAILURE' and isinstance(p['description'], str) for p in failed), 'failed-properties'
         classes = set()
         for p in failed:

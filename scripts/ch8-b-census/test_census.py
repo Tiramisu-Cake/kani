@@ -93,6 +93,27 @@ class CensusTests(unittest.TestCase):
         self.execution['stop']=None; self.data['harnesses'][0]['checks']['total']=20
         self.assertFalse(self.classify()['complete'])
 
+    def test_malformed_buckets_and_boolean_numbers_cannot_pass(self):
+        original=copy.deepcopy(self.data)
+        for group,fields in [('checks',['failure','unreachable','undetermined','error','unknown','other']),('covers',['satisfied','unsatisfiable','unreachable','undetermined','error','unknown','other'])]:
+            for key in fields:
+                for value in ['',None,{},0,False]:
+                    self.data=copy.deepcopy(original)
+                    h=self.data['harnesses'][0]
+                    h[group][key]=value
+                    if group=='covers':
+                        h['covers']['total']=0; h['n_properties']=1
+                    result=self.classify()
+                    self.assertFalse(result['complete'],(group,key,value))
+        for key in original['configuration']['checks']:
+            self.data=copy.deepcopy(original)
+            self.data['configuration']['checks'][key]=int(self.data['configuration']['checks'][key])
+            self.assertFalse(self.classify()['complete'],key)
+        self.data=copy.deepcopy(original); self.data['harness_selection']['matched_count']=True
+        self.assertFalse(self.classify()['complete'])
+        self.data=copy.deepcopy(original); self.data['harnesses'][0]['n_properties']=True
+        self.assertFalse(self.classify()['complete'])
+
     def test_observed_unsupported_survives_unknown_checks(self):
         self.fail("Kani currently doesn't support checking validity of `copy_nonoverlapping` for `u8`")
         h=self.data['harnesses'][0]
