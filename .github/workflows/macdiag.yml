@@ -1,0 +1,41 @@
+# CI-only diagnostic: why the C2 Gate A observer self-test fails on macos-15 (no Kani build).
+name: Gate A observer macOS diagnostic
+on:
+  push:
+    branches:
+      - 'uninit-ci/**'
+jobs:
+  diag:
+    runs-on: macos-15
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Shell identity
+        run: |
+          which -a bash; bash --version | head -1; /bin/bash --version | head -1; python3 --version
+      - name: Synthetic hook raw output
+        shell: bash {0}
+        run: |
+          python3 - <<'PY'
+          import os, subprocess, sys, tempfile, pathlib
+          sys.path.insert(0, "scripts/kani3300-gate")
+          import receipt
+          root = pathlib.Path(tempfile.mkdtemp()); (root/"scripts").mkdir()
+          (root/"scripts/kani-regression.sh").write_text("#!/usr/bin/env bash\nif [[ ${1-} == child ]]; then printf 'child body\\n'; exit 0; fi\nset -e\nprintf 'synthetic start\\n'\nbash scripts/kani-regression.sh child\nprintf 'test result: ok. 2 passed; 0 failed; 0 ignored; 0 filtered out\\n'\n")
+          (root/"observe.bash").write_text(receipt.HOOK)
+          r = subprocess.run(["bash", "scripts/kani-regression.sh"], cwd=root, env=dict(os.environ, BASH_ENV=str(root/"observe.bash")), stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+          print("rc", r.returncode, "bytes", len(r.stdout))
+          print(repr(r.stdout[:1500]))
+          try:
+              ev = receipt._decode_events(r.stdout); print("events", len(ev)); [print(e) for e in ev[:8]]
+          except Exception as e:
+              print("decode error", type(e).__name__, e)
+          try:
+              receipt.self_test(); print("self_test PASS")
+          except Exception as e:
+              print("self_test", type(e).__name__, e)
+          PY
