@@ -1,0 +1,12 @@
+--- a/tests/expected/uninit/maybe-uninit-contract-frame/main.rs
++++ b/tests/expected/uninit/maybe-uninit-contract-frame/main.rs
+@@ -19,7 +19,8 @@
+ #[kani::modifies(out)]
+ fn frame_target(out: &mut u16, outside: &mut u16) {
+     let value = relay(MaybeUninit::new(23), MaybeUninit::new(29));
+-    *outside = unsafe { value.assume_init() };
++    let _value = unsafe { value.assume_init() };
++    let _ = outside;
+     *out = 1;
+ }
+ 
