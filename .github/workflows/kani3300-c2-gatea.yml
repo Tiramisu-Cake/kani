@@ -1,8 +1,12 @@
 # Copyright Kani Contributors
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 name: C2 Gate A (manual, exact frozen export)
+# One run per push of the exact overlay to this single CI-only branch (workflow_dispatch cannot
+# reach a workflow absent from the fork default branch).
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - 'ci/kani3300-c2-gatea-w15'
 permissions:
   contents: read
 concurrency:
