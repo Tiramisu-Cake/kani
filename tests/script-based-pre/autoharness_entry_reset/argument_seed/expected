@@ -1,0 +1,4 @@
+ - Status: SUCCESS\
+ - Description: "assertion failed: bytes[usize::from(index % 4)] > 0"
+VERIFICATION:- SUCCESSFUL
+Complete - 1 successfully verified functions, 0 failures, 1 total.
