@@ -1,0 +1,353 @@
+diff --git a/kani-compiler/src/kani_middle/transform/check_uninit/ptr_uninit/mod.rs b/kani-compiler/src/kani_middle/transform/check_uninit/ptr_uninit/mod.rs
+index 206f71012..3d53567d7 100644
+--- a/kani-compiler/src/kani_middle/transform/check_uninit/ptr_uninit/mod.rs
++++ b/kani-compiler/src/kani_middle/transform/check_uninit/ptr_uninit/mod.rs
+@@ -5,7 +5,7 @@
+ //! uninitialized memory via raw pointers.
+ 
+ use crate::args::ExtraChecks;
+-use crate::kani_middle::kani_functions::{KaniFunction, KaniModel};
++use crate::kani_middle::kani_functions::{KaniFunction, KaniIntrinsic, KaniModel};
+ use crate::kani_middle::transform::{
+     TransformPass, TransformationType,
+     body::{CheckType, InsertPosition, MutableBody, SourceInstruction},
+@@ -79,6 +79,13 @@ fn transform(&mut self, tcx: TyCtxt, body: Body, instance: Instance) -> (bool, B
+ 
+ /// Checks if the instance is a harness -- an entry point of Kani analysis.
+ fn is_harness(instance: Instance, tcx: TyCtxt) -> bool {
++    // Automatic harnesses have a generated wrapper body but retain the intrinsic DefId.
++    if matches!(
++        KaniFunction::try_from(instance),
++        Ok(KaniFunction::Intrinsic(KaniIntrinsic::AutomaticHarness))
++    ) {
++        return true;
++    }
+     let harness_identifiers = [
+         vec![
+             rustc_span::symbol::Symbol::intern("kanitool"),
+diff --git a/tests/script-based-pre/autoharness_entry_reset/argument_seed/config.yml b/tests/script-based-pre/autoharness_entry_reset/argument_seed/config.yml
+new file mode 100644
+index 000000000..ce281b640
+--- /dev/null
++++ b/tests/script-based-pre/autoharness_entry_reset/argument_seed/config.yml
+@@ -0,0 +1,4 @@
++# Copyright Kani Contributors
++# SPDX-License-Identifier: Apache-2.0 OR MIT
++script: run.sh
++expected: expected
+diff --git a/tests/script-based-pre/autoharness_entry_reset/argument_seed/expected b/tests/script-based-pre/autoharness_entry_reset/argument_seed/expected
+new file mode 100644
+index 000000000..479be4c4b
+--- /dev/null
++++ b/tests/script-based-pre/autoharness_entry_reset/argument_seed/expected
+@@ -0,0 +1,4 @@
++ - Status: SUCCESS\
++ - Description: "assertion failed: bytes[usize::from(index % 4)] > 0"
++VERIFICATION:- SUCCESSFUL
++Complete - 1 successfully verified functions, 0 failures, 1 total.
+diff --git a/tests/script-based-pre/autoharness_entry_reset/argument_seed/main.rs b/tests/script-based-pre/autoharness_entry_reset/argument_seed/main.rs
+new file mode 100644
+index 000000000..131595f36
+--- /dev/null
++++ b/tests/script-based-pre/autoharness_entry_reset/argument_seed/main.rs
+@@ -0,0 +1,8 @@
++// Copyright Kani Contributors
++// SPDX-License-Identifier: Apache-2.0 OR MIT
++
++fn argument_seed(index: u8) -> &'static [u8; 4] {
++    let bytes: &'static [u8; 4] = &[1, 2, 3, 4];
++    assert!(bytes[usize::from(index % 4)] > 0);
++    bytes
++}
+diff --git a/tests/script-based-pre/autoharness_entry_reset/argument_seed/run.sh b/tests/script-based-pre/autoharness_entry_reset/argument_seed/run.sh
+new file mode 100755
+index 000000000..0d0a1ebc8
+--- /dev/null
++++ b/tests/script-based-pre/autoharness_entry_reset/argument_seed/run.sh
+@@ -0,0 +1,6 @@
++#!/usr/bin/env bash
++# Copyright Kani Contributors
++# SPDX-License-Identifier: Apache-2.0 OR MIT
++
++set -euo pipefail
++kani autoharness -Z uninit-checks -Z autoharness --include-pattern argument_seed --output-format=regular main.rs
+diff --git a/tests/script-based-pre/autoharness_entry_reset/contract_seed/config.yml b/tests/script-based-pre/autoharness_entry_reset/contract_seed/config.yml
+new file mode 100644
+index 000000000..ce281b640
+--- /dev/null
++++ b/tests/script-based-pre/autoharness_entry_reset/contract_seed/config.yml
+@@ -0,0 +1,4 @@
++# Copyright Kani Contributors
++# SPDX-License-Identifier: Apache-2.0 OR MIT
++script: run.sh
++expected: expected
+diff --git a/tests/script-based-pre/autoharness_entry_reset/contract_seed/expected b/tests/script-based-pre/autoharness_entry_reset/contract_seed/expected
+new file mode 100644
+index 000000000..0a8c88f28
+--- /dev/null
++++ b/tests/script-based-pre/autoharness_entry_reset/contract_seed/expected
+@@ -0,0 +1,2 @@
++VERIFICATION:- SUCCESSFUL
++Complete - 1 successfully verified functions, 0 failures, 1 total.
+diff --git a/tests/script-based-pre/autoharness_entry_reset/contract_seed/main.rs b/tests/script-based-pre/autoharness_entry_reset/contract_seed/main.rs
+new file mode 100644
+index 000000000..586eef3ed
+--- /dev/null
++++ b/tests/script-based-pre/autoharness_entry_reset/contract_seed/main.rs
+@@ -0,0 +1,8 @@
++// Copyright Kani Contributors
++// SPDX-License-Identifier: Apache-2.0 OR MIT
++
++#[kani::requires(index < 4)]
++#[kani::ensures(|result| result[usize::from(index)] > 0)]
++fn contract_seed(index: u8) -> &'static [u8; 4] {
++    &[1, 2, 3, 4]
++}
+diff --git a/tests/script-based-pre/autoharness_entry_reset/contract_seed/run.sh b/tests/script-based-pre/autoharness_entry_reset/contract_seed/run.sh
+new file mode 100755
+index 000000000..4d5616333
+--- /dev/null
++++ b/tests/script-based-pre/autoharness_entry_reset/contract_seed/run.sh
+@@ -0,0 +1,6 @@
++#!/usr/bin/env bash
++# Copyright Kani Contributors
++# SPDX-License-Identifier: Apache-2.0 OR MIT
++
++set -euo pipefail
++kani autoharness -Z uninit-checks -Z function-contracts -Z autoharness --include-pattern contract_seed --output-format=regular main.rs
+diff --git a/tests/script-based-pre/autoharness_entry_reset/initialized_read/config.yml b/tests/script-based-pre/autoharness_entry_reset/initialized_read/config.yml
+new file mode 100644
+index 000000000..ce281b640
+--- /dev/null
++++ b/tests/script-based-pre/autoharness_entry_reset/initialized_read/config.yml
+@@ -0,0 +1,4 @@
++# Copyright Kani Contributors
++# SPDX-License-Identifier: Apache-2.0 OR MIT
++script: run.sh
++expected: expected
+diff --git a/tests/script-based-pre/autoharness_entry_reset/initialized_read/expected b/tests/script-based-pre/autoharness_entry_reset/initialized_read/expected
+new file mode 100644
+index 000000000..0a8c88f28
+--- /dev/null
++++ b/tests/script-based-pre/autoharness_entry_reset/initialized_read/expected
+@@ -0,0 +1,2 @@
++VERIFICATION:- SUCCESSFUL
++Complete - 1 successfully verified functions, 0 failures, 1 total.
+diff --git a/tests/script-based-pre/autoharness_entry_reset/initialized_read/main.rs b/tests/script-based-pre/autoharness_entry_reset/initialized_read/main.rs
+new file mode 100644
+index 000000000..1a347d4db
+--- /dev/null
++++ b/tests/script-based-pre/autoharness_entry_reset/initialized_read/main.rs
+@@ -0,0 +1,16 @@
++// Copyright Kani Contributors
++// SPDX-License-Identifier: Apache-2.0 OR MIT
++
++#[repr(C)]
++#[allow(dead_code)] // The fields define initialized bytes; the read uses the union address.
++union Bytes {
++    first: u8,
++    all: [u8; 4],
++}
++
++fn initialized_read() {
++    let bytes = Bytes { all: [7; 4] };
++    // Read the last byte: a fixed zero-offset witness would miss this hole.
++    let ptr = (&raw const bytes).cast::<u8>();
++    let _last = unsafe { ptr.add(3).read() };
++}
+diff --git a/tests/script-based-pre/autoharness_entry_reset/initialized_read/run.sh b/tests/script-based-pre/autoharness_entry_reset/initialized_read/run.sh
+new file mode 100755
+index 000000000..d03cc7f63
+--- /dev/null
++++ b/tests/script-based-pre/autoharness_entry_reset/initialized_read/run.sh
+@@ -0,0 +1,6 @@
++#!/usr/bin/env bash
++# Copyright Kani Contributors
++# SPDX-License-Identifier: Apache-2.0 OR MIT
++
++set -euo pipefail
++kani autoharness -Z uninit-checks -Z autoharness --include-pattern initialized_read --output-format=regular main.rs
+diff --git a/tests/script-based-pre/autoharness_entry_reset/no_seed/config.yml b/tests/script-based-pre/autoharness_entry_reset/no_seed/config.yml
+new file mode 100644
+index 000000000..ce281b640
+--- /dev/null
++++ b/tests/script-based-pre/autoharness_entry_reset/no_seed/config.yml
+@@ -0,0 +1,4 @@
++# Copyright Kani Contributors
++# SPDX-License-Identifier: Apache-2.0 OR MIT
++script: run.sh
++expected: expected
+diff --git a/tests/script-based-pre/autoharness_entry_reset/no_seed/expected b/tests/script-based-pre/autoharness_entry_reset/no_seed/expected
+new file mode 100644
+index 000000000..0a8c88f28
+--- /dev/null
++++ b/tests/script-based-pre/autoharness_entry_reset/no_seed/expected
+@@ -0,0 +1,2 @@
++VERIFICATION:- SUCCESSFUL
++Complete - 1 successfully verified functions, 0 failures, 1 total.
+diff --git a/tests/script-based-pre/autoharness_entry_reset/no_seed/main.rs b/tests/script-based-pre/autoharness_entry_reset/no_seed/main.rs
+new file mode 100644
+index 000000000..66492f64f
+--- /dev/null
++++ b/tests/script-based-pre/autoharness_entry_reset/no_seed/main.rs
+@@ -0,0 +1,6 @@
++// Copyright Kani Contributors
++// SPDX-License-Identifier: Apache-2.0 OR MIT
++
++fn no_seed(value: u8) -> u8 {
++    value
++}
+diff --git a/tests/script-based-pre/autoharness_entry_reset/no_seed/run.sh b/tests/script-based-pre/autoharness_entry_reset/no_seed/run.sh
+new file mode 100755
+index 000000000..fa2d00313
+--- /dev/null
++++ b/tests/script-based-pre/autoharness_entry_reset/no_seed/run.sh
+@@ -0,0 +1,6 @@
++#!/usr/bin/env bash
++# Copyright Kani Contributors
++# SPDX-License-Identifier: Apache-2.0 OR MIT
++
++set -euo pipefail
++kani autoharness -Z uninit-checks -Z autoharness --include-pattern no_seed --output-format=regular main.rs
+diff --git a/tests/script-based-pre/autoharness_entry_reset/seed_only/config.yml b/tests/script-based-pre/autoharness_entry_reset/seed_only/config.yml
+new file mode 100644
+index 000000000..ce281b640
+--- /dev/null
++++ b/tests/script-based-pre/autoharness_entry_reset/seed_only/config.yml
+@@ -0,0 +1,4 @@
++# Copyright Kani Contributors
++# SPDX-License-Identifier: Apache-2.0 OR MIT
++script: run.sh
++expected: expected
+diff --git a/tests/script-based-pre/autoharness_entry_reset/seed_only/expected b/tests/script-based-pre/autoharness_entry_reset/seed_only/expected
+new file mode 100644
+index 000000000..0a8c88f28
+--- /dev/null
++++ b/tests/script-based-pre/autoharness_entry_reset/seed_only/expected
+@@ -0,0 +1,2 @@
++VERIFICATION:- SUCCESSFUL
++Complete - 1 successfully verified functions, 0 failures, 1 total.
+diff --git a/tests/script-based-pre/autoharness_entry_reset/seed_only/main.rs b/tests/script-based-pre/autoharness_entry_reset/seed_only/main.rs
+new file mode 100644
+index 000000000..0d8d74b0f
+--- /dev/null
++++ b/tests/script-based-pre/autoharness_entry_reset/seed_only/main.rs
+@@ -0,0 +1,7 @@
++// Copyright Kani Contributors
++// SPDX-License-Identifier: Apache-2.0 OR MIT
++
++// No input generation, MaybeUninit, or storage-dependent setup: the typed return admits a seed.
++fn seed_only() -> &'static [u8; 4] {
++    &[1, 2, 3, 4]
++}
+diff --git a/tests/script-based-pre/autoharness_entry_reset/seed_only/run.sh b/tests/script-based-pre/autoharness_entry_reset/seed_only/run.sh
+new file mode 100755
+index 000000000..e72ee17ef
+--- /dev/null
++++ b/tests/script-based-pre/autoharness_entry_reset/seed_only/run.sh
+@@ -0,0 +1,6 @@
++#!/usr/bin/env bash
++# Copyright Kani Contributors
++# SPDX-License-Identifier: Apache-2.0 OR MIT
++
++set -euo pipefail
++kani autoharness -Z uninit-checks -Z autoharness --include-pattern seed_only --output-format=regular main.rs
+diff --git a/tests/script-based-pre/autoharness_entry_reset/uninit_off/config.yml b/tests/script-based-pre/autoharness_entry_reset/uninit_off/config.yml
+new file mode 100644
+index 000000000..ce281b640
+--- /dev/null
++++ b/tests/script-based-pre/autoharness_entry_reset/uninit_off/config.yml
+@@ -0,0 +1,4 @@
++# Copyright Kani Contributors
++# SPDX-License-Identifier: Apache-2.0 OR MIT
++script: run.sh
++expected: expected
+diff --git a/tests/script-based-pre/autoharness_entry_reset/uninit_off/expected b/tests/script-based-pre/autoharness_entry_reset/uninit_off/expected
+new file mode 100644
+index 000000000..0a8c88f28
+--- /dev/null
++++ b/tests/script-based-pre/autoharness_entry_reset/uninit_off/expected
+@@ -0,0 +1,2 @@
++VERIFICATION:- SUCCESSFUL
++Complete - 1 successfully verified functions, 0 failures, 1 total.
+diff --git a/tests/script-based-pre/autoharness_entry_reset/uninit_off/main.rs b/tests/script-based-pre/autoharness_entry_reset/uninit_off/main.rs
+new file mode 100644
+index 000000000..6a8982e6e
+--- /dev/null
++++ b/tests/script-based-pre/autoharness_entry_reset/uninit_off/main.rs
+@@ -0,0 +1,7 @@
++// Copyright Kani Contributors
++// SPDX-License-Identifier: Apache-2.0 OR MIT
++
++// The same seeded source is legal with Uninit disabled; no entry reset should be emitted.
++fn seed_only() -> &'static [u8; 4] {
++    &[1, 2, 3, 4]
++}
+diff --git a/tests/script-based-pre/autoharness_entry_reset/uninit_off/run.sh b/tests/script-based-pre/autoharness_entry_reset/uninit_off/run.sh
+new file mode 100755
+index 000000000..a272a351f
+--- /dev/null
++++ b/tests/script-based-pre/autoharness_entry_reset/uninit_off/run.sh
+@@ -0,0 +1,6 @@
++#!/usr/bin/env bash
++# Copyright Kani Contributors
++# SPDX-License-Identifier: Apache-2.0 OR MIT
++
++set -euo pipefail
++kani autoharness -Z autoharness --include-pattern seed_only --output-format=regular main.rs
+diff --git a/tests/script-based-pre/autoharness_entry_reset/uninit_read/config.yml b/tests/script-based-pre/autoharness_entry_reset/uninit_read/config.yml
+new file mode 100644
+index 000000000..ce281b640
+--- /dev/null
++++ b/tests/script-based-pre/autoharness_entry_reset/uninit_read/config.yml
+@@ -0,0 +1,4 @@
++# Copyright Kani Contributors
++# SPDX-License-Identifier: Apache-2.0 OR MIT
++script: run.sh
++expected: expected
+diff --git a/tests/script-based-pre/autoharness_entry_reset/uninit_read/expected b/tests/script-based-pre/autoharness_entry_reset/uninit_read/expected
+new file mode 100644
+index 000000000..658aaca0f
+--- /dev/null
++++ b/tests/script-based-pre/autoharness_entry_reset/uninit_read/expected
+@@ -0,0 +1,4 @@
++ - Status: FAILURE\
++ - Description: "Undefined Behavior: Reading from an uninitialized pointer of type `u8`"
++VERIFICATION:- FAILED
++Complete - 0 successfully verified functions, 1 failures, 1 total.
+diff --git a/tests/script-based-pre/autoharness_entry_reset/uninit_read/main.rs b/tests/script-based-pre/autoharness_entry_reset/uninit_read/main.rs
+new file mode 100644
+index 000000000..afe7cc5cf
+--- /dev/null
++++ b/tests/script-based-pre/autoharness_entry_reset/uninit_read/main.rs
+@@ -0,0 +1,16 @@
++// Copyright Kani Contributors
++// SPDX-License-Identifier: Apache-2.0 OR MIT
++
++#[repr(C)]
++#[allow(dead_code)] // The fields define initialized bytes; the read uses the union address.
++union Bytes {
++    first: u8,
++    all: [u8; 4],
++}
++
++fn uninit_read() {
++    let bytes = Bytes { first: 7 };
++    // Read the last byte: a fixed zero-offset witness would miss this hole.
++    let ptr = (&raw const bytes).cast::<u8>();
++    let _last = unsafe { ptr.add(3).read() };
++}
+diff --git a/tests/script-based-pre/autoharness_entry_reset/uninit_read/run.sh b/tests/script-based-pre/autoharness_entry_reset/uninit_read/run.sh
+new file mode 100755
+index 000000000..1a1ffeedd
+--- /dev/null
++++ b/tests/script-based-pre/autoharness_entry_reset/uninit_read/run.sh
+@@ -0,0 +1,8 @@
++#!/usr/bin/env bash
++# Copyright Kani Contributors
++# SPDX-License-Identifier: Apache-2.0 OR MIT
++
++set -euo pipefail
++status=0
++kani autoharness -Z uninit-checks -Z autoharness --include-pattern uninit_read --output-format=regular main.rs || status=$?
++[[ "$status" == 1 ]]

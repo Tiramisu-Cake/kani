@@ -1,0 +1,131 @@
+name: CH8 PR-02 automatic harness entry reset
+'on':
+  push:
+    branches:
+      - uninit-ci/ch8-pr02-reset-*
+permissions:
+  contents: read
+concurrency:
+  group: ch8-pr02-reset
+  cancel-in-progress: false
+jobs:
+  reset:
+    if: ${{ github.repository == 'Tiramisu-Cake/kani' && startsWith(github.ref, 'refs/heads/uninit-ci/ch8-pr02-reset-') }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      CARGO_BUILD_JOBS: '2'
+      RUST_TEST_THREADS: '2'
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        arm: [A, B]
+    steps:
+      - name: Checkout exact CI control
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
+          path: control
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Require first attempt and same-tree trigger
+        working-directory: control
+        env:
+          RUNNER_TEMP: ${{ runner.temp }}
+        run: |
+          python3 - <<'PY'
+          import os, subprocess
+          assert os.environ['GITHUB_RUN_ATTEMPT'] == '1'
+          assert subprocess.check_output(['git','rev-parse','HEAD'], text=True).strip() == os.environ['GITHUB_SHA']
+          assert subprocess.check_output(['git','rev-parse','HEAD^{tree}']) == subprocess.check_output(['git','rev-parse','HEAD^1^{tree}'])
+          assert '[skip ci]' in subprocess.check_output(['git','show','-s','--format=%B','HEAD^'], text=True)
+          PY
+      - name: Resolve pinned source
+        id: pin
+        working-directory: control
+        run: |
+          python3 - <<'PY'
+          import json, os
+          req=json.load(open('CI-REQUEST.json'))
+          arm=os.environ['ARM']
+          sha=req['pins']['pr02' if arm == 'A' else 'sel1']['sha']
+          with open(os.environ['GITHUB_OUTPUT'],'a') as f: f.write(f'sha={sha}\n')
+          PY
+        env:
+          ARM: ${{ matrix.arm }}
+      - name: Checkout pinned source
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ steps.pin.outputs.sha }}
+          path: source
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Checkout unpatched old PR-02 control
+        if: ${{ matrix.arm == 'A' }}
+        uses: actions/checkout@v6
+        with:
+          ref: 932fb8395a58f8c86c0d702ba2cae835823b2962
+          path: old
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Verify and apply source patch
+        working-directory: control
+        env:
+          SOURCE_DIR: ${{ github.workspace }}/source
+          ARM: ${{ matrix.arm }}
+        run: python3 scripts/ch8-pr02-reset/apply_patch.py --repo "$SOURCE_DIR" --pin-key "$ARM"
+      - name: Setup source dependencies
+        uses: ./source/.github/actions/setup
+        with:
+          os: ubuntu-24.04
+          kani_dir: source
+      - name: Check source structure invariants
+        working-directory: control
+        env:
+          SOURCE_DIR: ${{ github.workspace }}/source
+        run: python3 scripts/ch8-pr02-reset/check_source_structure.py --repo "$SOURCE_DIR"
+      - name: Runner result error-path checks
+        working-directory: control
+        run: python3 scripts/ch8-pr02-reset/test_runner.py
+      - name: Setup old control dependencies
+        if: ${{ matrix.arm == 'A' }}
+        uses: ./old/.github/actions/setup
+        with:
+          os: ubuntu-24.04
+          kani_dir: old
+      - name: Build unpatched PR-02 control
+        if: ${{ matrix.arm == 'A' }}
+        working-directory: old
+        run: cargo build-dev
+      - name: Run PR-02 checks and matched old controls
+        if: ${{ matrix.arm == 'A' }}
+        working-directory: control
+        env:
+          RUNNER_TEMP: ${{ runner.temp }}
+          SOURCE_DIR: ${{ github.workspace }}/source
+          OLD_DIR: ${{ github.workspace }}/old
+        run: |
+          scripts/ch8-pr02-reset/run_arm_a.sh "$SOURCE_DIR"
+          python3 scripts/ch8-pr02-reset/run_old_control.py --old-repo "$OLD_DIR" --fixed-repo "$SOURCE_DIR"
+      - name: Build patched SEL1
+        if: ${{ matrix.arm == 'B' }}
+        working-directory: source
+        run: cargo build-dev
+      - name: Run SEL1 issue cases
+        if: ${{ matrix.arm == 'B' }}
+        working-directory: control
+        env:
+          RUNNER_TEMP: ${{ runner.temp }}
+          SOURCE_DIR: ${{ github.workspace }}/source
+        run: python3 scripts/ch8-pr02-reset/run_arm_b.py "$SOURCE_DIR" "$GITHUB_WORKSPACE/control"
+      - name: Upload bounded SEL1 result
+        if: ${{ always() && matrix.arm == 'B' }}
+        uses: actions/upload-artifact@v4
+        env:
+          RECEIPT_ROOT: ${{ runner.temp }}/ch8-pr02-reset-b
+        with:
+          name: ch8-pr02-reset-b-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ env.RECEIPT_ROOT }}/
+          if-no-files-found: warn
+          retention-days: 7

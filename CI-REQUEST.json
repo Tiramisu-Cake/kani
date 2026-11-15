@@ -1,0 +1,38 @@
+{
+  "schema": "ch8-pr02-reset-ci-request-v1",
+  "status": "DRAFT_STATIC_ONLY",
+  "runtime": "NOT_RUN",
+  "package_identity": "Bound externally by g0 CI-REQUEST.json and same-tree child workflow gate",
+  "source_fix": {
+    "commit": "f695f653efaa1f7ac6774a079104de8cc0ff81fc",
+    "tree": "ae00c4f05316e1129d7ce911417c627fda1dc9ea"
+  },
+  "expected_target": "x86_64-unknown-linux-gnu",
+  "pins": {
+    "pr02": {"sha": "932fb8395a58f8c86c0d702ba2cae835823b2962", "tree": "2c4d5ad4b72a7d07059f1461132a58da03f81ef9", "patched_tree": "ae00c4f05316e1129d7ce911417c627fda1dc9ea"},
+    "sel1": {"sha": "14bc57fdb99960240c4944845a3d985c8af4dcf7", "tree": "1efb6e4dfa69d346df8e23741d11839b1932403d", "patched_tree": "7df25f0cca4387cd07b9eccee39b573cdd5c1827"}
+  },
+  "patch": {
+    "path": "scripts/ch8-pr02-reset/reset.patch",
+    "sha256": "52173eb8126f00e7cc3285f4b7bd4941e42cec78a9e822588e7bc9cce23ec91a"
+  },
+  "fixtures": {
+    "issue-4854-autoharness.rs": "8a5b94bfb1af4eca980c1e20358ea66c9ecbc7f3df2b7e4d7b3af43c5c828bd2",
+    "issue-4854-explicit-proof-companion.rs": "7b8c87634051e6bb26ba0d0b0a42ebc5b5a8e01ab4878b5c6f227d5d346fc009"
+  },
+  "trigger": "uninit-ci/ch8-pr02-reset-*",
+  "workflow": ".github/workflows/ch8-pr02-reset.yml",
+  "arms": {
+    "A": "PR02+fix full gates and changed suites; unpatched PR02 old matched seed cases must fail closed with immutable reset absent fatal",
+    "B": "SEL1+fix exact issue #4854 autoharness plus explicit companion"
+  },
+  "static_model_gate": "PASS_REQUIRED: exact source checks for auto wrapper recognition, setup-before-instrumentation, Uninit ON guard, nondeterministic object/offset and false reset value; emitted wrapper/model evidence NOT_RUN",
+  "stock_workflows": "REMOVE_FROM_CI_ONLY_COMMIT; retain only this workflow under .github/workflows",
+  "limits": {
+    "job_timeout_minutes": 120,
+    "max_parallel": 1,
+    "cargo_build_jobs": 2,
+    "rust_test_threads": 2,
+    "retry": "NONE"
+  }
+}
