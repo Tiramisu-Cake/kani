@@ -1,0 +1,47 @@
+{
+  "provenance": {
+    "run": 43830757263,
+    "path": "/root/verify-rust-std-kani3300-g0/research/challenge-8/kani-k1/kani3300/ch8-s1/s1-04/run-43830757263/evidence/activation-default-u34/export.json",
+    "sha256": "c2100dc600b0bced6ae4995b7b4ce7b2f21b58e7b20f7d4a8a3abb3d02a47f61",
+    "scope": "Exact structured rich objects only, not historical stdout; test formats them with pinned format_result."
+  },
+  "selector": "slice::sort::shared::smallsort::verify::sorting_entry_controls::stable_default_activation",
+  "properties": [
+    {
+      "id": "<cell::Cell<u8> as slice::sort::shared::smallsort::StableSmallSortTypeImpl>::small_sort::<slice::sort::shared::smallsort::verify::sorting_model::KeyLess<cell::Cell<u8>>>::{closure#2}.assertion.1",
+      "description": "|_| !verify::sorting_model::enabled::<T, F>() ||\n{ const S1_ATTACHMENT_DEFAULT: bool = false; S1_ATTACHMENT_DEFAULT }",
+      "class": "assertion",
+      "file": "/home/runner/work/kani/kani/export/library/core/src/slice/sort/shared/smallsort.rs",
+      "line": "41",
+      "trace_available": true,
+      "status": "FAILURE"
+    },
+    {
+      "id": "panic::location::Location::<'_>::caller.unsupported_construct.1",
+      "description": "caller_location is not currently supported by Kani. Please post your example at https://github.com/model-checking/kani/issues/374",
+      "class": "unsupported_construct",
+      "file": "/home/runner/work/kani/kani/export/library/core/src/panic/location.rs",
+      "line": "185",
+      "trace_available": false,
+      "status": "SUCCESS"
+    },
+    {
+      "id": "kani::mem::cbmc::same_allocation.unsupported_construct.1",
+      "description": "Kani does not support reasoning about pointer to unallocated memory",
+      "class": "unsupported_construct",
+      "file": "/home/runner/work/kani/kani/export/library/core/src/lib.rs",
+      "line": "358",
+      "trace_available": false,
+      "status": "SUCCESS"
+    },
+    {
+      "id": "panicking::panic_nounwind_fmt::runtime.unsupported_construct.1",
+      "description": "call to foreign \"Rust\" function `_RNvCseilXckri75C_7___rustc17rust_begin_unwind` is not currently supported by Kani. Please post your example at https://github.com/model-checking/kani/issues/new/choose",
+      "class": "unsupported_construct",
+      "file": "/home/runner/work/kani/kani/export/library/core/src/panicking.rs",
+      "line": "110",
+      "trace_available": false,
+      "status": "SUCCESS"
+    }
+  ]
+}

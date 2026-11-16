@@ -20,20 +20,22 @@ import threading
 import time
 from typing import Any
 
+import rich_evidence
+
 HERE = Path(__file__).resolve().parent
 REQUEST_PATH = HERE / "CI-REQUEST.json"
-STD_SHA = "f22f84f316ad8ef6f3fccce86424bad927b09f78"
-STD_TREE = "e0dc89592926571e823797f8618cd6b4a7e11ff6"
+STD_SHA = "5be85699b8826e3286c0bf89efb9affefac0acb5"
+STD_TREE = "a9caaa953d579641ecc6a4b84b5c16fa1d23563b"
 TOOL_SHA = "0aac16ef62da9e9d5645782d458593e5d78143ba"
 TOOL_TREE = "9d8bc9312bf955ef126d32b819b3cd0ed105ed2b"
 MAX_ROW_SECONDS = 600
 COMPILE_SECONDS = 900
 GROUP_RSS_MAX_KIB = 12 * 1024 * 1024
 MEMORY_RESERVE_KIB = 2 * 1024 * 1024
-PHASE_SECONDS = 4500
+PHASE_SECONDS = 8100
 PHASE_CLEANUP_MARGIN = 10
 RSS_CAP_KIB = 6 * 1024 * 1024
-STDOUT_CAP_BYTES = 1024 * 1024
+STDOUT_CAP_BYTES = 16 * 1024 * 1024
 STDERR_CAP_BYTES = 1024 * 1024
 EXPORT_CAP_BYTES = 8 * 1024 * 1024
 ARTIFACT_CAP_BYTES = 256 * 1024 * 1024
@@ -99,6 +101,15 @@ def load_request(path: Path = REQUEST_PATH) -> dict[str, Any]:
             raise RunnerError(f"timeout outside 1..{MAX_ROW_SECONDS} for {rid}")
         if row["expected"] == "DETECTED" and not isinstance(row.get("failure_description"), str):
             raise RunnerError(f"negative row lacks named failure description: {rid}")
+        oracle = row.get("oracle")
+        if oracle is not None:
+            if (not isinstance(oracle, dict) or oracle.get("selector") != selector or
+                    oracle.get("class") != "assertion" or not isinstance(oracle.get("property_id"), str) or
+                    not oracle["property_id"] or not isinstance(oracle.get("file"), str) or
+                    not isinstance(oracle.get("export_file"), str) or type(oracle.get("line")) is not int or
+                    oracle["line"] < 1 or not isinstance(oracle.get("source_sha256"), str) or
+                    not isinstance(oracle.get("source_line"), str)):
+                raise RunnerError(f"invalid negative property oracle: {rid}")
     for key in ("changed_file_sha256", "variants"):
         if not isinstance(request.get(key), dict):
             raise RunnerError(f"missing request {key} object")
@@ -126,14 +137,50 @@ def load_request(path: Path = REQUEST_PATH) -> dict[str, Any]:
                 (row["mode"] == "PFC" and not isinstance(binding.get("target"), str)) or
                 (row["mode"] == "Original" and binding.get("target") is not None)):
             raise RunnerError(f"invalid source binding: {row['id']}")
-    smoke_ids = {"stable_default_cell", "stable_freeze_u8", "unstable_default_cell",
-                 "unstable_freeze_u8", "freeze_default_noncopy", "freeze_copy_u8"}
+        if row["mode"] == "PFC" and row.get("target") is not None and row.get("target") != binding["target"]:
+            raise RunnerError(f"row target/source binding mismatch: {row['id']}")
+        oracle = row.get("oracle")
+        if oracle is not None and row["variant"] == "production" and oracle["file"] != binding["file"]:
+            raise RunnerError(f"negative oracle source location mismatch: {row['id']}")
+    smoke_ids = {"stable_default_cell", "stable_freeze_u8_n0", "unstable_default_cell",
+                 "unstable_freeze_u8_n0", "freeze_default_noncopy_n0", "freeze_copy_u8_n0"}
     if not smoke_ids.issubset(bindings) or len({bindings[k]["target"] for k in smoke_ids}) != 6:
         raise RunnerError("six distinct PFC source targets required")
     for diagnostic, positive in (("activation-default", "stable_default_cell"),
-                                 ("activation-override", "stable_freeze_u8")):
+                                 ("activation-override", "stable_freeze_u8_n0")):
         if bindings.get(diagnostic, {}).get("target") != bindings[positive]["target"]:
             raise RunnerError("activation source target mismatch")
+    execution_groups = request.get("execution_groups")
+    if not isinstance(execution_groups, list) or not execution_groups:
+        raise RunnerError("execution_groups must be a non-empty ordered array")
+    group_rows(request["rows"], execution_groups)
+    unions = request.get("replacement_unions")
+    if not isinstance(unions, list):
+        raise RunnerError("replacement_unions must be an array")
+    union_members: set[str] = set()
+    for union in unions:
+        if (not isinstance(union, dict) or not isinstance(union.get("id"), str) or
+                not union["id"] or not isinstance(union.get("member_row_ids"), list) or
+                len(union["member_row_ids"]) != 4 or
+                not isinstance(union.get("required_cover_messages"), list) or
+                not isinstance(union.get("required_success_messages"), list) or
+                not union["required_cover_messages"] or not union["required_success_messages"]):
+            raise RunnerError("invalid fixed-N replacement union")
+        members = union["member_row_ids"]
+        if any(not isinstance(x, str) or x not in seen_ids for x in members) or len(set(members)) != 4:
+            raise RunnerError("replacement union row inventory mismatch")
+        if union_members.intersection(members):
+            raise RunnerError("replacement union member duplicated")
+        member_rows = [next(r for r in rows if r["id"] == x) for x in members]
+        if any(r["mode"] != "PFC" or r["expected"] != "SUCCESS" for r in member_rows):
+            raise RunnerError("replacement union must contain four successful PFC cases")
+        targets = {bindings[r["id"]]["target"] for r in member_rows}
+        if (len(targets) != 1 or {r.get("N") for r in member_rows} != {0, 1, 2, 3} or
+                len({r["variant"] for r in member_rows}) != 1 or
+                len({r["unwind"] for r in member_rows}) != 1 or
+                len({r.get("type") for r in member_rows}) != 1):
+            raise RunnerError("replacement union target mismatch")
+        union_members.update(members)
     return request
 
 
@@ -174,6 +221,18 @@ def verify_source(std: Path, tool: Path, request: dict[str, Any]) -> dict[str, A
         for loc in binding["locations"]:
             if loc["line"] > len(lines) or lines[loc["line"]-1] != loc["source"]:
                 raise RunnerError("harness source location anchor drift")
+    by_id = {row["id"]: row for row in request["rows"]}
+    for rid, row in by_id.items():
+        oracle = row.get("oracle")
+        if oracle is None or row["variant"] != "production":
+            continue
+        path = (std / oracle["file"]).resolve()
+        if (std.resolve() not in path.parents or not path.is_file() or
+                sha256(path) != oracle["source_sha256"]):
+            raise RunnerError(f"negative oracle source SHA drift: {rid}")
+        source_lines = path.read_text(encoding="utf-8").splitlines()
+        if oracle["line"] > len(source_lines) or source_lines[oracle["line"]-1] != oracle["source_line"]:
+            raise RunnerError(f"negative oracle assertion anchor drift: {rid}")
     # Variants may describe test overlays; their path/hash are checked when selected.
     return {"std_sha": STD_SHA, "std_tree": STD_TREE, "tool_sha": TOOL_SHA,
             "tool_tree": TOOL_TREE, "changed_file_sha256": request["changed_file_sha256"]}
@@ -194,7 +253,38 @@ def _variant_info(request: dict[str, Any], name: str) -> tuple[Path, str, dict[s
     return path, patch_sha, files
 
 
-def group_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def group_rows(rows: list[dict[str, Any]], execution_groups: list[dict[str, Any]] | None = None) -> list[dict[str, Any]]:
+    if execution_groups is not None:
+        by_id = {row["id"]: row for row in rows}
+        if len(by_id) != len(rows):
+            raise RunnerError("duplicate row id in execution inventory")
+        seen_ids: set[str] = set()
+        groups: list[dict[str, Any]] = []
+        seen_group_ids: set[str] = set()
+        for item in execution_groups:
+            if (not isinstance(item, dict) or not isinstance(item.get("id"), str) or not item["id"] or
+                    item["id"] in seen_group_ids or item.get("variant") not in
+                    ("production", "activation-default", "activation-override") or
+                    type(item.get("unwind")) is not int or item["unwind"] < 1 or
+                    not isinstance(item.get("row_ids"), list) or not item["row_ids"]):
+                raise RunnerError("invalid execution group")
+            seen_group_ids.add(item["id"])
+            ids = item["row_ids"]
+            if any(not isinstance(rid, str) or rid not in by_id for rid in ids) or len(set(ids)) != len(ids):
+                raise RunnerError("execution group row inventory mismatch")
+            if seen_ids.intersection(ids):
+                raise RunnerError("execution groups do not form a disjoint partition")
+            members = [by_id[rid] for rid in ids]
+            if any(r["variant"] != item["variant"] or r["unwind"] != item["unwind"] for r in members):
+                raise RunnerError("execution group compatibility mismatch")
+            if len({r["selector"] for r in members}) != len(members):
+                raise RunnerError("duplicate selector in invocation group")
+            seen_ids.update(ids)
+            groups.append({"id": item["id"], "variant": item["variant"],
+                           "unwind": item["unwind"], "rows": members})
+        if seen_ids != set(by_id):
+            raise RunnerError("execution groups do not cover the full row inventory")
+        return groups
     groups: dict[tuple[str, int], dict[str, Any]] = {}
     seen: set[tuple[str, int, str]] = set()
     for row in rows:
@@ -209,6 +299,27 @@ def group_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return list(groups.values())
 
 
+def select_groups(request: dict[str, Any], group_ids: list[str] | None = None) -> list[dict[str, Any]]:
+    groups = group_rows(request["rows"], request.get("execution_groups"))
+    if group_ids is None:
+        return groups
+    if not group_ids or any(not isinstance(x, str) or not x for x in group_ids) or len(set(group_ids)) != len(group_ids):
+        raise RunnerError("--groups requires a nonempty, unique comma-separated group list")
+    known = {g["id"] for g in groups}
+    unknown = set(group_ids) - known
+    if unknown:
+        raise RunnerError(f"unknown execution group(s): {sorted(unknown)}")
+    selected = set(group_ids)
+    return [g for g in groups if g["id"] in selected]
+
+
+def aggregate_replacement_union(union, rows, observations):
+    # Qualification belongs exclusively to the offline acceptance policy.
+    return {"id": union.get("id"), "state": "PENDING_OFFLINE_ACCEPTANCE",
+            "member_row_ids": union.get("member_row_ids"),
+            "eligible_for_review": False, "proof_credit": "NONE"}
+
+
 def build_argv(std: Path, tool: Path, selectors: list[str], unwind: int, export: Path) -> list[str]:
     if not selectors or len(set(selectors)) != len(selectors):
         raise RunnerError("nonempty unique exact group selectors required")
@@ -219,7 +330,7 @@ def build_argv(std: Path, tool: Path, selectors: list[str], unwind: int, export:
     for selector in selectors:
         argv += ["--harness", selector]
     argv += ["--exact", "--default-unwind", str(unwind), "-Z", "export-json",
-             "--export-json", str(export.resolve()), "--output-format=terse", str((std.resolve() / "library")),
+             "--export-json", str(export.resolve()), "--output-format=regular", str((std.resolve() / "library")),
              "--cbmc-args", "--object-bits", "12"]
     return argv
 
@@ -231,6 +342,8 @@ def ci_env(std: Path | None = None) -> dict[str, str]:
     if inherited and inherited != fixed:
         raise RunnerError("refusing inherited RUSTFLAGS outside the frozen sorting+controls cfg")
     env["RUSTFLAGS"] = fixed
+    env["NO_COLOR"] = "1"
+    env["TERM"] = "dumb"
     if std is not None:
         # std_project deletes its dummy crate on every invocation, including its
         # default target directory. Keep this job-local cache outside that tree.
@@ -239,9 +352,10 @@ def ci_env(std: Path | None = None) -> dict[str, str]:
 
 
 def _read_pipe(pipe, target: Path, cap: int, state: dict[str, Any], lock: threading.Lock, key: str,
-               capture_tail: bool = False) -> None:
-    head_cap = cap // 2 if capture_tail else cap
-    tail_cap = cap - head_cap if capture_tail else 0
+               capture_tail: bool = False, rich_parser=None) -> None:
+    storage_cap = min(cap, 65536) if rich_parser is not None else cap
+    head_cap = storage_cap // 2 if capture_tail else storage_cap
+    tail_cap = storage_cap - head_cap if capture_tail else 0
     head_kept = 0
     tail = bytearray()
     with target.open("wb") as output:
@@ -249,6 +363,8 @@ def _read_pipe(pipe, target: Path, cap: int, state: dict[str, Any], lock: thread
             data = pipe.read(65536)
             if not data:
                 break
+            if rich_parser is not None:
+                rich_parser.feed(data)
             with lock:
                 room = max(0, cap - state[key + "_kept"])
                 if len(data) > room:
@@ -274,6 +390,8 @@ def _read_pipe(pipe, target: Path, cap: int, state: dict[str, Any], lock: thread
                 output.flush()
         output.seek(head_kept)
         output.write(tail)
+    if rich_parser is not None:
+        rich_parser.finish()
     pipe.close()
 
 
@@ -413,7 +531,8 @@ def execute(argv: list[str], cwd: Path, out: Path, timeout: int,
             rss_cap_kib: int = RSS_CAP_KIB, stdout_cap: int = STDOUT_CAP_BYTES,
             stderr_cap: int = STDERR_CAP_BYTES, export_path: Path | None = None,
             export_cap: int = EXPORT_CAP_BYTES, env: dict[str, str] | None = None,
-            capture_tail: bool = False, compile_monitor: CompileMonitor | None = None) -> dict[str, Any]:
+            capture_tail: bool = False, compile_monitor: CompileMonitor | None = None,
+            rich_parser=None) -> dict[str, Any]:
     out.mkdir(parents=True, exist_ok=True)
     started = time.monotonic()
     info: dict[str, Any] = {"original_exit_code": None, "signal": None, "timed_out": False,
@@ -432,7 +551,7 @@ def execute(argv: list[str], cwd: Path, out: Path, timeout: int,
             compile_monitor.finish(info, state)
         return info
     threads = [threading.Thread(target=_read_pipe, args=(proc.stdout, out / "stdout.log", stdout_cap,
-                                                         state, lock, "stdout", capture_tail), daemon=True),
+                                                         state, lock, "stdout", capture_tail, rich_parser), daemon=True),
                threading.Thread(target=_read_pipe, args=(proc.stderr, out / "stderr.log", stderr_cap,
                                                          state, lock, "stderr", capture_tail), daemon=True)]
     for thread in threads: thread.start()
@@ -614,6 +733,9 @@ def parse_export(path: Path, row: dict[str, Any], max_bytes: int = EXPORT_CAP_BY
     if not isinstance(reported_tools, dict) or any(not isinstance(reported_tools.get(k), str) or not reported_tools[k]
                                                    for k in ("kani", "rustc", "cbmc")):
         return {"state": "MISSING_TOOL_VERSION", "outcome": "UNKNOWN"}
+    outcome = harness.get("outcome")
+    if not isinstance(outcome, dict) or outcome.get("kind") != "COMPLETED":
+        return {"state": "NOT_COMPLETED", "outcome": "UNKNOWN", "reported_outcome": outcome}
     checks, covers = harness.get("checks"), harness.get("covers")
     if not isinstance(checks, dict) or not isinstance(covers, dict):
         return {"state": "WRONG_EXPORT_SHAPE", "outcome": "UNKNOWN"}
@@ -621,63 +743,16 @@ def parse_export(path: Path, row: dict[str, Any], max_bytes: int = EXPORT_CAP_BY
     unsupported = harness.get("unsupported_constructs")
     if not isinstance(failures, list) or not isinstance(unsupported, list):
         return {"state": "WRONG_EXPORT_SHAPE", "outcome": "UNKNOWN"}
-    bad_fields = ("unreachable", "undetermined", "error", "unknown")
-    incomplete = (any(checks.get(key) != [] for key in bad_fields) or
-                  checks.get("other") != [] or not isinstance(checks.get("total"), int) or
-                  not isinstance(checks.get("success"), int) or
-                  not isinstance(covers.get("total"), int) or
-                  not isinstance(harness.get("n_properties"), int) or
-                  harness.get("n_properties") != checks["total"] + covers["total"])
-    if unsupported or incomplete:
-        return {"state": "INCOMPLETE_CHECK_INVENTORY", "outcome": "UNKNOWN",
-                "failures": failures, "unsupported_constructs": unsupported,
-                "checks": checks}
-    satisfied = covers.get("satisfied")
-    cover_bad = any(covers.get(key) != [] for key in
-                    ("unsatisfiable", "unreachable", "undetermined", "error", "unknown", "other"))
-    required_covers = row.get("required_covers", [])
-    if (not isinstance(satisfied, list) or cover_bad or len(satisfied) < row["required_cover_count"] or
-            not set(required_covers).issubset(set(satisfied))):
-        return {"state": "COVERAGE_INCOMPLETE", "outcome": "UNKNOWN", "covers": covers}
-    outcome = harness.get("outcome")
-    is_success = isinstance(outcome, dict) and outcome.get("kind") == "COMPLETED" and outcome.get("verdict") == "SUCCESS"
-    is_failure = isinstance(outcome, dict) and outcome.get("kind") == "COMPLETED" and outcome.get("verdict") == "FAILURE"
-    if not is_success and not is_failure:
-        return {"state": "NOT_COMPLETED", "outcome": "UNKNOWN"}
-    named = harness.get("failed_properties")
-    if not isinstance(named, list):
-        return {"state": "WRONG_EXPORT_SHAPE", "outcome": "UNKNOWN"}
-    failed_ids = [prop.get("id") for prop in named if isinstance(prop, dict)]
-    if (harness.get("n_failed") != len(failures) or len(failed_ids) != len(failures) or
-            set(failed_ids) != set(failures) or checks.get("success") + len(failures) != checks.get("total")):
-        return {"state": "INCONSISTENT_PROPERTY_COUNTS", "outcome": "UNKNOWN",
-                "failures": failures, "failed_properties": named, "checks": checks}
-    named_matches = []
-    for prop in named:
-        if isinstance(prop, dict):
-            label = " ".join(str(prop.get(k, "")) for k in ("id", "description"))
-            needle = row.get("failure_description", "")
-            if needle and (label == needle or needle in label): named_matches.append(prop)
-    if row["expected"] == "SUCCESS":
-        accepted = is_success and not failures and harness.get("n_failed") == 0
-    else:
-        needle = row["failure_description"]
-        accepted = (is_failure and len(failures) == 1 and len(named_matches) == 1 and
-                    any(needle == label or needle in label for label in
-                        (named_matches[0].get("id", ""), named_matches[0].get("description", ""))) and
-                    harness.get("n_failed") == 1)
-    return {"state": "VALIDATED_OBSERVATION", "outcome": "EXPECTED" if accepted else "UNEXPECTED",
-            "expected": row["expected"], "failures": failures, "failed_properties": named,
-            "checks": checks, "covers": covers, "checks_success": checks.get("success"),
-            "checks_total": checks.get("total"), "satisfied_cover_ids": satisfied,
-            "selected_root": harness.get("name"), "selected_mode": kind,
-            "expected_target_fn": binding.get("target"),
-            "source_binding": binding,
+    try:
+        rich_evidence.validate_stock_inventory(harness)
+    except ValueError as exc:
+        return {"state": "INCONSISTENT_PROPERTY_COUNTS", "outcome": "UNKNOWN", "error": str(exc)}
+    return {"state": "RECORDED_OBSERVATION", "outcome": "RECORDED",
+            "reported_outcome": outcome, "harness": harness,
+            "selected_root": harness["name"], "selected_mode": kind,
+            "expected_target_fn": binding.get("target"), "source_binding": binding,
             "reported_contracted_function_name": reported_contract_function,
-            "contract_wrapper_correlation": "PENDING_REVIEW",
-            "required_success_messages": row.get("required_success_messages", []),
-            "success_message_binding": "REVIEW_REQUIRED_SCHEMA_HAS_NO_NAMED_SUCCESS_CHECKS",
-            "proof_credit": "PENDING_REVIEW"}
+            "qualified_acceptance": "PENDING_OFFLINE_ACCEPTANCE", "proof_credit": "NONE"}
 
 
 def _write_json(path: Path, value: Any) -> None:
@@ -728,14 +803,25 @@ def _run_variant(std: Path, name: str, request: dict[str, Any]) -> tuple[Path | 
     subprocess.run(["git", "-C", str(std), "apply", "--check", str(patch)], check=True)
     subprocess.run(["git", "-C", str(std), "apply", str(patch)], check=True)
     try:
-        status = git(std, "status", "--porcelain=v1", "-z")
-        changed_paths = {item[3:] for item in status.split("\0") if item}
+        status = subprocess.run(["git", "-C", str(std), "status", "--porcelain=v1", "-z"],
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True).stdout
+        records = [item for item in status.split(b"\0") if item]
+        if any(len(item) < 4 or item[2:3] != b" " for item in records):
+            raise RunnerError(f"cannot parse lossless porcelain status ({name})")
+        changed_paths = {os.fsdecode(item[3:]) for item in records}
         if changed_paths != set(changed):
             raise RunnerError(f"variant changed unexpected paths ({name}): {sorted(changed_paths ^ set(changed))}")
         for rel, digest in changed.items():
             path = (std / rel).resolve()
             if std.resolve() not in path.parents or not path.is_file() or sha256(path) != digest:
                 raise RunnerError(f"variant changed-file SHA mismatch ({name}): {rel}")
+        for row in request.get("rows", []):
+            if row["variant"] != name or row.get("oracle") is None:
+                continue
+            oracle = row["oracle"]; path = std / oracle["file"]
+            if (changed.get(oracle["file"]) != oracle["source_sha256"] or
+                    path.read_text().splitlines()[oracle["line"]-1] != oracle["source_line"]):
+                raise RunnerError("mutant oracle source binding drift")
     except Exception:
         subprocess.run(["git", "-C", str(std), "apply", "--reverse", "--check", str(patch)], check=True)
         subprocess.run(["git", "-C", str(std), "apply", "--reverse", str(patch)], check=True)
@@ -779,12 +865,14 @@ def _run_group(std: Path, tool: Path, out: Path, request: dict[str, Any],
                "request_sha256": sha256(REQUEST_PATH)}
     patch = None
     fatal = None
+    rich = rich_evidence.RegularEvidence(selectors, std.resolve())
     monitor = CompileMonitor(dest / "compile/receipt.json", export, selectors)
     try:
         _write_json(dest / "receipt.json", receipt)
         for result in results:
             _write_json(out / result["id"] / "receipt.json", result)
         source_before = verify_source(std, tool, request)
+        receipt["source_before"] = source_before
         before = binary_fingerprints(tool, {})
         if not before["required_hashes_present"]:
             raise RunnerError("missing required tool binary hash")
@@ -809,7 +897,7 @@ def _run_group(std: Path, tool: Path, out: Path, request: dict[str, Any],
         invocation = execute(argv, std.resolve(), dest, timeout,
                              rss_cap_kib=memory["group_cap_kib"], stdout_cap=STDOUT_CAP_BYTES,
                              stderr_cap=STDERR_CAP_BYTES, export_path=export, export_cap=EXPORT_CAP_BYTES,
-                             env=child_env, capture_tail=True, compile_monitor=monitor)
+                             env=child_env, capture_tail=True, compile_monitor=monitor, rich_parser=rich)
         receipt["execution"] = invocation
         # Synthetic execution substitutes must also supply a bound compile receipt.
         if monitor.receipt["state"] != "COMPLETE":
@@ -829,6 +917,9 @@ def _run_group(std: Path, tool: Path, out: Path, request: dict[str, Any],
         all_success = all(h.get("outcome") == {"kind": "COMPLETED", "verdict": "SUCCESS"} for h in harnesses)
         if invocation.get("original_exit_code") != (0 if all_success else 1):
             raise RunnerError("group_exit_export_mismatch")
+        rich.validate(raw)
+        _write_json(dest / "properties.json", rich.document())
+        receipt["rich_evidence_sha256"] = sha256(dest / "properties.json")
         after = binary_fingerprints(tool, raw)
         receipt["tool_fingerprints_after"] = after
         if (not after["required_hashes_present"] or
@@ -841,6 +932,9 @@ def _run_group(std: Path, tool: Path, out: Path, request: dict[str, Any],
                                   std=std.resolve(), group_selectors=selectors)
             result.update(status="OBSERVED", outcome=parsed["outcome"], export=parsed,
                           group_export_sha256=receipt["export_sha256"],
+                          rich_evidence="groups/" + group["id"] + "/properties.json",
+                          rich_evidence_sha256=receipt["rich_evidence_sha256"],
+                          verification_time_s=parsed.get("harness", {}).get("resources", {}).get("verification_time_s"),
                           group_original_exit=invocation.get("original_exit_code"),
                           original_exit=None, original_exit_scope="PER_ROOT_DRIVER_EXIT_UNAVAILABLE_IN_BATCH",
                           signal=invocation.get("signal"), group_rss_peak_kib=invocation.get("rss_peak_kib"),
@@ -859,14 +953,14 @@ def _run_group(std: Path, tool: Path, out: Path, request: dict[str, Any],
                 subprocess.run(["git", "-C", str(std), "apply", "--reverse", "--check", str(patch)], check=True)
                 subprocess.run(["git", "-C", str(std), "apply", "--reverse", str(patch)], check=True)
             except Exception as exc:
-                fatal = f"variant_cleanup_failed: {exc}"
+                fatal = (fatal + "; " if fatal else "") + f"variant_cleanup_failed: {exc}"
         try:
             source_after = verify_source(std, tool, request)
             receipt["source_after"] = source_after
             if source_after != receipt.get("source_before"):
                 raise RunnerError("source_identity_drift")
         except Exception as exc:
-            fatal = f"source_drift: {exc}"
+            fatal = (fatal + "; " if fatal else "") + f"source_drift: {exc}"
         if fatal:
             receipt.update(state="FAILED", reason=fatal)
             for result in results:
@@ -876,6 +970,7 @@ def _run_group(std: Path, tool: Path, out: Path, request: dict[str, Any],
         execution = receipt.get("execution", {})
         if monitor.receipt["state"] == "IN_PROGRESS":
             monitor.finish({**execution, "runner_error": fatal or "NO_COMPLETION"}, {})
+        _write_json(dest / "properties.json", rich.document())
         for stream in ("stdout", "stderr"):
             receipt[stream] = _bounded_log(dest / (stream+".log"), execution.get(stream+"_bytes"))
         receipt["compilation"] = "compile/receipt.json"
@@ -896,11 +991,14 @@ def _run_group(std: Path, tool: Path, out: Path, request: dict[str, Any],
     return results, fatal
 
 
-def run_rows(std: Path, tool: Path, out: Path, request: dict[str, Any]) -> int:
+def run_rows(std: Path, tool: Path, out: Path, request: dict[str, Any],
+             group_ids: list[str] | None = None) -> int:
     out.mkdir(parents=True, exist_ok=True)
     phase_started = time.monotonic()
     deadline = phase_started+PHASE_SECONDS
-    groups = group_rows(request["rows"])
+    all_groups = group_rows(request["rows"], request.get("execution_groups"))
+    groups = select_groups(request, group_ids)
+    selected_group_ids = {g["id"] for g in groups}
     results: dict[str, dict[str, Any]] = {}
     fatal = None
     for group in groups:
@@ -918,13 +1016,28 @@ def run_rows(std: Path, tool: Path, out: Path, request: dict[str, Any]) -> int:
                 _write_json(out / row["id"] / "receipt.json", result)
         _write_json(out / "receipt.json", {"state": "STOPPED" if fatal else "IN_PROGRESS",
                     "stop_reason": fatal, "proof_credit": "NONE", "rows": list(results.values())})
+    for group in all_groups:
+        if group["id"] in selected_group_ids:
+            continue
+        for row in group["rows"]:
+            result = {**_row_base(row, "NOT_SELECTED"), "reason": "group not selected",
+                      "group": group["id"], "proof_credit": "NONE"}
+            results[row["id"]] = result
     ordered = [results[row["id"]] for row in request["rows"]]
-    unknown = any(r.get("outcome") != "EXPECTED" for r in ordered)
+    unknown = any(results[row["id"]].get("outcome") != "RECORDED" for group in groups for row in group["rows"])
+    union_summaries = [aggregate_replacement_union(u, request["rows"], results)
+                       for u in request.get("replacement_unions", [])]
     _write_json(out / "receipt.json", {"state": "STOPPED" if fatal else "COMPLETE_WITH_UNKNOWN" if unknown else "COMPLETE",
                 "stop_reason": fatal, "std_sha": STD_SHA, "tool_sha": TOOL_SHA,
+                "std_tree": STD_TREE, "tool_tree": TOOL_TREE,
+                "request_sha256": sha256(REQUEST_PATH),
                 "phase_elapsed_seconds": round(time.monotonic()-phase_started, 3),
+                "selected_groups": [g["id"] for g in groups],
+                "replacement_unions": union_summaries,
                 "proof_credit": "NONE", "per_root_rss_status": "UNKNOWN_NO_EXACT_HARNESS_ATTRIBUTION", "rows": ordered})
-    return 1 if fatal or unknown else 0
+    selected_unknown = any(results[row["id"]].get("outcome") != "RECORDED"
+                           for group in groups for row in group["rows"])
+    return 1 if fatal or selected_unknown else 0
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -934,14 +1047,17 @@ def main(argv: list[str] | None = None) -> int:
         p = sub.add_parser(command)
         p.add_argument("--std", required=True, type=Path)
         p.add_argument("--tool", required=True, type=Path)
-        if command != "check-source": p.add_argument("--out", required=True, type=Path)
+        if command != "check-source":
+            p.add_argument("--out", required=True, type=Path)
+            p.add_argument("--groups", help="comma-separated ordered subset of request execution group IDs")
     args = parser.parse_args(argv)
     try:
         request = load_request()
         if args.command == "check-source":
             print(json.dumps(verify_source(args.std, args.tool, request), sort_keys=True))
         else:
-            return run_rows(args.std, args.tool, args.out, request)
+            group_ids = args.groups.split(",") if args.groups is not None else None
+            return run_rows(args.std, args.tool, args.out, request, group_ids)
     except Exception as exc:
         print(f"runner: {type(exc).__name__}: {exc}", file=sys.stderr)
         return 2
