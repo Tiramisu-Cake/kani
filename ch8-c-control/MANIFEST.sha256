@@ -1,0 +1,5 @@
+8f3eb8994d9746014136541dd968c3c7420d83f6cb3b72bf3cd76ff474cd1662  .github/workflows/ch8-c.yml
+b68ad40d1915ee0b51776d839c0f7548506835b1a733839b6300ead9283c6a84  ch8-c-control/check_package.py
+55d216f35051bffb34116d3c39298ba50a1dbd5449acc2af9c549b5296a79591  ch8-c-control/runner.py
+d03fc6121392f687e00a60d29f4b1eddf5933fdc23ed5e5884fdf68e3b55568c  ch8-c-control/test_package.py
+e6120f8ff2c16765eac2ef5dacae6d34c55417e1587fb2131bf73d9d672e1651  ch8-c-control/test_runner.py

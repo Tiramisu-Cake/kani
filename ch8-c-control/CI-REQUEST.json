@@ -1,0 +1,153 @@
+{
+  "schema": "ch8-c-ci-request-v1",
+  "status": "READY",
+  "authorization": "PREPARATION_ONLY",
+  "std_sha": "597e54c5cb503955f9483edc6acc9d4752d57713",
+  "std_tree": "b3bd6d8c939e08b13fc7a4c6c9da694cc8a2aa97",
+  "base_std_sha": "c5ff36ff433692140605891f646043f991db05de",
+  "tool_sha": "0aac16ef62da9e9d5645782d458593e5d78143ba",
+  "tool_tree": "9d8bc9312bf955ef126d32b819b3cd0ed105ed2b",
+  "changed_file_sha256": {
+    "library/core/src/slice/sort/shared/smallsort/verify.rs": "cda65f8214b25d522a3fce607b824e7960e9f1fef999ee350d44e7952cb24a6a",
+    "library/core/src/slice/sort/shared/smallsort/verify/c_controls.rs": "5e2426cd05741a22e162110c73d8c8258cdf5d66ef77971d47ac6e7b69122200"
+  },
+  "rows": [
+    {
+      "id": "c_merge_source_write_restore",
+      "selector": "slice::sort::shared::smallsort::verify::c_controls::c_merge_source_write_restore",
+      "mode": "PFC",
+      "variant": "production",
+      "target": "slice::sort::shared::smallsort::bidirectional_merge",
+      "unwind": 17,
+      "expected": "DETECTED",
+      "failure_match": {
+        "description_regex": "^Check that .+ is assignable$",
+        "locations": [
+          {
+            "file": "library/core/src/slice/sort/shared/smallsort/verify/c_controls.rs",
+            "line": "23"
+          },
+          {
+            "file": "library/core/src/slice/sort/shared/smallsort/verify/c_controls.rs",
+            "line": "25"
+          }
+        ],
+        "class": "assigns"
+      },
+      "required_cover_count": 4,
+      "required_cover_descriptions": [
+        "C_merge_callback",
+        "C_N1_transient_write",
+        "C_merge_live_read_after_restore",
+        "C_merge_return"
+      ],
+      "timeout_seconds": 600,
+      "state": "NOT_RUN",
+      "source_target_syntax": "bidirectional_merge",
+      "source_harness_file": "library/core/src/slice/sort/shared/smallsort/verify/c_controls.rs",
+      "source_harness_line": 43
+    },
+    {
+      "id": "c_merge_source_read_only",
+      "selector": "slice::sort::shared::smallsort::verify::c_controls::c_merge_source_read_only",
+      "mode": "PFC",
+      "variant": "production",
+      "target": "slice::sort::shared::smallsort::bidirectional_merge",
+      "unwind": 17,
+      "expected": "SUCCESS",
+      "required_cover_count": 3,
+      "required_cover_descriptions": [
+        "C_merge_callback",
+        "C_merge_live_read_after_restore",
+        "C_merge_return"
+      ],
+      "timeout_seconds": 600,
+      "state": "NOT_RUN",
+      "source_target_syntax": "bidirectional_merge",
+      "source_harness_file": "library/core/src/slice/sort/shared/smallsort/verify/c_controls.rs",
+      "source_harness_line": 47
+    }
+  ],
+  "budgets": {
+    "phase_seconds": 6720,
+    "rss_kib": 6291456,
+    "stdout_bytes": 1048576,
+    "stderr_bytes": 1048576,
+    "export_bytes": 8388608,
+    "artifact_bytes": 268435456,
+    "row_seconds": 600,
+    "setup_seconds": 1800,
+    "reserve_seconds": 300,
+    "run_step_seconds": 6720,
+    "group_seconds": 2100,
+    "job_seconds": 9000
+  },
+  "ci_changed_paths": [
+    ".github/workflows/bench-compiler.yml",
+    ".github/workflows/bench-e2e.yml",
+    ".github/workflows/bench-pr.yml",
+    ".github/workflows/cargo-update.yml",
+    ".github/workflows/cbmc-latest.yml",
+    ".github/workflows/cbmc-update.yml",
+    ".github/workflows/ch8-c.yml",
+    ".github/workflows/charon-update.yml",
+    ".github/workflows/deny.yml",
+    ".github/workflows/extra_jobs.yml",
+    ".github/workflows/format-check.yml",
+    ".github/workflows/kani.yml",
+    ".github/workflows/release.yml",
+    ".github/workflows/slow-tests.yml",
+    ".github/workflows/toolchain-upgrade.yml",
+    ".github/workflows/verify-std-check.yml",
+    ".github/workflows/z3-update.yml",
+    "ch8-c-control/CI-REQUEST.json",
+    "ch8-c-control/MANIFEST.sha256",
+    "ch8-c-control/check_package.py",
+    "ch8-c-control/runner.py",
+    "ch8-c-control/test_package.py",
+    "ch8-c-control/test_runner.py"
+  ],
+  "ci_payload_sha256": {
+    ".github/workflows/ch8-c.yml": "8f3eb8994d9746014136541dd968c3c7420d83f6cb3b72bf3cd76ff474cd1662",
+    "ch8-c-control/check_package.py": "b68ad40d1915ee0b51776d839c0f7548506835b1a733839b6300ead9283c6a84",
+    "ch8-c-control/runner.py": "55d216f35051bffb34116d3c39298ba50a1dbd5449acc2af9c549b5296a79591",
+    "ch8-c-control/test_package.py": "d03fc6121392f687e00a60d29f4b1eddf5933fdc23ed5e5884fdf68e3b55568c",
+    "ch8-c-control/test_runner.py": "e6120f8ff2c16765eac2ef5dacae6d34c55417e1587fb2131bf73d9d672e1651"
+  },
+  "flags": {
+    "cli": [
+      "--no-assert-contracts",
+      "--jobs=1",
+      "--cbmc-args",
+      "--object-bits",
+      "12"
+    ],
+    "unstable_features": [
+      "function-contracts",
+      "mem-predicates",
+      "float-lib",
+      "c-ffi",
+      "loop-contracts",
+      "quantifiers",
+      "stubbing",
+      "export-json"
+    ],
+    "cfg": [
+      "kani_smallsort_controls"
+    ],
+    "sorting_cfg": false,
+    "assert_contracts": false,
+    "uninit_checks": false,
+    "valid_value_checks": false,
+    "jobs": 1,
+    "attempt": 1,
+    "max_root_seconds": 600
+  },
+  "payload_manifest": "MANIFEST.sha256",
+  "payload_manifest_sha256": "e338f015457138d770761258f9909c03d61aa9e664d1281dbd479fee6d42c435",
+  "variants": {},
+  "base_std_tree": "1302063846873aa300f8bac64fe09e8a3ed1280f",
+  "supersedes_control": "64ec781bc119279ccc4365aa831d2a9d0a792fee",
+  "artifact_exclusion": "Build directories named target are removed before fallback artifact accounting; upload also excludes **/target/**.",
+  "stage": "C-02"
+}
