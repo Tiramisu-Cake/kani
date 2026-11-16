@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 """CI-only census; local use is limited to static/synthetic checks."""
 import argparse
-import concurrent.futures
 import hashlib
 import json
 import os
@@ -44,7 +43,7 @@ def load():
     assert {s: sum(r['shard'] == s for r in roots) for s in range(1, 5)} == {1: 0, 2: 183, 3: 0, 4: 52}
     assert all(r['selector'] == PREFIX + r['root'] and r['intended_invalid_value'] is False for r in roots)
     assert req['organizer_features'] == ['function-contracts', 'mem-predicates', 'float-lib', 'c-ffi', 'loop-contracts', 'quantifiers', 'stubbing']
-    assert req['jobs'] == 2 and req['object_bits'] == 12
+    assert req['jobs'] == 1 and req['object_bits'] == 12
     assert req['cfg_on'] is False and req['autoharness'] is False and req['uninit_checks'] is False
     return req, roots
 
@@ -99,20 +98,48 @@ def kill_group(pid):
         pass
 
 
-def guarded(argv, cwd, seconds, req):
+def available_bytes():
+    return next(int(line.split()[1])*1024 for line in Path('/proc/meminfo').read_text().splitlines()
+                if line.startswith('MemAvailable:'))
+
+
+def guarded(argv, cwd, seconds, req, export_marker=None, compile_receipt=None):
     """Drain bounded output and monitor all invocation process groups; keep actual exit/signal."""
     started = time.monotonic()
     if Path('/proc/meminfo').is_file():
-        available = next(int(l.split()[1])*1024 for l in Path('/proc/meminfo').read_text().splitlines() if l.startswith('MemAvailable:'))
-        req = dict(req, aggregate_rss_bytes=min(req['aggregate_rss_bytes'], max(1, available-req['os_reserve_bytes'])))
+        available = available_bytes()
+        req = dict(req, aggregate_rss_bytes=min(req['aggregate_rss_bytes'], available-req['os_reserve_bytes']))
     receipt = {'argv': argv, 'cwd': str(cwd), 'exit': None, 'signal': None,
                'stop': None, 'peak_rss_bytes': 0, 'peak_aggregate_rss_bytes': 0,
-               'stdout_bytes': 0, 'diagnostic_tail': '', 'exception': None}
+               'stdout_bytes': 0, 'diagnostic_head': '', 'diagnostic_tail': '', 'exception': None,
+               'compile': {'status': 'NOT_RUN', 'limit_s': req.get('compile_seconds'),
+                           'boundary': 'fresh export marker after compile and selection',
+                           'wall_s': None, 'diagnostic_head': '', 'diagnostic_tail': ''}}
+    compile_done = export_marker is None
+    compile_head, compile_tail, head = bytearray(), bytearray(), bytearray()
+    compile_bytes = 0
+    def save_compile():
+        receipt['compile'].update(diagnostic_head=compile_head.decode(errors='replace'),
+                                  diagnostic_tail=compile_tail.decode(errors='replace'), stdout_bytes=compile_bytes,
+                                  diagnostic_truncated=compile_bytes > len(compile_head)+len(compile_tail))
+        if compile_receipt is not None:
+            write(compile_receipt, receipt['compile'])
+    if export_marker is not None:
+        receipt['compile']['status'] = 'IN_PROGRESS'
+        save_compile()
+    if req['aggregate_rss_bytes'] <= 0:
+        receipt.update(stop='MEMORY_UNAVAILABLE', wall_s=time.monotonic()-started)
+        receipt['compile'].update(status='NOT_RUN', reason='no RAM after OS reserve')
+        save_compile()
+        return receipt
     try:
         proc = subprocess.Popen(argv, cwd=cwd, env=clean_env(), stdout=subprocess.PIPE,
                                 stderr=subprocess.STDOUT, start_new_session=True)
     except Exception as exc:
         receipt.update(stop='SPAWN_ERROR', exception=repr(exc), wall_s=time.monotonic() - started)
+        if export_marker is not None:
+            receipt['compile'].update(status='SPAWN_ERROR', wall_s=receipt['wall_s'], exception=repr(exc))
+            save_compile()
         return receipt
     with LOCK:
         GROUPS.add(proc.pid)
@@ -121,20 +148,31 @@ def guarded(argv, cwd, seconds, req):
     sel.register(proc.stdout, selectors.EVENT_READ)
     try:
         while proc.poll() is None or sel.get_map():
+            if not compile_done and Path(export_marker).exists():
+                compile_done = True
+                receipt['compile'].update(status='MARKER_OBSERVED', wall_s=time.monotonic()-started)
+                save_compile()
             for key, _ in sel.select(0.1):
                 chunk = os.read(key.fd, 65536)
                 if not chunk:
                     sel.unregister(key.fileobj)
                 else:
                     receipt['stdout_bytes'] += len(chunk)
+                    head.extend(chunk[:max(0, 4096-len(head))])
                     tail.extend(chunk)
                     del tail[:-4096]
+                    if not compile_done:
+                        compile_bytes += len(chunk)
+                        compile_head.extend(chunk[:max(0, 4096-len(compile_head))])
+                        compile_tail.extend(chunk)
+                        del compile_tail[:-4096]
             with LOCK:
                 values = rss_groups(GROUPS)
             rss, total = values.get(proc.pid, 0), sum(values.values())
             receipt['peak_rss_bytes'] = max(receipt['peak_rss_bytes'], rss)
             receipt['peak_aggregate_rss_bytes'] = max(receipt['peak_aggregate_rss_bytes'], total)
-            why = ('TIMEOUT' if time.monotonic() - started > seconds else
+            why = ('COMPILE_TIMEOUT' if not compile_done and time.monotonic()-started > req['compile_seconds'] else
+                   'TIMEOUT' if time.monotonic() - started > seconds else
                    'RSS_LIMIT' if rss > req['root_rss_bytes'] or total > req['aggregate_rss_bytes'] else
                    'OUTPUT_LIMIT' if receipt['stdout_bytes'] > req['stdout_cap_bytes'] else None)
             if why and receipt['stop'] is None:
@@ -155,16 +193,27 @@ def guarded(argv, cwd, seconds, req):
         sel.close()
         proc.stdout.close()
     receipt['wall_s'] = time.monotonic() - started
+    receipt['diagnostic_head'] = head.decode(errors='replace')
     receipt['diagnostic_tail'] = tail.decode(errors='replace')
+    if export_marker is not None:
+        # This boundary establishes stage timing only; classify validates export identities.
+        if not compile_done and Path(export_marker).exists():
+            compile_done = True
+            receipt['compile'].update(status='MARKER_OBSERVED', wall_s=receipt['wall_s'])
+        if not compile_done:
+            receipt['compile'].update(status='INCOMPLETE', wall_s=receipt['wall_s'])
+        save_compile()
     receipt['diagnostic_tail_truncated'] = receipt['stdout_bytes'] > len(tail)
     return receipt
 
 
-def argv_for(req, row, binary, target, export):
+def argv_for(req, rows, binary, target, export):
     argv = [str(binary), 'verify-std', '-Z', 'unstable-options', './library']
     for feature in req['organizer_features'] + ['valid-value-checks', 'export-json']:
         argv += ['-Z', feature]
-    return argv + ['--no-assert-contracts', '--harness', row['selector'], '--exact', '--jobs=1',
+    for row in rows:
+        argv += ['--harness', row['selector']]
+    return argv + ['--no-assert-contracts', '--exact', '--jobs=1',
                    '--harness-timeout', '600s', '--target-dir', str(target), '--export-json', str(export),
                    '--output-format=terse', '--cbmc-args', '--object-bits', '12']
 
@@ -173,11 +222,13 @@ def unknown(reason):
     return {'classification': CATCHALL, 'complete': False, 'reason': reason, 'observed_classes': []}
 
 
-def classify(data, row, execution, req):
+def classify(data, row, execution, req, rows=None):
     """Only complete, exactly bound structured results can receive a scientific class."""
     retained = {}
+    rows = [row] if rows is None else rows
     try:
         assert isinstance(data, dict) and data['schema_version'] == '0.1.0', 'schema'
+        assert isinstance(data['configuration'], dict), 'configuration-type'
         assert data['kani_commit'] == KANI and data['kani_commit_dirty'] is False, 'tool'
         assert data['target'] == req['target'], 'target'
         assert data['enabled_unstable_features'] == sorted(req['organizer_features'] + ['unstable-options', 'valid-value-checks', 'export-json']), 'features'
@@ -189,12 +240,30 @@ def classify(data, row, execution, req):
         assert cfg['checks'] == expected and cfg['cbmc_args'] == ['--object-bits', '12'] and cfg['coverage_enabled'] is False, 'checks'
         selection = data['harness_selection']
         assert isinstance(selection, dict) and type(selection.get('matched_count')) is int and type(selection.get('exact')) is bool, 'selection-types'
-        assert selection == dict(requested_filters=[row['selector']], exact=True, unmatched_filters=[], matched_count=1), 'selection'
-        assert data['run_state'] == 'COMPLETE' and data['outcome'] == {'kind': 'COMPLETED'}, 'run-state'
+        filters = [r['selector'] for r in rows]
+        assert selection == dict(requested_filters=filters, exact=True, unmatched_filters=[], matched_count=len(rows)), 'selection'
+        assert type(data['harness_timeout_s']) in (int, float) and data['harness_timeout_s'] == 600, 'harness-timeout'
+        assert data['run_state'] in ('COMPLETE', 'PARTIAL') and data['outcome'] == {'kind': 'COMPLETED'}, 'run-state'
         hs = data['harnesses']
-        assert isinstance(hs, list) and len(hs) == 1, 'harness-count'
-        h = hs[0]
-        assert h['name'] == row['selector'] and h['crate_name'] == 'core' and h['is_automatically_generated'] is False, 'harness-binding'
+        assert isinstance(hs, list) and all(isinstance(h, dict) for h in hs), 'harness-array'
+        names = [h['name'] for h in hs]
+        assert all(isinstance(n, str) for n in names) and len(set(names)) == len(names), 'duplicate-harness'
+        assert set(names) <= set(filters), 'unexpected-harness'
+        assert (len(hs) == len(rows)) == (data['run_state'] == 'COMPLETE'), 'run-state-count'
+        selected = [h for h in hs if h['name'] == row['selector']]
+        assert len(selected) == 1, 'missing-harness'
+        h = selected[0]
+        assert h['crate_name'] == 'core' and h['is_automatically_generated'] is False, 'harness-binding'
+        contract = h['contract']
+        assert contract is None or (isinstance(contract, dict)
+            and set(contract) == {'contracted_function_name', 'recursion_tracker'}
+            and isinstance(contract['contracted_function_name'], str) and contract['contracted_function_name']
+            and (contract['recursion_tracker'] is None or isinstance(contract['recursion_tracker'], str))), 'contract'
+        retained['harness'] = h
+        # A failing/timed-out neighbour determines group exit; the selected row uses its own verdict.
+        assert all(isinstance(x.get('outcome'), dict) for x in hs), 'outcome-types'
+        all_success = data['run_state'] == 'COMPLETE' and all(x['outcome'] == {'kind':'COMPLETED','verdict':'SUCCESS'} for x in hs)
+        assert type(execution['exit']) is int and execution['exit'] == (0 if all_success else 1), 'exit-verdict'
         assert h['outcome']['kind'] == 'COMPLETED', 'harness-not-completed'
         retained['harness'] = h
         checks, covers = h['checks'], h['covers']
@@ -237,7 +306,6 @@ def classify(data, row, execution, req):
         verdict = h['outcome']['verdict']
         assert verdict in ('SUCCESS', 'FAILURE'), 'verdict'
         assert verdict == ('FAILURE' if failed else 'SUCCESS'), 'verdict-properties'
-        assert execution['exit'] == (1 if failed else 0), 'exit-verdict'
         assert execution['stop'] is None, 'wrapper-stop'
         if not classes:
             result = {'classification': 'PASS', 'complete': True, 'reason': 'bound completed verdict', 'observed_classes': ['PASS']}
@@ -279,44 +347,36 @@ def run_census(args, req, roots):
     seed(out, roots)
     before_binaries = json.loads((out/'binary-hashes.json').read_text())
     assert before_binaries == binary_hashes(export), 'binary changed between build and census'
-    available = next(int(l.split()[1]) * 1024 for l in Path('/proc/meminfo').read_text().splitlines() if l.startswith('MemAvailable:'))
+    available = available_bytes()
     req = dict(req, aggregate_rss_bytes=min(req['aggregate_rss_bytes'], available - req['os_reserve_bytes']))
     assert req['aggregate_rss_bytes'] > 0, 'no RAM after OS reserve'
     write(out / 'binding.json', dict(binding, available_bytes=available, aggregate_cap_bytes=req['aggregate_rss_bytes'], request_sha256=digest(HERE/'CI-REQUEST.json'), inventory_sha256=digest(HERE/'roots.json')))
-    deadline = time.monotonic() + req['stage_seconds']['verify']
-    slots = [roots[i::req['jobs']] for i in range(req['jobs'])]
-
-    def lane(slot, rows):
-        target = out.parent / ('target-shard-%s-slot-%s' % (args.shard, slot))
-        for row in rows:
-            remaining = deadline - time.monotonic()
-            if remaining < req['root_seconds'] + 5:
-                break  # Keep full root envelope; all untouched receipts remain NOT_RUN.
-            if sum(p.stat().st_size for p in out.glob('*.json')) > req['artifact_cap_bytes'] - req['export_cap_bytes']:
-                break
-            raw = target.parent / ('export-%03d.json' % row['id'])
-            assert not raw.exists(), 'stale export'
-            argv = argv_for(req, row, export/'scripts/kani', target, raw)
-            execution = guarded(argv, std, req['root_seconds'], req)
-            receipt = initial(row)
-            receipt['runtime_proof_status'] = 'ATTEMPTED'
-            receipt['execution'] = execution
-            if raw.exists() and raw.stat().st_size <= req['export_cap_bytes']:
-                receipt['export_sha256'] = digest(raw)
-                try:
-                    result = classify(json.loads(raw.read_text()), row, execution, req)
-                except (ValueError, OSError) as exc:
-                    result = unknown('INVALID_EXPORT: ' + repr(exc))
-                receipt.update(result)
-            else:
-                receipt.update(unknown('MISSING_OR_OVERSIZE_EXPORT'))
-            if raw.exists():
-                raw.unlink()  # Only curated bounded receipts are uploaded; no target/raw logs/archives.
-            write(out / ('root-%03d.json' % row['id']), receipt)
-    with concurrent.futures.ThreadPoolExecutor(max_workers=req['jobs']) as pool:
-        futures = [pool.submit(lane, i, r) for i, r in enumerate(slots)]
-        for f in futures:
-            f.result()
+    # All frozen B roots share flags/cfg/RUSTFLAGS: exactly one group across historical shards.
+    target, raw = out.parent/'target-b-group', out.parent/'export-b-group.json'
+    assert not raw.exists() and not target.exists(), 'fresh group scratch required'
+    group_seconds = req['compile_seconds'] + sum(req['root_seconds'] for _ in roots)
+    argv = argv_for(req, roots, export/'scripts/kani', target, raw)
+    execution = guarded(argv, std, group_seconds, dict(req, root_rss_bytes=req['aggregate_rss_bytes']), raw, out/'std-compile.json')
+    write(out/'group.json', dict(execution, group_seconds=group_seconds,
+        selectors=[r['selector'] for r in roots], per_root_rss_bytes='UNKNOWN',
+        rss_attribution='group process-tree peak only; no reliable per-harness attribution'))
+    write(out/'std-compile.json', execution['compile'])
+    data, export_sha, error = None, None, 'MISSING_OR_OVERSIZE_EXPORT'
+    if raw.exists() and raw.stat().st_size <= req['export_cap_bytes']:
+        export_sha = digest(raw)
+        try:
+            data = json.loads(raw.read_text())
+            error = None
+        except (ValueError, OSError) as exc:
+            error = 'INVALID_EXPORT: ' + repr(exc)
+    for row in roots:
+        receipt = initial(row)
+        receipt.update(runtime_proof_status='ATTEMPTED', group_receipt='group.json',
+                       export_sha256=export_sha, per_root_rss_bytes='UNKNOWN')
+        receipt.update(unknown(error) if error else classify(data, row, execution, req, roots))
+        write(out / ('root-%03d.json' % row['id']), receipt)
+    if raw.exists():
+        raw.unlink()  # Curated per-root structured results and bounded group receipts only.
     after_binaries = binary_hashes(export)
     write(out/'post-binary-hashes.json', after_binaries)
     assert before_binaries == after_binaries, 'binary changed during census'
@@ -341,14 +401,12 @@ def finalize(out, roots, status):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('action', choices=['seed', 'run', 'finalize', 'bind', 'build'])
-    parser.add_argument('--shard', type=int, choices=[2,4], default=2)
     parser.add_argument('--out', required=True)
     parser.add_argument('--std')
     parser.add_argument('--export')
     parser.add_argument('--job-status', default='unknown')
     args = parser.parse_args()
     req, roots = load()
-    roots = [r for r in roots if r['shard'] == args.shard]
     out = Path(args.out).resolve()
     if args.action == 'seed':
         seed(out, roots)

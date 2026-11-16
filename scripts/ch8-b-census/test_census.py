@@ -14,17 +14,20 @@ import census as c
 
 class CensusTests(unittest.TestCase):
     def setUp(self):
+        memory = patch.object(c, 'available_bytes', return_value=16*1024**3)
+        memory.start()
+        self.addCleanup(memory.stop)
         self.req, roots = c.load()
         self.row = roots[0]
         self.execution = {'exit':0, 'stop':None}
         self.data = dict(schema_version='0.1.0', kani_commit=c.KANI, kani_commit_dirty=False,
-            target=self.req['target'], run_state='COMPLETE', outcome={'kind':'COMPLETED'},
+            target=self.req['target'], harness_timeout_s=600, run_state='COMPLETE', outcome={'kind':'COMPLETED'},
             enabled_unstable_features=sorted(self.req['organizer_features']+['unstable-options','valid-value-checks','export-json']),
             configuration={'checks':dict(memory_safety=True,overflow=True,unwinding=True,undefined_function=True,
                 assertion_reach_checks=True,ignore_global_asm=False,extra_pointer_checks=False,assert_contracts=False,prove_safety_only=False),
                 'cbmc_args':['--object-bits','12'],'coverage_enabled':False},
             harness_selection=dict(requested_filters=[self.row['selector']],exact=True,unmatched_filters=[],matched_count=1),
-            harnesses=[dict(name=self.row['selector'],crate_name='core',is_automatically_generated=False,
+            harnesses=[dict(contract=None,name=self.row['selector'],crate_name='core',is_automatically_generated=False,
                 outcome={'kind':'COMPLETED','verdict':'SUCCESS'},n_properties=2,n_failed=0,failed_properties=[],unsupported_constructs=[],
                 checks=dict(total=1,success=1,failure=[],unreachable=[],undetermined=[],error=[],unknown=[],other=[]),
                 covers=dict(total=1,satisfied=['read-cover'],unsatisfiable=[],unreachable=[],undetermined=[],error=[],unknown=[],other=[]))])
@@ -165,19 +168,131 @@ class CensusTests(unittest.TestCase):
         tree = ast.parse(Path(c.__file__).read_text())
         literals = [n.value for n in ast.walk(tree) if isinstance(n, ast.Constant) and isinstance(n.value, str)]
         self.assertFalse(set(literals) & {'list', 'metrics', 'run-kani.sh'})
-        argv = c.argv_for(self.req, self.row, Path('/tool/scripts/kani'), Path('/target'), Path('/out'))
+        argv = c.argv_for(self.req, [self.row], Path('/tool/scripts/kani'), Path('/target'), Path('/out'))
         self.assertEqual(argv[1], 'verify-std')
         self.assertEqual(argv[argv.index('--harness') + 1], self.row['selector'])
         self.assertIn('--exact', argv)
 
     def test_argv_has_only_frozen_semantics_and_no_cfg(self):
-        argv=c.argv_for(self.req,self.row,Path('/export/scripts/kani'),Path('/target'),Path('/out.json'))
+        argv=c.argv_for(self.req,[self.row],Path('/export/scripts/kani'),Path('/target'),Path('/out.json'))
         self.assertEqual(argv[-3:],['--cbmc-args','--object-bits','12'])
         self.assertNotIn('--default-unwind',argv)
         self.assertNotIn('autoharness',argv)
         with patch.dict(os.environ,{'RUSTFLAGS':'--cfg kani_smallsort_controls','KANI_FLAGS':'bad','CARGO_ENCODED_RUSTFLAGS':'bad'}):
             env=c.clean_env()
             self.assertNotIn('RUSTFLAGS',env); self.assertNotIn('KANI_FLAGS',env)
+
+    def batch_fixture(self):
+        _, rows = c.load()
+        rows = copy.deepcopy(rows[:2])
+        data = copy.deepcopy(self.data)
+        other = copy.deepcopy(data['harnesses'][0])
+        other['name'] = rows[1]['selector']
+        data['harnesses'].append(other)
+        data['harness_selection'].update(requested_filters=[r['selector'] for r in rows], matched_count=2)
+        return rows, data
+
+    def test_batch_mixed_failure_timeout_reordered_partial_and_binding(self):
+        rows, data = self.batch_fixture()
+        h = data['harnesses'][1]
+        p = dict(id='p.1', description="Kani currently doesn't support checking validity of `copy_nonoverlapping` for `u8`",
+                 **{'class':'unsupported_construct'}, status='FAILURE')
+        h.update(outcome={'kind':'COMPLETED','verdict':'FAILURE'},n_failed=1,failed_properties=[p],unsupported_constructs=[p])
+        h['checks'].update(success=0,failure=['p.1'])
+        execution = dict(exit=1,stop=None)
+        data['harnesses'].reverse()  # Results order is source order, not selector order.
+        self.assertEqual(c.classify(data, rows[0], execution, self.req, rows)['classification'], 'PASS')
+        self.assertEqual(c.classify(data, rows[1], execution, self.req, rows)['classification'], 'copy Unsupported')
+        h['outcome'] = {'kind':'TIMEOUT'}
+        self.assertTrue(c.classify(data, rows[0], execution, self.req, rows)['complete'])
+        self.assertFalse(c.classify(data, rows[1], execution, self.req, rows)['complete'])
+        data['harnesses'].remove(h); data['run_state']='PARTIAL'
+        self.assertTrue(c.classify(data, rows[0], execution, self.req, rows)['complete'])
+        self.assertFalse(c.classify(data, rows[1], execution, self.req, rows)['complete'])
+        data['harnesses'].append(copy.deepcopy(data['harnesses'][0]))
+        self.assertFalse(c.classify(data, rows[0], execution, self.req, rows)['complete'])
+        for value in (None, {}, [], False):
+            altered=copy.deepcopy(self.data); altered['harnesses'][0]['contract']=value
+            result=c.classify(altered,self.row,self.execution,self.req)
+            self.assertEqual(result['complete'],value is None)
+        self.data['harness_timeout_s']=60
+        self.assertFalse(self.classify()['complete'])
+
+    def test_one_group_for_all235_argv_and_orchestration_error_exports(self):
+        from types import SimpleNamespace
+        rows, data = self.batch_fixture()
+        _, allrows = c.load()
+        argv=c.argv_for(self.req,allrows,Path('/bin/kani'),Path('/target'),Path('/export'))
+        self.assertEqual(argv.count('verify-std'),1)
+        self.assertEqual(argv.count('--harness'),235)
+        self.assertEqual(argv.count('--export-json'),1)
+        self.assertEqual(argv[argv.index('--harness-timeout')+1],'600s')
+        for case in ('valid','missing','null','malformed','wrong-type','oversize','exception'):
+            with self.subTest(case=case), tempfile.TemporaryDirectory() as td:
+                root=Path(td); out=root/'receipts'; out.mkdir()
+                (out/'binary-hashes.json').write_text('{}')
+                args=SimpleNamespace(out=str(out),std=str(root/'std'),export=str(root/'export'))
+                def fake_guard(argv,cwd,seconds,req,marker,compile_receipt):
+                    self.assertEqual(seconds,req['compile_seconds']+2*600)
+                    self.assertEqual(req['root_rss_bytes'],req['aggregate_rss_bytes'])
+                    self.assertEqual(argv.count('--harness'),2)
+                    if case=='valid': marker.write_text(json.dumps(data))
+                    elif case=='null': marker.write_text('null')
+                    elif case=='wrong-type': marker.write_text('[]')
+                    elif case=='malformed': marker.write_text('{')
+                    elif case=='oversize': marker.write_text('x'*(req['export_cap_bytes']+1))
+                    return dict(exit=None if case=='exception' else 0,stop='SPAWN_ERROR' if case=='exception' else None,
+                                exception='fixture' if case=='exception' else None,compile={'status':'fixture'})
+                with patch.dict(os.environ,{'GITHUB_ACTIONS':'true'}), patch.object(c,'bind',return_value={}), \
+                     patch.object(c,'binary_hashes',return_value={}), patch.object(c,'guarded',side_effect=fake_guard) as guard:
+                    c.run_census(args,self.req,rows)
+                self.assertEqual(guard.call_count,1)
+                self.assertTrue((out/'group.json').exists())
+                self.assertTrue((out/'std-compile.json').exists())
+                receipts=[json.loads((out/('root-%03d.json'%r['id'])).read_text()) for r in rows]
+                self.assertTrue(all(r['complete']==(case=='valid') for r in receipts))
+                self.assertTrue(all(r['per_root_rss_bytes']=='UNKNOWN' for r in receipts))
+                self.assertFalse((root/'export-b-group.json').exists())
+
+    def test_compile_separate_cap_marker_receipt_and_group_timeout(self):
+        with tempfile.TemporaryDirectory() as td:
+            root=Path(td); marker=root/'marker.json'; receipt=root/'compile.json'
+            req=dict(self.req,compile_seconds=.12)
+            def run(code, seconds=2):
+                return c.guarded([sys.executable,'-c',code],root,seconds,req,marker,receipt)
+            timed=run('import time; print("compile",flush=True); time.sleep(3)')
+            self.assertEqual(timed['stop'],'COMPILE_TIMEOUT')
+            self.assertEqual(timed['compile']['status'],'INCOMPLETE')
+            self.assertIn('compile',timed['compile']['diagnostic_head'])
+            self.assertEqual(json.loads(receipt.read_text()),timed['compile'])
+            code='from pathlib import Path; import time; print("compile",flush=True); Path("marker.json").write_text("{}"); time.sleep(.4)'
+            done=run(code)
+            self.assertEqual(done['exit'],0)
+            self.assertEqual(done['compile']['status'],'MARKER_OBSERVED')
+            self.assertIsNone(done['stop'])
+            marker.unlink()
+            group=run(code, .2)
+            self.assertEqual(group['stop'],'TIMEOUT')
+            self.assertEqual(group['compile']['status'],'MARKER_OBSERVED')
+            self.assertLessEqual(len(group['compile']['diagnostic_head'].encode()),4096)
+
+    def test_no_memory_and_wrapper_exception_preserve_original_state(self):
+        with tempfile.TemporaryDirectory() as td:
+            root=Path(td)
+            with patch.object(c,'available_bytes',return_value=1024), patch.object(c.subprocess,'Popen') as spawn:
+                result=c.guarded([sys.executable,'-c','pass'],root,1,self.req)
+                self.assertEqual(result['stop'],'MEMORY_UNAVAILABLE')
+                self.assertIsNone(result['exit'])
+                spawn.assert_not_called()
+            with patch.object(c,'rss_groups',side_effect=RuntimeError('sampling fixture')):
+                result=c.guarded([sys.executable,'-c','import time; time.sleep(3)'],root,1,self.req)
+                self.assertEqual(result['stop'],'WRAPPER_EXCEPTION')
+                self.assertIn('sampling fixture',result['exception'])
+                self.assertEqual(result['exit'],-9)
+            for values in (['bad'],[self.req['std']['sha'],'bad'],
+                           [self.req['std']['sha'],self.req['std']['tree'],' M library/core/src/lib.rs']):
+                with patch.object(c,'git',side_effect=values):
+                    with self.assertRaises(AssertionError): c.bind(root,self.req['std'])
 
 
 if __name__=='__main__':

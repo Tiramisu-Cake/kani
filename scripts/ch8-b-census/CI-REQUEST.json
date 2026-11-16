@@ -41,21 +41,21 @@
   "transport_features": [
     "export-json"
   ],
-  "jobs": 2,
+  "jobs": 1,
   "os": "ubuntu-24.04",
   "target": "x86_64-unknown-linux-gnu",
   "max_parallel_shards": 1,
   "job_minutes": 210,
   "stage_seconds": {
     "build": 2100,
-    "verify": 7200
+    "verify": 143100
   },
   "root_seconds": 600,
   "root_rss_bytes": 6442450944,
   "aggregate_rss_bytes": 12884901888,
   "os_reserve_bytes": 2147483648,
-  "stdout_cap_bytes": 2097152,
-  "export_cap_bytes": 262144,
+  "stdout_cap_bytes": 67108864,
+  "export_cap_bytes": 16777216,
   "artifact_cap_bytes": 134217728,
   "cfg_on": false,
   "autoharness": false,
@@ -68,10 +68,13 @@
     "Historic4-way shard membership retained, empty1/3 omitted. Ubuntu-only diagnostic, not cross-OS/R8 qualification.",
     "Transport export-json preserves reached checks/covers; no semantic flags beyond organizer set plus valid-value-checks.",
     "No intentional invalid-value root in the ordinary235. Such a failure is unexpected unless independently source-qualified; no name-based oracle.",
-    "Per-root invocations with2 slots and separate reusable target directories. Shard membership retained, scheduling is bounded census scheduling, not historical cost comparability."
+    "Single batch invocation for all235 equal-flag roots; historic shard membership retained only in row metadata. Kani jobs1. Group cap=compile2100s+235x600s; host job210min can still yield PARTIAL."
   ],
-  "aggregate_job_minutes": 420,
+  "aggregate_job_minutes": 210,
   "per_root_jobs": 1,
   "diagnostic_transport": "-Z export-json --export-json <path>; stock structured report only, no additional verification behavior",
-  "global_inventory": "NONE; direct exact per-root verify-std; does not call scripts/run-kani.sh"
+  "global_inventory": "NONE; one direct exact multi-harness verify-std group; does not call scripts/run-kani.sh",
+  "compile_seconds": 2100,
+  "group_count": 1,
+  "rss_attribution": "group peak; per-root UNKNOWN (no precise cbmc attribution)"
 }

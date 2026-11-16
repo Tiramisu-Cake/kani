@@ -13,11 +13,6 @@ jobs:
     if: ${{ github.repository == 'Tiramisu-Cake/kani' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 210
-    strategy:
-      fail-fast: false
-      max-parallel: 1
-      matrix:
-        shard: [2, 4]
     steps:
       - name: Checkout CI control
         uses: actions/checkout@v6
@@ -29,7 +24,6 @@ jobs:
       - name: Bind coordinator trigger and seed NOT_RUN receipts
         env:
           RECEIPTS: ${{ runner.temp }}/ch8-b-receipts
-          SHARD: ${{ matrix.shard }}
         run: |
           python3 - <<'PYCODE'
           import os, subprocess
@@ -42,7 +36,7 @@ jobs:
           assert '[skip ci]' in git('show','-s','--format=%B','HEAD^1')
           Path(os.environ['RECEIPTS']).mkdir(parents=True,exist_ok=True)
           PYCODE
-          python3 control/scripts/ch8-b-census/census.py seed --shard "$SHARD" --out "$RECEIPTS"
+          python3 control/scripts/ch8-b-census/census.py seed --out "$RECEIPTS"
       - name: Synthetic service preflight
         working-directory: control/scripts/ch8-b-census
         env:
@@ -81,25 +75,22 @@ jobs:
           RECEIPTS: ${{ runner.temp }}/ch8-b-receipts
         run: python3 control/scripts/ch8-b-census/census.py build --out "$RECEIPTS" --export export
       - name: Census ordinary roots once
-        timeout-minutes: 122
         env:
           RECEIPTS: ${{ runner.temp }}/ch8-b-receipts
-          SHARD: ${{ matrix.shard }}
-        run: python3 control/scripts/ch8-b-census/census.py run --shard "$SHARD" --out "$RECEIPTS" --export export --std std
+        run: python3 control/scripts/ch8-b-census/census.py run --out "$RECEIPTS" --export export --std std
       - name: Finalize complete or PARTIAL census
         if: always()
         env:
           RECEIPTS: ${{ runner.temp }}/ch8-b-receipts
-          SHARD: ${{ matrix.shard }}
           JOB_STATUS: ${{ job.status }}
-        run: python3 control/scripts/ch8-b-census/census.py finalize --shard "$SHARD" --out "$RECEIPTS" --job-status "$JOB_STATUS"
+        run: python3 control/scripts/ch8-b-census/census.py finalize --out "$RECEIPTS" --job-status "$JOB_STATUS"
       - name: Upload bounded curated receipts
         if: always()
         uses: actions/upload-artifact@v4
         env:
           RECEIPTS: ${{ runner.temp }}/ch8-b-receipts
         with:
-          name: ch8-b-census-shard-${{ matrix.shard }}-${{ github.run_id }}-${{ github.run_attempt }}
+          name: ch8-b-census-batch-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ env.RECEIPTS }}/*.json
           if-no-files-found: error
           retention-days: 7

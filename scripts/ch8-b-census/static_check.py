@@ -35,7 +35,7 @@ assert matched==['ch8-b-census.yml'], 'extra workflow push triggers: '+repr(matc
 job=w['jobs']['census']
 assert job['timeout-minutes']==req['job_minutes']==210
 assert job['runs-on']==req['os']
-assert job['strategy']=={'fail-fast':False,'max-parallel':1,'matrix':{'shard':[2,4]}}
+assert 'strategy' not in job
 steps=job['steps']
 for step in steps:
     if step.get('uses','').startswith('actions/checkout@'):
@@ -52,8 +52,8 @@ assert [s['with']['path'] for s in steps if s.get('uses','').startswith('actions
 assert next(s for s in steps if s.get('uses')=='./export/.github/actions/setup')['with']['kani_dir']=='export'
 assert not any(p.exists() for p in (ROOT/'control',ROOT/'export',ROOT/'std')), 'nested workspace'
 for p in census.HERE.glob('*.py'): ast.parse(p.read_text())
-# Protocol upper bound; two writers cannot exceed it even at the per-root export cap.
-assert 235*(req['export_cap_bytes']+32768)+1024**2 < req['artifact_cap_bytes']
+# Group harness data appears once across rows; group selection identity is repeated per row.
+assert 2*req['export_cap_bytes']+235*(32768+sum(len(r['selector'])+4 for r in roots))+1024**2 < req['artifact_cap_bytes']
 result = ({'status':'PASS','roots':235,'shards':req['inventory']['shards'],
     'checks':['YAML parse','runner context','checkout depth','trigger','cwd prefixes','no nested workspace','Python AST','artifact envelope'],
     'workflow_sha256':hashlib.sha256(WORKFLOW.read_bytes()).hexdigest()})
@@ -62,10 +62,12 @@ by_path={s['with']['path']:s['with'] for s in steps if s.get('uses','').startswi
 assert by_path['std']['ref']==req['std']['sha']
 assert by_path['export']['ref']==req['kani']['sha']
 assert by_path['export']['repository']==req['kani']['repository']=='model-checking/kani'
+assert req['jobs']==req['per_root_jobs']==1 and req['group_count']==1
+assert req['stage_seconds']['verify']==req['compile_seconds']+235*req['root_seconds']
 assert req['root_seconds']==600 and req['root_rss_bytes']==6*1024**3
 # Only direct selected verification and bounded build are invocation entry points.
 tree=ast.parse((census.HERE/'census.py').read_text())
 assert not any(isinstance(n,ast.Constant) and n.value in ('list','metrics','run-kani.sh') for n in ast.walk(tree))
-assert census.argv_for(req,roots[0],Path('/tool/scripts/kani'),Path('/target'),Path('/export.json'))[1]=='verify-std'
+assert census.argv_for(req,roots,Path('/tool/scripts/kani'),Path('/target'),Path('/export.json'))[1]=='verify-std'
 
 print(json.dumps(result))
