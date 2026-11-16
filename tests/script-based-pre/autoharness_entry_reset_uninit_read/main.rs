@@ -2,15 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #[repr(C)]
-#[allow(dead_code)] // The fields define initialized bytes; the read uses the union address.
-union Bytes {
-    first: u8,
-    all: [u8; 4],
+struct Bytes {
+    a: u8,
+    b: u32,
 }
 
 fn uninit_read() {
-    let bytes = Bytes { first: 7 };
-    // Read the last byte: a fixed zero-offset witness would miss this hole.
+    let bytes = Bytes { a: 7, b: 7 };
+    // Offset 1 is padding on the pinned x86_64 target, despite both fields being initialized.
     let ptr = (&raw const bytes).cast::<u8>();
-    let _last = unsafe { ptr.add(3).read() };
+    let _padding = unsafe { ptr.add(1).read() };
 }

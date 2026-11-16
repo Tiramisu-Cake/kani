@@ -94,20 +94,24 @@ jobs:
         run: python3 scripts/ch8-pr02-reset/check_source_structure.py --repo "$SOURCE_DIR"
       - name: Runner result error-path checks
         id: runner-tests
+        if: ${{ always() && steps.checkout.outcome == 'success' && steps.gate.outcome == 'success' }}
         working-directory: control
         run: |
-          python3 scripts/ch8-pr02-reset/test_runner.py
-          python3 scripts/ch8-pr02-reset/test_arm_a_receipts.py
+          status=0
+          for test in test_runner.py test_arm_a_receipts.py test_arm_a_gates.py; do
+            python3 "scripts/ch8-pr02-reset/$test" || status=1
+          done
+          exit "$status"
       - name: Setup old control dependencies
         id: old-setup
-        if: ${{ matrix.arm == 'A' }}
+        if: ${{ always() && matrix.arm == 'A' && steps.old.outcome == 'success' && steps.gate.outcome == 'success' }}
         uses: ./old/.github/actions/setup
         with:
           os: ubuntu-24.04
           kani_dir: old
       - name: Build unpatched PR-02 control
         id: old-build
-        if: ${{ matrix.arm == 'A' }}
+        if: ${{ always() && matrix.arm == 'A' && steps.old-setup.outcome == 'success' && steps.gate.outcome == 'success' }}
         working-directory: old
         env:
           RUNNER_TEMP: ${{ runner.temp }}
@@ -115,7 +119,7 @@ jobs:
         run: python3 "$CONTROL_DIR/scripts/ch8-pr02-reset/bounded_step.py" --id old-build --cwd "$PWD" -- cargo build-dev
       - name: Run PR-02 checks and matched old controls
         id: arm-a
-        if: ${{ matrix.arm == 'A' }}
+        if: ${{ always() && matrix.arm == 'A' && steps.apply.outcome == 'success' && steps.setup.outcome == 'success' && steps.gate.outcome == 'success' }}
         working-directory: control
         env:
           RUNNER_TEMP: ${{ runner.temp }}
@@ -124,7 +128,6 @@ jobs:
           CONTROL_DIR: ${{ github.workspace }}/control
         run: |
           scripts/ch8-pr02-reset/run_arm_a.sh "$SOURCE_DIR"
-          python3 scripts/ch8-pr02-reset/bounded_step.py --id old-controls --cwd "$PWD" -- python3 scripts/ch8-pr02-reset/run_old_control.py --old-repo "$OLD_DIR" --fixed-repo "$SOURCE_DIR"
       - name: Build patched SEL1
         if: ${{ matrix.arm == 'B' }}
         working-directory: source

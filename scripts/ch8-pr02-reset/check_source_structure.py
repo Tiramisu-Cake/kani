@@ -42,8 +42,16 @@ def main() -> int:
     assert "value = false" in reset
     cases = repo / "tests/script-based-pre"
     negative = (cases / "autoharness_entry_reset_uninit_read/main.rs").read_text()
-    assert "ptr.add(3).read()" in negative and "union Bytes" in negative
-    assert "MaybeUninit" not in negative and "storage" not in negative
+    companion = (cases / "autoharness_entry_reset_initialized_read/main.rs").read_text()
+    for source in (negative, companion):
+        assert "#[repr(C)]\nstruct Bytes {\n    a: u8,\n    b: u32,\n}" in source
+        assert "ptr.add(1).read()" in source
+        assert "union " not in source and "MaybeUninit" not in source
+    assert "let bytes = Bytes { a: 7, b: 7 };" in negative
+    assert "(&raw const bytes).cast::<u8>()" in negative and ".write(" not in negative
+    assert "let mut bytes = Bytes { a: 7, b: 7 };" in companion
+    assert "(&raw mut bytes).cast::<u8>()" in companion
+    assert companion.index("ptr.add(1).write(7)") < companion.index("ptr.add(1).read()")
     body = lambda path: re.search(r"fn seed_only\(\).*?\n\}", path.read_text(), re.S).group(0)
     assert body(cases / "autoharness_entry_reset_uninit_off/main.rs") == body(cases / "autoharness_entry_reset_seed_only/main.rs")
     assert "uninit-checks" not in (cases / "autoharness_entry_reset_uninit_off/run.sh").read_text()

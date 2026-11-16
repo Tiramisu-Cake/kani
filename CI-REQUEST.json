@@ -1,28 +1,28 @@
 {
-  "schema": "ch8-pr02-reset-u02-ci-request-v1",
+  "schema": "ch8-pr02-reset-u03-ci-request-v1",
   "status": "READY_COORDINATOR_REVIEW_SINGLE_ARM_A_RUN",
   "runtime": "NOT_RUN",
   "package_identity": "Bound externally by g0 CI-REQUEST.json and same-tree child workflow gate",
   "source_fix": {
-    "commit": "09a6d1cb2cba63e67e60aeefbd909d1f64849b76",
-    "tree": "1068f57f0d094033b6b1cd59ba333e9bbd110c8c"
+    "commit": "f7e89f1942fa6f671f20ec45fde98d9d736dc122",
+    "tree": "b6b84905327747cf1970ffe78c1266eeff2a7c56"
   },
   "expected_target": "x86_64-unknown-linux-gnu",
   "pins": {
     "pr02": {
       "sha": "932fb8395a58f8c86c0d702ba2cae835823b2962",
       "tree": "2c4d5ad4b72a7d07059f1461132a58da03f81ef9",
-      "patched_tree": "1068f57f0d094033b6b1cd59ba333e9bbd110c8c"
+      "patched_tree": "b6b84905327747cf1970ffe78c1266eeff2a7c56"
     },
     "sel1": {
       "sha": "14bc57fdb99960240c4944845a3d985c8af4dcf7",
       "tree": "1efb6e4dfa69d346df8e23741d11839b1932403d",
-      "patched_tree": "a7cd87889a186b91a89c0388af572dd27a85d696"
+      "patched_tree": "a91feaf733188595e10e74922406d6b06076e67b"
     }
   },
   "patch": {
     "path": "scripts/ch8-pr02-reset/reset.patch",
-    "sha256": "d43f251e5694c9ca5f15ee20134f5035009223bdd1d50b9b79c1d0b30093e0cd"
+    "sha256": "e9f639ad9bbb2a18deb388d693ecd19efc2d50f0257472850dc07d3815acb58d"
   },
   "fixtures": {
     "issue-4854-autoharness.rs": "8a5b94bfb1af4eca980c1e20358ea66c9ecbc7f3df2b7e4d7b3af43c5c828bd2",
@@ -31,8 +31,8 @@
   "trigger": "uninit-ci/ch8-pr02-reset-*",
   "workflow": ".github/workflows/ch8-pr02-reset.yml",
   "arms": {
-    "A": "PR02+fix full gates and changed suites; unpatched PR02 old matched seed cases must fail closed with immutable reset absent fatal; U-02 top-level fixtures; always upload bounded receipts",
-    "B": "NOT_REPEATED: retain U-01 run 43777434715 SUCCESS; compiler diff and B inputs unchanged; see g0 RESULT-U01.md and COMPATIBILITY.json"
+    "A": "PR02+fix all existing gates and seven fixtures; independent gate execution after successful source build, including autoharness and old-controls; aggregate exit and bounded always-upload receipts; padding negative/initialized companion",
+    "B": "NOT_REPEATED: retain U-01 task-reported SUCCESS; compiler diff and B runner/input files unchanged; changed A-only fixtures do not run in B"
   },
   "static_model_gate": "PASS_REQUIRED: exact source checks for auto wrapper recognition, setup-before-instrumentation, Uninit ON guard, nondeterministic object/offset and false reset value; emitted wrapper/model evidence NOT_RUN",
   "stock_workflows": "REMOVE_FROM_CI_ONLY_COMMIT; retain only this workflow under .github/workflows",
@@ -48,5 +48,11 @@
     "package": "b4edbb18bc8a490197420aac0964a7d55b284380",
     "arm_b": "SUCCESS_REPORTED_BY_TASK",
     "new_proof_credit": "NONE"
+  },
+  "retained_u02": {
+    "run_id": "43780092728",
+    "trigger_prefix": "235b30ffb8",
+    "package": "952ea771be3827a495a9c9f29ad6a015bd796fc7",
+    "facts": "See g0 RESULT-U02.md; task-reported bounded artifact, no new independent proof credit"
   }
 }

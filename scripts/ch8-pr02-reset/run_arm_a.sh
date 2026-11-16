@@ -8,15 +8,27 @@ export KANI_REPO="$repo"
 export PATH="$repo/scripts:$PATH"
 cd "$repo"
 
+aggregate=0
+last_status=0
 run_gate() {
   local gate=$1
   shift
-  python3 "$CONTROL_DIR/scripts/ch8-pr02-reset/bounded_step.py" \
-    --id "$gate" --cwd "$repo" -- "$@"
+  if python3 "$CONTROL_DIR/scripts/ch8-pr02-reset/bounded_step.py" \
+    --id "$gate" --cwd "$repo" -- "$@"; then
+    last_status=0
+  else
+    last_status=$?
+    aggregate=1
+  fi
 }
 
 run_gate fmt ./scripts/kani-fmt.sh --check
 run_gate build cargo build-dev
+# A failed source build is the only prerequisite boundary for the remaining gates.
+# Each receipt retains the original exit; the runner returns their aggregate.
+if (( last_status != 0 )); then
+  exit "$aggregate"
+fi
 run_gate clippy cargo clippy --workspace --tests -- -D warnings
 run_gate compiler-units cargo test -p kani-compiler --bin kani-compiler
 run_gate compiletest-build cargo build -p compiletest
@@ -35,3 +47,6 @@ run_slice expected expected 'uninit/'
 run_slice expected expected 'function-contract/'
 run_slice script-based-pre exec 'autoharness_entry_reset_'
 run_slice script-based-pre exec 'autoharness'
+run_gate old-controls python3 "$CONTROL_DIR/scripts/ch8-pr02-reset/run_old_control.py" \
+  --old-repo "${OLD_DIR:?old source checkout required}" --fixed-repo "$repo"
+exit "$aggregate"

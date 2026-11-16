@@ -13,6 +13,19 @@ the exact #4854 autoharness case plus its explicit proof companion. Runner
 receipts distinguish setup failures from test failures; outputs are bounded to
 the CI run and are not proof-credit records.
 
+U-03 schedules arm A only; U-01 arm B success is retained as task-reported
+context. The two read fixtures use byte 1 in a repr(C) struct's padding on the
+pinned x86_64 target. The companion writes that byte in place before reading.
+The other five fixtures and every expected-output oracle are unchanged.
+
+After the patched source builds successfully, every A gate runs independently,
+including the generic autoharness slice and matched old controls. Failures in
+fmt, clippy, compiler units, compiletest build or any slice accumulate a failing
+runner exit; bounded receipts retain each original exit. A failed patched build
+leaves dependent gates NOT_RUN. Workflow always-conditions prevent structure,
+runner-test or old-build failures from suppressing the A runner once its source
+setup succeeds. Final job status also retains those earlier failures.
+
 Before dispatch, run `python3 scripts/ch8-pr02-reset/check_package.py` and
 record the final package commit, tree, source patch SHA256, fixture SHA256s,
 and exact pins in `CI-REQUEST.json`. No local compiler or verifier invocation

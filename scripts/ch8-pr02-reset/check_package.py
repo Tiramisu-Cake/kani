@@ -76,7 +76,7 @@ def main() -> int:
         subprocess.run([sys.executable, "-c", pin_script], cwd=ROOT, env=env, check=True)
         assert output.read_bytes() == f"sha={pin_sha}\n".encode(), "GITHUB_OUTPUT must contain one valid SHA line"
 
-    fixed = Path(os.environ.get("CH8_PR02_FIXED_REPO", "/root/kani-fix-ch8-pr02-reset-u02-source"))
+    fixed = Path(os.environ.get("CH8_PR02_FIXED_REPO", "/root/kani-fix-ch8-pr02-reset-u03-source"))
     expected_cases = {"seed_only", "argument_seed", "no_seed", "contract_seed",
                       "uninit_read", "initialized_read", "uninit_off"}
     fixture_root = fixed / "tests/script-based-pre"
