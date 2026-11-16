@@ -18,9 +18,11 @@ import subprocess
 import sys
 import threading
 import time
+import uuid
 from typing import Any
 
 import rich_evidence
+import binding_metadata
 
 HERE = Path(__file__).resolve().parent
 REQUEST_PATH = HERE / "CI-REQUEST.json"
@@ -548,24 +550,29 @@ def execute(argv: list[str], cwd: Path, out: Path, timeout: int,
     except OSError as exc:
         info.update(runner_error=f"exec failed: {exc}", elapsed_seconds=time.monotonic() - started)
         if compile_monitor is not None:
-            compile_monitor.finish(info, state)
+            try:
+                compile_monitor.finish(info, state)
+            except Exception as finish_exc:
+                info["runner_exception"] = {"type": type(finish_exc).__name__, "message": str(finish_exc)}
         return info
     threads = [threading.Thread(target=_read_pipe, args=(proc.stdout, out / "stdout.log", stdout_cap,
                                                          state, lock, "stdout", capture_tail, rich_parser), daemon=True),
                threading.Thread(target=_read_pipe, args=(proc.stderr, out / "stderr.log", stderr_cap,
                                                          state, lock, "stderr", capture_tail), daemon=True)]
-    for thread in threads: thread.start()
     deadline = started + timeout
     killed_for = None
     external_signal: list[int] = []
     previous_handlers = {}
+    cleanup_errors = []
     def handle_external(signum, _frame):
         external_signal.append(signum)
         _kill_group(proc.pid)
-    for sig in (signal.SIGTERM, signal.SIGINT):
-        previous_handlers[sig] = signal.getsignal(sig)
-        signal.signal(sig, handle_external)
     try:
+        for thread in threads:
+            thread.start()
+        for sig in (signal.SIGTERM, signal.SIGINT):
+            previous_handlers[sig] = signal.getsignal(sig)
+            signal.signal(sig, handle_external)
         while proc.poll() is None or any(thread.is_alive() for thread in threads):
             rss = _group_rss_kib(proc.pid)
             info["rss_peak_kib"] = max(info["rss_peak_kib"], rss)
@@ -590,18 +597,47 @@ def execute(argv: list[str], cwd: Path, out: Path, timeout: int,
             if time.monotonic() >= deadline:
                 killed_for = "timeout"; info["timed_out"] = True; break
             time.sleep(0.05)
+    except BaseException as exc:
+        info["runner_exception"] = {"type": type(exc).__name__, "message": str(exc)}
+        killed_for = "runner_exception"
     finally:
+        if killed_for:
+            info["termination_reason"] = killed_for
+        # This boundary also covers monitor, sampling, signal-setup and thread
+        # failures. The caller snapshots binaries only after shutdown/reaping.
+        try:
+            _kill_group(proc.pid, 0 if info.get("runner_exception") else 5.0)
+        except Exception as exc:
+            cleanup_errors.append(f"kill: {type(exc).__name__}: {exc}")
+            try:
+                os.killpg(proc.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+        try:
+            code = proc.wait(timeout=7)
+        except subprocess.TimeoutExpired:
+            os.killpg(proc.pid, signal.SIGKILL)
+            code = proc.wait()
+        info["original_exit_code"] = code
+        for thread in threads:
+            if thread.ident is not None:
+                thread.join(timeout=2)
+                if thread.is_alive():
+                    cleanup_errors.append("pipe reader did not stop")
         for sig, handler in previous_handlers.items():
-            signal.signal(sig, handler)
-    if killed_for:
-        info["termination_reason"] = killed_for
-        _kill_group(proc.pid)
-    try:
-        code = proc.wait(timeout=7)
-    except subprocess.TimeoutExpired:
-        _kill_group(proc.pid, 0)
-        code = proc.wait()
-    for thread in threads: thread.join(timeout=2)
+            try:
+                signal.signal(sig, handler)
+            except Exception as exc:
+                cleanup_errors.append(f"restore signal: {type(exc).__name__}: {exc}")
+        shutdown_deadline = time.monotonic() + 2
+        while _group_has_live_members(proc.pid) and time.monotonic() < shutdown_deadline:
+            time.sleep(0.01)
+        info["child_shutdown_verified"] = not _group_has_live_members(proc.pid)
+        if not info["child_shutdown_verified"]:
+            cleanup_errors.append("process group still has live members")
+        if cleanup_errors:
+            info["cleanup_errors"] = cleanup_errors
+            info.setdefault("termination_reason", "child_cleanup_error")
     info["original_exit_code"] = code
     if code < 0:
         info["signal"] = -code
@@ -619,11 +655,19 @@ def execute(argv: list[str], cwd: Path, out: Path, timeout: int,
         info["termination_reason"] = "stdout_cap"
     elif state["stderr_cap"] and not info.get("termination_reason"):
         info["termination_reason"] = "stderr_cap"
-    if export_path is not None and export_path.exists() and export_path.stat().st_size > export_cap:
-        info["termination_reason"] = "export_cap"
+    try:
+        if export_path is not None and export_path.exists() and export_path.stat().st_size > export_cap:
+            info["termination_reason"] = "export_cap"
+    except OSError as exc:
+        info.setdefault("runner_exception", {"type": type(exc).__name__, "message": str(exc)})
+        info.setdefault("termination_reason", "export_stat_error")
     info["elapsed_seconds"] = round(time.monotonic() - started, 3)
     if compile_monitor is not None:
-        compile_monitor.finish(info, state)
+        try:
+            compile_monitor.finish(info, state)
+        except BaseException as exc:
+            info.setdefault("runner_exception", {"type": type(exc).__name__, "message": str(exc)})
+            info.setdefault("termination_reason", "compile_receipt_error")
     return info
 
 
@@ -764,17 +808,72 @@ def _write_json(path: Path, value: Any) -> None:
 
 def binary_fingerprints(tool: Path, export: dict[str, Any]) -> dict[str, Any]:
     candidates = {"kani_driver": tool / "target/kani/bin/kani-driver",
-                  "kani_compiler": tool / "target/kani/bin/kani-compiler"}
+                  "kani_compiler": tool / "target/kani/bin/kani-compiler",
+                  "cbmc": None}
     cbmc = shutil.which("cbmc")
     if cbmc:
         candidates["cbmc"] = Path(cbmc)
     tools = export.get("tools") if isinstance(export, dict) else None
     fingerprints = {}
     for name, path in candidates.items():
-        fingerprints[name] = {"path": str(path), "sha256": sha256(path) if path.is_file() else None}
+        item = {"path": str(path) if path is not None else None, "sha256": None}
+        try:
+            if path is not None and path.is_file():
+                item["sha256"] = sha256(path)
+        except Exception as exc:
+            item["error"] = f"{type(exc).__name__}: {exc}"
+        fingerprints[name] = item
     required = all(fingerprints.get(key, {}).get("sha256") for key in ("kani_driver", "kani_compiler", "cbmc"))
     return {"binaries": fingerprints, "required_hashes_present": required,
             "reported_versions": tools if isinstance(tools, dict) else None}
+
+
+def snapshot_binaries(tool: Path, receipt: dict[str, Any], stage: str) -> dict[str, Any]:
+    """Fixed binaries are measured even without a parseable stock export.
+
+    Failure to measure one binary must neither hide the others nor replace the
+    child's original exit/exception. The receipt keeps these errors separately.
+    """
+    try:
+        snapshot = binary_fingerprints(tool, {})
+    except Exception as exc:
+        snapshot = {"binaries": {}, "required_hashes_present": False,
+                    "error": f"{type(exc).__name__}: {exc}"}
+    required = ["kani_driver", "kani_compiler", "cbmc"]
+    missing = [name for name in required if not snapshot["binaries"].get(name, {}).get("sha256")]
+    snapshot = dict(snapshot)
+    snapshot.update(required_binaries=required, missing_binaries=missing,
+                    phase="BEFORE_CHILD" if stage == "before" else "AFTER_CHILD_SHUTDOWN",
+                    snapshot_completed=True,
+                    state="COMPLETE" if not missing and not snapshot.get("error") else "INCOMPLETE")
+    receipt["tool_fingerprints_" + stage] = snapshot
+    errors = receipt.setdefault("snapshot_errors", [])
+    if snapshot.get("error"):
+        errors.append({"stage": stage, "error": snapshot["error"]})
+    for name, item in snapshot["binaries"].items():
+        if item.get("error") or not item.get("sha256"):
+            errors.append({"stage": stage, "binary": name,
+                           "error": item.get("error", "required binary missing")})
+    return snapshot
+
+
+def fingerprints_match(before, after):
+    for snapshot in (before, after):
+        if (not isinstance(snapshot, dict) or snapshot.get("required_hashes_present") is not True
+                or snapshot.get("error") or not isinstance(snapshot.get("binaries"), dict)):
+            return False
+        for name in ("kani_driver", "kani_compiler", "cbmc"):
+            item = snapshot["binaries"].get(name)
+            if (not isinstance(item, dict) or item.get("error") or
+                    not isinstance(item.get("path"), str) or not item["path"] or
+                    not isinstance(item.get("sha256"), str) or
+                    re.fullmatch(r"[0-9a-f]{64}", item["sha256"]) is None):
+                return False
+    return before["binaries"] == after["binaries"]
+
+
+def capture_binding_metadata(dest, target, request, group, receipt):
+    return binding_metadata.capture(dest, target, request, group, receipt)
 
 
 def _bounded_log(path: Path, total_bytes: int | None) -> dict[str, Any]:
@@ -857,6 +956,7 @@ def _run_group(std: Path, tool: Path, out: Path, request: dict[str, Any],
                 "per_root_rss_kib": None, "per_root_rss_status": "UNKNOWN_NO_EXACT_HARNESS_ATTRIBUTION",
                 "proof_credit": "NONE"} for row in group["rows"]]
     receipt = {"schema": "ch8-s1-group-v1", "state": "IN_PROGRESS", "group": group["id"],
+               "invocation_id": uuid.uuid4().hex,
                "argv": argv, "selectors": selectors, "variant": group["variant"],
                "unwind": group["unwind"], "proof_credit": "NONE",
                "compile_limit_seconds": COMPILE_SECONDS,
@@ -864,6 +964,7 @@ def _run_group(std: Path, tool: Path, out: Path, request: dict[str, Any],
                "std_sha": STD_SHA, "tool_sha": TOOL_SHA,
                "request_sha256": sha256(REQUEST_PATH)}
     patch = None
+    metadata_target = None
     fatal = None
     rich = rich_evidence.RegularEvidence(selectors, std.resolve())
     monitor = CompileMonitor(dest / "compile/receipt.json", export, selectors)
@@ -873,7 +974,7 @@ def _run_group(std: Path, tool: Path, out: Path, request: dict[str, Any],
             _write_json(out / result["id"] / "receipt.json", result)
         source_before = verify_source(std, tool, request)
         receipt["source_before"] = source_before
-        before = binary_fingerprints(tool, {})
+        before = snapshot_binaries(tool, receipt, "before")
         if not before["required_hashes_present"]:
             raise RunnerError("missing required tool binary hash")
         memory = group_memory_budget()
@@ -883,7 +984,13 @@ def _run_group(std: Path, tool: Path, out: Path, request: dict[str, Any],
                        "variant": group["variant"], "file_sha256": {**request["changed_file_sha256"], **variant_files},
                        "patch_sha256": sha256(patch) if patch is not None else None})
         child_env = ci_env(std)
+        # Fresh namespace prevents old/native-cache metadata from being labelled
+        # as this invocation. This is a runner key, not a compiler instance ID.
+        metadata_target = Path(child_env["CARGO_TARGET_DIR"]) / receipt["invocation_id"]
+        metadata_target.mkdir(parents=True, exist_ok=False)
+        child_env["CARGO_TARGET_DIR"] = str(metadata_target)
         receipt["cargo_target_dir"] = child_env["CARGO_TARGET_DIR"]
+        receipt["effective_cfg"] = child_env["RUSTFLAGS"]
         remaining = phase_deadline-time.monotonic()-PHASE_CLEANUP_MARGIN
         if remaining <= 0:
             raise RunnerError("phase_seconds_cap_before_group")
@@ -894,11 +1001,22 @@ def _run_group(std: Path, tool: Path, out: Path, request: dict[str, Any],
         for stream in ("stdout", "stderr"):
             (dest / (stream+".log")).write_bytes(b"")
         _write_json(dest / "receipt.json", receipt)
-        invocation = execute(argv, std.resolve(), dest, timeout,
-                             rss_cap_kib=memory["group_cap_kib"], stdout_cap=STDOUT_CAP_BYTES,
-                             stderr_cap=STDERR_CAP_BYTES, export_path=export, export_cap=EXPORT_CAP_BYTES,
-                             env=child_env, capture_tail=True, compile_monitor=monitor, rich_parser=rich)
-        receipt["execution"] = invocation
+        try:
+            invocation = execute(argv, std.resolve(), dest, timeout,
+                                 rss_cap_kib=memory["group_cap_kib"], stdout_cap=STDOUT_CAP_BYTES,
+                                 stderr_cap=STDERR_CAP_BYTES, export_path=export, export_cap=EXPORT_CAP_BYTES,
+                                 env=child_env, capture_tail=True, compile_monitor=monitor, rich_parser=rich)
+            receipt["execution"] = invocation
+        except BaseException as exc:
+            receipt["execution_exception"] = {"type": type(exc).__name__, "message": str(exc)}
+            raise
+        finally:
+            # execute owns child shutdown/reaping. No export parsing or rich
+            # validation may precede this protected same-invocation snapshot.
+            snapshot_binaries(tool, receipt, "after")
+            _write_json(dest / "receipt.json", receipt)
+        if invocation.get("runner_exception") or invocation.get("runner_error"):
+            raise RunnerError("group_execution_error")
         # Synthetic execution substitutes must also supply a bound compile receipt.
         if monitor.receipt["state"] != "COMPLETE":
             raise RunnerError("compilation_not_complete")
@@ -920,12 +1038,8 @@ def _run_group(std: Path, tool: Path, out: Path, request: dict[str, Any],
         rich.validate(raw)
         _write_json(dest / "properties.json", rich.document())
         receipt["rich_evidence_sha256"] = sha256(dest / "properties.json")
-        after = binary_fingerprints(tool, raw)
-        receipt["tool_fingerprints_after"] = after
-        if (not after["required_hashes_present"] or
-                {k:v.get("sha256") for k,v in before["binaries"].items()} !=
-                {k:v.get("sha256") for k,v in after["binaries"].items()}):
-            raise RunnerError("tool_binary_drift")
+        # Version strings are source-reported metadata, never identity hashes.
+        receipt["reported_tool_versions"] = raw.get("tools")
         receipt["export_sha256"] = sha256(export)
         for row, result in zip(group["rows"], results):
             parsed = parse_export(export, row, source_binding=request["source_bindings"][row["id"]],
@@ -944,10 +1058,17 @@ def _run_group(std: Path, tool: Path, out: Path, request: dict[str, Any],
                           diagnostics=f"groups/{group['id']}")
     except BaseException as exc:
         fatal = f"{type(exc).__name__}: {exc}"
-        receipt.update(state="FAILED", reason=fatal)
+        receipt.update(state="FAILED", reason=fatal,
+                       original_exception={"type": type(exc).__name__, "message": str(exc)})
         for result in results:
             result.update(status="UNKNOWN", outcome="UNKNOWN", reason=fatal)
     finally:
+        if not fingerprints_match(receipt.get("tool_fingerprints_before"),
+                                  receipt.get("tool_fingerprints_after")):
+            receipt["binary_identity"] = "UNKNOWN"
+            fatal = (fatal + "; " if fatal else "") + "tool_binary_missing_drift_or_snapshot_error"
+        else:
+            receipt["binary_identity"] = "MATCH"
         if patch is not None:
             try:
                 subprocess.run(["git", "-C", str(std), "apply", "--reverse", "--check", str(patch)], check=True)
@@ -961,16 +1082,28 @@ def _run_group(std: Path, tool: Path, out: Path, request: dict[str, Any],
                 raise RunnerError("source_identity_drift")
         except Exception as exc:
             fatal = (fatal + "; " if fatal else "") + f"source_drift: {exc}"
+        execution = receipt.get("execution", {})
+        if monitor.receipt["state"] == "IN_PROGRESS":
+            try:
+                monitor.finish({**execution, "runner_error": fatal or "NO_COMPLETION"}, {})
+            except Exception as exc:
+                receipt["compile_receipt_error"] = f"{type(exc).__name__}: {exc}"
+                fatal = (fatal + "; " if fatal else "") + "compile_receipt_error: " + receipt["compile_receipt_error"]
+        _write_json(dest / "properties.json", rich.document())
+        receipt["location_exceptions"] = rich.location_exceptions()
+        try:
+            receipt["binding_metadata"] = capture_binding_metadata(dest, metadata_target, request, group, receipt)
+            if receipt["binding_metadata"]["errors"]:
+                fatal = (fatal + "; " if fatal else "") + "binding_metadata_capture_incomplete"
+        except Exception as exc:
+            receipt["binding_metadata_error"] = f"{type(exc).__name__}: {exc}"
+            fatal = (fatal + "; " if fatal else "") + "binding_metadata_capture_error: " + receipt["binding_metadata_error"]
         if fatal:
             receipt.update(state="FAILED", reason=fatal)
             for result in results:
                 result.update(outcome="UNKNOWN", reason=fatal)
         else:
             receipt["state"] = "COMPLETE"
-        execution = receipt.get("execution", {})
-        if monitor.receipt["state"] == "IN_PROGRESS":
-            monitor.finish({**execution, "runner_error": fatal or "NO_COMPLETION"}, {})
-        _write_json(dest / "properties.json", rich.document())
         for stream in ("stdout", "stderr"):
             receipt[stream] = _bounded_log(dest / (stream+".log"), execution.get(stream+"_bytes"))
         receipt["compilation"] = "compile/receipt.json"

@@ -420,7 +420,8 @@ class GroupTests(unittest.TestCase):
     def run_mock_batch(self, root, request, *, case='success'):
         import copy
         std=root/'std';std.mkdir();tool=root/'tool';out=root/'out'
-        fp={'required_hashes_present':True,'binaries':{'driver':{'sha256':'a'}},'reported_versions':None}
+        fp={'required_hashes_present':True,'binaries':{name:{'path':name,'sha256':'a'*64}
+            for name in ('kani_driver','kani_compiler','cbmc')},'reported_versions':None}
         calls=[]
         def execute(argv,cwd,dest,timeout,**kw):
             selectors=[argv[i+1] for i,a in enumerate(argv) if a=='--harness']
@@ -436,6 +437,12 @@ class GroupTests(unittest.TestCase):
             kw['compile_monitor'].poll(0.01,{})
             final=batch_export(rows,request['source_bindings'])
             feed_regular(kw['rich_parser'], final)
+            native=Path(kw['env']['CARGO_TARGET_DIR'])/'debug/deps/core.kani-metadata.json'
+            native.parent.mkdir(parents=True,exist_ok=True)
+            native.write_text(json.dumps({'crate_name':'core','proof_harnesses':[
+                {'pretty_name':h['name'],'crate_name':h['crate_name'],
+                 'attributes':h['attributes'],'contract':h['contract']}
+                for h in final['harnesses']]}))
             if case=='exception':raise OSError('synthetic execution exception')
             if case=='partial':final={'run_state':'PARTIAL'}
             if case=='null':final=None
@@ -527,7 +534,8 @@ class GroupTests(unittest.TestCase):
         request={'rows':[r],'source_bindings':{r['id']:binding(r)},'changed_file_sha256':{},'variants':{}}
         with tempfile.TemporaryDirectory() as d:
             root=Path(d);std=root/'std';std.mkdir();out=root/'out';patchfile=root/'overlay.patch';patchfile.write_text('synthetic overlay')
-            fp={'required_hashes_present':True,'binaries':{}}
+            fp={'required_hashes_present':True,'binaries':{name:{'path':name,'sha256':'a'*64}
+                for name in ('kani_driver','kani_compiler','cbmc')}}
             def execute(argv,cwd,dest,timeout,**kw):
                 value=batch_export([r]);kw['export_path'].write_text(json.dumps(value));kw['compile_monitor'].poll(0.01,{})
                 return {'original_exit_code':0,'signal':None,'rss_peak_kib':1,'elapsed_seconds':0.02}

@@ -1,5 +1,6 @@
 """One deterministic compact structured artifact per job. Never reads raw logs."""
 import argparse
+import base64
 import gzip
 import hashlib
 import json
@@ -13,7 +14,7 @@ NAME = 'group-evidence.json.gz'
 def pack(root):
     files = {}
     total = 0
-    error = None
+    errors = []
     try:
         for path in sorted(root.rglob('*.json')):
             if path.is_symlink():
@@ -23,11 +24,21 @@ def pack(root):
             if total > UNCOMPRESSED_CAP:
                 raise ValueError('structured input cap')
             data = path.read_bytes()
-            json.loads(data)  # Reject partial/invalid JSON, preserve original bytes.
+            try:
+                json.loads(data)
+            except (ValueError, UnicodeError) as exc:
+                # Preserve the exact partial text and continue to receipts/rich
+                # inventory. The artifact remains INCOMPLETE and unqualified.
+                errors.append(str(path.relative_to(root)) + ': ' + str(exc))
+            try:
+                text=data.decode('utf-8');encoding='utf-8'
+            except UnicodeError:
+                text=base64.b64encode(data).decode('ascii');encoding='base64'
             files[str(path.relative_to(root))] = {'sha256': hashlib.sha256(data).hexdigest(),
-                                               'bytes': len(data), 'text': data.decode('utf-8')}
+                                               'bytes': len(data), 'text': text, 'encoding':encoding}
     except (OSError, ValueError) as exc:
-        error = str(exc)
+        errors.append(str(exc))
+    error = '; '.join(errors) if errors else None
     doc = {'schema': 'ch8-s1-05-artifact-v1', 'state': 'INCOMPLETE' if error else 'PACKAGED',
            'error': error, 'files': files, 'proof_credit': 'NONE'}
     raw = json.dumps(doc, ensure_ascii=False, separators=(',', ':')).encode()
