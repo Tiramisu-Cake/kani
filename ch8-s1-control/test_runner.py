@@ -20,6 +20,10 @@ def row(**updates):
              "failure_description": "expected semantic failure", "required_cover_count": 2,
              "timeout_seconds": 600}
     value.update(updates)
+    if value["expected"] == "DETECTED":
+        value.setdefault("oracle", {"selector": value["selector"], "property_id": "synthetic-property",
+                                      "file": "source.rs", "export_file": "/std/source.rs",
+                                      "line": 7, "class": "assertion"})
     return value
 
 
@@ -56,9 +60,12 @@ def export(*, selector="slice::sort::root", mode="pfc", schema="0.1.0", state="C
 
 class RequestTests(unittest.TestCase):
     def request(self):
+        selected = row()
         return {"status": "READY", "std_sha": runner.STD_SHA, "std_tree": runner.STD_TREE,
                 "tool_sha": runner.TOOL_SHA, "tool_tree": runner.TOOL_TREE,
-                "rows": [row()], "changed_file_sha256": {}, "variants": {},
+                "rows": [selected], "changed_file_sha256": {}, "variants": {},
+                "execution_groups": [{"id": "fixture", "variant": "production", "unwind": 4,
+                                      "row_ids": [selected["id"]]}], "replacement_unions": [],
                 "budgets": {"phase_seconds": runner.PHASE_SECONDS, "rss_kib": runner.RSS_CAP_KIB,
                             "stdout_bytes": runner.STDOUT_CAP_BYTES, "stderr_bytes": runner.STDERR_CAP_BYTES,
                             "export_bytes": runner.EXPORT_CAP_BYTES, "artifact_bytes": runner.ARTIFACT_CAP_BYTES,
@@ -134,12 +141,14 @@ class ExportTests(unittest.TestCase):
         self.assertEqual(accepted["reported_contracted_function_name"], "_RNvNtCs1kani4sort6modify")
         self.assertNotEqual(accepted["reported_contracted_function_name"], accepted["expected_target_fn"])
         negative_row = row(expected="DETECTED", failure_description="S1 semantic check")
-        negative = export(verdict="FAILURE", failures=["property-7"], named=[
-            {"id": "property-7", "description": "S1 semantic check failed"}])
+        negative = export(verdict="FAILURE", failures=["synthetic-property"], named=[
+            {"id": "synthetic-property", "description": "S1 semantic check failed",
+             "file": "/std/source.rs", "line": "7", "class": "assertion", "status": "FAILURE"}])
         self.assertEqual(self.parse(negative, negative_row,
                                    {negative_row["selector"]: "slice::sort::body"})["outcome"], "EXPECTED")
-        extra = export(verdict="FAILURE", failures=["property-7", "other"], named=[
-            {"id": "property-7", "description": "S1 semantic check failed"}])
+        extra = export(verdict="FAILURE", failures=["synthetic-property", "other"], named=[
+            {"id": "synthetic-property", "description": "S1 semantic check failed",
+             "file": "/std/source.rs", "line": "7", "class": "assertion", "status": "FAILURE"}])
         self.assertEqual(self.parse(extra, negative_row,
                                    {negative_row["selector"]: "slice::sort::body"})["outcome"], "UNKNOWN")
 
@@ -289,7 +298,7 @@ class NoListBindingTests(unittest.TestCase):
             lambda r:r['source_bindings'][r['rows'][0]['id']].update(selector='other'),
             lambda r:r['source_bindings'][r['rows'][0]['id']].update(mode='Original'),
             lambda r:r['source_bindings'][r['rows'][0]['id']].update(locations=[]),
-            lambda r:r['source_bindings']['stable_freeze_u8'].update(target=r['source_bindings']['stable_default_cell']['target']),
+            lambda r:r['source_bindings']['stable_freeze_u8_n0'].update(target=r['source_bindings']['stable_default_cell']['target']),
             lambda r:r['source_bindings']['activation-default'].update(target='other'),
             lambda r:r['budgets'].update(compile_seconds=1500),
         ]
@@ -305,13 +314,18 @@ def batch_export(rows, bindings=None):
     value['harnesses']=[]
     for r in rows:
         neg=r['expected']=='DETECTED'
+        oracle=r.get('oracle') or {'property_id':'synthetic-unbound-property','export_file':'/synthetic/unbound.rs','line':1}
         h=export(selector=r['selector'],mode='pfc' if r['mode']=='PFC' else 'ordinary',
-                 verdict='FAILURE' if neg else 'SUCCESS',failures=['failure-1'] if neg else [],
-                 named=[{'id':'failure-1','description':r['failure_description']}] if neg else [])['harnesses'][0]
+                 verdict='FAILURE' if neg else 'SUCCESS',failures=[oracle['property_id']] if neg else [],
+                 named=[{'id':oracle['property_id'],'description':r['failure_description'],
+                         'file':oracle['export_file'],'line':str(oracle['line']),
+                         'class':'assertion','status':'FAILURE'}] if neg else [])['harnesses'][0]
+        if neg:
+            h['checks']['failure'] = [oracle['property_id']]
         b=(bindings or {}).get(r['id'],binding(r))
         h.update(file=b['file'],line=b['locations'][0]['line'],resolved_unwind=r['unwind'])
         if r['mode']=='PFC':h['attributes']['kind']['ProofForContract']['target_fn']=b['target']
-        covers=list(r.get('required_covers',[]))
+        covers=list(r.get('required_cover_messages',r.get('required_covers',[])))
         while len(covers)<r['required_cover_count']:covers.append('cover-'+str(len(covers)))
         h['covers'].update(total=len(covers),satisfied=covers)
         h['n_properties']=h['checks']['total']+len(covers)
@@ -322,10 +336,9 @@ def batch_export(rows, bindings=None):
 
 class GroupTests(unittest.TestCase):
     def test_groups_keep_rows_flags_variants_and_every_selector(self):
-        request=runner.load_request();groups=runner.group_rows(request['rows'])
-        self.assertEqual([(g['variant'],g['unwind'],len(g['rows'])) for g in groups],
-                         [('production',34,15),('production',5,3),('production',4,3),
-                          ('activation-default',34,1),('activation-override',34,1)])
+        request=runner.load_request();groups=runner.group_rows(request['rows'],request['execution_groups'])
+        self.assertEqual(len(groups),14)
+        self.assertEqual([g['id'] for g in groups],[g['id'] for g in request['execution_groups']])
         self.assertEqual(sorted(r['id'] for g in groups for r in g['rows']),sorted(r['id'] for r in request['rows']))
         for g in groups:
             selectors=[r['selector'] for r in g['rows']]
@@ -339,6 +352,15 @@ class GroupTests(unittest.TestCase):
             self.assertEqual(argv[argv.index('--default-unwind')+1],str(g['unwind']))
         duplicate=[row(id='a'),row(id='b')]
         with self.assertRaises(runner.RunnerError):runner.group_rows(duplicate)
+
+    def test_execution_groups_are_exact_ordered_partition_and_subset_selection(self):
+        request=runner.load_request();all_groups=runner.select_groups(request)
+        ids=[all_groups[-1]['id'],all_groups[0]['id']]
+        selected=runner.select_groups(request,ids)
+        self.assertEqual([g['id'] for g in selected],[all_groups[0]['id'],all_groups[-1]['id']])
+        bad=dict(request);bad['execution_groups']=[dict(x) for x in request['execution_groups']]
+        bad['execution_groups'][0]['row_ids']=bad['execution_groups'][1]['row_ids']
+        with self.assertRaises(runner.RunnerError):runner.group_rows(request['rows'],bad['execution_groups'])
 
     def test_batch_mapping_mixed_positive_negative_and_bad_inventory(self):
         rows=[row(id='ok'),row(id='bad',selector='slice::sort::bad',expected='DETECTED')]
@@ -378,7 +400,7 @@ class GroupTests(unittest.TestCase):
             selectors=[argv[i+1] for i,a in enumerate(argv) if a=='--harness']
             rows=[r for r in request['rows'] if r['selector'] in selectors and r['variant'] in dest.name]
             # Exact request group order is authoritative, variants may share selectors.
-            g=next(g for g in runner.group_rows(request['rows']) if g['id']==dest.name)
+            g=next(g for g in runner.group_rows(request['rows'],request.get('execution_groups')) if g['id']==dest.name)
             rows=g['rows'];calls.append((argv,timeout,kw))
             self.assertTrue(kw['capture_tail']);self.assertNotIn('--only-codegen',argv)
             self.assertEqual(cwd,std.resolve());self.assertFalse(kw['export_path'].exists())
@@ -415,20 +437,24 @@ class GroupTests(unittest.TestCase):
             code=runner.run_rows(std,tool,out,request)
         return code,json.loads((out/'receipt.json').read_text()),calls,out
 
-    def test_all23_rows_five_invocations_mixed_group_exit_and_unknown_rss(self):
+    def test_all35_rows_fourteen_invocations_and_unbound_activation_oracles(self):
         request=runner.load_request()
         with tempfile.TemporaryDirectory() as d:
             code,summary,calls,out=self.run_mock_batch(Path(d),request)
-            self.assertEqual(code,0,json.dumps(summary))
-            self.assertEqual(len(calls),5)
+            self.assertEqual(code,1,json.dumps(summary))
+            self.assertEqual(len(calls),14)
             self.assertEqual([r['id'] for r in summary['rows']],[r['id'] for r in request['rows']])
             for r in summary['rows']:
-                self.assertEqual(r['outcome'],'EXPECTED');self.assertIsNone(r['original_exit'])
+                expected='UNKNOWN' if r['id'] in ('activation-default','activation-override') else 'EXPECTED'
+                self.assertEqual(r['outcome'],expected);self.assertIsNone(r['original_exit'])
                 self.assertIsNone(r['per_root_rss_kib']);self.assertIn('UNKNOWN',r['per_root_rss_status'])
                 self.assertEqual(r['group_rss_peak_kib'],100);self.assertEqual(r['proof_credit'],'NONE')
                 self.assertEqual(r['diagnostic_scope'],'SHARED_GROUP_CAPTURE_NOT_PER_ROOT')
-            self.assertEqual(summary['rows'][0]['group_original_exit'],1) # positive root in mixed failure group
-            for g in runner.group_rows(request['rows']):
+            corruption=next(r for r in summary['rows'] if r['id']=='corruption_companion')
+            self.assertEqual(corruption['group_original_exit'],1) # positive root in mixed failure group
+            for rid in ('activation-default','activation-override'):
+                self.assertEqual(summary['rows'][next(i for i,r in enumerate(summary['rows']) if r['id']==rid)]['export']['state'],'NEGATIVE_ORACLE_UNBOUND')
+            for g in runner.group_rows(request['rows'],request['execution_groups']):
                 receipt=json.loads((out/'groups'/g['id']/'receipt.json').read_text())
                 self.assertEqual(receipt['group_budget_seconds'],900+600*len(g['rows']))
                 self.assertEqual(json.loads((out/'groups'/g['id']/'compile/receipt.json').read_text())['state'],'COMPLETE')
@@ -464,7 +490,7 @@ class GroupTests(unittest.TestCase):
         request=runner.load_request()
         with tempfile.TemporaryDirectory() as d,mock.patch.object(runner,'PHASE_SECONDS',50):
             code,summary,calls,out=self.run_mock_batch(Path(d),request)
-            self.assertEqual(code,0)
+            self.assertEqual(code,1)  # unbound activation oracles remain UNKNOWN in synthetic success
             for argv,timeout,kw in calls:
                 self.assertLess(timeout,50)
                 self.assertEqual(argv[argv.index('--harness-timeout')+1],'600s')
