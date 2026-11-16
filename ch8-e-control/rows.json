@@ -1,0 +1,137 @@
+[
+  {
+    "id": "e_s_unbounded_slice",
+    "file": "fixtures/e_s_unbounded_slice.rs",
+    "harness": "e_s_unbounded_slice",
+    "checks": [
+      "ON",
+      "OFF"
+    ],
+    "expected_by_check": {
+      "ON": "SUCCESS",
+      "OFF": "SUCCESS"
+    },
+    "oracle": "Alloc-enabled kani::arbitrary::any_slice_mut_unbounded::<u8> must support a direct legal symbolic-index read before any loop, with no imposed CAP. ON must pass with uninit checks. Confirm all three reachable covers, especially len>32 and the value-dependent interior-zero read. This is a storage-generation/read control only; no loop or frame is present.",
+    "required_covers": [
+      "E-S interior zero read",
+      "E-S length above 32",
+      "E-S storage call returns"
+    ],
+    "failure_description": "If len>32 is unreachable or the model is unavailable for the selected target, storage binding is not established; do not replace the model with a capped generator."
+  },
+  {
+    "id": "e_s_false_value",
+    "file": "fixtures/e_s_false_value.rs",
+    "harness": "e_s_false_value",
+    "checks": [
+      "ON",
+      "OFF"
+    ],
+    "expected_by_check": {
+      "ON": "ASSERTION_FAILURE",
+      "OFF": "ASSERTION_FAILURE"
+    },
+    "oracle": "Same uncapped symbolic-length storage and legal read as positive; all covers precede the false assertion. value == value.wrapping_add(1) is false for every u8. Require exact assertion at line 18, all original covers and no unrelated failures. No CAP/value assume.",
+    "required_covers": [
+      "E-S interior zero read",
+      "E-S length above 32",
+      "E-S storage call returns"
+    ],
+    "failure_description": "If len>32 is unreachable or the model is unavailable for the selected target, storage binding is not established; do not replace the model with a capped generator.",
+    "failure_match": {
+      "class": "assertion",
+      "description_regex": "^assertion failed: value == value\\.wrapping_add\\(1\\)$",
+      "file": "fixtures/e_s_false_value.rs",
+      "line": 18
+    }
+  },
+  {
+    "id": "e_h_primitive_write",
+    "file": "fixtures/shadow_write_u8_candidate.rs",
+    "harness": "shadow_write_u8_candidate",
+    "checks": [
+      "ON",
+      "OFF"
+    ],
+    "expected_by_check": {
+      "ON": "SUCCESS",
+      "OFF": "SUCCESS"
+    },
+    "oracle": "Initialized u8, explicit pointer/counter loop frame, actual raw write then immediate read. Compare ON/OFF and no-write/no-loop companions. No MaybeUninit union, new shadow model or manual initialized=true.",
+    "required_covers": [
+      "primitive write loop returns"
+    ],
+    "failure_description": "Any assigns/uninit/unsupported/value failure is a separate observed blocker, not positive proof credit."
+  },
+  {
+    "id": "e_h_primitive_no_write",
+    "file": "fixtures/shadow_no_write_u8.rs",
+    "harness": "shadow_no_write_u8",
+    "checks": [
+      "ON",
+      "OFF"
+    ],
+    "expected_by_check": {
+      "ON": "SUCCESS",
+      "OFF": "SUCCESS"
+    },
+    "oracle": "Same initialized u8 and explicit loop frame; omit raw payload write, retain raw pointer read and counter update. Payload value is unconstrained after frame havoc, so assert17 would be invalid without a stronger invariant. This isolates raw-write instrumentation from counter/generated-loop bookkeeping; it is not an uninitialized negative.",
+    "required_covers": [
+      "primitive no-write loop returns"
+    ],
+    "failure_description": "Any assigns/uninit/unsupported/value failure is a separate observed blocker, not positive proof credit."
+  },
+  {
+    "id": "e_h_primitive_no_loop",
+    "file": "fixtures/shadow_write_u8_no_loop.rs",
+    "harness": "shadow_write_u8_no_loop",
+    "checks": [
+      "ON",
+      "OFF"
+    ],
+    "expected_by_check": {
+      "ON": "SUCCESS",
+      "OFF": "SUCCESS"
+    },
+    "oracle": "Same initialized primitive and raw write/read assertion, with no loop/frame. Separates ordinary write instrumentation from loop assigns. ON/OFF both expected success.",
+    "required_covers": [
+      "primitive no-loop write returns"
+    ],
+    "failure_description": "Any assigns/uninit/unsupported/value failure is a separate observed blocker, not positive proof credit."
+  },
+  {
+    "id": "e_h_issue_mre",
+    "file": "fixtures/e_h_issue_mre.rs",
+    "harness": "e_h_write_then_read",
+    "checks": [
+      "ON",
+      "OFF"
+    ],
+    "expected_by_check": {
+      "ON": "SUCCESS",
+      "OFF": "SUCCESS"
+    },
+    "oracle": "Byte-exact MaybeUninit root from E-01 ISSUE-DRAFT. SEL1 ON diagnostic reproduction, not a positive proof; OFF expected success. Upstream ON desired success remains blocked in E-01 by unsupported union/raw-pointer; no upstream assigns reproduction inferred.",
+    "required_covers": [
+      "E-H write loop body reached"
+    ],
+    "failure_description": "SEL1 ON expected exact assigns diagnostic: Check that self->value is assignable (library/kani_core/src/mem_init.rs:120). All failed properties must match. Upstream ON has a known separate unsupported union/raw-pointer blocker; retain UNKNOWN, never accept it as assigns reproduction.",
+    "expected_by_pin": {
+      "upstream": {
+        "ON": "SUCCESS",
+        "OFF": "SUCCESS"
+      },
+      "sel1": {
+        "ON": "ASSIGNS_FAILURE",
+        "OFF": "SUCCESS"
+      }
+    },
+    "failure_match": {
+      "class": "assigns",
+      "description_regex": "^Check that self->value is assignable$",
+      "file": "library/kani_core/src/mem_init.rs",
+      "line": 120,
+      "file_scope": "tool"
+    }
+  }
+]

@@ -1,0 +1,110 @@
+{
+  "schema": "ch8-e-controls-ci-request-v1",
+  "status": "READY",
+  "task": "TASK-CH8-E02-W15.md",
+  "input_g0": "f04b83e08503d608b91ab7da898e00ba27bdfd75",
+  "bucket": "E",
+  "item": 1,
+  "attempt": 1,
+  "planned_dispatch_count": 1,
+  "dispatch_authorized": false,
+  "push_performed": false,
+  "ci_performed": false,
+  "proof_status": "ALL_NOT_RUN",
+  "proof_credit": "NONE",
+  "pins": {
+    "upstream": {
+      "repository": "model-checking/kani",
+      "sha": "0aac16ef62da9e9d5645782d458593e5d78143ba",
+      "tree": "9d8bc9312bf955ef126d32b819b3cd0ed105ed2b"
+    },
+    "sel1": {
+      "repository": "Tiramisu-Cake/kani",
+      "sha": "14bc57fdb99960240c4944845a3d985c8af4dcf7",
+      "tree": "1efb6e4dfa69d346df8e23741d11839b1932403d"
+    }
+  },
+  "control_parent": "0aac16ef62da9e9d5645782d458593e5d78143ba",
+  "control_repository": "Tiramisu-Cake/kani",
+  "branch_prefix": "uninit-ci/ch8-e-ctl-",
+  "flags": {
+    "base": [
+      "-Z",
+      "unstable-options",
+      "-Z",
+      "loop-contracts",
+      "-Z",
+      "quantifiers",
+      "-Z",
+      "export-json",
+      "--harness-timeout",
+      "600s",
+      "--jobs",
+      "1",
+      "--exact",
+      "--cbmc-args",
+      "--object-bits",
+      "12"
+    ],
+    "on_adds": [
+      "-Z",
+      "uninit-checks"
+    ],
+    "default_checks_preserved": true,
+    "std_build": false,
+    "unwind_override": false
+  },
+  "caps": {
+    "row_envelope_seconds": 660,
+    "harness_seconds": 600,
+    "run_phase_seconds_per_pin": 4500,
+    "tool_build_seconds": 900,
+    "job_minutes_per_pin": 120,
+    "process_group_rss_bytes": 6442450944,
+    "stdout_head_bytes": 1048576,
+    "stderr_head_bytes": 1048576,
+    "tail_bytes_per_stream": 4096,
+    "export_bytes": 8388608
+  },
+  "identity_limits": {
+    "target": "EXPORTED_AT_RUNTIME",
+    "solver": "DEFAULT_EXPORTED_AT_RUNTIME",
+    "mir_opt": "NOT_OVERRIDDEN_NOT_INDEPENDENTLY_BOUND"
+  },
+  "rows_sha256": "3406ce125fafa5d5b6a1c951339e6901f76716898c1cf88a5217bf9f6b23a6e6",
+  "payload_sha256": {
+    ".github/workflows/ch8-e.yml": "60806f9bb3cfaa9c4e72875f3393199a82ea66b378d3e3f7404d4572a7c6534a",
+    "ch8-e-control/ORACLES.md": "0d841d9b7d5397f0d50aac1fef4d41ca7c262b2833ce684c2bced8cdacdebfa5",
+    "ch8-e-control/check_package.py": "450cb231291c49db0490ae2dd9ee3e0fb59db80dfbbf72e6cd24d1058f0e12d8",
+    "ch8-e-control/fixtures/e_h_copy_then_read.rs": "a6e3bc77a76bc5de6cc73af0545740876375f5b6ea36f9d38bd66961ef45b12e",
+    "ch8-e-control/fixtures/e_h_hole_inside_alias.rs": "93e743ea9eb914a704d9bafed7a2335e47edea66bcd38fe9eb496cdf59921049",
+    "ch8-e-control/fixtures/e_h_issue_mre.rs": "832de27430e7d9b30b29d09b5ad9fefd406b9323ae19c8a169b9a95fabc40501",
+    "ch8-e-control/fixtures/e_h_live_after_havoc.rs": "762a9b7b42492e13ea52aac29a284959c8a7ca09cc4744694c9896e6a1b630c7",
+    "ch8-e-control/fixtures/e_h_outside_false_alias.rs": "9144ea4df0ced8dc1a1c129a2cbde742d816afbb129268098fed1cc7b410a34c",
+    "ch8-e-control/fixtures/e_h_write_then_read.rs": "832de27430e7d9b30b29d09b5ad9fefd406b9323ae19c8a169b9a95fabc40501",
+    "ch8-e-control/fixtures/e_q_false_pointer_loop.rs": "6e65fb7abface3afae50846072b8b8946867ad4eccc8a739a8c2be816f82364c",
+    "ch8-e-control/fixtures/e_q_isolated_witness.rs": "765c77554b19cec446ed009f9e2f4ca7f759b33f45d993e2893b9c8aa669b672",
+    "ch8-e-control/fixtures/e_q_pointer_loop.rs": "a7b320bccc1d9c239aa80e104c0294107fa1cf1d82553f001d1ad385d029fc53",
+    "ch8-e-control/fixtures/e_q_scalar_invariant.rs": "b332bcb84a9a6a91c1e6823491e0d954ff42ca1eb00fa45f8b4b39f5d3a58cf5",
+    "ch8-e-control/fixtures/e_s_false_value.rs": "9c477d054ab6c52f50ba53edde6dfebd0ebbf538ac394b20b4051441dc7707c8",
+    "ch8-e-control/fixtures/e_s_unbounded_slice.rs": "d25b9a4cd2cade19b10dea6fae232a05cb9998ef9b36cd11d42a70f0acbe189b",
+    "ch8-e-control/fixtures/shadow_no_write_u8.rs": "7ecd2d699bbe0a203da8b7ba84f5568d0bab3fbd3b9eb7f281dbfb3fe42014db",
+    "ch8-e-control/fixtures/shadow_write_u8_candidate.rs": "163650e4ded1bed5fabc2ecbe35faca04d5774fedec7c0b43566fffca5eb5962",
+    "ch8-e-control/fixtures/shadow_write_u8_no_loop.rs": "b2776500e4b793fb354fd6b14fb45c15c559ac1e8b00f18fe7c3628a90c6afa3",
+    "ch8-e-control/rows.json": "3406ce125fafa5d5b6a1c951339e6901f76716898c1cf88a5217bf9f6b23a6e6",
+    "ch8-e-control/runner.py": "06e911d8f769e4c7fcd540f8d24a08307f43a0dc5746b0ac2f7892b17b734591",
+    "ch8-e-control/test_e02.py": "ecb32a70c7496b74eb61b7a0cf552e7a92bddc64fcde328dee90ff0dc683101c",
+    "ch8-e-control/test_package.py": "0d404bdc46f51b5f25223a12e2239005e9acd7fa10c635ff2aeb2b974234dae3",
+    "ch8-e-control/test_runner.py": "8da00f2a54c5f17a5b18a2410b134a17c03a6caebb8fd265aaf3d8f1f77b10e8",
+    "ch8-e-control/test_workflow_repo.py": "5af200ec80cf8641bb5e3a81e18419b127036b8d88053adb22fc35e05d2f22ef",
+    "ch8-e-control/workflow_repo.py": "e38ce725569e5f4ec66ff2d45a786099fc5f338e16e57f33369fb4f85d4bdb66"
+  },
+  "payload_manifest_sha256": "527b0c85e0d4c2733227382d5f3bbb411020f3732fe7d5d37ca276a851ab3397",
+  "activation": "Separate coordinator authorization: same-tree sibling without skip-ci and sole parent upstream0aac, fresh branch; never child of preparation commit.",
+  "stage": "E-02",
+  "prior_control": "628ba7fd9b8d1f66d5ccd220ce6ea84bc4626027",
+  "source_file_count": 6,
+  "invocations_per_pin": 12,
+  "total_invocations": 24,
+  "scope": "Single-file, no std; one prepared E-02 dispatch; ALL_NOT_RUN"
+}

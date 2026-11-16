@@ -1,0 +1,90 @@
+name: CH8 E isolated controls
+on:
+  push:
+    branches: ["uninit-ci/ch8-e-ctl-*"]
+permissions:
+  contents: read
+concurrency:
+  group: ch8-e-controls
+  cancel-in-progress: false
+jobs:
+  controls:
+    if: ${{ github.repository == 'Tiramisu-Cake/kani' && github.event_name == 'push' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        include:
+          - pin: upstream
+            repository: model-checking/kani
+            sha: 0aac16ef62da9e9d5645782d458593e5d78143ba
+          - pin: sel1
+            repository: Tiramisu-Cake/kani
+            sha: 14bc57fdb99960240c4944845a3d985c8af4dcf7
+    steps:
+      - name: Checkout control
+        timeout-minutes: 2
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
+          path: control
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Check frozen package and synthetic controls
+        timeout-minutes: 2
+        working-directory: control/ch8-e-control
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: |
+          python3 check_package.py control --repo ..
+          python3 -m unittest -v test_runner.py test_package.py test_workflow_repo.py test_e02.py
+      - name: Checkout exact tool
+        timeout-minutes: 3
+        uses: actions/checkout@v6
+        with:
+          repository: ${{ matrix.repository }}
+          ref: ${{ matrix.sha }}
+          path: tool
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Setup exact tool
+        timeout-minutes: 15
+        uses: ./tool/.github/actions/setup
+        with:
+          os: ubuntu-24.04
+          kani_dir: tool
+      - name: Build exact tool once
+        timeout-minutes: 16
+        env:
+          RECEIPT_ROOT: ${{ runner.temp }}/ch8-e-${{ matrix.pin }}
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: python3 control/ch8-e-control/runner.py build --tool tool --out "$RECEIPT_ROOT" --pin ${{ matrix.pin }}
+      - name: Run isolated single-file controls
+        timeout-minutes: 76
+        env:
+          RECEIPT_ROOT: ${{ runner.temp }}/ch8-e-${{ matrix.pin }}
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: python3 control/ch8-e-control/runner.py run --tool tool --out "$RECEIPT_ROOT" --pin ${{ matrix.pin }}
+      - name: Preserve receipts and materialize NOT_RUN rows
+        if: always()
+        timeout-minutes: 2
+        env:
+          RECEIPT_ROOT: ${{ runner.temp }}/ch8-e-${{ matrix.pin }}
+          JOB_STATUS: ${{ job.status }}
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: python3 control/ch8-e-control/runner.py fallback --out "$RECEIPT_ROOT" --pin ${{ matrix.pin }}
+      - name: Upload bounded evidence without build artifacts
+        if: always()
+        timeout-minutes: 3
+        uses: actions/upload-artifact@v4
+        env:
+          RECEIPT_ROOT: ${{ runner.temp }}/ch8-e-${{ matrix.pin }}
+        with:
+          name: ch8-e-${{ matrix.pin }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ env.RECEIPT_ROOT }}/
+            !${{ env.RECEIPT_ROOT }}/**/target/**
+          if-no-files-found: error
+          retention-days: 7
