@@ -1,0 +1,67 @@
+{
+  "schema": "ch8-issue-mre-request-v1",
+  "status": "READY",
+  "task": "TASK-CH8-ISSUE-MRE-W14.md",
+  "input_g0": "b76f736c1846bdd141d40d65b25e589916829557",
+  "attempt": 1,
+  "planned_dispatch_count": 1,
+  "dispatch_authorized": false,
+  "proof_status": "ALL_NOT_RUN",
+  "proof_credit": "NONE",
+  "pins": {
+    "upstream": {
+      "repository": "model-checking/kani",
+      "sha": "0aac16ef62da9e9d5645782d458593e5d78143ba",
+      "tree": "9d8bc9312bf955ef126d32b819b3cd0ed105ed2b"
+    }
+  },
+  "control_parent": "0aac16ef62da9e9d5645782d458593e5d78143ba",
+  "control_repository": "Tiramisu-Cake/kani",
+  "branch_prefix": "uninit-ci/ch8-issue-mre-",
+  "source_file_count": 7,
+  "total_invocations": 10,
+  "caps": {
+    "row_envelope_seconds": 30,
+    "run_phase_seconds_per_pin": 330,
+    "tool_build_seconds": 720,
+    "job_minutes": 30,
+    "process_group_rss_bytes": 6442450944,
+    "stdout_head_bytes": 1048576,
+    "stderr_head_bytes": 1048576,
+    "tail_bytes_per_stream": 4096,
+    "export_bytes": 8388608
+  },
+  "rows_sha256": "4b7117cbd9e46d0849a92a18e1170cccf3bc050713df9b26b6ebaec71c010a94",
+  "payload_sha256": {
+    "ch8-issue-mre-control/rows.json": "4b7117cbd9e46d0849a92a18e1170cccf3bc050713df9b26b6ebaec71c010a94",
+    "ch8-issue-mre-control/workflow_repo.py": "e38ce725569e5f4ec66ff2d45a786099fc5f338e16e57f33369fb4f85d4bdb66",
+    "ch8-issue-mre-control/test_workflow_repo.py": "f163227baf6874f3310fab5ce057234d57c0efe3f43391268f4336f31f7b6cb9",
+    "ch8-issue-mre-control/ORACLES.md": "cc86e1902c648989b401d0c35f96e49c4b6cc37cd8b7b62e64ed1075469e98a0",
+    "ch8-issue-mre-control/check_package.py": "e68963b30db74c7dd8f25a8851a9c31190264a47786e0c160ce82c30ff04bded",
+    "ch8-issue-mre-control/test_package.py": "4dc7b92ae182f84b8b91072d57e1c921a3a680f3623c64c303532d74383e7b97",
+    "ch8-issue-mre-control/runner.py": "41d9329d6caf4648b8d5fee4f5ae854512eb567d392a8016b2d9733ba51098c9",
+    "ch8-issue-mre-control/test_runner.py": "a9042b83acb7bde336c5a2b632a0422970a9089765a068105fa663d78de5958d",
+    "ch8-issue-mre-control/fixtures/copy_integer.rs": "ef99ff060769cff9c06e51268d3a475898eebb9b06296131e19658bdf6c16085",
+    "ch8-issue-mre-control/fixtures/raw_bool_overwrite.rs": "d8a11a01e98b384a01bda711c70f826d0cd7f1c6b11ea4d600b1f5b522e162b7",
+    "ch8-issue-mre-control/fixtures/raw_bool_read.rs": "c13356d537d284a691e65953c8988df6fa2c108ee372919f30a76f9bc267ecb7",
+    "ch8-issue-mre-control/fixtures/slice_uninit.rs": "eed93a7cc92b4e2d33f303cf7cd4891ca4b8fff7556bf70bbb273684162bfd80",
+    "ch8-issue-mre-control/fixtures/slice_initialized.rs": "c5a2200d532cf3a5d719c2231fbd9c482d8b3611c6e89ed045f6a00e5cf7d4b6",
+    "ch8-issue-mre-control/fixtures/thin_uninit.rs": "c258db16c5d59613c81438ea38f9483dbc78f4d40e4b01c165b2e0a48ff55295",
+    "ch8-issue-mre-control/fixtures/actual_uninit_read.rs": "51cddd671e5ea910e7feb121bfd92cb3c67447a9bfaf8f76195f6205f09ab54b",
+    ".github/workflows/ch8-issue-mre.yml": "b689fde4149f96df003465ce3996ad2dad0c3cdc0bff15a530450e35263f44c9"
+  },
+  "payload_manifest_sha256": "0f0dd4d6b98a8c8f4bc8a0ec8a65728850919110a1757dee951a9c498e419c83",
+  "activation": "Separate coordinator stage only: same-tree sibling without [skip ci], sole parent clean upstream0aac; no dispatch is authorized by this preparation.",
+  "authority": {
+    "push": false,
+    "ci": false,
+    "publications": false,
+    "ledger": false,
+    "local_compiler_verifier": false
+  },
+  "limits": [
+    "Source-predicted expectations; generated property IDs and runtime versions only available after execution.",
+    "Current/floating upstream comparison is outside pinned one-job stage.",
+    "External row30s/build720s/setup4min/job30min may yield UNKNOWN/NOT_RUN."
+  ]
+}

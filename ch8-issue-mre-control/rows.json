@@ -1,0 +1,172 @@
+[
+  {
+    "id": "copy_integer",
+    "file": "fixtures/copy_integer.rs",
+    "harness": "copy_integer",
+    "flags": [
+      "-Z",
+      "valid-value-checks"
+    ],
+    "expected": "COPY_UNSUPPORTED",
+    "desired": "SUCCESS",
+    "kind": "Proof",
+    "contract": null,
+    "verified_stubs": [],
+    "failure_description": "Kani currently doesn't support checking validity of `copy_nonoverlapping` for `*const u8`"
+  },
+  {
+    "id": "raw_bool_overwrite",
+    "file": "fixtures/raw_bool_overwrite.rs",
+    "harness": "raw_bool_overwrite",
+    "flags": [
+      "-Z",
+      "valid-value-checks"
+    ],
+    "expected": "COPY_UNSUPPORTED",
+    "desired": "SUCCESS",
+    "kind": "Proof",
+    "contract": null,
+    "verified_stubs": [],
+    "failure_description": "Kani currently doesn't support checking validity of `copy_nonoverlapping` for `*const bool`"
+  },
+  {
+    "id": "raw_bool_read",
+    "file": "fixtures/raw_bool_read.rs",
+    "harness": "raw_bool_read",
+    "flags": [
+      "-Z",
+      "valid-value-checks"
+    ],
+    "expected": "COPY_UNSUPPORTED",
+    "desired": "INVALID_VALUE_FAILURE",
+    "kind": "Proof",
+    "contract": null,
+    "verified_stubs": [],
+    "failure_description": "Kani currently doesn't support checking validity of `copy_nonoverlapping` for `*const bool`"
+  },
+  {
+    "id": "slice_uninit_check_body",
+    "file": "fixtures/slice_uninit.rs",
+    "harness": "check_body",
+    "flags": [
+      "-Z",
+      "function-contracts",
+      "-Z",
+      "uninit-checks"
+    ],
+    "expected": "SUCCESS",
+    "desired": "SUCCESS",
+    "kind": "ProofForContract",
+    "contract": "initialize",
+    "verified_stubs": [],
+    "failure_description": null
+  },
+  {
+    "id": "slice_uninit_check_slice_havoc",
+    "file": "fixtures/slice_uninit.rs",
+    "harness": "check_slice_havoc",
+    "flags": [
+      "-Z",
+      "function-contracts",
+      "-Z",
+      "uninit-checks"
+    ],
+    "expected": "UNINIT_FAILURE",
+    "desired": "SUCCESS",
+    "kind": "Proof",
+    "contract": null,
+    "verified_stubs": [
+      "initialize"
+    ],
+    "failure_description": "Undefined Behavior: Reading from an uninitialized pointer of type `*mut [u8]`"
+  },
+  {
+    "id": "slice_initialized_check_body",
+    "file": "fixtures/slice_initialized.rs",
+    "harness": "check_body",
+    "flags": [
+      "-Z",
+      "function-contracts",
+      "-Z",
+      "uninit-checks"
+    ],
+    "expected": "SUCCESS",
+    "desired": "SUCCESS",
+    "kind": "ProofForContract",
+    "contract": "initialize",
+    "verified_stubs": [],
+    "failure_description": null
+  },
+  {
+    "id": "slice_initialized_check_slice_havoc",
+    "file": "fixtures/slice_initialized.rs",
+    "harness": "check_slice_havoc",
+    "flags": [
+      "-Z",
+      "function-contracts",
+      "-Z",
+      "uninit-checks"
+    ],
+    "expected": "SUCCESS",
+    "desired": "SUCCESS",
+    "kind": "Proof",
+    "contract": null,
+    "verified_stubs": [
+      "initialize"
+    ],
+    "failure_description": null
+  },
+  {
+    "id": "thin_uninit_check_body",
+    "file": "fixtures/thin_uninit.rs",
+    "harness": "check_body",
+    "flags": [
+      "-Z",
+      "function-contracts",
+      "-Z",
+      "uninit-checks"
+    ],
+    "expected": "SUCCESS",
+    "desired": "SUCCESS",
+    "kind": "ProofForContract",
+    "contract": "initialize",
+    "verified_stubs": [],
+    "failure_description": null
+  },
+  {
+    "id": "thin_uninit_check_slice_havoc",
+    "file": "fixtures/thin_uninit.rs",
+    "harness": "check_slice_havoc",
+    "flags": [
+      "-Z",
+      "function-contracts",
+      "-Z",
+      "uninit-checks"
+    ],
+    "expected": "SUCCESS",
+    "desired": "SUCCESS",
+    "kind": "Proof",
+    "contract": null,
+    "verified_stubs": [
+      "initialize"
+    ],
+    "failure_description": null
+  },
+  {
+    "id": "actual_uninit_read",
+    "file": "fixtures/actual_uninit_read.rs",
+    "harness": "actual_uninit_read",
+    "flags": [
+      "-Z",
+      "function-contracts",
+      "-Z",
+      "uninit-checks"
+    ],
+    "expected": "UNINIT_FAILURE",
+    "desired": "UNINIT_FAILURE",
+    "kind": "Proof",
+    "contract": null,
+    "verified_stubs": [],
+    "failure_description": "Undefined Behavior: Reading from an uninitialized pointer of type `*const u8`"
+  }
+]
