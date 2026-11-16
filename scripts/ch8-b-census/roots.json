@@ -1,0 +1,1882 @@
+[
+  {
+    "id": 1,
+    "root": "fixed_inputs::advancement_merge_up_u8_n2",
+    "selector": "slice::sort::shared::smallsort::verify::fixed_inputs::advancement_merge_up_u8_n2",
+    "shard": 2,
+    "class": "helpers",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 2,
+    "root": "fixed_inputs::permutation_merge_u8_n4",
+    "selector": "slice::sort::shared::smallsort::verify::fixed_inputs::permutation_merge_u8_n4",
+    "shard": 2,
+    "class": "helpers",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 3,
+    "root": "fixed_inputs::safety_stable_unit_n1",
+    "selector": "slice::sort::shared::smallsort::verify::fixed_inputs::safety_stable_unit_n1",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 4,
+    "root": "fixed_inputs::safety_stable_unit_n16",
+    "selector": "slice::sort::shared::smallsort::verify::fixed_inputs::safety_stable_unit_n16",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 5,
+    "root": "fixed_inputs::safety_stable_unit_n17",
+    "selector": "slice::sort::shared::smallsort::verify::fixed_inputs::safety_stable_unit_n17",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 6,
+    "root": "fixed_inputs::safety_stable_unit_n2",
+    "selector": "slice::sort::shared::smallsort::verify::fixed_inputs::safety_stable_unit_n2",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 7,
+    "root": "fixed_inputs::safety_stable_unit_n31",
+    "selector": "slice::sort::shared::smallsort::verify::fixed_inputs::safety_stable_unit_n31",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 8,
+    "root": "fixed_inputs::safety_stable_unit_n32",
+    "selector": "slice::sort::shared::smallsort::verify::fixed_inputs::safety_stable_unit_n32",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 9,
+    "root": "fixed_inputs::safety_stable_unit_n7",
+    "selector": "slice::sort::shared::smallsort::verify::fixed_inputs::safety_stable_unit_n7",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 10,
+    "root": "fixed_inputs::safety_stable_unit_n8",
+    "selector": "slice::sort::shared::smallsort::verify::fixed_inputs::safety_stable_unit_n8",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 11,
+    "root": "fixed_inputs::sorted_network_prefix_u8_n10",
+    "selector": "slice::sort::shared::smallsort::verify::fixed_inputs::sorted_network_prefix_u8_n10",
+    "shard": 2,
+    "class": "helpers",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 12,
+    "root": "fixed_inputs::sorted_permutation_insert_tail_u8_n2",
+    "selector": "slice::sort::shared::smallsort::verify::fixed_inputs::sorted_permutation_insert_tail_u8_n2",
+    "shard": 2,
+    "class": "helpers",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 13,
+    "root": "fixed_inputs::sorted_permutation_swap_u8_n2",
+    "selector": "slice::sort::shared::smallsort::verify::fixed_inputs::sorted_permutation_swap_u8_n2",
+    "shard": 2,
+    "class": "helpers",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 14,
+    "root": "forwarding_contracts::freeze_noncopy_n2",
+    "selector": "slice::sort::shared::smallsort::verify::forwarding_contracts::freeze_noncopy_n2",
+    "shard": 4,
+    "class": "profile_pfc",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 15,
+    "root": "forwarding_contracts::stable_cell_n2",
+    "selector": "slice::sort::shared::smallsort::verify::forwarding_contracts::stable_cell_n2",
+    "shard": 4,
+    "class": "profile_pfc",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 16,
+    "root": "forwarding_contracts::unstable_byte_n2",
+    "selector": "slice::sort::shared::smallsort::verify::forwarding_contracts::unstable_byte_n2",
+    "shard": 4,
+    "class": "profile_pfc",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 17,
+    "root": "helper_contracts::insert_tail_safety_u64_tail1_to4_backing5",
+    "selector": "slice::sort::shared::smallsort::verify::helper_contracts::insert_tail_safety_u64_tail1_to4_backing5",
+    "shard": 4,
+    "class": "real_helper_contracts",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 18,
+    "root": "helper_contracts::insertion_safety_u64_len2",
+    "selector": "slice::sort::shared::smallsort::verify::helper_contracts::insertion_safety_u64_len2",
+    "shard": 4,
+    "class": "real_helper_contracts",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 19,
+    "root": "helper_contracts::insertion_safety_u64_len3",
+    "selector": "slice::sort::shared::smallsort::verify::helper_contracts::insertion_safety_u64_len3",
+    "shard": 4,
+    "class": "real_helper_contracts",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 20,
+    "root": "helper_contracts::merge_safety_u64_len2",
+    "selector": "slice::sort::shared::smallsort::verify::helper_contracts::merge_safety_u64_len2",
+    "shard": 4,
+    "class": "real_helper_contracts",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 21,
+    "root": "helper_contracts::merge_safety_u64_len4",
+    "selector": "slice::sort::shared::smallsort::verify::helper_contracts::merge_safety_u64_len4",
+    "shard": 4,
+    "class": "real_helper_contracts",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 22,
+    "root": "helper_contracts::sort4_safety_u64",
+    "selector": "slice::sort::shared::smallsort::verify::helper_contracts::sort4_safety_u64",
+    "shard": 4,
+    "class": "real_helper_contracts",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 23,
+    "root": "helper_contracts::swap_safety_bytes17_backing4",
+    "selector": "slice::sort::shared::smallsort::verify::helper_contracts::swap_safety_bytes17_backing4",
+    "shard": 4,
+    "class": "real_helper_contracts",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 24,
+    "root": "helper_contracts::swap_safety_u64_backing4",
+    "selector": "slice::sort::shared::smallsort::verify::helper_contracts::swap_safety_u64_backing4",
+    "shard": 4,
+    "class": "real_helper_contracts",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 25,
+    "root": "helper_contracts::swap_safety_u8_backing13",
+    "selector": "slice::sort::shared::smallsort::verify::helper_contracts::swap_safety_u8_backing13",
+    "shard": 4,
+    "class": "real_helper_contracts",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 26,
+    "root": "helper_contracts::swap_safety_u8_backing4",
+    "selector": "slice::sort::shared::smallsort::verify::helper_contracts::swap_safety_u8_backing4",
+    "shard": 4,
+    "class": "real_helper_contracts",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 27,
+    "root": "helper_contracts::swap_safety_u8_backing9",
+    "selector": "slice::sort::shared::smallsort::verify::helper_contracts::swap_safety_u8_backing9",
+    "shard": 4,
+    "class": "real_helper_contracts",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 28,
+    "root": "helper_contracts::unstable_network_safety_u8_n13_stubbed",
+    "selector": "slice::sort::shared::smallsort::verify::helper_contracts::unstable_network_safety_u8_n13_stubbed",
+    "shard": 2,
+    "class": "real_helper_contracts",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 29,
+    "root": "helper_contracts::unstable_network_safety_u8_n9_stubbed",
+    "selector": "slice::sort::shared::smallsort::verify::helper_contracts::unstable_network_safety_u8_n9_stubbed",
+    "shard": 2,
+    "class": "real_helper_contracts",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 30,
+    "root": "helper_contracts_wide::merge_safety_u64_len8_scratch48_src32_dst0",
+    "selector": "slice::sort::shared::smallsort::verify::helper_contracts_wide::merge_safety_u64_len8_scratch48_src32_dst0",
+    "shard": 4,
+    "class": "real_helper_contracts",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 31,
+    "root": "helper_contracts_wide::sort8_safety_u64_scratch48_src32_dst0_merge_stubbed",
+    "selector": "slice::sort::shared::smallsort::verify::helper_contracts_wide::sort8_safety_u64_scratch48_src32_dst0_merge_stubbed",
+    "shard": 2,
+    "class": "real_helper_contracts",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 32,
+    "root": "helper_contracts_wide::swap_safety_u64_backing32",
+    "selector": "slice::sort::shared::smallsort::verify::helper_contracts_wide::swap_safety_u64_backing32",
+    "shard": 4,
+    "class": "real_helper_contracts",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 33,
+    "root": "helper_contracts_wide::swap_safety_u8_backing32",
+    "selector": "slice::sort::shared::smallsort::verify::helper_contracts_wide::swap_safety_u8_backing32",
+    "shard": 4,
+    "class": "real_helper_contracts",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 34,
+    "root": "helper_contracts_wide::unstable_network_safety_u8_n32_stubbed",
+    "selector": "slice::sort::shared::smallsort::verify::helper_contracts_wide::unstable_network_safety_u8_n32_stubbed",
+    "shard": 2,
+    "class": "real_helper_contracts",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 35,
+    "root": "insert_tail_contracts::insert_tail_safety_u64_backing17_tail1_to7",
+    "selector": "slice::sort::shared::smallsort::verify::insert_tail_contracts::insert_tail_safety_u64_backing17_tail1_to7",
+    "shard": 4,
+    "class": "real_helper_contracts",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 36,
+    "root": "insert_tail_contracts::insert_tail_safety_u64_backing17_tail8_to15",
+    "selector": "slice::sort::shared::smallsort::verify::insert_tail_contracts::insert_tail_safety_u64_backing17_tail8_to15",
+    "shard": 4,
+    "class": "real_helper_contracts",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 37,
+    "root": "merge::drop_fallback_drop_count_n2",
+    "selector": "slice::sort::shared::smallsort::verify::merge::drop_fallback_drop_count_n2",
+    "shard": 2,
+    "class": "drop_tag",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 38,
+    "root": "merge::drop_fallback_drop_count_n4",
+    "selector": "slice::sort::shared::smallsort::verify::merge::drop_fallback_drop_count_n4",
+    "shard": 2,
+    "class": "drop_tag",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 39,
+    "root": "merge::drop_fallback_drop_count_n8",
+    "selector": "slice::sort::shared::smallsort::verify::merge::drop_fallback_drop_count_n8",
+    "shard": 2,
+    "class": "drop_tag",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 40,
+    "root": "merge::drop_fallback_tag_permutation_n2",
+    "selector": "slice::sort::shared::smallsort::verify::merge::drop_fallback_tag_permutation_n2",
+    "shard": 2,
+    "class": "drop_tag",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 41,
+    "root": "merge::drop_fallback_tag_permutation_n4",
+    "selector": "slice::sort::shared::smallsort::verify::merge::drop_fallback_tag_permutation_n4",
+    "shard": 2,
+    "class": "drop_tag",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 42,
+    "root": "merge::drop_fallback_tag_permutation_n8",
+    "selector": "slice::sort::shared::smallsort::verify::merge::drop_fallback_tag_permutation_n8",
+    "shard": 2,
+    "class": "drop_tag",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 43,
+    "root": "merge::drop_general_drop_count_n16",
+    "selector": "slice::sort::shared::smallsort::verify::merge::drop_general_drop_count_n16",
+    "shard": 2,
+    "class": "drop_tag",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 44,
+    "root": "merge::drop_general_drop_count_n2",
+    "selector": "slice::sort::shared::smallsort::verify::merge::drop_general_drop_count_n2",
+    "shard": 2,
+    "class": "drop_tag",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 45,
+    "root": "merge::drop_general_drop_count_n4",
+    "selector": "slice::sort::shared::smallsort::verify::merge::drop_general_drop_count_n4",
+    "shard": 2,
+    "class": "drop_tag",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 46,
+    "root": "merge::drop_general_drop_count_n8",
+    "selector": "slice::sort::shared::smallsort::verify::merge::drop_general_drop_count_n8",
+    "shard": 2,
+    "class": "drop_tag",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 47,
+    "root": "merge::drop_general_tag_permutation_n2",
+    "selector": "slice::sort::shared::smallsort::verify::merge::drop_general_tag_permutation_n2",
+    "shard": 2,
+    "class": "drop_tag",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 48,
+    "root": "merge::drop_general_tag_permutation_n4",
+    "selector": "slice::sort::shared::smallsort::verify::merge::drop_general_tag_permutation_n4",
+    "shard": 2,
+    "class": "drop_tag",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 49,
+    "root": "merge::drop_general_tag_permutation_n8",
+    "selector": "slice::sort::shared::smallsort::verify::merge::drop_general_tag_permutation_n8",
+    "shard": 2,
+    "class": "drop_tag",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 50,
+    "root": "merge::fallback_sorted_permutation_u8_u64_n0",
+    "selector": "slice::sort::shared::smallsort::verify::merge::fallback_sorted_permutation_u8_u64_n0",
+    "shard": 2,
+    "class": "fallback",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 51,
+    "root": "merge::fallback_sorted_permutation_u8_u64_n1",
+    "selector": "slice::sort::shared::smallsort::verify::merge::fallback_sorted_permutation_u8_u64_n1",
+    "shard": 2,
+    "class": "fallback",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 52,
+    "root": "merge::fallback_sorted_permutation_u8_u64_n2",
+    "selector": "slice::sort::shared::smallsort::verify::merge::fallback_sorted_permutation_u8_u64_n2",
+    "shard": 2,
+    "class": "fallback",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 53,
+    "root": "merge::fallback_sorted_permutation_u8_u64_n3",
+    "selector": "slice::sort::shared::smallsort::verify::merge::fallback_sorted_permutation_u8_u64_n3",
+    "shard": 2,
+    "class": "fallback",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 54,
+    "root": "merge::fallback_sorted_permutation_u8_u64_n4",
+    "selector": "slice::sort::shared::smallsort::verify::merge::fallback_sorted_permutation_u8_u64_n4",
+    "shard": 2,
+    "class": "fallback",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 55,
+    "root": "merge::fallback_sorted_permutation_u8_u64_n5",
+    "selector": "slice::sort::shared::smallsort::verify::merge::fallback_sorted_permutation_u8_u64_n5",
+    "shard": 2,
+    "class": "fallback",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 56,
+    "root": "merge::fallback_sorted_permutation_u8_u64_n6",
+    "selector": "slice::sort::shared::smallsort::verify::merge::fallback_sorted_permutation_u8_u64_n6",
+    "shard": 2,
+    "class": "fallback",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 57,
+    "root": "merge::general_direct_u64_n6",
+    "selector": "slice::sort::shared::smallsort::verify::merge::general_direct_u64_n6",
+    "shard": 2,
+    "class": "general_stable",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 58,
+    "root": "merge::general_direct_u64_n7",
+    "selector": "slice::sort::shared::smallsort::verify::merge::general_direct_u64_n7",
+    "shard": 2,
+    "class": "general_stable",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 59,
+    "root": "merge::general_direct_u64_n8",
+    "selector": "slice::sort::shared::smallsort::verify::merge::general_direct_u64_n8",
+    "shard": 2,
+    "class": "general_stable",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 60,
+    "root": "merge::general_direct_u64_n9",
+    "selector": "slice::sort::shared::smallsort::verify::merge::general_direct_u64_n9",
+    "shard": 2,
+    "class": "general_stable",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 61,
+    "root": "merge::general_direct_u8_n9",
+    "selector": "slice::sort::shared::smallsort::verify::merge::general_direct_u8_n9",
+    "shard": 2,
+    "class": "general_stable",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 62,
+    "root": "merge::general_stable_direct_u64_n2",
+    "selector": "slice::sort::shared::smallsort::verify::merge::general_stable_direct_u64_n2",
+    "shard": 2,
+    "class": "general_stable",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 63,
+    "root": "merge::general_stable_direct_u64_n3",
+    "selector": "slice::sort::shared::smallsort::verify::merge::general_stable_direct_u64_n3",
+    "shard": 2,
+    "class": "general_stable",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 64,
+    "root": "merge::general_stable_direct_u64_n4",
+    "selector": "slice::sort::shared::smallsort::verify::merge::general_stable_direct_u64_n4",
+    "shard": 2,
+    "class": "general_stable",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 65,
+    "root": "merge::general_stable_direct_u64_n5",
+    "selector": "slice::sort::shared::smallsort::verify::merge::general_stable_direct_u64_n5",
+    "shard": 2,
+    "class": "general_stable",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 66,
+    "root": "merge::general_stable_direct_u8_n2",
+    "selector": "slice::sort::shared::smallsort::verify::merge::general_stable_direct_u8_n2",
+    "shard": 2,
+    "class": "general_stable",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 67,
+    "root": "merge::general_stable_direct_u8_n3",
+    "selector": "slice::sort::shared::smallsort::verify::merge::general_stable_direct_u8_n3",
+    "shard": 2,
+    "class": "general_stable",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 68,
+    "root": "merge::general_stable_direct_u8_n4",
+    "selector": "slice::sort::shared::smallsort::verify::merge::general_stable_direct_u8_n4",
+    "shard": 2,
+    "class": "general_stable",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 69,
+    "root": "merge::general_stable_direct_u8_n5",
+    "selector": "slice::sort::shared::smallsort::verify::merge::general_stable_direct_u8_n5",
+    "shard": 2,
+    "class": "general_stable",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 70,
+    "root": "merge::general_stable_direct_u8_n6",
+    "selector": "slice::sort::shared::smallsort::verify::merge::general_stable_direct_u8_n6",
+    "shard": 2,
+    "class": "general_stable",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 71,
+    "root": "merge::general_stable_direct_u8_n7",
+    "selector": "slice::sort::shared::smallsort::verify::merge::general_stable_direct_u8_n7",
+    "shard": 2,
+    "class": "general_stable",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 72,
+    "root": "merge::general_stable_direct_u8_n8",
+    "selector": "slice::sort::shared::smallsort::verify::merge::general_stable_direct_u8_n8",
+    "shard": 2,
+    "class": "general_stable",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 73,
+    "root": "merge::general_stable_sorted_permutation_u64_n0",
+    "selector": "slice::sort::shared::smallsort::verify::merge::general_stable_sorted_permutation_u64_n0",
+    "shard": 2,
+    "class": "general_stable",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 74,
+    "root": "merge::general_stable_sorted_permutation_u64_n1",
+    "selector": "slice::sort::shared::smallsort::verify::merge::general_stable_sorted_permutation_u64_n1",
+    "shard": 2,
+    "class": "general_stable",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 75,
+    "root": "merge::general_stable_sorted_permutation_u8_n0",
+    "selector": "slice::sort::shared::smallsort::verify::merge::general_stable_sorted_permutation_u8_n0",
+    "shard": 2,
+    "class": "general_stable",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 76,
+    "root": "merge::general_stable_sorted_permutation_u8_n1",
+    "selector": "slice::sort::shared::smallsort::verify::merge::general_stable_sorted_permutation_u8_n1",
+    "shard": 2,
+    "class": "general_stable",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 77,
+    "root": "merge::merge_contract_u64_n2_to4",
+    "selector": "slice::sort::shared::smallsort::verify::merge::merge_contract_u64_n2_to4",
+    "shard": 4,
+    "class": "profile_pfc",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 78,
+    "root": "merge::merge_contract_u64_n5",
+    "selector": "slice::sort::shared::smallsort::verify::merge::merge_contract_u64_n5",
+    "shard": 4,
+    "class": "profile_pfc",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 79,
+    "root": "merge::merge_contract_u64_n6",
+    "selector": "slice::sort::shared::smallsort::verify::merge::merge_contract_u64_n6",
+    "shard": 4,
+    "class": "profile_pfc",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 80,
+    "root": "merge::merge_contract_u64_n7",
+    "selector": "slice::sort::shared::smallsort::verify::merge::merge_contract_u64_n7",
+    "shard": 4,
+    "class": "profile_pfc",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 81,
+    "root": "merge::merge_contract_u64_n8",
+    "selector": "slice::sort::shared::smallsort::verify::merge::merge_contract_u64_n8",
+    "shard": 4,
+    "class": "profile_pfc",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 82,
+    "root": "merge::merge_contract_u8_n2_to4",
+    "selector": "slice::sort::shared::smallsort::verify::merge::merge_contract_u8_n2_to4",
+    "shard": 4,
+    "class": "profile_pfc",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 83,
+    "root": "merge::merge_contract_u8_n5",
+    "selector": "slice::sort::shared::smallsort::verify::merge::merge_contract_u8_n5",
+    "shard": 4,
+    "class": "profile_pfc",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 84,
+    "root": "merge::merge_contract_u8_n6",
+    "selector": "slice::sort::shared::smallsort::verify::merge::merge_contract_u8_n6",
+    "shard": 4,
+    "class": "profile_pfc",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 85,
+    "root": "merge::merge_contract_u8_n7",
+    "selector": "slice::sort::shared::smallsort::verify::merge::merge_contract_u8_n7",
+    "shard": 4,
+    "class": "profile_pfc",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 86,
+    "root": "merge::merge_contract_u8_n8",
+    "selector": "slice::sort::shared::smallsort::verify::merge::merge_contract_u8_n8",
+    "shard": 4,
+    "class": "profile_pfc",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 87,
+    "root": "merge::merge_contract_u8_n9",
+    "selector": "slice::sort::shared::smallsort::verify::merge::merge_contract_u8_n9",
+    "shard": 4,
+    "class": "profile_pfc",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 88,
+    "root": "merge::merge_scratch48_contract_u8_n9",
+    "selector": "slice::sort::shared::smallsort::verify::merge::merge_scratch48_contract_u8_n9",
+    "shard": 4,
+    "class": "profile_pfc",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 89,
+    "root": "merge::route_safety_all_routes_n16",
+    "selector": "slice::sort::shared::smallsort::verify::merge::route_safety_all_routes_n16",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 90,
+    "root": "merge::route_safety_all_routes_n2",
+    "selector": "slice::sort::shared::smallsort::verify::merge::route_safety_all_routes_n2",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 91,
+    "root": "merge::route_safety_all_routes_n3",
+    "selector": "slice::sort::shared::smallsort::verify::merge::route_safety_all_routes_n3",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 92,
+    "root": "merge::route_safety_all_routes_n4",
+    "selector": "slice::sort::shared::smallsort::verify::merge::route_safety_all_routes_n4",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 93,
+    "root": "merge::route_safety_all_routes_n5",
+    "selector": "slice::sort::shared::smallsort::verify::merge::route_safety_all_routes_n5",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 94,
+    "root": "merge::route_safety_all_routes_n6",
+    "selector": "slice::sort::shared::smallsort::verify::merge::route_safety_all_routes_n6",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 95,
+    "root": "merge::route_safety_all_routes_n7",
+    "selector": "slice::sort::shared::smallsort::verify::merge::route_safety_all_routes_n7",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 96,
+    "root": "merge::route_safety_all_routes_n8",
+    "selector": "slice::sort::shared::smallsort::verify::merge::route_safety_all_routes_n8",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 97,
+    "root": "merge::sort4_arbitrary_comparator_bytes16_n4",
+    "selector": "slice::sort::shared::smallsort::verify::merge::sort4_arbitrary_comparator_bytes16_n4",
+    "shard": 2,
+    "class": "helpers",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 98,
+    "root": "merge::sort4_arbitrary_comparator_u64_n4",
+    "selector": "slice::sort::shared::smallsort::verify::merge::sort4_arbitrary_comparator_u64_n4",
+    "shard": 2,
+    "class": "helpers",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 99,
+    "root": "merge::sort4_contract_bytes16_n4",
+    "selector": "slice::sort::shared::smallsort::verify::merge::sort4_contract_bytes16_n4",
+    "shard": 4,
+    "class": "profile_pfc",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 100,
+    "root": "merge::sort4_contract_u64_n4",
+    "selector": "slice::sort::shared::smallsort::verify::merge::sort4_contract_u64_n4",
+    "shard": 4,
+    "class": "profile_pfc",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 101,
+    "root": "merge::stable_direct_nonconst_u8_n9",
+    "selector": "slice::sort::shared::smallsort::verify::merge::stable_direct_nonconst_u8_n9",
+    "shard": 2,
+    "class": "general_stable",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 102,
+    "root": "merge::stable_direct_u64_n6",
+    "selector": "slice::sort::shared::smallsort::verify::merge::stable_direct_u64_n6",
+    "shard": 2,
+    "class": "general_stable",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 103,
+    "root": "merge::stable_direct_u64_n7",
+    "selector": "slice::sort::shared::smallsort::verify::merge::stable_direct_u64_n7",
+    "shard": 2,
+    "class": "general_stable",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 104,
+    "root": "merge::stable_direct_u64_n8",
+    "selector": "slice::sort::shared::smallsort::verify::merge::stable_direct_u64_n8",
+    "shard": 2,
+    "class": "general_stable",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 105,
+    "root": "merge::stable_direct_u64_n9",
+    "selector": "slice::sort::shared::smallsort::verify::merge::stable_direct_u64_n9",
+    "shard": 2,
+    "class": "general_stable",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 106,
+    "root": "network::contract_insert_tail_u8_prefix",
+    "selector": "slice::sort::shared::smallsort::verify::network::contract_insert_tail_u8_prefix",
+    "shard": 4,
+    "class": "profile_pfc",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 107,
+    "root": "network::dispatch_reachability_general_bytes16_n17",
+    "selector": "slice::sort::shared::smallsort::verify::network::dispatch_reachability_general_bytes16_n17",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 108,
+    "root": "network::dispatch_reachability_network_u8_n18",
+    "selector": "slice::sort::shared::smallsort::verify::network::dispatch_reachability_network_u8_n18",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 109,
+    "root": "network::dispatch_reachability_stable_u8_n17",
+    "selector": "slice::sort::shared::smallsort::verify::network::dispatch_reachability_stable_u8_n17",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 110,
+    "root": "network::dispatch_safety_stable_bytes16_n32",
+    "selector": "slice::sort::shared::smallsort::verify::network::dispatch_safety_stable_bytes16_n32",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 111,
+    "root": "network::dispatch_safety_stable_bytes17_n32",
+    "selector": "slice::sort::shared::smallsort::verify::network::dispatch_safety_stable_bytes17_n32",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 112,
+    "root": "network::dispatch_safety_stable_u8_n0_1_2_7_8",
+    "selector": "slice::sort::shared::smallsort::verify::network::dispatch_safety_stable_u8_n0_1_2_7_8",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 113,
+    "root": "network::dispatch_safety_stable_u8_n15_16_17",
+    "selector": "slice::sort::shared::smallsort::verify::network::dispatch_safety_stable_u8_n15_16_17",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 114,
+    "root": "network::dispatch_safety_stable_u8_n31_32",
+    "selector": "slice::sort::shared::smallsort::verify::network::dispatch_safety_stable_u8_n31_32",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 115,
+    "root": "network::dispatch_safety_stable_unstable_bytes16_n0_1_2_7_8",
+    "selector": "slice::sort::shared::smallsort::verify::network::dispatch_safety_stable_unstable_bytes16_n0_1_2_7_8",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 116,
+    "root": "network::dispatch_safety_stable_unstable_bytes16_n15",
+    "selector": "slice::sort::shared::smallsort::verify::network::dispatch_safety_stable_unstable_bytes16_n15",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 117,
+    "root": "network::dispatch_safety_stable_unstable_bytes16_n16",
+    "selector": "slice::sort::shared::smallsort::verify::network::dispatch_safety_stable_unstable_bytes16_n16",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 118,
+    "root": "network::dispatch_safety_stable_unstable_bytes16_n17",
+    "selector": "slice::sort::shared::smallsort::verify::network::dispatch_safety_stable_unstable_bytes16_n17",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 119,
+    "root": "network::dispatch_safety_stable_unstable_bytes17_n0_1_2_7_8",
+    "selector": "slice::sort::shared::smallsort::verify::network::dispatch_safety_stable_unstable_bytes17_n0_1_2_7_8",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 120,
+    "root": "network::dispatch_safety_stable_unstable_bytes17_n15",
+    "selector": "slice::sort::shared::smallsort::verify::network::dispatch_safety_stable_unstable_bytes17_n15",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 121,
+    "root": "network::dispatch_safety_stable_unstable_bytes17_n16",
+    "selector": "slice::sort::shared::smallsort::verify::network::dispatch_safety_stable_unstable_bytes17_n16",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 122,
+    "root": "network::dispatch_safety_stable_unstable_bytes17_n17",
+    "selector": "slice::sort::shared::smallsort::verify::network::dispatch_safety_stable_unstable_bytes17_n17",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 123,
+    "root": "network::dispatch_safety_stable_unstable_bytes85_n0_1_2_7_8",
+    "selector": "slice::sort::shared::smallsort::verify::network::dispatch_safety_stable_unstable_bytes85_n0_1_2_7_8",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 124,
+    "root": "network::dispatch_safety_stable_unstable_bytes85_n15_16_17",
+    "selector": "slice::sort::shared::smallsort::verify::network::dispatch_safety_stable_unstable_bytes85_n15_16_17",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 125,
+    "root": "network::dispatch_safety_stable_unstable_bytes85_n32",
+    "selector": "slice::sort::shared::smallsort::verify::network::dispatch_safety_stable_unstable_bytes85_n32",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 126,
+    "root": "network::dispatch_safety_stable_unstable_drop_u8_n0_1_2_7_8",
+    "selector": "slice::sort::shared::smallsort::verify::network::dispatch_safety_stable_unstable_drop_u8_n0_1_2_7_8",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 127,
+    "root": "network::dispatch_safety_stable_unstable_drop_u8_n15_16_17",
+    "selector": "slice::sort::shared::smallsort::verify::network::dispatch_safety_stable_unstable_drop_u8_n15_16_17",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 128,
+    "root": "network::dispatch_safety_stable_unstable_drop_u8_n32",
+    "selector": "slice::sort::shared::smallsort::verify::network::dispatch_safety_stable_unstable_drop_u8_n32",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 129,
+    "root": "network::dispatch_safety_unstable_bytes16_n32",
+    "selector": "slice::sort::shared::smallsort::verify::network::dispatch_safety_unstable_bytes16_n32",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 130,
+    "root": "network::dispatch_safety_unstable_bytes17_n32",
+    "selector": "slice::sort::shared::smallsort::verify::network::dispatch_safety_unstable_bytes17_n32",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 131,
+    "root": "network::dispatch_safety_unstable_bytes86_n0_1_2_15_16",
+    "selector": "slice::sort::shared::smallsort::verify::network::dispatch_safety_unstable_bytes86_n0_1_2_15_16",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 132,
+    "root": "network::dispatch_safety_unstable_u8_n18_31_32",
+    "selector": "slice::sort::shared::smallsort::verify::network::dispatch_safety_unstable_u8_n18_31_32",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 133,
+    "root": "network::dispatch_safety_unstable_u8_n8_9_12_13_17",
+    "selector": "slice::sort::shared::smallsort::verify::network::dispatch_safety_unstable_u8_n8_9_12_13_17",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 134,
+    "root": "network::insert_tail_contract_u64_start1_tail13_to14",
+    "selector": "slice::sort::shared::smallsort::verify::network::insert_tail_contract_u64_start1_tail13_to14",
+    "shard": 4,
+    "class": "profile_pfc",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 135,
+    "root": "network::insert_tail_contract_u64_start1_tail15_to16",
+    "selector": "slice::sort::shared::smallsort::verify::network::insert_tail_contract_u64_start1_tail15_to16",
+    "shard": 4,
+    "class": "profile_pfc",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 136,
+    "root": "network::insert_tail_contract_u64_start1_tail2_to8",
+    "selector": "slice::sort::shared::smallsort::verify::network::insert_tail_contract_u64_start1_tail2_to8",
+    "shard": 4,
+    "class": "profile_pfc",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 137,
+    "root": "network::insert_tail_contract_u64_start1_tail9_to12",
+    "selector": "slice::sort::shared::smallsort::verify::network::insert_tail_contract_u64_start1_tail9_to12",
+    "shard": 4,
+    "class": "profile_pfc",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 138,
+    "root": "network::insertion_permutation_u64_n10",
+    "selector": "slice::sort::shared::smallsort::verify::network::insertion_permutation_u64_n10",
+    "shard": 2,
+    "class": "insertion_count",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 139,
+    "root": "network::insertion_permutation_u64_n14",
+    "selector": "slice::sort::shared::smallsort::verify::network::insertion_permutation_u64_n14",
+    "shard": 2,
+    "class": "insertion_count",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 140,
+    "root": "network::insertion_permutation_u8_n10",
+    "selector": "slice::sort::shared::smallsort::verify::network::insertion_permutation_u8_n10",
+    "shard": 2,
+    "class": "insertion_count",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 141,
+    "root": "network::insertion_permutation_u8_n11",
+    "selector": "slice::sort::shared::smallsort::verify::network::insertion_permutation_u8_n11",
+    "shard": 2,
+    "class": "insertion_count",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 142,
+    "root": "network::insertion_permutation_u8_n14",
+    "selector": "slice::sort::shared::smallsort::verify::network::insertion_permutation_u8_n14",
+    "shard": 2,
+    "class": "insertion_count",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 143,
+    "root": "network::insertion_safety_u64_n11_to12",
+    "selector": "slice::sort::shared::smallsort::verify::network::insertion_safety_u64_n11_to12",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 144,
+    "root": "network::insertion_safety_u64_n13",
+    "selector": "slice::sort::shared::smallsort::verify::network::insertion_safety_u64_n13",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 145,
+    "root": "network::insertion_safety_u64_n14",
+    "selector": "slice::sort::shared::smallsort::verify::network::insertion_safety_u64_n14",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 146,
+    "root": "network::insertion_safety_u64_n15_offsets13_to15",
+    "selector": "slice::sort::shared::smallsort::verify::network::insertion_safety_u64_n15_offsets13_to15",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 147,
+    "root": "network::insertion_safety_u64_n15_offsets1_to4",
+    "selector": "slice::sort::shared::smallsort::verify::network::insertion_safety_u64_n15_offsets1_to4",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 148,
+    "root": "network::insertion_safety_u64_n15_offsets5_to8",
+    "selector": "slice::sort::shared::smallsort::verify::network::insertion_safety_u64_n15_offsets5_to8",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 149,
+    "root": "network::insertion_safety_u64_n15_offsets9_to12",
+    "selector": "slice::sort::shared::smallsort::verify::network::insertion_safety_u64_n15_offsets9_to12",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 150,
+    "root": "network::insertion_safety_u64_n16_offsets13_to16",
+    "selector": "slice::sort::shared::smallsort::verify::network::insertion_safety_u64_n16_offsets13_to16",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 151,
+    "root": "network::insertion_safety_u64_n16_offsets1_to4",
+    "selector": "slice::sort::shared::smallsort::verify::network::insertion_safety_u64_n16_offsets1_to4",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 152,
+    "root": "network::insertion_safety_u64_n16_offsets5_to8",
+    "selector": "slice::sort::shared::smallsort::verify::network::insertion_safety_u64_n16_offsets5_to8",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 153,
+    "root": "network::insertion_safety_u64_n16_offsets9_to12",
+    "selector": "slice::sort::shared::smallsort::verify::network::insertion_safety_u64_n16_offsets9_to12",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 154,
+    "root": "network::insertion_safety_u64_n17_offsets13_to15",
+    "selector": "slice::sort::shared::smallsort::verify::network::insertion_safety_u64_n17_offsets13_to15",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 155,
+    "root": "network::insertion_safety_u64_n17_offsets16_to17",
+    "selector": "slice::sort::shared::smallsort::verify::network::insertion_safety_u64_n17_offsets16_to17",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 156,
+    "root": "network::insertion_safety_u64_n17_offsets1_to4",
+    "selector": "slice::sort::shared::smallsort::verify::network::insertion_safety_u64_n17_offsets1_to4",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 157,
+    "root": "network::insertion_safety_u64_n17_offsets5_to8",
+    "selector": "slice::sort::shared::smallsort::verify::network::insertion_safety_u64_n17_offsets5_to8",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 158,
+    "root": "network::insertion_safety_u64_n17_offsets9_to12",
+    "selector": "slice::sort::shared::smallsort::verify::network::insertion_safety_u64_n17_offsets9_to12",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 159,
+    "root": "network::insertion_safety_u64_n18_offsets13_to16",
+    "selector": "slice::sort::shared::smallsort::verify::network::insertion_safety_u64_n18_offsets13_to16",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 160,
+    "root": "network::insertion_safety_u64_n18_offsets17_to18",
+    "selector": "slice::sort::shared::smallsort::verify::network::insertion_safety_u64_n18_offsets17_to18",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 161,
+    "root": "network::insertion_safety_u64_n18_offsets1_to4",
+    "selector": "slice::sort::shared::smallsort::verify::network::insertion_safety_u64_n18_offsets1_to4",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 162,
+    "root": "network::insertion_safety_u64_n18_offsets5_to8",
+    "selector": "slice::sort::shared::smallsort::verify::network::insertion_safety_u64_n18_offsets5_to8",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 163,
+    "root": "network::insertion_safety_u64_n18_offsets9_to12",
+    "selector": "slice::sort::shared::smallsort::verify::network::insertion_safety_u64_n18_offsets9_to12",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 164,
+    "root": "network::insertion_safety_u64_n19_offsets13_to16",
+    "selector": "slice::sort::shared::smallsort::verify::network::insertion_safety_u64_n19_offsets13_to16",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 165,
+    "root": "network::insertion_safety_u64_n19_offsets17_to19",
+    "selector": "slice::sort::shared::smallsort::verify::network::insertion_safety_u64_n19_offsets17_to19",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 166,
+    "root": "network::insertion_safety_u64_n19_offsets1_to4",
+    "selector": "slice::sort::shared::smallsort::verify::network::insertion_safety_u64_n19_offsets1_to4",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 167,
+    "root": "network::insertion_safety_u64_n19_offsets5_to8",
+    "selector": "slice::sort::shared::smallsort::verify::network::insertion_safety_u64_n19_offsets5_to8",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 168,
+    "root": "network::insertion_safety_u64_n19_offsets9_to12",
+    "selector": "slice::sort::shared::smallsort::verify::network::insertion_safety_u64_n19_offsets9_to12",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 169,
+    "root": "network::insertion_safety_u64_n1_to5",
+    "selector": "slice::sort::shared::smallsort::verify::network::insertion_safety_u64_n1_to5",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 170,
+    "root": "network::insertion_safety_u64_n20_offsets13_to16",
+    "selector": "slice::sort::shared::smallsort::verify::network::insertion_safety_u64_n20_offsets13_to16",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 171,
+    "root": "network::insertion_safety_u64_n20_offsets17_to20",
+    "selector": "slice::sort::shared::smallsort::verify::network::insertion_safety_u64_n20_offsets17_to20",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 172,
+    "root": "network::insertion_safety_u64_n20_offsets1_to4",
+    "selector": "slice::sort::shared::smallsort::verify::network::insertion_safety_u64_n20_offsets1_to4",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 173,
+    "root": "network::insertion_safety_u64_n20_offsets5_to8",
+    "selector": "slice::sort::shared::smallsort::verify::network::insertion_safety_u64_n20_offsets5_to8",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 174,
+    "root": "network::insertion_safety_u64_n20_offsets9_to12",
+    "selector": "slice::sort::shared::smallsort::verify::network::insertion_safety_u64_n20_offsets9_to12",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 175,
+    "root": "network::insertion_safety_u64_n6_to10",
+    "selector": "slice::sort::shared::smallsort::verify::network::insertion_safety_u64_n6_to10",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 176,
+    "root": "network::mutating_insertion_safety_cell_n1_to5",
+    "selector": "slice::sort::shared::smallsort::verify::network::mutating_insertion_safety_cell_n1_to5",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 177,
+    "root": "network::mutating_insertion_safety_cell_n20_offsets13_to16",
+    "selector": "slice::sort::shared::smallsort::verify::network::mutating_insertion_safety_cell_n20_offsets13_to16",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 178,
+    "root": "network::mutating_insertion_safety_cell_n20_offsets17_to20",
+    "selector": "slice::sort::shared::smallsort::verify::network::mutating_insertion_safety_cell_n20_offsets17_to20",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 179,
+    "root": "network::mutating_insertion_safety_cell_n20_offsets1_to4",
+    "selector": "slice::sort::shared::smallsort::verify::network::mutating_insertion_safety_cell_n20_offsets1_to4",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 180,
+    "root": "network::mutating_insertion_safety_cell_n20_offsets5_to8",
+    "selector": "slice::sort::shared::smallsort::verify::network::mutating_insertion_safety_cell_n20_offsets5_to8",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 181,
+    "root": "network::mutating_insertion_safety_cell_n20_offsets9_to12",
+    "selector": "slice::sort::shared::smallsort::verify::network::mutating_insertion_safety_cell_n20_offsets9_to12",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 182,
+    "root": "network::mutating_route_permutation_cell_n2",
+    "selector": "slice::sort::shared::smallsort::verify::network::mutating_route_permutation_cell_n2",
+    "shard": 2,
+    "class": "drop_tag",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 183,
+    "root": "network::mutating_route_permutation_cell_n3",
+    "selector": "slice::sort::shared::smallsort::verify::network::mutating_route_permutation_cell_n3",
+    "shard": 2,
+    "class": "drop_tag",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 184,
+    "root": "network::mutating_route_permutation_cell_n4",
+    "selector": "slice::sort::shared::smallsort::verify::network::mutating_route_permutation_cell_n4",
+    "shard": 2,
+    "class": "drop_tag",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 185,
+    "root": "network::mutating_route_safety_cell_n0_to4",
+    "selector": "slice::sort::shared::smallsort::verify::network::mutating_route_safety_cell_n0_to4",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 186,
+    "root": "network::mutating_route_safety_cell_n13_to16",
+    "selector": "slice::sort::shared::smallsort::verify::network::mutating_route_safety_cell_n13_to16",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 187,
+    "root": "network::mutating_route_safety_cell_n5_to8",
+    "selector": "slice::sort::shared::smallsort::verify::network::mutating_route_safety_cell_n5_to8",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 188,
+    "root": "network::mutating_route_safety_cell_n9_to12",
+    "selector": "slice::sort::shared::smallsort::verify::network::mutating_route_safety_cell_n9_to12",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 189,
+    "root": "network::network_correctness_u64_n0_to2",
+    "selector": "slice::sort::shared::smallsort::verify::network::network_correctness_u64_n0_to2",
+    "shard": 2,
+    "class": "network_order",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 190,
+    "root": "network::network_correctness_u64_n3_to4",
+    "selector": "slice::sort::shared::smallsort::verify::network::network_correctness_u64_n3_to4",
+    "shard": 2,
+    "class": "network_order",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 191,
+    "root": "network::network_correctness_u64_n5",
+    "selector": "slice::sort::shared::smallsort::verify::network::network_correctness_u64_n5",
+    "shard": 2,
+    "class": "network_order",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 192,
+    "root": "network::network_correctness_u64_n6",
+    "selector": "slice::sort::shared::smallsort::verify::network::network_correctness_u64_n6",
+    "shard": 2,
+    "class": "network_order",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 193,
+    "root": "network::network_correctness_u64_n7",
+    "selector": "slice::sort::shared::smallsort::verify::network::network_correctness_u64_n7",
+    "shard": 2,
+    "class": "network_order",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 194,
+    "root": "network::network_correctness_u64_n9",
+    "selector": "slice::sort::shared::smallsort::verify::network::network_correctness_u64_n9",
+    "shard": 2,
+    "class": "network_order",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 195,
+    "root": "network::network_correctness_u8_n0_to2",
+    "selector": "slice::sort::shared::smallsort::verify::network::network_correctness_u8_n0_to2",
+    "shard": 2,
+    "class": "network_order",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 196,
+    "root": "network::network_correctness_u8_n10",
+    "selector": "slice::sort::shared::smallsort::verify::network::network_correctness_u8_n10",
+    "shard": 2,
+    "class": "network_order",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 197,
+    "root": "network::network_correctness_u8_n11",
+    "selector": "slice::sort::shared::smallsort::verify::network::network_correctness_u8_n11",
+    "shard": 2,
+    "class": "network_order",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 198,
+    "root": "network::network_correctness_u8_n12",
+    "selector": "slice::sort::shared::smallsort::verify::network::network_correctness_u8_n12",
+    "shard": 2,
+    "class": "network_order",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 199,
+    "root": "network::network_correctness_u8_n13",
+    "selector": "slice::sort::shared::smallsort::verify::network::network_correctness_u8_n13",
+    "shard": 2,
+    "class": "network_order",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 200,
+    "root": "network::network_correctness_u8_n3_to4",
+    "selector": "slice::sort::shared::smallsort::verify::network::network_correctness_u8_n3_to4",
+    "shard": 2,
+    "class": "network_order",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 201,
+    "root": "network::network_correctness_u8_n5",
+    "selector": "slice::sort::shared::smallsort::verify::network::network_correctness_u8_n5",
+    "shard": 2,
+    "class": "network_order",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 202,
+    "root": "network::network_correctness_u8_n6",
+    "selector": "slice::sort::shared::smallsort::verify::network::network_correctness_u8_n6",
+    "shard": 2,
+    "class": "network_order",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 203,
+    "root": "network::network_correctness_u8_n7",
+    "selector": "slice::sort::shared::smallsort::verify::network::network_correctness_u8_n7",
+    "shard": 2,
+    "class": "network_order",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 204,
+    "root": "network::network_correctness_u8_n9",
+    "selector": "slice::sort::shared::smallsort::verify::network::network_correctness_u8_n9",
+    "shard": 2,
+    "class": "network_order",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 205,
+    "root": "network::network_safety_unstable_u64_n0_to17",
+    "selector": "slice::sort::shared::smallsort::verify::network::network_safety_unstable_u64_n0_to17",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 206,
+    "root": "network::network_safety_unstable_u64_n30",
+    "selector": "slice::sort::shared::smallsort::verify::network::network_safety_unstable_u64_n30",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 207,
+    "root": "network::network_safety_unstable_u64_n31",
+    "selector": "slice::sort::shared::smallsort::verify::network::network_safety_unstable_u64_n31",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 208,
+    "root": "network::network_safety_unstable_u64_n32",
+    "selector": "slice::sort::shared::smallsort::verify::network::network_safety_unstable_u64_n32",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 209,
+    "root": "network::swap_contract_bytes16_n2",
+    "selector": "slice::sort::shared::smallsort::verify::network::swap_contract_bytes16_n2",
+    "shard": 4,
+    "class": "profile_pfc",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 210,
+    "root": "network::swap_contract_bytes17_n2",
+    "selector": "slice::sort::shared::smallsort::verify::network::swap_contract_bytes17_n2",
+    "shard": 4,
+    "class": "profile_pfc",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 211,
+    "root": "network::swap_contract_cell_i32_n2",
+    "selector": "slice::sort::shared::smallsort::verify::network::swap_contract_cell_i32_n2",
+    "shard": 4,
+    "class": "profile_pfc",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 212,
+    "root": "network::swap_contract_drop_u8_n2",
+    "selector": "slice::sort::shared::smallsort::verify::network::swap_contract_drop_u8_n2",
+    "shard": 4,
+    "class": "profile_pfc",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 213,
+    "root": "network::swap_contract_four_positions_i32",
+    "selector": "slice::sort::shared::smallsort::verify::network::swap_contract_four_positions_i32",
+    "shard": 4,
+    "class": "profile_pfc",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 214,
+    "root": "network::swap_contract_four_positions_u64",
+    "selector": "slice::sort::shared::smallsort::verify::network::swap_contract_four_positions_u64",
+    "shard": 4,
+    "class": "profile_pfc",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 215,
+    "root": "network::swap_contract_four_positions_u8",
+    "selector": "slice::sort::shared::smallsort::verify::network::swap_contract_four_positions_u8",
+    "shard": 4,
+    "class": "profile_pfc",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 216,
+    "root": "network::swap_contract_u64_indices_n17",
+    "selector": "slice::sort::shared::smallsort::verify::network::swap_contract_u64_indices_n17",
+    "shard": 4,
+    "class": "profile_pfc",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 217,
+    "root": "network::swap_contract_u64_n2",
+    "selector": "slice::sort::shared::smallsort::verify::network::swap_contract_u64_n2",
+    "shard": 4,
+    "class": "profile_pfc",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 218,
+    "root": "network::swap_contract_u64_n9",
+    "selector": "slice::sort::shared::smallsort::verify::network::swap_contract_u64_n9",
+    "shard": 4,
+    "class": "profile_pfc",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 219,
+    "root": "network::swap_contract_u8_indices_n17",
+    "selector": "slice::sort::shared::smallsort::verify::network::swap_contract_u8_indices_n17",
+    "shard": 4,
+    "class": "profile_pfc",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 220,
+    "root": "network::swap_contract_u8_n13",
+    "selector": "slice::sort::shared::smallsort::verify::network::swap_contract_u8_n13",
+    "shard": 4,
+    "class": "profile_pfc",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 221,
+    "root": "network::swap_contract_u8_n2",
+    "selector": "slice::sort::shared::smallsort::verify::network::swap_contract_u8_n2",
+    "shard": 4,
+    "class": "profile_pfc",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 222,
+    "root": "network::swap_contract_u8_n9",
+    "selector": "slice::sort::shared::smallsort::verify::network::swap_contract_u8_n9",
+    "shard": 4,
+    "class": "profile_pfc",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 223,
+    "root": "network::swap_same_position_u8",
+    "selector": "slice::sort::shared::smallsort::verify::network::swap_same_position_u8",
+    "shard": 2,
+    "class": "helpers",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 224,
+    "root": "network::unstable_freeze_noncopy_bytes86_fallback_n2",
+    "selector": "slice::sort::shared::smallsort::verify::network::unstable_freeze_noncopy_bytes86_fallback_n2",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 225,
+    "root": "scratch_geometry::stable_u64_min_scratch_n2",
+    "selector": "slice::sort::shared::smallsort::verify::scratch_geometry::stable_u64_min_scratch_n2",
+    "shard": 2,
+    "class": "safety",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 226,
+    "root": "smoke::predicate_efficient_swap_type_matrix",
+    "selector": "slice::sort::shared::smallsort::verify::smoke::predicate_efficient_swap_type_matrix",
+    "shard": 2,
+    "class": "helpers",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 227,
+    "root": "tag_permutation::network_u8_n13",
+    "selector": "slice::sort::shared::smallsort::verify::tag_permutation::network_u8_n13",
+    "shard": 2,
+    "class": "drop_tag",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 228,
+    "root": "tag_permutation::network_u8_n9",
+    "selector": "slice::sort::shared::smallsort::verify::tag_permutation::network_u8_n9",
+    "shard": 2,
+    "class": "drop_tag",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 229,
+    "root": "tag_permutation::tag_types_preserve_source_routes",
+    "selector": "slice::sort::shared::smallsort::verify::tag_permutation::tag_types_preserve_source_routes",
+    "shard": 2,
+    "class": "drop_tag",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 230,
+    "root": "types::sorted_permutation_traits_fallback_cell_u8_n0_to2",
+    "selector": "slice::sort::shared::smallsort::verify::types::sorted_permutation_traits_fallback_cell_u8_n0_to2",
+    "shard": 2,
+    "class": "logical_traits",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 231,
+    "root": "types::sorted_permutation_traits_fallback_cell_u8_n7",
+    "selector": "slice::sort::shared::smallsort::verify::types::sorted_permutation_traits_fallback_cell_u8_n7",
+    "shard": 2,
+    "class": "logical_traits",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 232,
+    "root": "types::sorted_permutation_traits_general_drop_u8_n0_to2",
+    "selector": "slice::sort::shared::smallsort::verify::types::sorted_permutation_traits_general_drop_u8_n0_to2",
+    "shard": 2,
+    "class": "logical_traits",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 233,
+    "root": "types::sorted_permutation_traits_general_drop_u8_n8",
+    "selector": "slice::sort::shared::smallsort::verify::types::sorted_permutation_traits_general_drop_u8_n8",
+    "shard": 2,
+    "class": "logical_traits",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 234,
+    "root": "types::sorted_permutation_traits_stable_fallback_cell_u8_n8",
+    "selector": "slice::sort::shared::smallsort::verify::types::sorted_permutation_traits_stable_fallback_cell_u8_n8",
+    "shard": 2,
+    "class": "logical_traits",
+    "intended_invalid_value": false
+  },
+  {
+    "id": 235,
+    "root": "types::sorted_permutation_traits_unstable_fallback_cell_u8_n8",
+    "selector": "slice::sort::shared::smallsort::verify::types::sorted_permutation_traits_unstable_fallback_cell_u8_n8",
+    "shard": 2,
+    "class": "logical_traits",
+    "intended_invalid_value": false
+  }
+]

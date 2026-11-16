@@ -1,0 +1,105 @@
+# CI-only package. The coordinator creates a same-tree non-skip trigger after review/ledger GO.
+name: Challenge 8 B valid-value census
+'on':
+  push:
+    branches: ['uninit-ci/ch8-b-census-*']
+permissions:
+  contents: read
+concurrency:
+  group: ch8-b-census
+  cancel-in-progress: false
+jobs:
+  census:
+    if: ${{ github.repository == 'Tiramisu-Cake/kani' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 210
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        shard: [2, 4]
+    steps:
+      - name: Checkout CI control
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
+          path: control
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Bind coordinator trigger and seed NOT_RUN receipts
+        env:
+          RECEIPTS: ${{ runner.temp }}/ch8-b-receipts
+          SHARD: ${{ matrix.shard }}
+        run: |
+          python3 - <<'PYCODE'
+          import os, subprocess
+          from pathlib import Path
+          def git(*args):
+              return subprocess.check_output(['git','-C','control',*args],text=True).strip()
+          assert os.environ['GITHUB_RUN_ATTEMPT'] == '1', 'Reruns are not authorized'
+          assert git('rev-parse','HEAD') == os.environ['GITHUB_SHA']
+          assert git('rev-parse','HEAD^{tree}') == git('rev-parse','HEAD^1^{tree}'), 'Require same-tree coordinator trigger'
+          assert '[skip ci]' in git('show','-s','--format=%B','HEAD^1')
+          Path(os.environ['RECEIPTS']).mkdir(parents=True,exist_ok=True)
+          PYCODE
+          python3 control/scripts/ch8-b-census/census.py seed --shard "$SHARD" --out "$RECEIPTS"
+      - name: Synthetic service preflight
+        working-directory: control/scripts/ch8-b-census
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: python3 -m unittest -v test_census.py
+      - name: Checkout pristine Kani export
+        uses: actions/checkout@v6
+        with:
+          repository: model-checking/kani
+          ref: 0aac16ef62da9e9d5645782d458593e5d78143ba
+          path: export
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Checkout P-prime std
+        uses: actions/checkout@v6
+        with:
+          repository: Tiramisu-Cake/verify-rust-std
+          ref: c5ff36ff433692140605891f646043f991db05de
+          path: std
+          submodules: true
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Bind source identities
+        env:
+          RECEIPTS: ${{ runner.temp }}/ch8-b-receipts
+        run: python3 control/scripts/ch8-b-census/census.py bind --out "$RECEIPTS" --export export --std std
+      - name: Setup exact export dependencies
+        timeout-minutes: 25
+        uses: ./export/.github/actions/setup
+        with:
+          os: ubuntu-24.04
+          kani_dir: export
+      - name: Build pristine export with bounds
+        timeout-minutes: 36
+        env:
+          RECEIPTS: ${{ runner.temp }}/ch8-b-receipts
+        run: python3 control/scripts/ch8-b-census/census.py build --out "$RECEIPTS" --export export
+      - name: Census ordinary roots once
+        timeout-minutes: 122
+        env:
+          RECEIPTS: ${{ runner.temp }}/ch8-b-receipts
+          SHARD: ${{ matrix.shard }}
+        run: python3 control/scripts/ch8-b-census/census.py run --shard "$SHARD" --out "$RECEIPTS" --export export --std std
+      - name: Finalize complete or PARTIAL census
+        if: always()
+        env:
+          RECEIPTS: ${{ runner.temp }}/ch8-b-receipts
+          SHARD: ${{ matrix.shard }}
+          JOB_STATUS: ${{ job.status }}
+        run: python3 control/scripts/ch8-b-census/census.py finalize --shard "$SHARD" --out "$RECEIPTS" --job-status "$JOB_STATUS"
+      - name: Upload bounded curated receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        env:
+          RECEIPTS: ${{ runner.temp }}/ch8-b-receipts
+        with:
+          name: ch8-b-census-shard-${{ matrix.shard }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ env.RECEIPTS }}/*.json
+          if-no-files-found: error
+          retention-days: 7
