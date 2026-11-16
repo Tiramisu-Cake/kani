@@ -1,0 +1,4 @@
+Failed Checks: Undefined Behavior: Reading from an uninitialized pointer of type
+
+Verification failed for - read_in_drop_of_uninit_slot
+Complete - 0 successfully verified harnesses, 1 failures, 1 total.

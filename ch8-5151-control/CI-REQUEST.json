@@ -1,0 +1,110 @@
+{
+  "activation": {
+    "control_commit_message_suffix": "[skip ci]",
+    "requires_separate_coordinator_authorization": true,
+    "trigger": "same-tree child on uninit-ci/ch8-5151-* after skip-ci control commit",
+    "workflow_preflight": "trigger tree equals control tree; control message contains [skip ci]; control parent is pinned stock commit"
+  },
+  "artifact": {
+    "export_limit_bytes": 8388608,
+    "log_head_bytes": 131072,
+    "log_tail_bytes": 4096,
+    "retention_days": 7
+  },
+  "attempt": 1,
+  "authority": {
+    "ci": false,
+    "ledger": false,
+    "local_compiler_verifier": false,
+    "publications": false,
+    "push": false
+  },
+  "branch_prefix": "uninit-ci/ch8-5151-",
+  "caps": {
+    "attempt": 1,
+    "build_seconds": 1800,
+    "fail_fast": false,
+    "job_minutes": 55,
+    "max_parallel": 1,
+    "retries": 0,
+    "row_seconds": 60
+  },
+  "compiler_configuration": {
+    "compile_flags": [
+      "--edition",
+      "2021"
+    ],
+    "edition": "2021",
+    "test_header": "// compile-flags: --edition 2021",
+    "transport": "per-harness RUSTFLAGS"
+  },
+  "control_parent": "0aac16ef62da9e9d5645782d458593e5d78143ba",
+  "control_repository": "Tiramisu-Cake/kani",
+  "dispatch_authorized": false,
+  "expectations": {
+    "prototype": {
+      "initialized-slot": "SUCCESS",
+      "original-empty-drop": "COMPLETED_WITHOUT_UNSUPPORTED; semantic target UNINIT_FAILURE; SUCCESS is an observed empty-drop limitation",
+      "read-in-drop": "UNINIT_FAILURE"
+    },
+    "stock": "exact pinned MaybeUninit union-layout diagnostic with nonzero status on all three rows"
+  },
+  "invocation_count_per_pin": 3,
+  "limitations": [
+    "Expectations are source-level predictions until separately authorized workflow execution.",
+    "A completed SUCCESS for original-empty-drop records an unresolved semantic limitation.",
+    "Runtime proof credit remains NONE."
+  ],
+  "payload_sha256": {
+    ".github/workflows/ch8-5151.yml": "69f77d4f5c00dc0e521a1cf624d2130ae525153ca3ea716300e8a89e87040e84",
+    "ch8-5151-control/HANDOFF.md": "e4a87c6db2ca183927402906b0c4f31f7f30371a7230d3a2dcdba7ca107657ed",
+    "ch8-5151-control/ORACLES.md": "a192b1e1c53067d6cdb07e56c65ea7bba182451140166d912d86516c25cf6993",
+    "ch8-5151-control/PACKAGE.md": "40407eac957ffddb6757efabd2d6b7a5bf996a90e7fa20e0f3538d72e3176301",
+    "ch8-5151-control/check_package.py": "1b741c13dfe11c3e2ce52e6f2ad3f44d9233288475dcf27f0fe3bae17bc08f80",
+    "ch8-5151-control/rows.json": "d4eb216d7dd864071d2e1c45cc270f16f647e1d636757109584e221a82da50de",
+    "ch8-5151-control/runner.py": "0cc2c2660f176b8c82d304f64e229d4dcdf2bc51554ac6472396ba52a9aab9c9",
+    "ch8-5151-control/test_runner.py": "5b4bcdfca5ccd479e509e7371221b8ff46d3c3fe44932293e75ec1b210f61244",
+    "tests/expected/uninit/issue-5151/initialized-slot.expected": "deb74bc3e432216ac6aa5ccdc12fcd79544634c60727d2838e5a1cbd5c410f55",
+    "tests/expected/uninit/issue-5151/initialized-slot.rs": "4ae2f6cbda607c45754d133d66c7ed2654aa342bdca253bd292ee4fa05bb1982",
+    "tests/expected/uninit/issue-5151/original-empty-drop.expected": "44b7f93792c645277e6d474d747e0cd98eb208e0abd18ec26ad770bd9c585afa",
+    "tests/expected/uninit/issue-5151/original-empty-drop.rs": "51d9d5dae9e1f2a362747fbd8f834ad0aef9c66898fb7b440ab52a969271ccad",
+    "tests/expected/uninit/issue-5151/read-in-drop.expected": "885c3cd269ee77010c74240d94b214474c0f0f344435532cf097ac6e205f95e3",
+    "tests/expected/uninit/issue-5151/read-in-drop.rs": "6a2c23d01cb269f3e8e0e1358b0a2fe9a0edebf7702e235a098dfdc16ddf71b6"
+  },
+  "pins": {
+    "prototype": {
+      "repository": "Tiramisu-Cake/kani",
+      "sha": "8e299aa6243bc5f06a29c51e98aafa9564478220",
+      "tree": "9829702c1aa0ecb73c860fc0ad5451757917d6cb"
+    },
+    "stock": {
+      "repository": "model-checking/kani",
+      "sha": "0aac16ef62da9e9d5645782d458593e5d78143ba",
+      "tree": "9d8bc9312bf955ef126d32b819b3cd0ed105ed2b"
+    }
+  },
+  "planned_dispatch_count": 0,
+  "previous_run": {
+    "diagnostic": "error[E0433]: cannot find core in the crate root",
+    "edition": "2015",
+    "id": 43878900159,
+    "proof_credit": "NONE",
+    "provenance": "USER_REPORTED",
+    "result": "UNKNOWN",
+    "rows": 6,
+    "stage": "COMPILATION_FAILED",
+    "trigger_prefix": "dbfb4d8bd8"
+  },
+  "proof_credit": "NONE",
+  "rows_sha256": "d4eb216d7dd864071d2e1c45cc270f16f647e1d636757109584e221a82da50de",
+  "schema": "ch8-5151-control-request-v1",
+  "status": "READY",
+  "supersedes_control": "0a9e3bdb8a029815ccf205541b1fc09acf8808f9",
+  "task": "/root/verify-rust-std-kani3300-g0/research/challenge-8/kani-k1/TASK-CH8-5151-REPRO-W13.md",
+  "toolchain": {
+    "cbmc": "6.11.0",
+    "kissat": "4.0.1",
+    "rust": "nightly-2026-10-23"
+  },
+  "total_exact_invocations": 6
+}

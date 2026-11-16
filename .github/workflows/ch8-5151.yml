@@ -1,0 +1,118 @@
+# Copyright Kani Contributors
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+name: CH8 issue 5151 bounded reproduction
+on:
+  push:
+    branches: ["uninit-ci/ch8-5151-*"]
+permissions:
+  contents: read
+concurrency:
+  group: ch8-5151
+  cancel-in-progress: false
+jobs:
+  reproduce:
+    if: ${{ github.repository == 'Tiramisu-Cake/kani' && github.event_name == 'push' && github.run_attempt == 1 }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    strategy:
+      max-parallel: 1
+      fail-fast: false
+      matrix:
+        include:
+          - pin: stock
+            repository: model-checking/kani
+            sha: 0aac16ef62da9e9d5645782d458593e5d78143ba
+            tree: 9d8bc9312bf955ef126d32b819b3cd0ed105ed2b
+          - pin: prototype
+            repository: Tiramisu-Cake/kani
+            sha: 8e299aa6243bc5f06a29c51e98aafa9564478220
+            tree: 9829702c1aa0ecb73c860fc0ad5451757917d6cb
+    steps:
+      - name: Checkout control
+        timeout-minutes: 2
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
+          path: control
+          fetch-depth: 3
+          persist-credentials: false
+      - name: Require same-tree child of skip-ci control
+        timeout-minutes: 1
+        env:
+          EXPECTED_HEAD: ${{ github.sha }}
+          STOCK_PARENT: 0aac16ef62da9e9d5645782d458593e5d78143ba
+        run: |
+          test "$(git -C control rev-parse HEAD)" = "$EXPECTED_HEAD"
+          test "$(git -C control rev-parse HEAD^{tree})" = "$(git -C control rev-parse HEAD^1^{tree})"
+          git -C control log -1 --format=%B HEAD^1 | grep -Fqi '[skip ci]'
+          test "$(git -C control rev-parse HEAD^1^1)" = "$STOCK_PARENT"
+          for key in RUSTFLAGS CARGO_ENCODED_RUSTFLAGS KANI_FLAGS KANI_OPTS; do
+            test -z "${!key:-}" || { echo "refusing inherited $key" >&2; exit 1; }
+          done
+          for key in KANI_ATTEMPT SMALLSORT_ATTEMPT; do
+            test -z "${!key:-}" || test "${!key}" = 1 || { echo "refusing $key other than attempt 1" >&2; exit 1; }
+          done
+      - name: Validate package and synthetic controls
+        timeout-minutes: 2
+        working-directory: control/ch8-5151-control
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: |
+          python3 check_package.py
+          python3 -m unittest -v
+      - name: Checkout pinned tool
+        timeout-minutes: 2
+        uses: actions/checkout@v6
+        with:
+          repository: ${{ matrix.repository }}
+          ref: ${{ matrix.sha }}
+          path: tool
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Verify pinned tree
+        timeout-minutes: 1
+        env:
+          EXPECTED_TREE: ${{ matrix.tree }}
+        run: test "$(git -C tool rev-parse HEAD^{tree})" = "$EXPECTED_TREE"
+      - name: Setup pinned tool
+        timeout-minutes: 4
+        uses: ./tool/.github/actions/setup
+        with:
+          os: ubuntu-24.04
+          kani_dir: tool
+      - name: Build pinned tool once
+        timeout-minutes: 31
+        env:
+          RECEIPT_ROOT: ${{ runner.temp }}/ch8-5151-${{ matrix.pin }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_REF: ${{ github.ref }}
+          GITHUB_RUN_ATTEMPT: ${{ github.run_attempt }}
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: python3 control/ch8-5151-control/runner.py build --pin "${{ matrix.pin }}" --tool tool --out "$RECEIPT_ROOT"
+      - name: Run three exact harness invocations
+        timeout-minutes: 5
+        env:
+          RECEIPT_ROOT: ${{ runner.temp }}/ch8-5151-${{ matrix.pin }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_REF: ${{ github.ref }}
+          GITHUB_RUN_ATTEMPT: ${{ github.run_attempt }}
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: python3 control/ch8-5151-control/runner.py run --pin "${{ matrix.pin }}" --tool tool --out "$RECEIPT_ROOT"
+      - name: Preserve receipts and materialize unstarted rows
+        if: always()
+        timeout-minutes: 1
+        env:
+          RECEIPT_ROOT: ${{ runner.temp }}/ch8-5151-${{ matrix.pin }}
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: python3 control/ch8-5151-control/runner.py fallback --out "$RECEIPT_ROOT"
+      - name: Upload bounded observations
+        if: always()
+        timeout-minutes: 1
+        uses: actions/upload-artifact@v4
+        with:
+          name: ch8-5151-${{ matrix.pin }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/ch8-5151-${{ matrix.pin }}/
+          if-no-files-found: warn
+          retention-days: 7
