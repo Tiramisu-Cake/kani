@@ -1,0 +1,203 @@
+[
+  {
+    "id": "e_q_pointer_loop",
+    "file": "fixtures/e_q_pointer_loop.rs",
+    "harness": "e_q_pointer_loop",
+    "checks": [
+      "ON",
+      "OFF"
+    ],
+    "expected_by_check": {
+      "ON": "FRONTEND_REJECTION",
+      "OFF": "SUCCESS"
+    },
+    "oracle": "ON must reject the raw-pointer dereference inside the existential loop invariant with the pinned quantifier safety-check guard. OFF must retain the quantified predicate strongly enough for the positive witness and return cover to pass.",
+    "required_covers": [
+      "E-Q pointer loop returns"
+    ],
+    "failure_description": "ON exact diagnostic: quantifier predicates containing safety checks are not supported with -Z valid-value-checks or -Z uninit-checks.",
+    "frontend_diagnostic": "quantifier predicates containing safety checks are not supported with -Z valid-value-checks or -Z uninit-checks"
+  },
+  {
+    "id": "e_q_false_pointer_loop",
+    "file": "fixtures/e_q_false_pointer_loop.rs",
+    "harness": "e_q_false_pointer_loop",
+    "checks": [
+      "ON",
+      "OFF"
+    ],
+    "expected_by_check": {
+      "ON": "FRONTEND_REJECTION",
+      "OFF": "ASSERTION_FAILURE"
+    },
+    "oracle": "ON has the same frontend guard as the positive pointer predicate. OFF must fail the false existential at the loop invariant base; any unrelated failure or success means the predicate cannot serve as this control.",
+    "required_covers": [],
+    "failure_description": "OFF failure must identify the false loop invariant/base assertion for exists i in 0..2, *p.add(i)==3; ON exact diagnostic is the quantifier safety-check guard.",
+    "frontend_diagnostic": "quantifier predicates containing safety checks are not supported with -Z valid-value-checks or -Z uninit-checks",
+    "failure_match": {
+      "class": "loop_invariant_base",
+      "description_regex": "^Check invariant before entry for loop e_q_false_pointer_loop\\.0$",
+      "file": "fixtures/e_q_false_pointer_loop.rs",
+      "line": 11
+    }
+  },
+  {
+    "id": "e_q_isolated_witness",
+    "file": "fixtures/e_q_isolated_witness.rs",
+    "harness": "e_q_isolated_witness",
+    "checks": [
+      "ON",
+      "OFF"
+    ],
+    "expected_by_check": {
+      "ON": "FRONTEND_REJECTION",
+      "OFF": "SUCCESS"
+    },
+    "oracle": "The isolated existential raw-pointer witness must be rejected by the ON guard and pass OFF. This separates predicate lowering from loop-contract lowering.",
+    "required_covers": [],
+    "failure_description": "ON exact diagnostic: quantifier predicates containing safety checks are not supported with -Z valid-value-checks or -Z uninit-checks.",
+    "frontend_diagnostic": "quantifier predicates containing safety checks are not supported with -Z valid-value-checks or -Z uninit-checks"
+  },
+  {
+    "id": "e_q_scalar_invariant",
+    "file": "fixtures/e_q_scalar_invariant.rs",
+    "harness": "e_q_scalar_invariant",
+    "checks": [
+      "ON",
+      "OFF"
+    ],
+    "expected_by_check": {
+      "ON": "SUCCESS",
+      "OFF": "SUCCESS"
+    },
+    "oracle": "A directly evaluated scalar raw read outside any quantifier remains valid with ON and OFF. Require the loop return cover and final assertion; this is the alternative to the unsupported quantified pointer invariant.",
+    "required_covers": [
+      "E-Q scalar loop returns"
+    ],
+    "failure_description": "Any ON frontend rejection here is not the quantifier-predicate guard and is a separate blocker."
+  },
+  {
+    "id": "e_s_unbounded_slice",
+    "file": "fixtures/e_s_unbounded_slice.rs",
+    "harness": "e_s_unbounded_slice",
+    "checks": [
+      "ON",
+      "OFF"
+    ],
+    "expected_by_check": {
+      "ON": "SUCCESS",
+      "OFF": "SUCCESS"
+    },
+    "oracle": "Alloc-enabled any_slice_mut_unbounded::<u8> must support a direct legal symbolic-index read before any loop, with no imposed CAP. ON must pass with uninit checks. Confirm all three reachable covers, especially len>32 and the value-dependent interior-zero read. This is a storage-generation/read control only; no loop or frame is present.",
+    "required_covers": [
+      "E-S interior zero read",
+      "E-S length above 32",
+      "E-S storage call returns"
+    ],
+    "failure_description": "If len>32 is unreachable or the model is unavailable for the selected target, storage binding is not established; do not replace the model with a capped generator."
+  },
+  {
+    "id": "e_h_live_after_havoc",
+    "file": "fixtures/e_h_live_after_havoc.rs",
+    "harness": "e_h_live_after_havoc",
+    "checks": [
+      "ON",
+      "OFF"
+    ],
+    "expected_by_check": {
+      "ON": "SUCCESS",
+      "OFF": "SUCCESS"
+    },
+    "oracle": "The loop actually writes declared live byte 0 inside a two-byte frame. After abstraction, read initialized fixed witness byte 1 through a pre-existing alias and cover its value. ON success checks the witness remains readable after havoc; require both covers.",
+    "required_covers": [
+      "E-H live loop body reached",
+      "E-H fixed initialized witness read"
+    ],
+    "failure_description": "An ON uninit failure on alias.read is evidence that initialization was not preserved through this frame/havoc control."
+  },
+  {
+    "id": "e_h_hole_inside_alias",
+    "file": "fixtures/e_h_hole_inside_alias.rs",
+    "harness": "e_h_hole_inside_alias",
+    "checks": [
+      "ON",
+      "OFF"
+    ],
+    "expected_by_check": {
+      "ON": "UNINIT_FAILURE",
+      "OFF": "OBSERVE"
+    },
+    "oracle": "The loop actually writes live byte 0 inside a two-byte frame; byte 1 is an unwritten hole inside that frame and is read through a pre-existing alias after abstraction. ON must fail at the exact alias read with an uninitialized-read check. OFF is OBSERVE only.",
+    "required_covers": [
+      "E-H hole loop body reached"
+    ],
+    "failure_description": "Must match the uninitialized-read safety check for the direct raw dereference *alias_to_hole on line 24, not an assigns or unrelated failure.",
+    "failure_match": {
+      "class": "safety_check",
+      "description_regex": "^Undefined Behavior: Reading from an uninitialized pointer of type `(?:u8|\\*const u8)`$",
+      "file": "fixtures/e_h_hole_inside_alias.rs",
+      "line": 24
+    }
+  },
+  {
+    "id": "e_h_outside_false_alias",
+    "file": "fixtures/e_h_outside_false_alias.rs",
+    "harness": "e_h_outside_false_alias",
+    "checks": [
+      "ON",
+      "OFF"
+    ],
+    "expected_by_check": {
+      "ON": "UNINIT_FAILURE",
+      "OFF": "OBSERVE"
+    },
+    "oracle": "The loop actually writes live byte 0 inside a two-byte frame. The initialized sentinel at index 3 is outside the frame and must retain value 77 through its alias; index 2 is an unwritten false bit outside the frame and ON must report its uninitialized read through an alias. OFF is OBSERVE only.",
+    "required_covers": [
+      "E-H outside-frame loop body reached",
+      "E-H outside sentinel preserved"
+    ],
+    "failure_description": "Must match the uninitialized-read safety check for the direct raw dereference *alias_outside_frame on line 34; the outside sentinel assertion and cover must pass first.",
+    "failure_match": {
+      "class": "safety_check",
+      "description_regex": "^Undefined Behavior: Reading from an uninitialized pointer of type `(?:u8|\\*const u8)`$",
+      "file": "fixtures/e_h_outside_false_alias.rs",
+      "line": 34
+    }
+  },
+  {
+    "id": "e_h_write_makes_readable",
+    "file": "fixtures/e_h_write_then_read.rs",
+    "harness": "e_h_write_then_read",
+    "checks": [
+      "ON",
+      "OFF"
+    ],
+    "expected_by_check": {
+      "ON": "SUCCESS",
+      "OFF": "SUCCESS"
+    },
+    "oracle": "On the reachable loop-body transition, an actual raw write to the destination must make its immediate raw read legal under ON; OFF companion confirms the ordinary value path. Require body cover and assertion.",
+    "required_covers": [
+      "E-H write loop body reached"
+    ],
+    "failure_description": "Any ON uninit failure on the read immediately after destination_ptr.write(41) means the actual write did not establish readable shadow state."
+  },
+  {
+    "id": "e_h_copy_makes_readable",
+    "file": "fixtures/e_h_copy_then_read.rs",
+    "harness": "e_h_copy_then_read",
+    "checks": [
+      "ON",
+      "OFF"
+    ],
+    "expected_by_check": {
+      "ON": "SUCCESS",
+      "OFF": "SUCCESS"
+    },
+    "oracle": "Copy one initialized u8 from a distinct source into the destination inside the loop body; ON must permit the immediate raw read after the actual copy, and the copied value assertion must pass. Require body cover.",
+    "required_covers": [
+      "E-H copy loop body reached"
+    ],
+    "failure_description": "Any ON uninit failure on the read immediately after copy_nonoverlapping, or source/destination safety failure, means the copy control did not establish the intended readable destination."
+  }
+]

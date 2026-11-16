@@ -1,0 +1,96 @@
+{
+  "schema": "ch8-e-controls-ci-request-v1",
+  "status": "READY",
+  "task": "TASK-CH8-E-CONTROLS-W15.md",
+  "input_g0": "7d8ddd22f40a64053de7de13fb23a3f3303bc07a",
+  "bucket": "E",
+  "item": 1,
+  "attempt": 1,
+  "planned_dispatch_count": 1,
+  "dispatch_authorized": false,
+  "push_performed": false,
+  "ci_performed": false,
+  "proof_status": "ALL_NOT_RUN",
+  "proof_credit": "NONE",
+  "pins": {
+    "upstream": {
+      "repository": "model-checking/kani",
+      "sha": "0aac16ef62da9e9d5645782d458593e5d78143ba",
+      "tree": "9d8bc9312bf955ef126d32b819b3cd0ed105ed2b"
+    },
+    "sel1": {
+      "repository": "Tiramisu-Cake/kani",
+      "sha": "14bc57fdb99960240c4944845a3d985c8af4dcf7",
+      "tree": "1efb6e4dfa69d346df8e23741d11839b1932403d"
+    }
+  },
+  "control_parent": "0aac16ef62da9e9d5645782d458593e5d78143ba",
+  "control_repository": "Tiramisu-Cake/kani",
+  "branch_prefix": "uninit-ci/ch8-e-ctl-",
+  "flags": {
+    "base": [
+      "-Z",
+      "unstable-options",
+      "-Z",
+      "loop-contracts",
+      "-Z",
+      "quantifiers",
+      "-Z",
+      "export-json",
+      "--harness-timeout",
+      "600s",
+      "--jobs",
+      "1",
+      "--exact",
+      "--cbmc-args",
+      "--object-bits",
+      "12"
+    ],
+    "on_adds": [
+      "-Z",
+      "uninit-checks"
+    ],
+    "default_checks_preserved": true,
+    "std_build": false,
+    "unwind_override": false
+  },
+  "caps": {
+    "row_envelope_seconds": 660,
+    "harness_seconds": 600,
+    "run_phase_seconds_per_pin": 4500,
+    "tool_build_seconds": 900,
+    "job_minutes_per_pin": 120,
+    "process_group_rss_bytes": 6442450944,
+    "stdout_head_bytes": 1048576,
+    "stderr_head_bytes": 1048576,
+    "tail_bytes_per_stream": 4096,
+    "export_bytes": 8388608
+  },
+  "identity_limits": {
+    "target": "EXPORTED_AT_RUNTIME",
+    "solver": "DEFAULT_EXPORTED_AT_RUNTIME",
+    "mir_opt": "NOT_OVERRIDDEN_NOT_INDEPENDENTLY_BOUND"
+  },
+  "rows_sha256": "b20e030f43b3a316c20a1b4d0275c6c78c6022e48060e9fb83f556fa39ac9c86",
+  "payload_sha256": {
+    ".github/workflows/ch8-e.yml": "0aa8bd83c41edfdeb8a973d9392145f7ca46101cd8be52c5822d9884ef893f92",
+    "ch8-e-control/ORACLES.md": "018eedc408f121a92fc90aee8899f1ae4be7694074869e8a9c3daf6c23dbf8cb",
+    "ch8-e-control/check_package.py": "ec68ae16709756aa450c5c5f41df5dc88e361669c8ecb4f0080ee7c2c07fdf50",
+    "ch8-e-control/fixtures/e_h_copy_then_read.rs": "a6e3bc77a76bc5de6cc73af0545740876375f5b6ea36f9d38bd66961ef45b12e",
+    "ch8-e-control/fixtures/e_h_hole_inside_alias.rs": "93e743ea9eb914a704d9bafed7a2335e47edea66bcd38fe9eb496cdf59921049",
+    "ch8-e-control/fixtures/e_h_live_after_havoc.rs": "762a9b7b42492e13ea52aac29a284959c8a7ca09cc4744694c9896e6a1b630c7",
+    "ch8-e-control/fixtures/e_h_outside_false_alias.rs": "9144ea4df0ced8dc1a1c129a2cbde742d816afbb129268098fed1cc7b410a34c",
+    "ch8-e-control/fixtures/e_h_write_then_read.rs": "832de27430e7d9b30b29d09b5ad9fefd406b9323ae19c8a169b9a95fabc40501",
+    "ch8-e-control/fixtures/e_q_false_pointer_loop.rs": "6e65fb7abface3afae50846072b8b8946867ad4eccc8a739a8c2be816f82364c",
+    "ch8-e-control/fixtures/e_q_isolated_witness.rs": "765c77554b19cec446ed009f9e2f4ca7f759b33f45d993e2893b9c8aa669b672",
+    "ch8-e-control/fixtures/e_q_pointer_loop.rs": "a7b320bccc1d9c239aa80e104c0294107fa1cf1d82553f001d1ad385d029fc53",
+    "ch8-e-control/fixtures/e_q_scalar_invariant.rs": "b332bcb84a9a6a91c1e6823491e0d954ff42ca1eb00fa45f8b4b39f5d3a58cf5",
+    "ch8-e-control/fixtures/e_s_unbounded_slice.rs": "918ca6109068245148d66cfaafc339b5eb0f3d72872c0c444c6213fe63173a4f",
+    "ch8-e-control/rows.json": "b20e030f43b3a316c20a1b4d0275c6c78c6022e48060e9fb83f556fa39ac9c86",
+    "ch8-e-control/runner.py": "1a13ae8d11c3bac30081c5baff2138f69289a60e1615dc97806b4517c83c3d9a",
+    "ch8-e-control/test_package.py": "0d404bdc46f51b5f25223a12e2239005e9acd7fa10c635ff2aeb2b974234dae3",
+    "ch8-e-control/test_runner.py": "8da00f2a54c5f17a5b18a2410b134a17c03a6caebb8fd265aaf3d8f1f77b10e8"
+  },
+  "payload_manifest_sha256": "4a7fd6ae382adaac379a561a0e60805cc74d3bc0e87d8c5ce42978d92cc7f2ec",
+  "activation": "Separate coordinator authorization: same-tree sibling without skip-ci and sole parent upstream0aac, fresh branch; never child of preparation commit."
+}
