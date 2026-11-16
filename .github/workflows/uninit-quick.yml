@@ -1,0 +1,56 @@
+# Copyright Kani Contributors
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+name: Stock Kani initialization correctness probes
+on:
+  push:
+    branches:
+      - 'uninit-ci/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  confirm:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      RUST_BACKTRACE: '0'
+      NO_COLOR: '1'
+      RUSTFLAGS: ''
+      KANIFLAGS: ''
+      KANI_LOG: ''
+      CONFIRM_EVIDENCE_DIR: ${{ github.workspace }}/../confirm-main-evidence
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 3
+      - name: Check stock source identities
+        run: python3 .github/confirm-main/confirm.py before
+      - name: Check collector failure handling
+        run: PYTHONDONTWRITEBYTECODE=1 python3 .github/confirm-main/check_service.py
+      - name: Setup Kani dependencies
+        uses: ./.github/actions/setup
+        with:
+          os: ubuntu-24.04
+      - name: Build stock Kani once
+        run: cargo build-dev
+      - name: Run correctness probes
+        run: |
+          export PATH="$PWD/scripts:$PATH"
+          unset CARGO_ENCODED_RUSTFLAGS
+          ulimit -c 0
+          python3 .github/confirm-main/confirm.py run
+      - name: Complete per-test records and check source identities
+        if: ${{ always() }}
+        env:
+          CONFIRM_JOB_STATUS: ${{ job.status }}
+        run: python3 .github/confirm-main/confirm.py finish
+      - name: Upload compact per-test results
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: confirm-main-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ env.CONFIRM_EVIDENCE_DIR }}/
+          if-no-files-found: error
+          retention-days: 7
