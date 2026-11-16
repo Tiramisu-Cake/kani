@@ -1,0 +1,225 @@
+name: CH8 Profiles ON-OFF PROF-ON-02 (63 rows)
+on:
+  push:
+    branches: ["uninit-ci/ch8-prof02-*"]
+permissions:
+  contents: read
+concurrency:
+  group: ch8-prof02-control
+  cancel-in-progress: false
+jobs:
+  profiles-on:
+    if: ${{ github.repository == 'Tiramisu-Cake/kani' && github.event_name == 'push' && github.run_attempt == 1 }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    strategy:
+      max-parallel: 1
+      matrix:
+        lane: [on]
+    steps:
+      - name: Begin setup budget
+        timeout-minutes: 1
+        env:
+          SETUP_EPOCH: ${{ runner.temp }}/ch8-prof02-on-setup-epoch
+        run: python3 -c 'import os,time; open(os.environ["SETUP_EPOCH"],"w").write(str(time.time()))'
+      - name: Checkout CI control
+        timeout-minutes: 2
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
+          path: control
+          fetch-depth: 32
+          persist-credentials: false
+      - name: Validate control and synthetic wrappers
+        timeout-minutes: 2
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: |
+          python3 control/ch8-prof-on-control/check_package.py control --repo control
+          (cd control/ch8-prof-on-control && python3 -m unittest -v test_runner.py test_profiles.py test_batch.py test_workflow_repo.py test_on.py)
+          (cd control/ch8-prof-on-control/off && python3 -m unittest -v test_runner.py test_batch.py test_lane.py)
+      - name: Read immutable export pins
+        timeout-minutes: 1
+        id: pins
+        run: |
+          python3 - <<'PYCODE'
+          import json, os
+          r = json.load(open('control/ch8-prof-on-control/CI-REQUEST.json'))
+          assert r['status'] == 'READY'
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+              f.write('std=' + r['std_sha'] + '\n')
+              f.write('tool=' + r['tool_sha'] + '\n')
+          PYCODE
+      - name: Checkout exact profiles std source
+        timeout-minutes: 5
+        uses: actions/checkout@v6
+        with:
+          repository: Tiramisu-Cake/verify-rust-std
+          ref: ${{ steps.pins.outputs.std }}
+          path: export
+          fetch-depth: 2
+          persist-credentials: false
+          submodules: true
+      - name: Checkout immutable SEL1 tool
+        timeout-minutes: 2
+        uses: actions/checkout@v6
+        with:
+          repository: Tiramisu-Cake/kani
+          ref: ${{ steps.pins.outputs.tool }}
+          path: tool
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Check all source identities
+        timeout-minutes: 1
+        run: python3 control/ch8-prof-on-control/runner.py check-source --std export --tool tool
+      - name: Setup exact SEL1 tool
+        timeout-minutes: 15
+        uses: ./tool/.github/actions/setup
+        with:
+          os: ubuntu-24.04
+          kani_dir: tool
+      - name: Build exact SEL1 tool once
+        timeout-minutes: 15
+        working-directory: tool
+        env:
+          CARGO_BUILD_JOBS: "1"
+          SETUP_EPOCH: ${{ runner.temp }}/ch8-prof02-on-setup-epoch
+          RECEIPT_ROOT: ${{ runner.temp }}/ch8-prof02-on-receipts
+        run: >-
+          python3 ../control/ch8-prof-on-control/check_package.py build
+          --tool . --epoch "$SETUP_EPOCH" --out "$RECEIPT_ROOT/setup"
+      - name: Run ON profile batches
+        timeout-minutes: 140
+        env:
+          RECEIPT_ROOT: ${{ runner.temp }}/ch8-prof02-on-receipts
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: |
+          python3 control/ch8-prof-on-control/runner.py run --std export --tool tool --out "$RECEIPT_ROOT"
+      - name: Materialize bounded ON fallback
+        if: always()
+        timeout-minutes: 2
+        env:
+          RECEIPT_ROOT: ${{ runner.temp }}/ch8-prof02-on-receipts
+          JOB_STATUS: ${{ job.status }}
+        run: python3 control/ch8-prof-on-control/check_package.py fallback --out "$RECEIPT_ROOT"
+      - name: Upload bounded ON evidence
+        if: always()
+        timeout-minutes: 8
+        uses: actions/upload-artifact@v4
+        env:
+          RECEIPT_ROOT: ${{ runner.temp }}/ch8-prof02-on-receipts
+        with:
+          name: ch8-prof02-on-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ env.RECEIPT_ROOT }}/
+            !${{ env.RECEIPT_ROOT }}/**/target/**
+          if-no-files-found: error
+          retention-days: 7
+  profiles-off:
+    needs: profiles-on
+    if: ${{ always() && github.repository == 'Tiramisu-Cake/kani' && github.event_name == 'push' && github.run_attempt == 1 }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    strategy:
+      max-parallel: 1
+      matrix:
+        lane: [off]
+    steps:
+      - name: Begin setup budget
+        timeout-minutes: 1
+        env:
+          SETUP_EPOCH: ${{ runner.temp }}/ch8-prof02-off-setup-epoch
+        run: python3 -c 'import os,time; open(os.environ["SETUP_EPOCH"],"w").write(str(time.time()))'
+      - name: Checkout CI control
+        timeout-minutes: 2
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
+          path: control
+          fetch-depth: 32
+          persist-credentials: false
+      - name: Validate control and synthetic wrappers
+        timeout-minutes: 2
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: |
+          python3 control/ch8-prof-on-control/check_package.py control --repo control
+          (cd control/ch8-prof-on-control && python3 -m unittest -v test_runner.py test_profiles.py test_batch.py test_workflow_repo.py test_on.py)
+          (cd control/ch8-prof-on-control/off && python3 -m unittest -v test_runner.py test_batch.py test_lane.py)
+      - name: Read immutable export pins
+        timeout-minutes: 1
+        id: pins
+        run: |
+          python3 - <<'PYCODE'
+          import json, os
+          r = json.load(open('control/ch8-prof-on-control/off/CI-REQUEST.json'))
+          assert r['status'] == 'READY'
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+              f.write('std=' + r['std_sha'] + '\n')
+              f.write('tool=' + r['tool_sha'] + '\n')
+          PYCODE
+      - name: Checkout exact profiles std source
+        timeout-minutes: 5
+        uses: actions/checkout@v6
+        with:
+          repository: Tiramisu-Cake/verify-rust-std
+          ref: ${{ steps.pins.outputs.std }}
+          path: export
+          fetch-depth: 2
+          persist-credentials: false
+          submodules: true
+      - name: Checkout immutable stock tool
+        timeout-minutes: 2
+        uses: actions/checkout@v6
+        with:
+          repository: Tiramisu-Cake/kani
+          ref: ${{ steps.pins.outputs.tool }}
+          path: tool
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Check all source identities
+        timeout-minutes: 1
+        run: python3 control/ch8-prof-on-control/off/runner.py check-source --std export --tool tool
+      - name: Setup exact stock tool
+        timeout-minutes: 15
+        uses: ./tool/.github/actions/setup
+        with:
+          os: ubuntu-24.04
+          kani_dir: tool
+      - name: Build exact stock tool once
+        timeout-minutes: 15
+        working-directory: tool
+        env:
+          CARGO_BUILD_JOBS: "1"
+          SETUP_EPOCH: ${{ runner.temp }}/ch8-prof02-off-setup-epoch
+          RECEIPT_ROOT: ${{ runner.temp }}/ch8-prof02-off-receipts
+        run: >-
+          python3 ../control/ch8-prof-on-control/check_package.py build
+          --tool . --epoch "$SETUP_EPOCH" --out "$RECEIPT_ROOT/setup"
+      - name: Run OFF profile batches
+        timeout-minutes: 140
+        env:
+          RECEIPT_ROOT: ${{ runner.temp }}/ch8-prof02-off-receipts
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: |
+          python3 control/ch8-prof-on-control/off/runner.py run --std export --tool tool --out "$RECEIPT_ROOT"
+      - name: Materialize bounded OFF fallback
+        if: always()
+        timeout-minutes: 2
+        env:
+          RECEIPT_ROOT: ${{ runner.temp }}/ch8-prof02-off-receipts
+          JOB_STATUS: ${{ job.status }}
+        run: python3 control/ch8-prof-on-control/check_package.py fallback --lane off --out "$RECEIPT_ROOT"
+      - name: Upload bounded OFF evidence
+        if: always()
+        timeout-minutes: 8
+        uses: actions/upload-artifact@v4
+        env:
+          RECEIPT_ROOT: ${{ runner.temp }}/ch8-prof02-off-receipts
+        with:
+          name: ch8-prof02-off-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ env.RECEIPT_ROOT }}/
+            !${{ env.RECEIPT_ROOT }}/**/target/**
+          if-no-files-found: error
+          retention-days: 7
