@@ -1,0 +1,10 @@
+[package]
+name = "delayed-harness-order"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+kani = { path = "../../../library/kani" }
+
+[features]
+delayed-first = []
