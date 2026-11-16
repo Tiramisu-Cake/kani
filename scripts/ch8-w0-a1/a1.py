@@ -48,6 +48,10 @@ R2_FIXTURES = {
     "drop_uninit_in_array": "native/issue-5151-empty-drop.rs",
     "drop_initialized_slot_in_array": "native/issue-5151-initialized-slot-companion.rs",
 }
+EXCERPT_LIMIT = 64 * 1024
+DIAGNOSTIC_ENV_KEYS = ("RUSTFLAGS", "CARGO_ENCODED_RUSTFLAGS", "CARGO_TARGET_DIR",
+                       "CARGO_BUILD_TARGET", "RUSTC", "RUSTC_WRAPPER",
+                       "RUSTC_WORKSPACE_WRAPPER", "RUSTUP_TOOLCHAIN")
 INVALID_EXPORT_STATES = set(origin.INVALID_EXPORT_STATES) | {
     "UNKNOWN_SCHEMA", "PARTIAL", "NO_HARNESSES_SELECTED", "UNKNOWN_WRONG_SELECTOR",
     "UNKNOWN_HARNESS_SELECTION", "UNKNOWN_HARNESS_SCHEMA",
@@ -151,6 +155,8 @@ def validate_row(stage: str, row: Any) -> dict[str, Any]:
     if stage == "r1":
         if "verify-std" not in argv or "./library" not in argv or "<FIXTURE>" in argv or row.get("fixture") is not None:
             raise ValueError("r1 must be verify-std ./library and cannot name a native fixture")
+        if any(a == "--target" or a.startswith("--target=") for a in argv):
+            raise ValueError("r1 host-default target policy forbids an explicit --target override")
         if row.get("mode") != "actual-body" or argv[1] != "verify-std":
             raise ValueError("r1 must use the pinned actual-body verify-std mode")
         if row["selector"].rsplit("::", 1)[-1] not in R1_SUFFIXES:
@@ -161,8 +167,9 @@ def validate_row(stage: str, row: Any) -> dict[str, Any]:
         uninit_on = "-Zuninit-checks" in argv or any(argv[i:i+2] == ["-Z", "uninit-checks"] for i in range(len(argv)-1))
         if (not uninit_on or "--no-assert-contracts" not in argv or
                 "--object-bits" not in argv or argv.index("--object-bits") + 1 >= len(argv) or argv[argv.index("--object-bits") + 1] != "12" or
-                "--harness-timeout" not in argv or argv.index("--harness-timeout") + 1 >= len(argv) or argv[argv.index("--harness-timeout") + 1] != "600s" or
-                row["environment"].get("RUSTFLAGS") != "--cfg kani_smallsort_controls"):
+                "--harness-timeout" not in argv or argv.index("--harness-timeout") + 1 >= len(argv) or argv[argv.index("--harness-timeout") + 1] != "600s"):
+            raise ValueError("r1 controls/profile flags or environment differ from the frozen request")
+        if row["environment"].get("RUSTFLAGS") != "--cfg kani_smallsort_controls":
             raise ValueError("r1 controls/profile flags or environment differ from the frozen request")
         export_index = argv.index("--export-json") if "--export-json" in argv else -1
         if export_index < 0 or export_index + 1 >= len(argv) or argv[export_index + 1] != "<OUT>/export.json":
@@ -192,8 +199,11 @@ def validate_row(stage: str, row: Any) -> dict[str, Any]:
                 raise ValueError("#4854 original scoped RUSTFLAGS/RUST_BACKTRACE differ from request")
         elif "--harness" not in argv or argv.index("--harness") + 1 >= len(argv) or argv[argv.index("--harness") + 1] != row["selector"]:
             raise ValueError("r2 proof selector/mode argv mismatch")
+        elif row["selector"] in ("drop_uninit_in_array", "drop_initialized_slot_in_array"):
+            if env.get("RUSTFLAGS") != "--edition=2021" or "RUST_BACKTRACE" in env:
+                raise ValueError("#5151 rows require scoped RUSTFLAGS=--edition=2021 only")
         elif "RUSTFLAGS" in env or "RUST_BACKTRACE" in env:
-            raise ValueError("native non-#4854 rows cannot receive the issue-only compiler environment")
+            raise ValueError("native non-#4854/#5151 rows cannot receive issue-only compiler environment")
         export_index = argv.index("--export-json") if "--export-json" in argv else -1
         if export_index < 0 or export_index + 1 >= len(argv) or argv[export_index + 1] != "<OUT>/export.json":
             raise ValueError("native row export path must be isolated at <OUT>/export.json")
@@ -463,6 +473,8 @@ def _tree_bytes(root: Path) -> tuple[int, int, list[str]]:
     if not root.exists(): return total, metadata, oversized
     for p in root.rglob("*"):
         try:
+            if "target" in p.relative_to(root).parts:
+                continue
             if p.is_file():
                 size = p.stat().st_size; total += size
                 if p.suffix.lower() in (".json", ".jsonl"):
@@ -492,6 +504,7 @@ def execute(argv: list[str], cwd: Path, env: dict[str, str], out: Path,
                               "group_rss_peak_bytes": 0, "driver_rss_peak_bytes": 0,
                               "backend_rss_peak_bytes": 0, "memory_threshold": mem}
     streams = {"stdout": bytearray(), "stderr": bytearray()}
+    tails = {"stdout": bytearray(), "stderr": bytearray()}
     limits = {"stdout": STDOUT_LIMIT, "stderr": STDERR_LIMIT}
     paths = {name: out / f"{name}.log" for name in streams}
     files = {name: p.open("wb") for name, p in paths.items()}
@@ -544,6 +557,9 @@ def execute(argv: list[str], cwd: Path, env: dict[str, str], out: Path,
                 if room > 0:
                     keep = chunk[:room]; streams[name].extend(keep); files[name].write(keep)
                 if len(chunk) > max(room, 0): trunc[name] = True
+                tails[name].extend(chunk)
+                if len(tails[name]) > EXCERPT_LIMIT:
+                    del tails[name][:-EXCERPT_LIMIT]
             if leader_wait is not None and not _group_exists(proc.pid) and not selector.get_map():
                 break
             if leader_wait is None and not _group_exists(proc.pid):
@@ -582,6 +598,16 @@ def execute(argv: list[str], cwd: Path, env: dict[str, str], out: Path,
     result["stdout_bytes"] = len(streams["stdout"]); result["stderr_bytes"] = len(streams["stderr"])
     result["stdout_truncated"] = trunc["stdout"]; result["stderr_truncated"] = trunc["stderr"]
     result["stdout_sha256"] = sha256(paths["stdout"]); result["stderr_sha256"] = sha256(paths["stderr"])
+    excerpt_descriptors = {}
+    for name in ("stdout", "stderr"):
+        for side, data in (("head", streams[name][:EXCERPT_LIMIT]), ("tail", tails[name])):
+            excerpt_path = out / f"{name}.{side}.log"
+            excerpt_path.write_bytes(data)
+            excerpt_descriptors[f"{name}_{side}"] = {
+                "path": excerpt_path.name, "bytes": len(data), "sha256": _digest_bytes(data),
+                "source": "observed_stream", "state": "COMPLETE",
+            }
+    result["stream_excerpts"] = excerpt_descriptors
     result["output_tree_bytes"] = _tree_bytes(artifact_root)[0]
     if kill_reason == "TIMEOUT":
         result["termination_classification"] = "TIMEOUT"
@@ -609,7 +635,9 @@ def root_exit_code(receipt: dict[str, Any]) -> int:
             receipt.get("output_capped") or receipt.get("artifact_capped") or receipt.get("rss_watchdog_killed") or
             receipt.get("postprocessing_state") != "COMPLETE" or
             receipt.get("export", {}).get("state") in INVALID_EXPORT_STATES): return 1
-    post = receipt.get("post_run_validation", {})
+    post = receipt.get("post_run_validation")
+    if not isinstance(post, dict):
+        return "post-run validation missing or wrong type"
     if post.get("source_valid") is not True: return 1
     if post.get("controls_valid") is not True: return 1
     if receipt.get("stage") == "r1" and post.get("std_overlay_valid") is not True: return 1
@@ -624,29 +652,72 @@ def bound_artifacts(out: Path) -> dict[str, Any]:
     """Enforce upload limits, preserving receipts and recording every trimmed artifact."""
     if not out.is_dir():
         raise ValueError(f"artifact directory missing: {out}")
+    # Exclude every directory named target without opening or hashing its contents.
+    excluded_targets: list[dict[str, Any]] = []
+    target_dirs = sorted((p for p in out.rglob("*") if p.is_dir() and p.name == "target"),
+                         key=lambda p: len(p.parts))
+    for target in target_dirs:
+        if not target.exists():
+            continue
+        size = 0
+        for base, dirs, names in os.walk(target):
+            dirs[:] = dirs
+            for name in names:
+                try: size += (Path(base) / name).stat().st_size
+                except OSError: pass
+        rel = target.relative_to(out).as_posix()
+        shutil.rmtree(target)
+        excluded_targets.append({"path": rel, "bytes": size, "state": "INTENTIONALLY_EXCLUDED_TARGET_DIRECTORY"})
+    # If execute was stubbed or did not produce excerpts, derive head/tail from its
+    # already bounded stdout.log/stderr.log. Never synthesize a tail from discarded bytes.
+    for source in out.rglob("*.log"):
+        if source.name not in ("stdout.log", "stderr.log"):
+            continue
+        stream = source.stem
+        for side in ("head", "tail"):
+            dest = source.with_name(f"{stream}.{side}.log")
+            if not dest.exists() and source.is_file():
+                with source.open("rb") as f:
+                    if side == "head": data = f.read(EXCERPT_LIMIT)
+                    else:
+                        f.seek(max(0, source.stat().st_size - EXCERPT_LIMIT)); data = f.read(EXCERPT_LIMIT)
+                dest.write_bytes(data)
     files = [p for p in out.rglob("*") if p.is_file() and p.name != "bound-artifacts.json"]
     total = sum(p.stat().st_size for p in files)
-    metadata = sum(p.stat().st_size for p in files if p.name not in ("stdout.log", "stderr.log"))
+    metadata = sum(p.stat().st_size for p in files if p.suffix.lower() in (".json", ".jsonl"))
     removed: list[dict[str, Any]] = []
     # Preserve receipts first. If necessary, remove the largest non-receipt artifacts.
-    candidates = sorted((p for p in files if p.name not in ("receipt.json", "receipts.json")),
+    protected = {"receipt.json", "receipts.json", "stdout.head.log", "stdout.tail.log",
+                 "stderr.head.log", "stderr.tail.log"}
+    candidates = sorted((p for p in files if p.name not in protected),
                        key=lambda p: p.stat().st_size, reverse=True)
     for p in candidates:
-        if total <= JOB_OUTPUT_LIMIT and metadata <= METADATA_LIMIT:
+        if total <= JOB_OUTPUT_LIMIT:
             break
+        if not p.exists(): continue
         size = p.stat().st_size
         # Hash before deletion so the manifest identifies exactly what was omitted.
         removed.append({"path": p.relative_to(out).as_posix(), "bytes": size, "sha256": sha256(p),
                         "state": "TRUNCATED_REMOVED"})
         p.unlink()
         total -= size
-        if p.name not in ("stdout.log", "stderr.log"):
+        if p.suffix.lower() in (".json", ".jsonl"):
             metadata -= size
+    metadata_candidates = sorted((p for p in files if p.name not in protected and
+                                   p.suffix.lower() in (".json", ".jsonl") and p.exists()),
+                                 key=lambda p: p.stat().st_size, reverse=True)
+    for p in metadata_candidates:
+        if metadata <= METADATA_LIMIT: break
+        size = p.stat().st_size
+        removed.append({"path": p.relative_to(out).as_posix(), "bytes": size, "sha256": sha256(p),
+                        "state": "TRUNCATED_REMOVED"})
+        p.unlink(); total -= size; metadata -= size
     state = "COMPLETE" if not removed and total <= JOB_OUTPUT_LIMIT and metadata <= METADATA_LIMIT else "TRUNCATED"
     manifest = {"schema": "ch8-w0-a1-bounded-artifacts-v1", "state": state,
                 "total_bytes_after": total, "metadata_bytes_after": metadata,
                 "total_cap_bytes": JOB_OUTPUT_LIMIT, "metadata_cap_bytes": METADATA_LIMIT,
-                "removed": removed, "outcome": "UNKNOWN"}
+                "removed": removed, "intentional_exclusions": excluded_targets,
+                "outcome": "UNKNOWN"}
     if total > JOB_OUTPUT_LIMIT or metadata > METADATA_LIMIT:
         manifest["state"] = "INCOMPLETE_PROTECTED_RECEIPTS_EXCEED_CAP"
     # Mark every durable receipt incomplete when artifact loss occurs or caps remain exceeded.
@@ -661,6 +732,25 @@ def bound_artifacts(out: Path) -> dict[str, Any]:
                 write_json_atomic(p, value)
             except (OSError, json.JSONDecodeError, TypeError):
                 pass
+    write_json_atomic(out / "bound-artifacts.json", manifest)
+    final_total, final_metadata, final_oversized = _tree_bytes(out)
+    manifest["total_bytes_after"] = final_total
+    manifest["metadata_bytes_after"] = final_metadata
+    if final_total > JOB_OUTPUT_LIMIT or final_metadata > METADATA_LIMIT or final_oversized:
+        manifest["state"] = "INCOMPLETE_PROTECTED_RECEIPTS_EXCEED_CAP"
+        for p in out.rglob("receipt.json"):
+            try:
+                value = json.loads(p.read_text())
+                value["postprocessing_state"] = "INCOMPLETE"
+                value["artifact_bound_state"] = manifest["state"]
+                value["artifact_truncations"] = removed
+                value["outcome"] = "UNKNOWN"
+                write_json_atomic(p, value)
+            except (OSError, json.JSONDecodeError, TypeError):
+                pass
+        final_total, final_metadata, _ = _tree_bytes(out)
+        manifest["total_bytes_after"] = final_total
+        manifest["metadata_bytes_after"] = final_metadata
     write_json_atomic(out / "bound-artifacts.json", manifest)
     return manifest
 
@@ -736,6 +826,7 @@ def run(repo: Path, pin_name: str, stage_name: str, row_id: str, binary: Path, o
         "cwd": str(cwd), "input_abs_path": str(isolated_fixture) if isolated_fixture else None,
         "control_snapshot_before": controls_before,
         "environment": {k: env.get(k) for k in row["environment"]},
+        "diagnostic_environment": {k: env.get(k) for k in DIAGNOSTIC_ENV_KEYS if k in env},
         "std_base_before": std_base_before, "std_before": std_before, "phase": "BEGIN", "outcome": "UNKNOWN",
         "proof_status": "NOT_RUN_UNTIL_REVIEWED", "postprocessing_state": "INCOMPLETE",
     }
@@ -752,6 +843,7 @@ def run(repo: Path, pin_name: str, stage_name: str, row_id: str, binary: Path, o
         "cwd": str(cwd), "input_abs_path": str(isolated_fixture) if isolated_fixture else None,
         "control_snapshot_before": controls_before,
         "environment": {k: env.get(k) for k in row["environment"]},
+        "diagnostic_environment": {k: env.get(k) for k in DIAGNOSTIC_ENV_KEYS if k in env},
         "std_base_before": std_base_before, "std_before": std_before,
         "rss": {"max_kib": execution.pop("rss_max_kib", None), "max_bytes": execution.pop("rss_max_bytes"),
           "max_mib": execution.pop("rss_max_mib", None), "max_gib": execution.pop("rss_max_gib", None),
@@ -820,6 +912,164 @@ def run(repo: Path, pin_name: str, stage_name: str, row_id: str, binary: Path, o
     return receipt
 
 
+def _compile_error_for_core_lib(receipt: dict[str, Any], row_out: Path) -> bool:
+    code = receipt.get("original_exit_code")
+    if not isinstance(code, int) or code == 0:
+        return False
+    if (receipt.get("timed_out") or receipt.get("runner_error") or receipt.get("output_capped") or
+            receipt.get("artifact_capped") or receipt.get("rss_watchdog_killed") or
+            receipt.get("postprocessing_state") != "COMPLETE" or
+            receipt.get("termination_classification") not in (None, "EXITED")):
+        return False
+    chunks = []
+    for stream in ("stdout", "stderr"):
+        for side in ("head", "tail"):
+            path = row_out / f"{stream}.{side}.log"
+            if path.is_file():
+                chunks.append(path.read_bytes()[:EXCERPT_LIMIT].decode("utf-8", "replace"))
+        if not any((row_out / f"{stream}.{side}.log").is_file() for side in ("head", "tail")):
+            path = row_out / f"{stream}.log"
+            if path.is_file():
+                with path.open("rb") as f:
+                    chunks.append(f.read(EXCERPT_LIMIT).decode("utf-8", "replace"))
+                    if path.stat().st_size > EXCERPT_LIMIT:
+                        f.seek(max(0, path.stat().st_size - EXCERPT_LIMIT))
+                        chunks.append(f.read(EXCERPT_LIMIT).decode("utf-8", "replace"))
+    text = "\n".join(chunks)
+    import re
+    text = re.sub(r"\x1b\[[0-?]*[ -/]*[@-~]", "", text)
+    return re.search(r"could\s+not\s+compile\s*[`'\"“”‘’]?\s*core\s*[`'\"“”‘’]?\s*\(\s*lib\s*\)",
+                     text, re.IGNORECASE) is not None
+
+
+def _sequence_uncertain(receipt: dict[str, Any], allow_compile_missing_export: bool = False) -> str | None:
+    if receipt.get("original_exit_code") is None:
+        return "missing original exit code"
+    if receipt.get("timed_out"):
+        return "timeout"
+    if receipt.get("rss_watchdog_killed"):
+        return "resource watchdog termination"
+    if receipt.get("output_capped") or receipt.get("artifact_capped"):
+        return "output cap termination"
+    if receipt.get("runner_error"):
+        return "runner error"
+    if receipt.get("signal") is not None or receipt.get("original_exit_code", 0) < 0:
+        return "signal termination"
+    if receipt.get("termination_classification") not in (None, "EXITED"):
+        return f"uncertain termination: {receipt.get('termination_classification')}"
+    if receipt.get("postprocessing_state") != "COMPLETE":
+        return "incomplete postprocessing"
+    rss = receipt.get("rss")
+    if (not isinstance(rss, dict) or rss.get("status") != "OBSERVED_WAIT4_LINUX_RU_MAXRSS" or
+            not isinstance(rss.get("max_bytes"), int)):
+        return "RSS wait4 evidence missing or invalid"
+    export = receipt.get("export")
+    state = export.get("state") if isinstance(export, dict) else None
+    if state != "UNVALIDATED_COMPLETE_SINGLE_HARNESS" and not (allow_compile_missing_export and state == "MISSING"):
+        return f"incomplete or uncertain export: {state}"
+    post = receipt.get("post_run_validation", {})
+    if any(post.get(k) is not True for k in ("source_valid", "controls_valid", "std_overlay_valid", "std_base_valid")):
+        return "post-run validation incomplete or mismatched"
+    return None
+
+
+def _write_not_run_receipt(path: Path, pin_name: str, row: dict[str, Any], reason: str) -> dict[str, Any]:
+    path.mkdir(parents=True, exist_ok=False)
+    value = {"schema": "ch8-w0-a1-ci-receipt-v1", "pin": pin_name, "stage": "r1",
+             "row_id": row["id"], "selector": row["selector"], "status": "NOT_RUN",
+             "not_run_reason": reason, "original_exit_code": None, "signal": None,
+             "phase": "NOT_RUN", "proof_status": "NOT_RUN", "outcome": "UNKNOWN",
+             "postprocessing_state": "INCOMPLETE"}
+    write_json_atomic(path / "receipt.json", value)
+    return value
+
+
+def run_r1_sequence(repo: Path, pin_name: str, binary: Path, out: Path, std: Path,
+                    timeout_seconds: int = MAX_INVOCATION_SECONDS) -> dict[str, Any]:
+    """Run the exact frozen r1 request order, stopping only on confirmed compile or uncertainty."""
+    req = load_request()
+    if pin_name not in PIN_NAMES:
+        raise ValueError(f"unknown source pin: {pin_name}")
+    if pin_name != "sel1":
+        raise ValueError("r1 sequence requires the frozen sel1 source pin")
+    rows = req.get("r1", {}).get("rows")
+    if not isinstance(rows, list) or len(rows) != len(R1_SUFFIXES):
+        raise ValueError("r1 sequence requires the exact eight requested rows")
+    for row in rows:
+        validate_row("r1", row)
+    expected_first = ("stable_freeze_u64_n32", "unstable_general_nocopy_u64_n32", "unstable_network_u64_n32")
+    if tuple(row["id"] for row in rows[:3]) != expected_first:
+        raise ValueError("r1 sequence request must begin with the exact three N32 rows in frozen order")
+    if not std.is_absolute() or not out.is_absolute():
+        raise ValueError("sequence std and output paths must be absolute")
+    # Complete all frozen identity/stage checks before creating output or starting a child.
+    verify_source(repo, pin_name, req, require_submodules=True)
+    _verify_std_base(std, req["std"])
+    _verify_std_overlay(std, req["std"])
+    if out.exists() and not out.is_dir():
+        raise ValueError(f"sequence output exists and is not a directory: {out}")
+    out.mkdir(parents=True, exist_ok=True)
+    if (out / "sequence-summary.json").exists():
+        raise ValueError(f"refusing existing sequence summary: {out / 'sequence-summary.json'}")
+    for row in rows:
+        if (out / row["id"]).exists():
+            raise ValueError(f"refusing existing row output: {out / row['id']}")
+    rows_summary: list[dict[str, Any]] = []
+    stop_reason: str | None = None
+    failure_codes: list[int] = []
+    for row in rows:
+        row_out = out / row["id"]
+        if stop_reason is not None:
+            not_run = _write_not_run_receipt(row_out, pin_name, row, stop_reason)
+            rows_summary.append({"row_id": row["id"], "status": "NOT_RUN", "receipt": str(row_out / "receipt.json"),
+                                 "original_exit_code": None, "reason": stop_reason})
+            continue
+        try:
+            receipt = run(repo, pin_name, "r1", row["id"], binary, row_out, std, timeout_seconds)
+        except Exception as exc:
+            if not (row_out / "receipt.json").is_file():
+                row_out.mkdir(parents=True, exist_ok=True)
+                partial = {"schema": "ch8-w0-a1-ci-receipt-v1", "pin": pin_name, "stage": "r1",
+                           "row_id": row["id"], "selector": row["selector"], "phase": "RUNNER_EXCEPTION",
+                           "original_exit_code": None, "signal": None, "runner_error": f"{type(exc).__name__}: {exc}",
+                           "outcome": "UNKNOWN", "proof_status": "NOT_RUN_UNTIL_REVIEWED",
+                           "postprocessing_state": "INCOMPLETE"}
+                write_json_atomic(row_out / "receipt.json", partial)
+            else:
+                try:
+                    partial = json.loads((row_out / "receipt.json").read_text())
+                    partial.setdefault("runner_error", f"{type(exc).__name__}: {exc}")
+                    partial["postprocessing_state"] = "INCOMPLETE"
+                    partial["outcome"] = "UNKNOWN"
+                    write_json_atomic(row_out / "receipt.json", partial)
+                except (OSError, json.JSONDecodeError):
+                    partial = {"original_exit_code": None}
+            rows_summary.append({"row_id": row["id"], "status": "EXCEPTION", "receipt": str(row_out / "receipt.json"),
+                                 "original_exit_code": partial.get("original_exit_code"),
+                                 "reason": f"{type(exc).__name__}: {exc}"})
+            stop_reason = f"predecessor {row['id']} receipt {row_out / 'receipt.json'}: row raised {type(exc).__name__}; later rows not run"
+            failure_codes.append(1)
+            continue
+        code = receipt.get("original_exit_code")
+        row_state = "COMPLETE" if receipt.get("postprocessing_state") == "COMPLETE" else "INCOMPLETE"
+        rows_summary.append({"row_id": row["id"], "status": row_state, "receipt": str(row_out / "receipt.json"),
+                             "original_exit_code": code, "signal": receipt.get("signal")})
+        confirmed_compile = _compile_error_for_core_lib(receipt, row_out)
+        uncertain = _sequence_uncertain(receipt, allow_compile_missing_export=confirmed_compile)
+        if uncertain:
+            stop_reason = f"predecessor {row['id']} receipt {row_out / 'receipt.json'}: {uncertain}; later rows not run"
+            failure_codes.append(code if isinstance(code, int) and code > 0 else 1)
+        elif code != 0:
+            failure_codes.append(code if isinstance(code, int) and code > 0 else 1)
+            if confirmed_compile:
+                stop_reason = f"predecessor {row['id']} receipt {row_out / 'receipt.json'}: confirmed core (lib) compile error; later rows not run"
+    summary = {"schema": "ch8-w0-a1-r1-sequence-v1", "pin": pin_name, "stage": "r1",
+               "order": [r["id"] for r in rows], "rows": rows_summary, "stop_reason": stop_reason,
+               "return_code": failure_codes[0] if failure_codes else 0, "outcome": "UNKNOWN"}
+    write_json_atomic(out / "sequence-summary.json", summary)
+    return summary
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
@@ -830,6 +1080,10 @@ def main() -> int:
     r.add_argument("--stage", choices=("r1", "r2"), required=True); r.add_argument("--row", required=True)
     r.add_argument("--std", type=Path); r.add_argument("--binary", type=Path, required=True); r.add_argument("--out", type=Path, required=True)
     r.add_argument("--timeout-seconds", type=int, default=MAX_INVOCATION_SECONDS)
+    q = sub.add_parser("run-r1-sequence"); q.add_argument("--repo", type=Path, required=True)
+    q.add_argument("--pin", choices=PIN_NAMES, required=True); q.add_argument("--std", type=Path, required=True)
+    q.add_argument("--binary", type=Path, required=True); q.add_argument("--out", type=Path, required=True)
+    q.add_argument("--timeout-seconds", type=int, default=MAX_INVOCATION_SECONDS)
     args = parser.parse_args()
     try:
         if args.command == "verify-source": result = verify_source(args.repo, args.pin)
@@ -838,10 +1092,12 @@ def main() -> int:
             result = bound_artifacts(args.out)
             print(json.dumps(result, indent=2, sort_keys=True))
             return 1 if result["state"] != "COMPLETE" else 0
+        elif args.command == "run-r1-sequence":
+            result = run_r1_sequence(args.repo, args.pin, args.binary, args.out, args.std, args.timeout_seconds)
         else:
             result = run(args.repo, args.pin, args.stage, args.row, args.binary, args.out, args.std, args.timeout_seconds)
         print(json.dumps(result, indent=2, sort_keys=True))
-        return root_exit_code(result) if args.command == "run" else 0
+        return result["return_code"] if args.command == "run-r1-sequence" else (root_exit_code(result) if args.command == "run" else 0)
     except (OSError, ValueError, subprocess.SubprocessError, json.JSONDecodeError) as e:
         print(f"A1 CI wrapper error: {e}", file=sys.stderr); return 2
 

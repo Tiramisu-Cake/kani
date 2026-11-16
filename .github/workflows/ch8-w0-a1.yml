@@ -1,10 +1,9 @@
-# CI-only; coordinator publishes same-tree non-skip trigger.
+# CI-only; coordinator publishes same-tree non-skip trigger. R3 reserve only.
 name: Challenge 8 W0 A1 bounded safety probes
 'on':
   push:
     branches:
-    - uninit-ci/ch8-w0-a1-r1-*
-    - uninit-ci/ch8-w0-a1-r2-*
+    - uninit-ci/ch8-w0-a1-r3-*
 permissions:
   contents: read
 concurrency:
@@ -12,22 +11,10 @@ concurrency:
   cancel-in-progress: false
 jobs:
   r1:
-    if: ${{ github.repository == 'Tiramisu-Cake/kani' && startsWith(github.ref, 'refs/heads/uninit-ci/ch8-w0-a1-r1-') }}
+    if: ${{ github.repository == 'Tiramisu-Cake/kani' && startsWith(github.ref, 'refs/heads/uninit-ci/ch8-w0-a1-r3-')
+      }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
-    strategy:
-      fail-fast: false
-      max-parallel: 1
-      matrix:
-        root:
-        - stable_freeze_u64_n32
-        - unstable_general_nocopy_u64_n32
-        - unstable_network_u64_n32
-        - stable_freeze_u64_n8
-        - stable_freeze_u64_n16
-        - unstable_general_nocopy_u64_n8
-        - unstable_general_nocopy_u64_n16
-        - unstable_network_u64_n18
+    timeout-minutes: 130
     steps:
     - name: Checkout exact CI control
       uses: actions/checkout@v6
@@ -96,9 +83,9 @@ jobs:
       run: |-
         python3 - <<'PYCODE'
         import os, time
-        assert time.time() - float(os.environ['A1_JOB_BEGIN']) <= 2340, 'Cannot retain 10min verifier plus 10min upload reserve'
+        assert time.time() - float(os.environ['A1_JOB_BEGIN']) <= 2340, 'Cannot retain eight 10min invocations plus 10min upload reserve'
         PYCODE
-        python3 control/scripts/ch8-w0-a1/a1.py run --repo "$GITHUB_WORKSPACE/export" --pin sel1 --stage r1 --row "${{ matrix.root }}" --std "$RUNNER_TEMP/ch8-a1-std" --binary "$GITHUB_WORKSPACE/export/scripts/kani" --out "$RUNNER_TEMP/ch8-a1-receipt/${{ matrix.root }}"
+        python3 control/scripts/ch8-w0-a1/a1.py run-r1-sequence --repo "$GITHUB_WORKSPACE/export" --pin sel1 --std "$RUNNER_TEMP/ch8-a1-std" --binary "$GITHUB_WORKSPACE/export/scripts/kani" --out "$RUNNER_TEMP/ch8-a1-receipt"
     - name: Fallback NOT_RUN receipts
       if: always()
       env:
@@ -109,9 +96,9 @@ jobs:
         from pathlib import Path
         req = json.load(open('control/scripts/ch8-w0-a1/CI-REQUEST.json'))
         root = Path(os.environ['RUNNER_TEMP']) / 'ch8-a1-receipt'
-        rows = [r for r in req['r1']['rows'] if r['id'] == '${{ matrix.root }}'] if 'r1' == 'r1' else req['r2']['rows']
+        rows = req['r1']['rows']
         for row in rows:
-            out = root / row['id'] if 'r1' == 'r1' else root / 'sel1' / row['id']
+            out = root / row['id']
             out.mkdir(parents=True, exist_ok=True)
             receipt = out / 'receipt.json'
             if not receipt.exists():
@@ -127,14 +114,17 @@ jobs:
       env:
         RECEIPT_ROOT: ${{ runner.temp }}/ch8-a1-receipt
       with:
-        name: ch8-a1-r1-${{ matrix.root }}-${{ github.run_id }}-${{ github.run_attempt }}
-        path: ${{ env.RECEIPT_ROOT }}/
+        name: ch8-a1-r3-std-${{ github.run_id }}-${{ github.run_attempt }}
+        path: |-
+          ${{ env.RECEIPT_ROOT }}/
+          !${{ env.RECEIPT_ROOT }}/**/target/**
         if-no-files-found: error
         retention-days: 7
   r2:
-    if: ${{ github.repository == 'Tiramisu-Cake/kani' && startsWith(github.ref, 'refs/heads/uninit-ci/ch8-w0-a1-r2-') }}
+    if: ${{ github.repository == 'Tiramisu-Cake/kani' && startsWith(github.ref, 'refs/heads/uninit-ci/ch8-w0-a1-r3-')
+      }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 90
+    timeout-minutes: 50
     strategy:
       fail-fast: false
       max-parallel: 1
@@ -208,10 +198,12 @@ jobs:
         python3 - <<'PYCODE'
         import json, os, subprocess, time
         from pathlib import Path
-        assert time.time() - float(os.environ['A1_JOB_BEGIN']) <= 1140, 'Cannot retain six 10min verifiers plus 10min upload reserve'
+        assert time.time() - float(os.environ['A1_JOB_BEGIN']) <= 1140, 'Cannot retain two 10min verifiers plus 10min upload reserve'
         req = json.load(open('control/scripts/ch8-w0-a1/CI-REQUEST.json'))
         exits = []
         for row in req['r2']['rows']:
+            if row['id'] not in req['r3']['native_row_ids']:
+                continue
             out = Path(os.environ['RUNNER_TEMP']) / 'ch8-a1-receipt' / '${{ matrix.pin }}' / row['id']
             argv = ['python3', 'control/scripts/ch8-w0-a1/a1.py', 'run', '--repo', str(Path(os.environ['GITHUB_WORKSPACE']) / 'export'), '--pin', '${{ matrix.pin }}', '--stage', 'r2', '--row', row['id'], '--binary', str(Path(os.environ['GITHUB_WORKSPACE']) / 'export/scripts/kani'), '--out', str(out)]
             exits.append({'row': row['id'], 'wrapper_exit': subprocess.run(argv).returncode})
@@ -230,9 +222,9 @@ jobs:
         from pathlib import Path
         req = json.load(open('control/scripts/ch8-w0-a1/CI-REQUEST.json'))
         root = Path(os.environ['RUNNER_TEMP']) / 'ch8-a1-receipt'
-        rows = [r for r in req['r1']['rows'] if r['id'] == '${{ matrix.root }}'] if 'r2' == 'r1' else req['r2']['rows']
+        rows = [r for r in req['r2']['rows'] if r['id'] in req['r3']['native_row_ids']]
         for row in rows:
-            out = root / row['id'] if 'r2' == 'r1' else root / '${{ matrix.pin }}' / row['id']
+            out = root / '${{ matrix.pin }}' / row['id']
             out.mkdir(parents=True, exist_ok=True)
             receipt = out / 'receipt.json'
             if not receipt.exists():
@@ -248,7 +240,9 @@ jobs:
       env:
         RECEIPT_ROOT: ${{ runner.temp }}/ch8-a1-receipt
       with:
-        name: ch8-a1-r2-${{ matrix.pin }}-${{ github.run_id }}-${{ github.run_attempt }}
-        path: ${{ env.RECEIPT_ROOT }}/
+        name: ch8-a1-r3-native-${{ matrix.pin }}-${{ github.run_id }}-${{ github.run_attempt }}
+        path: |-
+          ${{ env.RECEIPT_ROOT }}/
+          !${{ env.RECEIPT_ROOT }}/**/target/**
         if-no-files-found: error
         retention-days: 7

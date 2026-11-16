@@ -1,5 +1,5 @@
 diff --git a/library/core/src/slice/sort/shared/smallsort/verify.rs b/library/core/src/slice/sort/shared/smallsort/verify.rs
-index 9ed9be525b3181a964ef9d7a994af76287e1ca0e..de9cb0d60dea1ef3b69025a002b20535f2f9f283 100644
+index 9ed9be525b..de9cb0d60d 100644
 --- a/library/core/src/slice/sort/shared/smallsort/verify.rs
 +++ b/library/core/src/slice/sort/shared/smallsort/verify.rs
 @@ -84,9 +84,15 @@ mod merge;
@@ -19,7 +19,7 @@ index 9ed9be525b3181a964ef9d7a994af76287e1ca0e..de9cb0d60dea1ef3b69025a002b20535
 +#[cfg(kani_smallsort_controls)]
 +mod wave0_a1;
 diff --git a/library/core/src/slice/sort/shared/smallsort/verify/helper_contracts.rs b/library/core/src/slice/sort/shared/smallsort/verify/helper_contracts.rs
-index 52977f4b1f39637dc16c1620390a16c47dc48edb..336fe652773e58618c0275ed5d47a3f1c9179ef8 100644
+index 52977f4b1f..336fe65277 100644
 --- a/library/core/src/slice/sort/shared/smallsort/verify/helper_contracts.rs
 +++ b/library/core/src/slice/sort/shared/smallsort/verify/helper_contracts.rs
 @@ -36,7 +36,9 @@ fn exercise_swap<T: kani::Arbitrary + Copy + PartialEq>() {
@@ -47,7 +47,7 @@ index 52977f4b1f39637dc16c1620390a16c47dc48edb..336fe652773e58618c0275ed5d47a3f1
          kani::assert(src[i] == before[i], "helper contract sort4 source frame");
      }
 diff --git a/library/core/src/slice/sort/shared/smallsort/verify/helper_contracts_wide.rs b/library/core/src/slice/sort/shared/smallsort/verify/helper_contracts_wide.rs
-index b0c6777added9c36716c8aa4a6616facc1a00899..432a9c0d4bc8eb0b5bd22ecf089b21015a57f8ef 100644
+index b0c6777add..432a9c0d4b 100644
 --- a/library/core/src/slice/sort/shared/smallsort/verify/helper_contracts_wide.rs
 +++ b/library/core/src/slice/sort/shared/smallsort/verify/helper_contracts_wide.rs
 @@ -114,7 +114,7 @@ fn merge_safety_u64_len8_scratch48_src32_dst0() {
@@ -61,7 +61,7 @@ index b0c6777added9c36716c8aa4a6616facc1a00899..432a9c0d4bc8eb0b5bd22ecf089b2101
          // SAFETY: the initialized source must be framed by the merge.
 diff --git a/library/core/src/slice/sort/shared/smallsort/verify/replay_gateb_prime.rs b/library/core/src/slice/sort/shared/smallsort/verify/replay_gateb_prime.rs
 new file mode 100644
-index 0000000000000000000000000000000000000000..b66ce6ee72d95814278c1d9cb323dc3e4ed3ee50
+index 0000000000..b66ce6ee72
 --- /dev/null
 +++ b/library/core/src/slice/sort/shared/smallsort/verify/replay_gateb_prime.rs
 @@ -0,0 +1,52 @@
@@ -119,7 +119,7 @@ index 0000000000000000000000000000000000000000..b66ce6ee72d95814278c1d9cb323dc3e
 +}
 diff --git a/library/core/src/slice/sort/shared/smallsort/verify/replay_uninit_controls.rs b/library/core/src/slice/sort/shared/smallsort/verify/replay_uninit_controls.rs
 new file mode 100644
-index 0000000000000000000000000000000000000000..890b2597c237578a33e55c534fd35324da224c13
+index 0000000000..890b2597c2
 --- /dev/null
 +++ b/library/core/src/slice/sort/shared/smallsort/verify/replay_uninit_controls.rs
 @@ -0,0 +1,49 @@
@@ -174,14 +174,14 @@ index 0000000000000000000000000000000000000000..890b2597c237578a33e55c534fd35324
 +}
 diff --git a/library/core/src/slice/sort/shared/smallsort/verify/wave0_a1.rs b/library/core/src/slice/sort/shared/smallsort/verify/wave0_a1.rs
 new file mode 100644
-index 0000000000000000000000000000000000000000..8226194452b6330ed81161d8e48f078433485f42
+index 0000000000..7202969769
 --- /dev/null
 +++ b/library/core/src/slice/sort/shared/smallsort/verify/wave0_a1.rs
 @@ -0,0 +1,166 @@
 +//! A1 bounded scale probes: actual trait entry points with arbitrary-bool comparators.
 +//! These roots are opt-in and intentionally make no sortedness or permutation claim.
 +
-+use super::{StableSmallSortTypeImpl, UnstableSmallSortTypeImpl};
++use super::super::{StableSmallSortTypeImpl, UnstableSmallSortTypeImpl};
 +use crate::kani;
 +use crate::mem::MaybeUninit;
 +use crate::ptr;

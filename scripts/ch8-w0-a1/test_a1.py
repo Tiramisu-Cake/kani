@@ -41,7 +41,9 @@ def mk_r2(selector):
     argv += ["--export-json", "<OUT>/export.json"]
     fixture = a1.R2_FIXTURES[selector]
     environment = {"NO_COLOR": "1"}
-    if selector == "reassemble_ptr_fragments_in_static":
+    if selector in ("drop_uninit_in_array", "drop_initialized_slot_in_array"):
+        environment["RUSTFLAGS"] = "--edition=2021"
+    elif selector == "reassemble_ptr_fragments_in_static":
         environment.update({"RUSTFLAGS": "--edition=2021 --cap-lints=warn", "RUST_BACKTRACE": "full"})
     return {"id": f"issue-{issue}-{'original' if original else 'companion'}-{selector}",
             "selector": selector, "mode": mode, "fixture": fixture,
@@ -78,7 +80,8 @@ class RequestTests(unittest.TestCase):
             self.assertEqual(len(req["r1"]["rows"]), 8)
             self.assertEqual(len(req["r2"]["rows"]), 6)
             for row in req["r2"]["rows"]:
-                if row["selector"] != "reassemble_ptr_fragments_in_static":
+                if row["selector"] not in ("reassemble_ptr_fragments_in_static", "drop_uninit_in_array",
+                                             "drop_initialized_slot_in_array"):
                     self.assertNotIn("RUSTFLAGS", row["environment"])
 
     def test_rejects_missing_row_or_native_std_mixup(self):
@@ -106,6 +109,21 @@ class RequestTests(unittest.TestCase):
         row = mk_r1(R1[0]); row["argv"][row["argv"].index("--harness") + 1] = "wrong"
         with self.assertRaisesRegex(ValueError, "r1 mode/selector"):
             a1.validate_row("r1", row)
+        row = mk_r1(R1[0]); row["argv"].extend(["--target", "wrong-target"])
+        with self.assertRaisesRegex(ValueError, "target policy"):
+            a1.validate_row("r1", row)
+
+    def test_5151_requires_edition_flag_and_other_native_flags_remain_exact(self):
+        for suffix in ("drop_uninit_in_array", "drop_initialized_slot_in_array"):
+            row = mk_r2(suffix); a1.validate_row("r2", row)
+            row["environment"]["RUSTFLAGS"] = "--cfg kani_smallsort_controls"
+            with self.assertRaisesRegex(ValueError, "5151 rows require"):
+                a1.validate_row("r2", row)
+        for suffix in ("nonnull_field", "initialized_same_type_companion", "explicit_proof_observes_initialized_null"):
+            row = mk_r2(suffix); a1.validate_row("r2", row)
+            row["environment"]["RUSTFLAGS"] = "--edition=2021"
+            with self.assertRaisesRegex(ValueError, "cannot receive issue-only"):
+                a1.validate_row("r2", row)
 
 
 class ExportTests(unittest.TestCase):
@@ -210,9 +228,16 @@ class ExecutionTests(unittest.TestCase):
 
     def test_output_stream_cap_is_enforced_during_execution(self):
         with mock.patch.object(a1, "STDOUT_LIMIT", 256):
-            td, _, r = self.run_code("import sys; sys.stdout.write('x'*100000); sys.stdout.flush()")
+            td, out, r = self.run_code("import sys; sys.stdout.write('x'*100000); sys.stdout.flush()")
         self.assertTrue(r["output_capped"]); self.assertTrue(r["stdout_truncated"])
-        self.assertLessEqual(r["stdout_bytes"], 256); td.cleanup()
+        self.assertLessEqual(r["stdout_bytes"], 256)
+        for suffix in ("stdout.head.log", "stdout.tail.log", "stderr.head.log", "stderr.tail.log"):
+            p = out / suffix
+            self.assertTrue(p.is_file())
+            self.assertLessEqual(p.stat().st_size, 64 * 1024)
+        self.assertEqual(r["stream_excerpts"]["stdout_head"]["sha256"], hashlib.sha256((out / "stdout.head.log").read_bytes()).hexdigest())
+        self.assertEqual(r["stream_excerpts"]["stdout_tail"]["bytes"], (out / "stdout.tail.log").stat().st_size)
+        td.cleanup()
 
     def test_frozen_job_rss_policy_is_used_and_cannot_exceed_reserve(self):
         env = {"A1_MEM_AVAILABLE_BYTES": str(8 * 1024**3), "A1_RSS_LIMIT_BYTES": str(5 * 1024**3)}
@@ -307,11 +332,171 @@ class ArtifactTests(unittest.TestCase):
             (root / "big.bin").write_bytes(b"x"*1024)
             with mock.patch.object(a1, "JOB_OUTPUT_LIMIT", 512):
                 result = a1.bound_artifacts(root)
-            self.assertEqual(result["state"], "TRUNCATED")
+            self.assertEqual(result["state"], "INCOMPLETE_PROTECTED_RECEIPTS_EXCEED_CAP")
             self.assertTrue((root / "receipt.json").is_file())
             self.assertFalse((root / "big.bin").exists())
             receipt = json.loads((root / "receipt.json").read_text())
             self.assertEqual(receipt["postprocessing_state"], "INCOMPLETE")
+
+    def test_metadata_cap_never_deletes_stdout_and_excerpts_are_protected(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            (root / "receipt.json").write_text(json.dumps({"outcome": "UNKNOWN", "postprocessing_state": "COMPLETE"}))
+            for name in ("stdout.log", "stdout.head.log", "stdout.tail.log", "stderr.head.log", "stderr.tail.log"):
+                (root / name).write_bytes(name.encode() * 20)
+            (root / "extra.json").write_text("{}")
+            with mock.patch.object(a1, "JOB_OUTPUT_LIMIT", 1024 * 1024), mock.patch.object(a1, "METADATA_LIMIT", 1):
+                result = a1.bound_artifacts(root)
+            self.assertEqual(result["state"], "INCOMPLETE_PROTECTED_RECEIPTS_EXCEED_CAP")
+            for name in ("stdout.log", "stdout.head.log", "stdout.tail.log", "stderr.head.log", "stderr.tail.log"):
+                self.assertTrue((root / name).is_file())
+            self.assertTrue((root / "receipt.json").is_file())
+
+    def test_target_directories_are_excluded_and_fallback_excerpts_created(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td); target = root / "nested" / "target"; target.mkdir(parents=True)
+            (target / "opaque.bin").write_bytes(b"x" * 91)
+            (root / "stdout.log").write_bytes(b"a" * 100000 + b"z" * 100000)
+            result = a1.bound_artifacts(root)
+            self.assertFalse(target.exists())
+            self.assertEqual(result["intentional_exclusions"], [{"path": "nested/target", "bytes": 91,
+                              "state": "INTENTIONALLY_EXCLUDED_TARGET_DIRECTORY"}])
+            self.assertEqual((root / "stdout.head.log").read_bytes(), b"a" * (64 * 1024))
+            self.assertEqual((root / "stdout.tail.log").read_bytes(), b"z" * (64 * 1024))
+
+    def test_protected_receipts_over_cap_fail_closed(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td); (root / "receipt.json").write_text(json.dumps({"postprocessing_state": "COMPLETE"}))
+            with mock.patch.object(a1, "JOB_OUTPUT_LIMIT", 1):
+                result = a1.bound_artifacts(root)
+            self.assertEqual(result["state"], "INCOMPLETE_PROTECTED_RECEIPTS_EXCEED_CAP")
+            self.assertTrue((root / "receipt.json").exists())
+            self.assertEqual(json.loads((root / "receipt.json").read_text())["postprocessing_state"], "INCOMPLETE")
+
+
+class SequenceTests(unittest.TestCase):
+    def _setup(self, root):
+        rows = [mk_r1(s) for s in ("stable_freeze_u64_n32", "unstable_general_nocopy_u64_n32",
+                                  "unstable_network_u64_n32") + tuple(s for s in R1 if not s.endswith("n32"))]
+        request = {"r1": {"rows": rows}, "std": {}, "pins": {}}
+        return request, rows
+
+    def _invoke(self, root, outcome):
+        request, rows = self._setup(root)
+        req_path = root / "CI-REQUEST.json"; req_path.write_text("{}")
+        std = root / "std"; std.mkdir(); out = root / "out"
+        base = {"original_exit_code": 0, "signal": None, "timed_out": False, "output_capped": False,
+                "artifact_capped": False, "rss_watchdog_killed": False, "runner_error": None,
+                "termination_classification": "EXITED", "postprocessing_state": "COMPLETE",
+                "rss": {"status": "OBSERVED_WAIT4_LINUX_RU_MAXRSS", "max_bytes": 123},
+                "export": {"state": "UNVALIDATED_COMPLETE_SINGLE_HARNESS"},
+                "post_run_validation": {"source_valid": True, "controls_valid": True,
+                                        "std_overlay_valid": True, "std_base_valid": True}}
+        calls = []
+        def fake_run(repo, pin, stage, row_id, binary, row_out, given_std, timeout):
+            calls.append(row_id); row_out.mkdir(parents=True)
+            index = len(calls) - 1; val = dict(base); val["export"] = dict(base["export"])
+            val["post_run_validation"] = dict(base["post_run_validation"])
+            val.update(outcome(index, row_out))
+            (row_out / "receipt.json").write_text(json.dumps(val))
+            return val
+        patches = [mock.patch.object(a1, "load_request", return_value=request),
+                   mock.patch.object(a1, "REQUEST", req_path), mock.patch.object(a1, "verify_source", return_value={}),
+                   mock.patch.object(a1, "_verify_std_base", return_value={}), mock.patch.object(a1, "_verify_std_overlay", return_value={}),
+                   mock.patch.object(a1, "run", side_effect=fake_run)]
+        return rows, calls, patches, std, out
+
+    def test_success_and_noncompile_nonzero_continue_in_frozen_order(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td); rows, calls, patches, std, out = self._invoke(root,
+                lambda i, p: {"original_exit_code": 9} if i == 0 else {})
+            for p in patches: p.start()
+            try:
+                result = a1.run_r1_sequence(root, "sel1", Path("/unused"), out, std)
+            finally:
+                for p in reversed(patches): p.stop()
+            self.assertEqual(calls, [r["id"] for r in rows])
+            self.assertEqual(result["return_code"], 9)
+
+    def test_confirmed_compile_error_stops_and_writes_not_run_receipts(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            def outcome(i, p):
+                if i == 0:
+                    (p / "stderr.tail.log").write_text("error: could not compile ‘core’ (lib) due to 1 previous error")
+                    return {"original_exit_code": 101, "export": {"state": "MISSING"}}
+                return {}
+            rows, calls, patches, std, out = self._invoke(root, outcome)
+            for p in patches: p.start()
+            try: result = a1.run_r1_sequence(root, "sel1", Path("/unused"), out, std)
+            finally:
+                for p in reversed(patches): p.stop()
+            self.assertEqual(calls, [rows[0]["id"]])
+            self.assertEqual(json.loads((out / rows[1]["id"] / "receipt.json").read_text())["status"], "NOT_RUN")
+            self.assertIn("confirmed core (lib) compile error", result["stop_reason"])
+
+    def test_uncertain_outcomes_fail_stop_and_preserve_original_exit(self):
+        cases = [({"timed_out": True}, "timeout"), ({"postprocessing_state": "INCOMPLETE"}, "postprocessing"),
+                 ({"rss": None}, "RSS wait4 evidence"),
+                 ({"export": {"state": "MISSING"}}, "export"), ({"export": {"state": "NULL"}}, "export"),
+                 ({"export": {"state": "WRONG_TOP_LEVEL_TYPE"}}, "export"),
+                 ({"export": {"state": "PARTIAL"}}, "export"), ({"export": None}, "export"),
+                 ({"export": []}, "export")]
+        for override, reason in cases:
+            with self.subTest(override=override), tempfile.TemporaryDirectory() as td:
+                root = Path(td); rows, calls, patches, std, out = self._invoke(root, lambda i, p: override if i == 0 else {})
+                for p in patches: p.start()
+                try: result = a1.run_r1_sequence(root, "sel1", Path("/unused"), out, std)
+                finally:
+                    for p in reversed(patches): p.stop()
+                self.assertEqual(calls, [rows[0]["id"]])
+                self.assertIn(reason, result["stop_reason"])
+                self.assertEqual(json.loads((out / rows[0]["id"] / "receipt.json").read_text())["original_exit_code"], 0)
+
+    def test_exception_gets_durable_partial_and_remaining_not_run(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td); request, rows = self._setup(root); req_path = root / "CI-REQUEST.json"; req_path.write_text("{}")
+            std = root / "std"; std.mkdir(); out = root / "out"
+            patches = [mock.patch.object(a1, "load_request", return_value=request), mock.patch.object(a1, "REQUEST", req_path),
+                       mock.patch.object(a1, "verify_source", return_value={}), mock.patch.object(a1, "_verify_std_base", return_value={}),
+                       mock.patch.object(a1, "_verify_std_overlay", return_value={}), mock.patch.object(a1, "run", side_effect=RuntimeError("synthetic"))]
+            for p in patches: p.start()
+            try: result = a1.run_r1_sequence(root, "sel1", Path("/unused"), out, std)
+            finally:
+                for p in reversed(patches): p.stop()
+            first = json.loads((out / rows[0]["id"] / "receipt.json").read_text())
+            self.assertEqual(first["postprocessing_state"], "INCOMPLETE")
+            self.assertEqual(json.loads((out / rows[1]["id"] / "receipt.json").read_text())["status"], "NOT_RUN")
+
+    def test_bad_order_and_source_mismatch_prevent_child(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td); request, rows = self._setup(root); rows[0], rows[3] = rows[3], rows[0]
+            req_path = root / "CI-REQUEST.json"; req_path.write_text("{}")
+            std = root / "std"; std.mkdir(); out = root / "out"
+            with mock.patch.object(a1, "load_request", return_value=request), mock.patch.object(a1, "REQUEST", req_path), \
+                 mock.patch.object(a1, "run") as run_mock, mock.patch.object(a1, "verify_source"):
+                with self.assertRaisesRegex(ValueError, "begin with the exact three N32"):
+                    a1.run_r1_sequence(root, "sel1", Path("/unused"), out, std)
+                run_mock.assert_not_called()
+
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td); request, _ = self._setup(root); req_path = root / "CI-REQUEST.json"; req_path.write_text("{}")
+            std = root / "std"; std.mkdir(); out = root / "out"
+            with mock.patch.object(a1, "load_request", return_value=request), mock.patch.object(a1, "REQUEST", req_path), \
+                 mock.patch.object(a1, "verify_source", side_effect=ValueError("pin mismatch")) as source_mock, \
+                 mock.patch.object(a1, "run") as run_mock:
+                with self.assertRaisesRegex(ValueError, "pin mismatch"):
+                    a1.run_r1_sequence(root, "sel1", Path("/unused"), out, std)
+                source_mock.assert_called_once(); run_mock.assert_not_called(); self.assertFalse(out.exists())
+
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td); request, _ = self._setup(root); req_path = root / "CI-REQUEST.json"; req_path.write_text("{}")
+            std = root / "std"; std.mkdir(); out = root / "out"
+            with mock.patch.object(a1, "load_request", return_value=request), mock.patch.object(a1, "REQUEST", req_path), \
+                 mock.patch.object(a1, "verify_source") as source_mock, mock.patch.object(a1, "run") as run_mock:
+                with self.assertRaisesRegex(ValueError, "requires the frozen sel1"):
+                    a1.run_r1_sequence(root, "baseline", Path("/unused"), out, std)
+                source_mock.assert_not_called(); run_mock.assert_not_called(); self.assertFalse(out.exists())
 
 
 if __name__ == "__main__":

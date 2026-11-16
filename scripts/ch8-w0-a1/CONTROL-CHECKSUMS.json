@@ -1,9 +1,9 @@
 {
   "authorization": "COORDINATOR_PUBLICATION_ONLY",
   "files_sha256": {
-    ".github/workflows/ch8-w0-a1.yml": "c75ec17b97a2af2a47197343ec70fd677d2a264f8653e3eeb850df44c3f3a875",
-    "scripts/ch8-w0-a1/CI-REQUEST.json": "6f49f0dec801a14f4dd33205620d0114a606959a2d2f0ad7c677d6bbd2e26e71",
-    "scripts/ch8-w0-a1/a1.py": "8bc4787c3703dc2ea59408e3d38e6da7f50ad9cd8fe938ed9e964211f212454f",
+    ".github/workflows/ch8-w0-a1.yml": "2f1a97d2566e397cadb3ae1e76e3631144221fda0f47c29128b8cb6e15a03149",
+    "scripts/ch8-w0-a1/CI-REQUEST.json": "f4114738bf1ed15ec91049ef0ceb6b7f66b0550603b67ac514b5edc00366cb56",
+    "scripts/ch8-w0-a1/a1.py": "feafc08a3cf4e7a06dcd02e33859f6f162fb18f2ae7a1044e377c517c1c6b538",
     "scripts/ch8-w0-a1/baseline-source-binding.json": "d3de2bc1fa15080475d125bb7325bbab26d061ccc4a9f40ecf43916516bc49aa",
     "scripts/ch8-w0-a1/native/COMPANION-DIFFS.txt": "5830c7fcff73df36f62be0a6d55d05ce00eff992b0901c7701964a5ee2eb912e",
     "scripts/ch8-w0-a1/native/MANIFEST.json": "aa0e4cbde9973ac4c8ba727dd6349a0c63b97febf870685049f963cf58309a4a",
@@ -18,10 +18,10 @@
     "scripts/ch8-w0-a1/native/source-bodies/issue-5151.md": "36ff4cf4b67cfeeb99ea280cb4cd85373aeec5f3e7015d5ffd6c7490c4882f1c",
     "scripts/ch8-w0-a1/replay_origin.py": "aa5d3484421c8266ff2aebfeafabc395740133b4625c28e345b5c7fcfbb78ec0",
     "scripts/ch8-w0-a1/sel1-source-binding.json": "d4ed00227c03cd59c759c2551064d362c03b7a2f356cd13bf24ac16dbe59630b",
-    "scripts/ch8-w0-a1/std-test-only.patch": "bb076677040e5da399df6a1751814add5ba4f2a8d4c58ee02e78a95022ac918a",
-    "scripts/ch8-w0-a1/test_a1.py": "64bc2dec0f304083ed674d70660931bc968e32e6bc2f394c21c5283d981e6c58"
+    "scripts/ch8-w0-a1/std-test-only.patch": "ae3a538be5a91891d6ac5499b688495376d8c6343ccca927c651388c57436d83",
+    "scripts/ch8-w0-a1/test_a1.py": "efd9d838667337e3ee6821b01da5d2e2ea0ed5423c923e44a53fd87c156d082b"
   },
   "runtime": "NOT_RUN",
-  "schema": "ch8-w0-a1-ci-control-checksums-v1",
+  "schema": "ch8-w0-a1-r3-ci-control-checksums-v1",
   "source_unchanged": true
 }

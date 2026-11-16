@@ -4,9 +4,11 @@
   "cloud_dollars": 0,
   "dispatches": {
     "a1_cap": 3,
+    "already_used": 2,
     "item1_cap": 18,
-    "mandatory": 2,
+    "mandatory": 0,
     "overall_cap": 32,
+    "prepared_dispatches": 1,
     "reserve": 1,
     "retry": "NONE"
   },
@@ -23,9 +25,9 @@
     }
   },
   "r1": {
-    "aggregate_job_minutes": 480,
+    "aggregate_job_minutes": 130,
     "invocation_seconds": 600,
-    "job_minutes": 60,
+    "job_minutes": 130,
     "jobs": 1,
     "max_parallel": 1,
     "rows": [
@@ -630,15 +632,17 @@
         "uninit": true
       }
     ],
+    "sequence": "SINGLE_JOB_SERIAL_N32_FIRST",
     "setup_max_before_invocation_seconds": 2340,
-    "stop": "First cap/runner loss/unexpected failure/Unsupported/missing cover or binding => named blocker, no retry; independent already prepared rows may finish.",
+    "stop": "Confirmed core(lib) compile failure => remaining rows NOT_RUN; runner loss/cap/partial => fail closed; no retry",
     "upload_reserve_minutes": 10
   },
   "r2": {
-    "aggregate_job_minutes": 180,
+    "aggregate_job_minutes": 100,
+    "execution_filter": "r3.native_row_ids; six historical fixture definitions retained",
     "invocation_seconds": 600,
-    "invocations_per_pin": 6,
-    "job_minutes": 90,
+    "invocations_per_pin": 2,
+    "job_minutes": 50,
     "max_parallel": 1,
     "native_manifest_sha256": "aa0e4cbde9973ac4c8ba727dd6349a0c63b97febf870685049f963cf58309a4a",
     "off_companion": "NOT_PREPARED; optional one same N32 after R1 selection requires coordinator frozen exact-delta request. This package runs zero OFF rows.",
@@ -890,7 +894,8 @@
         ],
         "cwd": "<OUT>/cwd",
         "environment": {
-          "NO_COLOR": "1"
+          "NO_COLOR": "1",
+          "RUSTFLAGS": "--edition=2021"
         },
         "file": "issue-5151-empty-drop.rs",
         "fixture": "native/issue-5151-empty-drop.rs",
@@ -947,7 +952,8 @@
         ],
         "cwd": "<OUT>/cwd",
         "environment": {
-          "NO_COLOR": "1"
+          "NO_COLOR": "1",
+          "RUSTFLAGS": "--edition=2021"
         },
         "file": "issue-5151-initialized-slot-companion.rs",
         "fixture": "native/issue-5151-initialized-slot-companion.rs",
@@ -979,36 +985,50 @@
     "setup_max_before_invocation_seconds": 1140,
     "upload_reserve_minutes": 10
   },
-  "r3": "RESERVE_ONLY_COORDINATOR_DECISION_AFTER_R1_R2; fixture/wiring fix OR C2 attribution pin, no automatic dispatch",
+  "r3": {
+    "already_used": 2,
+    "automatic_retry": false,
+    "branch_prefix": "uninit-ci/ch8-w0-a1-r3-*",
+    "compile_fix": "wave0_a1 trait import super::super; full diagnostic cause not established",
+    "dispatch": "LAST_A1_RESERVE_COORDINATOR_ONLY",
+    "maximum_runner_minutes": 230,
+    "native_row_ids": [
+      "kani-5151-empty-drop-negative",
+      "kani-5151-initialized-slot-companion"
+    ],
+    "remaining": 1
+  },
   "resource_limits": {
     "artifact_bytes_per_job": 268435456,
+    "diagnostic_head_tail_bytes_each": 65536,
     "metadata_bytes_per_job": 16777216,
     "rss_os_reserve_bytes": 2147483648,
     "rss_threshold_policy": "Before setup capture MemAvailable once, reserve2GiB, freeze available-minus-reserve in GITHUB_ENV for entire job. No raising after kill. Formula frozen before dispatch; numeric UNKNOWN until runner assigned.",
     "stderr_bytes_per_invocation": 33554432,
-    "stdout_bytes_per_invocation": 33554432
+    "stdout_bytes_per_invocation": 33554432,
+    "upload_excludes": "all target/ directories"
   },
   "retry": "NONE",
   "runtime": "NOT_RUN",
   "schema": "ch8-w0-a1-ci-request-v1",
   "std": {
-    "a1_only_patch_sha256": "05da44f4ded67994140025607666037911e2105ae613c002451dea39618fa2d5",
+    "a1_only_patch_sha256": "44263be0739d2a04b2f0472a5952a91e768f3ff838536c570af5f4f4026fae6c",
     "accepted_overlay_parent": "6075e7ce17179f45642c9ffe8fe09e3ec9395726",
     "base_library_tree": "6ea9d3425f6d0478cfc2517cbdd2fb7d7b32a53f",
     "base_sha": "70ba5befc617627073738e26cb1466bd4fb76e41",
     "base_tree": "84ab170ccdcc29fba69e55e0a46e6acdf52d9704",
-    "package_library_tree": "93d2f428370a2a9dbedafd6dd598305b46aac50c",
-    "package_sha": "65864680a145c90c583dcba7efd1d569475519fc",
-    "package_tree": "318753826afce4c952e8210b67a8b5919f646f9b",
+    "package_library_tree": "54c4873f693f1d420a5ac505660ab460c8aa1f96",
+    "package_sha": "312ff625b9b3338281d899cca47d72c24d5a2539",
+    "package_tree": "44bf49c77a2f5157bc051002dfd8b162f36bc649",
     "patch": "std-test-only.patch",
-    "patch_sha256": "bb076677040e5da399df6a1751814add5ba4f2a8d4c58ee02e78a95022ac918a",
+    "patch_sha256": "ae3a538be5a91891d6ac5499b688495376d8c6343ccca927c651388c57436d83",
     "patched_files": {
       "library/core/src/slice/sort/shared/smallsort/verify.rs": "f7741fde76545b53c98742149c2081c3ef6de8c7f004fe4522473cd64a611f1c",
       "library/core/src/slice/sort/shared/smallsort/verify/helper_contracts.rs": "22de8b24f6adf35b633b2962d9873a349041a18cca9d580944d2d4a3c9ad0655",
       "library/core/src/slice/sort/shared/smallsort/verify/helper_contracts_wide.rs": "b2d71e6e61b4130a95dda6daac3cd5f0970f9daf7b0f7bfa8a9f99d9c3c29844",
       "library/core/src/slice/sort/shared/smallsort/verify/replay_gateb_prime.rs": "c585f3d0c74879cb21e8f09204f52d59b7aa4948a2e17541a94e162b3ffb10a1",
       "library/core/src/slice/sort/shared/smallsort/verify/replay_uninit_controls.rs": "c186a086dadba038ff5ad7ca823e52e1e807758a92b1a46cf4c807fc07d96a39",
-      "library/core/src/slice/sort/shared/smallsort/verify/wave0_a1.rs": "453218bd78b39d8e30881ada9bc442b50d3e1d63b81151410ec25b2ecf467299"
+      "library/core/src/slice/sort/shared/smallsort/verify/wave0_a1.rs": "73fae915bbcaeb773cfed559610215969019b5050fefe83615c139ddb394526e"
     }
   }
 }
