@@ -1,0 +1,64 @@
+#!/usr/bin/env python3
+"""Combine structured matrix receipts; never grants proof credit or opens logs."""
+import argparse
+import json
+from pathlib import Path
+import runner as r
+
+
+def read(path):
+    if path.stat().st_size > r.ARTIFACT_CAP_BYTES:
+        raise r.RunnerError('oversize receipt')
+    value=json.loads(path.read_text())
+    if not isinstance(value,dict):
+        raise r.RunnerError('receipt must be an object')
+    return value
+
+
+def collect(roots,request):
+    groups={g['id']:g for g in r.group_rows(request['rows'],request['execution_groups'])}
+    expected_identity={key:request[key] for key in ('std_sha','std_tree','tool_sha','tool_tree')}
+    request_hash=r.sha256(r.REQUEST_PATH)
+    seen=set(); observations={}
+    for root in roots:
+        terminal=read(root/'receipt.json')
+        if (any(terminal.get(k)!=v for k,v in expected_identity.items()) or
+                terminal.get('request_sha256')!=request_hash):
+            raise r.RunnerError('matrix terminal identity mismatch')
+        selected=terminal.get('selected_groups')
+        if (not isinstance(selected,list) or not selected or any(not isinstance(x,str) for x in selected)
+                or len(set(selected))!=len(selected) or not set(selected).issubset(groups)
+                or seen.intersection(selected)):
+            raise r.RunnerError('duplicate or invalid matrix partition')
+        rows=terminal.get('rows')
+        if not isinstance(rows,list) or any(not isinstance(x,dict) for x in rows):
+            raise r.RunnerError('invalid terminal rows')
+        byid={x.get('id'):x for x in rows}
+        if len(byid)!=len(rows):raise r.RunnerError('duplicate terminal row')
+        for gid in selected:
+            group=groups[gid];receipt=read(root/'groups'/gid/'receipt.json')
+            before,after=receipt.get('source_before'),receipt.get('source_after')
+            expected_source={**expected_identity,'changed_file_sha256':request['changed_file_sha256']}
+            intact=(receipt.get('request_sha256')==request_hash and before==expected_source and after==expected_source
+                    and receipt.get('state')=='COMPLETE')
+            for row in group['rows']:
+                observed=byid.get(row['id'])
+                if (not isinstance(observed,dict) or observed.get('selector')!=row['selector']
+                        or observed.get('group')!=gid or observed.get('mode')!=row['mode']
+                        or observed.get('variant')!=row['variant']):
+                    raise r.RunnerError('matrix row identity mismatch')
+                observations[row['id']]=observed if intact else {**observed,'outcome':'UNKNOWN','reason':'group source/completion mismatch'}
+        seen.update(selected)
+    missing=[gid for gid in groups if gid not in seen]
+    unions=[r.aggregate_replacement_union(u,request['rows'],observations) for u in request['replacement_unions']]
+    return {'state':'INCOMPLETE_MATRIX' if missing else 'COLLECTED_OBSERVATIONS_PENDING_REVIEW',
+            **expected_identity,'request_sha256':request_hash,'missing_groups':missing,
+            'replacement_unions':unions,'rows':[observations.get(row['id'],{'id':row['id'],'status':'NOT_RUN','outcome':'UNKNOWN'}) for row in request['rows']],
+            'proof_credit':'NONE','qualified_acceptance':'PENDING_INDEPENDENT_BINDING_AND_EXCEPTION_REVIEW'}
+
+
+if __name__=='__main__':
+    parser=argparse.ArgumentParser();parser.add_argument('--root',type=Path,action='append',required=True)
+    parser.add_argument('--out',type=Path,required=True);args=parser.parse_args()
+    result=collect(args.root,r.load_request());r._write_json(args.out,result)
+    print(json.dumps({'state':result['state'],'missing_groups':result['missing_groups'],'proof_credit':'NONE'}))
