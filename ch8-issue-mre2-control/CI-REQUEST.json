@@ -1,0 +1,64 @@
+{
+  "schema": "ch8-issue-mre2-request-v1",
+  "status": "READY",
+  "task": "TASK-CH8-ISSUE-MRE2-W14.md",
+  "input_g0": "99e5b0d81db758c5ad98eddae5962246f129437a",
+  "attempt": 1,
+  "planned_dispatch_count": 1,
+  "dispatch_authorized": false,
+  "proof_status": "ALL_NOT_RUN",
+  "proof_credit": "NONE",
+  "pins": {
+    "upstream": {
+      "repository": "model-checking/kani",
+      "sha": "0aac16ef62da9e9d5645782d458593e5d78143ba",
+      "tree": "9d8bc9312bf955ef126d32b819b3cd0ed105ed2b"
+    }
+  },
+  "control_parent": "0aac16ef62da9e9d5645782d458593e5d78143ba",
+  "control_repository": "Tiramisu-Cake/kani",
+  "branch_prefix": "uninit-ci/ch8-issue-mre2-",
+  "source_file_count": 4,
+  "total_invocations": 7,
+  "caps": {
+    "row_envelope_seconds": 30,
+    "run_phase_seconds_per_pin": 330,
+    "tool_build_seconds": 720,
+    "job_minutes": 30,
+    "process_group_rss_bytes": 6442450944,
+    "stdout_head_bytes": 1048576,
+    "stderr_head_bytes": 1048576,
+    "tail_bytes_per_stream": 4096,
+    "export_bytes": 8388608
+  },
+  "rows_sha256": "d0f666778474843c692fb2ebea7c68b7132206844a833b6a38225d716e7df461",
+  "payload_sha256": {
+    ".github/workflows/ch8-issue-mre2.yml": "2d93bbb6c805a4deea74e61f34a27952e159dbe9d491df6f856f792acabddcb1",
+    "ch8-issue-mre2-control/ORACLES.md": "6eb478e3695e69c22a1a42c79f6bac970cef9fa92ec4cc8e5d0a97dac5c62439",
+    "ch8-issue-mre2-control/check_package.py": "23b071ec837b53e2c5420b05cf823a4fa7d61339f3594c060c7afcef56bec870",
+    "ch8-issue-mre2-control/fixtures/actual_uninit_read.rs": "f39417a5dabc00e5502f516822996981ca2acb55b382e5cbc82a969ba2701935",
+    "ch8-issue-mre2-control/fixtures/slice_initialized.rs": "db9f1037aece3c06286802584c6faf7f337e83b433de293eed6a6af48ecfc8db",
+    "ch8-issue-mre2-control/fixtures/slice_uninit.rs": "66df29900517f6c105c7c7c1e7ded15b68a9c6c3d09cefdaa0068bb4eb8ff242",
+    "ch8-issue-mre2-control/fixtures/thin_uninit.rs": "d5ac40349cec4075dd4e886b41bd4b22de51078e48e41ccb6b4fa95a414b1891",
+    "ch8-issue-mre2-control/rows.json": "d0f666778474843c692fb2ebea7c68b7132206844a833b6a38225d716e7df461",
+    "ch8-issue-mre2-control/runner.py": "67310ad0afba141ee6b47881cf806894bfe9e1ada2fd49f80ff575dbad226399",
+    "ch8-issue-mre2-control/test_package.py": "25ca507b273c66314b61f4c2db79c8d2563e36abddbb90c1af279e9e523f30cc",
+    "ch8-issue-mre2-control/test_runner.py": "588e12461de6b07a0454980294817d77876bc25a6a890ea4fcea5453cee3d775",
+    "ch8-issue-mre2-control/test_workflow_repo.py": "6cba56f4d02b7c7108b4d252ed194b79309fe69c9894569f82dcea0b6f5e468d",
+    "ch8-issue-mre2-control/workflow_repo.py": "e38ce725569e5f4ec66ff2d45a786099fc5f338e16e57f33369fb4f85d4bdb66"
+  },
+  "payload_manifest_sha256": "debce80ffe991ff538f025bcba3a9605f67ba7d4c9ea5cdb0b15482dcb6fa40c",
+  "activation": "Separate coordinator stage only: same-tree sibling without [skip ci], sole parent clean upstream0aac; no dispatch is authorized by this preparation.",
+  "authority": {
+    "push": false,
+    "ci": false,
+    "publications": false,
+    "ledger": false,
+    "local_compiler_verifier": false
+  },
+  "limits": [
+    "Source-predicted expectations; generated property IDs and runtime versions only available after execution.",
+    "Current/floating upstream comparison is outside pinned one-job stage.",
+    "External row30s/build720s/setup4min/job30min may yield UNKNOWN/NOT_RUN."
+  ]
+}

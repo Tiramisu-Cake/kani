@@ -1,0 +1,148 @@
+[
+  {
+    "id": "slice_uninit_check_body",
+    "file": "fixtures/slice_uninit.rs",
+    "harness": "check_body",
+    "flags": [
+      "-Z",
+      "function-contracts",
+      "-Z",
+      "uninit-checks",
+      "-Z",
+      "stubbing"
+    ],
+    "expected": "SUCCESS",
+    "desired": "SUCCESS",
+    "kind": "ProofForContract",
+    "contract": "initialize",
+    "verified_stubs": [],
+    "failure_description": null,
+    "failure_function": null
+  },
+  {
+    "id": "slice_uninit_check_slice_havoc",
+    "file": "fixtures/slice_uninit.rs",
+    "harness": "check_slice_havoc",
+    "flags": [
+      "-Z",
+      "function-contracts",
+      "-Z",
+      "uninit-checks",
+      "-Z",
+      "stubbing"
+    ],
+    "expected": "UNINIT_FAILURE",
+    "desired": "SUCCESS",
+    "kind": "Proof",
+    "contract": null,
+    "verified_stubs": [
+      "initialize"
+    ],
+    "failure_description": "Undefined Behavior: Reading from an uninitialized pointer of type `*mut [u8]`",
+    "failure_function": "write_any_slice"
+  },
+  {
+    "id": "slice_initialized_check_body",
+    "file": "fixtures/slice_initialized.rs",
+    "harness": "check_body",
+    "flags": [
+      "-Z",
+      "function-contracts",
+      "-Z",
+      "uninit-checks",
+      "-Z",
+      "stubbing"
+    ],
+    "expected": "SUCCESS",
+    "desired": "SUCCESS",
+    "kind": "ProofForContract",
+    "contract": "initialize",
+    "verified_stubs": [],
+    "failure_description": null,
+    "failure_function": null
+  },
+  {
+    "id": "slice_initialized_check_slice_havoc",
+    "file": "fixtures/slice_initialized.rs",
+    "harness": "check_slice_havoc",
+    "flags": [
+      "-Z",
+      "function-contracts",
+      "-Z",
+      "uninit-checks",
+      "-Z",
+      "stubbing"
+    ],
+    "expected": "SUCCESS",
+    "desired": "SUCCESS",
+    "kind": "Proof",
+    "contract": null,
+    "verified_stubs": [
+      "initialize"
+    ],
+    "failure_description": null,
+    "failure_function": null
+  },
+  {
+    "id": "thin_uninit_check_body",
+    "file": "fixtures/thin_uninit.rs",
+    "harness": "check_body",
+    "flags": [
+      "-Z",
+      "function-contracts",
+      "-Z",
+      "uninit-checks",
+      "-Z",
+      "stubbing"
+    ],
+    "expected": "SUCCESS",
+    "desired": "SUCCESS",
+    "kind": "ProofForContract",
+    "contract": "initialize",
+    "verified_stubs": [],
+    "failure_description": null,
+    "failure_function": null
+  },
+  {
+    "id": "thin_uninit_check_slice_havoc",
+    "file": "fixtures/thin_uninit.rs",
+    "harness": "check_slice_havoc",
+    "flags": [
+      "-Z",
+      "function-contracts",
+      "-Z",
+      "uninit-checks",
+      "-Z",
+      "stubbing"
+    ],
+    "expected": "SUCCESS",
+    "desired": "SUCCESS",
+    "kind": "Proof",
+    "contract": null,
+    "verified_stubs": [
+      "initialize"
+    ],
+    "failure_description": null,
+    "failure_function": null
+  },
+  {
+    "id": "actual_uninit_read",
+    "file": "fixtures/actual_uninit_read.rs",
+    "harness": "actual_uninit_read",
+    "flags": [
+      "-Z",
+      "function-contracts",
+      "-Z",
+      "uninit-checks",
+      "-Z",
+      "stubbing"
+    ],
+    "expected": "UNINIT_FAILURE",
+    "desired": "UNINIT_FAILURE",
+    "kind": "Proof",
+    "contract": null,
+    "verified_stubs": [],
+    "failure_description": "Undefined Behavior: Reading from an uninitialized pointer of type `*const u8`",
+    "failure_function": null
+  }
+]

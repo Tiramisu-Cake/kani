@@ -1,0 +1,81 @@
+# Copyright Kani Contributors
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+name: CH8 upstream slice havoc MRE v2
+on:
+  push:
+    branches: ["uninit-ci/ch8-issue-mre2-*"]
+permissions:
+  contents: read
+concurrency:
+  group: ch8-issue-mre2
+  cancel-in-progress: false
+jobs:
+  controls:
+    if: ${{ github.repository == 'Tiramisu-Cake/kani' && github.event_name == 'push' && github.run_attempt == 1 }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout control
+        timeout-minutes: 1
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
+          path: control
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Check frozen package and synthetic controls
+        timeout-minutes: 1
+        working-directory: control/ch8-issue-mre2-control
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: |
+          python3 check_package.py control --repo ..
+          python3 -m unittest -v
+      - name: Checkout clean upstream tool
+        timeout-minutes: 1
+        uses: actions/checkout@v6
+        with:
+          repository: model-checking/kani
+          ref: 0aac16ef62da9e9d5645782d458593e5d78143ba
+          path: tool
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Setup pinned tool
+        timeout-minutes: 4
+        uses: ./tool/.github/actions/setup
+        with:
+          os: ubuntu-24.04
+          kani_dir: tool
+      - name: Build pinned tool once
+        timeout-minutes: 13
+        env:
+          RECEIPT_ROOT: ${{ runner.temp }}/ch8-issue-mre2
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: python3 control/ch8-issue-mre2-control/runner.py build --tool tool --out "$RECEIPT_ROOT"
+      - name: Run seven isolated harness invocations
+        timeout-minutes: 6
+        env:
+          RECEIPT_ROOT: ${{ runner.temp }}/ch8-issue-mre2
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: python3 control/ch8-issue-mre2-control/runner.py run --tool tool --out "$RECEIPT_ROOT"
+      - name: Preserve receipts and materialize missing rows
+        if: always()
+        timeout-minutes: 1
+        env:
+          RECEIPT_ROOT: ${{ runner.temp }}/ch8-issue-mre2
+          JOB_STATUS: ${{ job.status }}
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: python3 control/ch8-issue-mre2-control/runner.py fallback --out "$RECEIPT_ROOT"
+      - name: Upload bounded receipts and exports
+        if: always()
+        timeout-minutes: 1
+        uses: actions/upload-artifact@v4
+        env:
+          RECEIPT_ROOT: ${{ runner.temp }}/ch8-issue-mre2
+        with:
+          name: ch8-issue-mre2-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ env.RECEIPT_ROOT }}/
+            !${{ env.RECEIPT_ROOT }}/**/target/**
+          if-no-files-found: error
+          retention-days: 7
