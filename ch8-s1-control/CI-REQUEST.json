@@ -1,5 +1,5 @@
 {
-  "schema": "ch8-s1-05-ready-v1",
+  "schema": "ch8-s1-07-ready-v1",
   "status": "READY",
   "authorization": "PREPARATION_ONLY_NO_DISPATCH_OWNER_GO_REQUIRED",
   "std_sha": "5be85699b8826e3286c0bf89efb9affefac0acb5",
@@ -1235,20 +1235,22 @@
     }
   ],
   "ci_payload_sha256": {
-    ".github/workflows/ch8-s1.yml": "eebf582b1c96cef1972a5b07a39bc1a3c5684d5d932b33b848abfa29514dd254",
+    ".github/workflows/ch8-s1.yml": "2f51f3793567fb000337ae384375dbc0622729d57193236e80763a5d4f1cea38",
     "ch8-s1-control/activation-default.patch": "cee9e21c4b5015d6daf53c286f781602d0890e4ed23239f968d228088335dcc3",
     "ch8-s1-control/activation-override.patch": "6dcb40cc4118035de700f0988a6766c96aad8f4def76513f0f10f275d091c356",
-    "ch8-s1-control/check_package.py": "6d87bdc922af8dcd750512fcccf6b1cb2ff97f554e3fa6b352257980b60b7139",
-    "ch8-s1-control/collect.py": "e5127d7fd1982eaac300cf1a0abe4897c28751aaae3bd914b3de8a9492f17dee",
+    "ch8-s1-control/check_package.py": "092be5eb1c4862a3081445a53cf2f129d0c419c3f130a81da761de11472a81e5",
+    "ch8-s1-control/collect.py": "bb9170a58af1e0cfcb93d9758730265f2ae78b019c7a0a9b50d348cca45cd6e7",
     "ch8-s1-control/negative_oracle.py": "fabd41fb31e37ea79239e4798f38aa81cd068abad0d00281d1d93d936f59681c",
-    "ch8-s1-control/runner.py": "d3010c4f629bcba93ef88820915fabebdca36b88110296e1d21fc61220ab1374",
-    "ch8-s1-control/test_package.py": "f1a05ece77d37b657701d0b173e364a1ac6e3f02f61fd6c8dc426f9c18de7cc2",
-    "ch8-s1-control/test_runner.py": "b8de6214486b13460d6bf30d65da48a762b5ac0c0e086f2a34e5f3a1cfd22632",
+    "ch8-s1-control/runner.py": "8c35580085d490ae42053d8064b3a35a21ad457d9c80440f595efe095ab8edb7",
+    "ch8-s1-control/test_package.py": "ab1dac733bf15fe43e7b62fa66f384ce8ef8c6c8910045262e227b21d1dd44c7",
+    "ch8-s1-control/test_runner.py": "d8e9e479c4dbf21178f6d28b0e68bbddf6defe8d8ffc2e003fa31bb5e838c55a",
     "ch8-s1-control/test_s104.py": "cf729fca7df6db47628bb2c17dda1eececf80ddaaa2dc07de57e0731ba16e59d",
     "ch8-s1-control/fixtures/s104-rich-fragment.json": "08958a31eb173ce59173a588ffd9e785ed9cef0086a733b7fc998af843c054cc",
-    "ch8-s1-control/pack_evidence.py": "5343a2e17bb71baa06b74413ae3ff6adc8b678c91af7e343e018e7ad7001b408",
-    "ch8-s1-control/rich_evidence.py": "60833d357aae37877842b6cb7278bd9098dcfec81291aa2164c2203802099882",
-    "ch8-s1-control/test_s105.py": "588a346818b33e00fb02b510d616b7b787f184b00ac5a5b10cfad8b8cf46455e"
+    "ch8-s1-control/pack_evidence.py": "833004929291e3a6a96011c8579852fce7520e5dea6abd3af2c7611675619e8b",
+    "ch8-s1-control/rich_evidence.py": "1c778852fd6c7d4542634424af7801e49e2f7074574b411f6c34a9fb86ab5139",
+    "ch8-s1-control/test_s105.py": "588a346818b33e00fb02b510d616b7b787f184b00ac5a5b10cfad8b8cf46455e",
+    "ch8-s1-control/test_s107.py": "07f08fba39af05d4745b524ddc18e21edcc776a8b7d487a1fea49ac88afaf5f0",
+    "ch8-s1-control/binding_metadata.py": "8af48498fe256283dcbe7a1f7bd766e213c2ab83e28008e23bd6bb9811c57030"
   },
   "budgets": {
     "jobs": 1,
@@ -1325,6 +1327,7 @@
     "ch8-s1-control/CI-REQUEST.json",
     "ch8-s1-control/activation-default.patch",
     "ch8-s1-control/activation-override.patch",
+    "ch8-s1-control/binding_metadata.py",
     "ch8-s1-control/check_package.py",
     "ch8-s1-control/collect.py",
     "ch8-s1-control/fixtures/s104-rich-fragment.json",
@@ -1335,7 +1338,8 @@
     "ch8-s1-control/test_package.py",
     "ch8-s1-control/test_runner.py",
     "ch8-s1-control/test_s104.py",
-    "ch8-s1-control/test_s105.py"
+    "ch8-s1-control/test_s105.py",
+    "ch8-s1-control/test_s107.py"
   ],
   "source_bindings": {
     "stable_default_cell": {
@@ -1925,7 +1929,7 @@
     "phase_seconds": 8100,
     "group_wall_seconds": "compile900 + sum(root600) + cleanup10; per job group partition only"
   },
-  "control_parent": "40b5d9cf48900ff1e227e1fbba24cb5b2edbf8d5",
+  "control_parent": "b25dd39a46ba90b167500997d546a5f2f5bd8f3b",
   "legacy_symbolic_rows": [
     {
       "id": "freeze_copy_u8",
@@ -2383,5 +2387,9 @@
     "uncompressed_cap_per_group": 33554432,
     "aggregate_compressed_cap": 117440512,
     "raw_stdout_uploaded": false
-  }
+  },
+  "binary_snapshot_policy": "Fixed kani-driver/kani-compiler/CBMC before and protected after child shutdown; independent of export/rich validation; missing/drift/error => UNKNOWN",
+  "location_exception_policy": "S1-07_EXACT_STOCK_UNREACHABLE_LOCATION_ONLY_V1: exact 18 row/variant observations, 2 IDs, class/description/SUCCESS/original display; null sites retained; offline w11 admission",
+  "binding_metadata_policy": "Same-invocation fresh target namespace; bounded exact native kani-metadata JSON bytes plus export/rich/compile manifest and input/config/source/variant/binary hashes; runner UUID is not compiler-instance identity. Missing compiler-instance/impl/substitution/clause/expansion/property-MIR edges remain UNKNOWN for offline w11.",
+  "binding_metadata_requirements_sha256": "48dba27cacf1933770e4ec61c257a24318456ce5096cac949f9ad886887e3589"
 }

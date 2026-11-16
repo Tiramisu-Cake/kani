@@ -132,7 +132,7 @@ class PackageTests(unittest.TestCase):
                     if not step.get('uses','').startswith('actions/checkout@'):
                         continue
                     checkout=step['with']['path']
-                    for depth in ([0,1,2,4] if checkout=='control' else [0,1,3]):
+                    for depth in ([0,1,2,3,5] if checkout=='control' else [0,1,3]):
                         bad=copy.deepcopy(doc)
                         bad['jobs'][job_name]['steps'][index]['with']['fetch-depth']=depth
                         path.write_text(fast_dump(bad,sort_keys=False))
@@ -161,6 +161,7 @@ class PackageTests(unittest.TestCase):
             older=commit(origin,'older')
             tool_sha=commit(origin,'tool');git(origin,'branch','tool',tool_sha)
             tool_tree=git(origin,'rev-parse','HEAD^{tree}')
+            commit(origin,'prior control')
             parent=commit(origin,'parent');git(origin,'branch','export',parent)
             std_tree=git(origin,'rev-parse','HEAD^{tree}')
             here=origin/'ch8-s1-control';here.mkdir()

@@ -10,9 +10,9 @@ import subprocess
 import time
 
 HERE = Path(__file__).resolve().parent
-# Frozen graph: control -> control_parent -> tool_sha. Export/tool identity
+# Frozen graph: S1-07 control -> b25 control_parent -> 40b control -> tool_sha. Export/tool identity
 # operations use only HEAD, its tree and the pinned commit; retain their depth 2.
-CHECKOUT_DEPTHS = {'control': 3, 'export': 2, 'tool': 2}
+CHECKOUT_DEPTHS = {'control': 4, 'export': 2, 'tool': 2}
 
 
 def load_yaml(text):
@@ -140,6 +140,7 @@ def check_yaml(path):
         assert steps[-1]['with']['path']=='${{ env.RECEIPT_ROOT }}/group-evidence.json.gz'
         assert 'pack_evidence.py --root' in steps[-2]['run']
         assert 'test_s105.py' in steps[2]['run']
+        assert 'test_s107.py' in steps[2]['run']
     return {'yaml':'PASS','scalar_types':'NATIVE_LITERAL_PASS',
             'runner_context':'STEP_ENV_ONLY','checkout_depth':dict(CHECKOUT_DEPTHS),
             'layout':['control','export','tool'],'dispatch':'NOT_RUN'}

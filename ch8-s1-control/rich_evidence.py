@@ -14,6 +14,40 @@ CHECK_BUCKETS = ('failure', 'unreachable', 'undetermined', 'error', 'unknown', '
 COVER_BUCKETS = ('satisfied', 'unsatisfiable', 'unreachable', 'undetermined', 'error', 'unknown', 'other')
 
 
+# Coordinator-authorized location-only exception. Exact same-row identities from
+# S1-06; no source site is reconstructed and offline admission remains pending.
+LOCATION_POLICY = 'S1-07_EXACT_STOCK_UNREACHABLE_LOCATION_ONLY_V1'
+_SMALLSORT = 'slice::sort::shared::smallsort::'
+_MODEL = _SMALLSORT + 'verify::sorting_model::'
+_LOCATION_U8 = (_SMALLSORT + 'small_sort_general_with_scratch::<u8, ' +
+                _MODEL + 'KeyLess<u8>>.unreachable.1')
+_LOCATION_NONCOPY = (_SMALLSORT + 'small_sort_general_with_scratch::<' + _MODEL +
+                     'NonCopyByte, ' + _MODEL + 'KeyLess<' + _MODEL +
+                     'NonCopyByte>>.unreachable.1')
+LOCATION_EXCEPTION_BINDINGS = {
+    _SMALLSORT + 'verify::sorting_entry_smoke::' + family + '_n' + str(n): pid
+    for family, pid in (('freeze_copy_u8', _LOCATION_U8),
+                        ('freeze_default_noncopy', _LOCATION_NONCOPY),
+                        ('stable_freeze_u8', _LOCATION_U8),
+                        ('unstable_freeze_u8', _LOCATION_U8))
+    for n in range(4)
+}
+LOCATION_EXCEPTION_BINDINGS[_SMALLSORT + 'verify::sorting_entry_controls::stable_freeze_activation'] = _LOCATION_U8
+
+
+
+def location_exception(harness, p):
+    pid = LOCATION_EXCEPTION_BINDINGS.get(harness)
+    if pid is None:
+        return False
+    function = pid.removesuffix('.unreachable.1')
+    return (p.get('id') == pid and p.get('display_id') == pid and
+            p.get('class') == 'unreachable' and p.get('status') == 'SUCCESS' and
+            p.get('description') == 'unreachable code' and
+            p.get('file') is None and p.get('line') is None and
+            p.get('location_display') == 'library/core/src/lib.rs:0:0 in function ' + function)
+
+
 def require(ok, message):
     if not ok:
         raise ValueError(message)
@@ -178,13 +212,21 @@ class RegularEvidence:
         # merely because its decoder has no streaming missing_sites list.
         require(all(isinstance(p.get('file'), str) and p['file'] and
                     isinstance(p.get('line'), str) and re.fullmatch(r'[1-9][0-9]*', p['line'])
-                    for records in self.records.values() for p in records),
+                    or location_exception(harness, p)
+                    for harness, records in self.records.items() for p in records),
                 'rich metadata incomplete: file/line missing')
         self.complete = True
+
+    def location_exceptions(self):
+        return [{'policy': LOCATION_POLICY, 'harness': name, 'property': dict(p),
+                 'scope': 'LOCATION_ONLY', 'qualified_acceptance': 'PENDING_OFFLINE_ACCEPTANCE'}
+                for name, records in self.records.items() for p in records
+                if location_exception(name, p)]
 
     def document(self):
         return {'schema': 'ch8-s1-05-rich-v1', 'state': 'COMPLETE' if self.complete else 'INCOMPLETE',
                 'error': self.error, 'observed_stdout_bytes': self.bytes,
                 'missing_sites': self.missing_sites,
+                'location_exceptions': self.location_exceptions(),
                 'harnesses': [{'name': k, 'properties': v} for k, v in self.records.items()],
                 'qualified_acceptance': 'PENDING_OFFLINE_ACCEPTANCE', 'proof_credit': 'NONE'}
