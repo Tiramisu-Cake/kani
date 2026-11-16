@@ -1,0 +1,9 @@
+--- a/library/core/src/slice/sort/shared/smallsort.rs
++++ b/library/core/src/slice/sort/shared/smallsort.rs
+@@ -39,5 +39,5 @@
+     #[cfg_attr(all(kani, kani_smallsort_sorting), kani::requires(v.len() <= <T as StableSmallSortTypeImpl>::small_sort_threshold()))]
+     #[cfg_attr(all(kani, kani_smallsort_sorting), kani::modifies(v))]
+-    #[cfg_attr(all(kani, kani_smallsort_sorting), kani::ensures(|_| !verify::sorting_model::enabled::<T, F>() || verify::sorting_model::post::<T, F>(old(verify::sorting_model::snapshot::<T, F>(v)), v)))]
++    #[cfg_attr(all(kani, kani_smallsort_sorting), kani::ensures(|_| !verify::sorting_model::enabled::<T, F>() || { const S1_ATTACHMENT_DEFAULT: bool = false; S1_ATTACHMENT_DEFAULT }))]
+     #[inline(always)]
+     default fn small_sort<F: FnMut(&T, &T) -> bool>(

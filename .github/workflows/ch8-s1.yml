@@ -1,0 +1,117 @@
+name: CH8 S1 six actual bodies
+on:
+  push:
+    branches: ["uninit-ci/ch8-s1k-*"]
+permissions:
+  contents: read
+concurrency:
+  group: ch8-s1-fork
+  cancel-in-progress: false
+jobs:
+  s1:
+    if: ${{ github.repository == 'Tiramisu-Cake/kani' && github.event_name == 'push' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    strategy:
+      max-parallel: 1
+      matrix:
+        lane: [s1]
+    steps:
+      - name: Begin setup budget
+        timeout-minutes: 1
+        env:
+          SETUP_EPOCH: ${{ runner.temp }}/ch8-s1-setup-epoch
+        run: python3 -c 'import os,time; open(os.environ["SETUP_EPOCH"],"w").write(str(time.time()))'
+      - name: Checkout CI control
+        timeout-minutes: 2
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
+          path: control
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Validate control and synthetic wrapper
+        timeout-minutes: 1
+        working-directory: control/ch8-s1-control
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: |
+          python3 check_package.py control --repo ..
+          python3 -m unittest -v test_runner.py test_package.py
+      - name: Read immutable export pins
+        timeout-minutes: 1
+        id: pins
+        run: |
+          python3 - <<'PYCODE'
+          import json, os
+          r = json.load(open('control/ch8-s1-control/CI-REQUEST.json'))
+          assert r['status'] == 'READY'
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+              f.write('std=' + r['std_sha'] + '\n')
+              f.write('tool=' + r['tool_sha'] + '\n')
+          PYCODE
+      - name: Checkout production model export
+        timeout-minutes: 5
+        uses: actions/checkout@v6
+        with:
+          repository: Tiramisu-Cake/verify-rust-std
+          ref: ${{ steps.pins.outputs.std }}
+          path: export
+          fetch-depth: 2
+          persist-credentials: false
+          submodules: true
+      - name: Checkout immutable upstream tool
+        timeout-minutes: 2
+        uses: actions/checkout@v6
+        with:
+          repository: model-checking/kani
+          ref: ${{ steps.pins.outputs.tool }}
+          path: tool
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Check all source identities
+        timeout-minutes: 1
+        run: python3 control/ch8-s1-control/runner.py check-source --std export --tool tool
+      - name: Setup exact stock tool
+        timeout-minutes: 15
+        uses: ./tool/.github/actions/setup
+        with:
+          os: ubuntu-24.04
+          kani_dir: tool
+      - name: Build exact stock tool once
+        timeout-minutes: 15
+        working-directory: tool
+        env:
+          CARGO_BUILD_JOBS: "1"
+          SETUP_EPOCH: ${{ runner.temp }}/ch8-s1-setup-epoch
+          RECEIPT_ROOT: ${{ runner.temp }}/ch8-s1-receipts
+        run: >-
+          python3 ../control/ch8-s1-control/check_package.py build
+          --tool . --epoch "$SETUP_EPOCH" --out "$RECEIPT_ROOT/setup"
+      - name: Run grouped S1 batch with per-harness timeout
+        timeout-minutes: 75
+        env:
+          RECEIPT_ROOT: ${{ runner.temp }}/ch8-s1-receipts
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: |
+          python3 control/ch8-s1-control/runner.py run --std export --tool tool --out "$RECEIPT_ROOT"
+      - name: Materialize bounded fallback
+        if: always()
+        timeout-minutes: 2
+        env:
+          RECEIPT_ROOT: ${{ runner.temp }}/ch8-s1-receipts
+          JOB_STATUS: ${{ job.status }}
+        run: python3 control/ch8-s1-control/check_package.py fallback --out "$RECEIPT_ROOT"
+      - name: Upload bounded evidence
+        if: always()
+        timeout-minutes: 13
+        uses: actions/upload-artifact@v4
+        env:
+          RECEIPT_ROOT: ${{ runner.temp }}/ch8-s1-receipts
+        with:
+          name: ch8-s1-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ env.RECEIPT_ROOT }}/
+            !${{ env.RECEIPT_ROOT }}/**/target/**
+          if-no-files-found: error
+          retention-days: 7
