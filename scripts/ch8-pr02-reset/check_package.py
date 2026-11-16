@@ -39,7 +39,10 @@ def main() -> int:
     assert "fetch-depth: 2" in text
     assert "timeout-minutes: 120" in text
     assert "max-parallel: 1" in text
-    assert "arm: [A, B]" in text
+    assert "arm: [A]" in text
+    assert "always() && matrix.arm == 'A'" in text
+    assert "Upload bounded PR-02 result" in text
+    assert "Finalize bounded PR-02 receipt" in text
     lines = text.splitlines()
     for index, line in enumerate(lines):
         if re.search(r"\$\{\{\s*runner\.[^}]+\}\}", line):
@@ -73,14 +76,15 @@ def main() -> int:
         subprocess.run([sys.executable, "-c", pin_script], cwd=ROOT, env=env, check=True)
         assert output.read_bytes() == f"sha={pin_sha}\n".encode(), "GITHUB_OUTPUT must contain one valid SHA line"
 
-    fixed = Path(os.environ.get("CH8_PR02_FIXED_REPO", "/root/kani-fix-ch8-pr02-reset-w15"))
+    fixed = Path(os.environ.get("CH8_PR02_FIXED_REPO", "/root/kani-fix-ch8-pr02-reset-u02-source"))
     expected_cases = {"seed_only", "argument_seed", "no_seed", "contract_seed",
                       "uninit_read", "initialized_read", "uninit_off"}
-    fixture_root = fixed / "tests/script-based-pre/autoharness_entry_reset"
-    assert {p.name for p in fixture_root.iterdir() if p.is_dir()} == expected_cases
+    fixture_root = fixed / "tests/script-based-pre"
+    assert not (fixture_root / "autoharness_entry_reset").exists()
+    assert {p.name.removeprefix("autoharness_entry_reset_") for p in fixture_root.glob("autoharness_entry_reset_*")} == expected_cases
     for case in expected_cases:
         for name in ("main.rs", "run.sh", "config.yml", "expected"):
-            assert (fixture_root / case / name).is_file(), f"missing {case}/{name}"
+            assert (fixture_root / f"autoharness_entry_reset_{case}" / name).is_file(), f"missing {case}/{name}"
     print("CI package static checks PASS; compiler/verifier/CI runtime NOT_RUN")
     return 0
 

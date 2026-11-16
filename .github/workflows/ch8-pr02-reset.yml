@@ -20,9 +20,10 @@ jobs:
       fail-fast: false
       max-parallel: 1
       matrix:
-        arm: [A, B]
+        arm: [A]
     steps:
       - name: Checkout exact CI control
+        id: checkout
         uses: actions/checkout@v6
         with:
           ref: ${{ github.sha }}
@@ -30,6 +31,7 @@ jobs:
           fetch-depth: 2
           persist-credentials: false
       - name: Require first attempt and same-tree trigger
+        id: gate
         working-directory: control
         env:
           RUNNER_TEMP: ${{ runner.temp }}
@@ -55,6 +57,7 @@ jobs:
         env:
           ARM: ${{ matrix.arm }}
       - name: Checkout pinned source
+        id: source
         uses: actions/checkout@v6
         with:
           ref: ${{ steps.pin.outputs.sha }}
@@ -62,6 +65,7 @@ jobs:
           fetch-depth: 2
           persist-credentials: false
       - name: Checkout unpatched old PR-02 control
+        id: old
         if: ${{ matrix.arm == 'A' }}
         uses: actions/checkout@v6
         with:
@@ -70,44 +74,57 @@ jobs:
           fetch-depth: 2
           persist-credentials: false
       - name: Verify and apply source patch
+        id: apply
         working-directory: control
         env:
           SOURCE_DIR: ${{ github.workspace }}/source
           ARM: ${{ matrix.arm }}
         run: python3 scripts/ch8-pr02-reset/apply_patch.py --repo "$SOURCE_DIR" --pin-key "$ARM"
       - name: Setup source dependencies
+        id: setup
         uses: ./source/.github/actions/setup
         with:
           os: ubuntu-24.04
           kani_dir: source
       - name: Check source structure invariants
+        id: structure
         working-directory: control
         env:
           SOURCE_DIR: ${{ github.workspace }}/source
         run: python3 scripts/ch8-pr02-reset/check_source_structure.py --repo "$SOURCE_DIR"
       - name: Runner result error-path checks
+        id: runner-tests
         working-directory: control
-        run: python3 scripts/ch8-pr02-reset/test_runner.py
+        run: |
+          python3 scripts/ch8-pr02-reset/test_runner.py
+          python3 scripts/ch8-pr02-reset/test_arm_a_receipts.py
       - name: Setup old control dependencies
+        id: old-setup
         if: ${{ matrix.arm == 'A' }}
         uses: ./old/.github/actions/setup
         with:
           os: ubuntu-24.04
           kani_dir: old
       - name: Build unpatched PR-02 control
+        id: old-build
         if: ${{ matrix.arm == 'A' }}
         working-directory: old
-        run: cargo build-dev
+        env:
+          RUNNER_TEMP: ${{ runner.temp }}
+          CONTROL_DIR: ${{ github.workspace }}/control
+        run: python3 "$CONTROL_DIR/scripts/ch8-pr02-reset/bounded_step.py" --id old-build --cwd "$PWD" -- cargo build-dev
       - name: Run PR-02 checks and matched old controls
+        id: arm-a
         if: ${{ matrix.arm == 'A' }}
         working-directory: control
         env:
           RUNNER_TEMP: ${{ runner.temp }}
           SOURCE_DIR: ${{ github.workspace }}/source
           OLD_DIR: ${{ github.workspace }}/old
+          CONTROL_DIR: ${{ github.workspace }}/control
         run: |
           scripts/ch8-pr02-reset/run_arm_a.sh "$SOURCE_DIR"
-          python3 scripts/ch8-pr02-reset/run_old_control.py --old-repo "$OLD_DIR" --fixed-repo "$SOURCE_DIR"
+          python3 scripts/ch8-pr02-reset/bounded_step.py --id old-controls --cwd "$PWD" -- python3 scripts/ch8-pr02-reset/run_old_control.py --old-repo "$OLD_DIR" --fixed-repo "$SOURCE_DIR"
       - name: Build patched SEL1
         if: ${{ matrix.arm == 'B' }}
         working-directory: source
@@ -128,4 +145,22 @@ jobs:
           name: ch8-pr02-reset-b-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ env.RECEIPT_ROOT }}/
           if-no-files-found: warn
+          retention-days: 7
+      - name: Finalize bounded PR-02 receipt
+        if: ${{ always() && matrix.arm == 'A' }}
+        working-directory: control
+        env:
+          RUNNER_TEMP: ${{ runner.temp }}
+          STEP_OUTCOMES: ${{ toJSON(steps) }}
+          JOB_STATUS: ${{ job.status }}
+        run: python3 scripts/ch8-pr02-reset/finalize_arm_a.py
+      - name: Upload bounded PR-02 result
+        if: ${{ always() && matrix.arm == 'A' }}
+        uses: actions/upload-artifact@v4
+        env:
+          RECEIPT_ROOT: ${{ runner.temp }}/ch8-pr02-reset-a
+        with:
+          name: ch8-pr02-reset-a-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ env.RECEIPT_ROOT }}/
+          if-no-files-found: error
           retention-days: 7

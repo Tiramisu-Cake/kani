@@ -21,10 +21,10 @@ def main() -> int:
     parser.add_argument("--old-repo", required=True, type=Path)
     parser.add_argument("--fixed-repo", required=True, type=Path)
     args = parser.parse_args()
-    fixture_root = args.fixed_repo / "tests/script-based-pre/autoharness_entry_reset"
+    fixture_root = args.fixed_repo / "tests/script-based-pre"
     kani = args.old_repo / "scripts/kani"
     for case in CASES:
-        case_dir = fixture_root / case
+        case_dir = fixture_root / f"autoharness_entry_reset_{case}"
         source = case_dir / "main.rs"
         script = case_dir / "run.sh"
         if not source.is_file():

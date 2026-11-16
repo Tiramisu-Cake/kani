@@ -40,13 +40,13 @@ def main() -> int:
     assert "tracked_object_id = super::any()" in reset
     assert "tracked_offset = super::any()" in reset
     assert "value = false" in reset
-    cases = repo / "tests/script-based-pre/autoharness_entry_reset"
-    negative = (cases / "uninit_read/main.rs").read_text()
+    cases = repo / "tests/script-based-pre"
+    negative = (cases / "autoharness_entry_reset_uninit_read/main.rs").read_text()
     assert "ptr.add(3).read()" in negative and "union Bytes" in negative
     assert "MaybeUninit" not in negative and "storage" not in negative
     body = lambda path: re.search(r"fn seed_only\(\).*?\n\}", path.read_text(), re.S).group(0)
-    assert body(cases / "uninit_off/main.rs") == body(cases / "seed_only/main.rs")
-    assert "uninit-checks" not in (cases / "uninit_off/run.sh").read_text()
+    assert body(cases / "autoharness_entry_reset_uninit_off/main.rs") == body(cases / "autoharness_entry_reset_seed_only/main.rs")
+    assert "uninit-checks" not in (cases / "autoharness_entry_reset_uninit_off/run.sh").read_text()
     print("static source invariants PASS; emitted wrapper/model runtime evidence NOT_RUN")
     return 0
 
