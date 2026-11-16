@@ -1,0 +1,5 @@
+[
+  {"id":"initialized-slot","file":"tests/expected/uninit/issue-5151/initialized-slot.rs","harness":"drop_initialized_slot","expected_stock":"UNSUPPORTED_UNION","expected_prototype":"SUCCESS","flags":["-Z","uninit-checks"]},
+  {"id":"original-empty-drop","file":"tests/expected/uninit/issue-5151/original-empty-drop.rs","harness":"drop_uninit_in_array","expected_stock":"UNSUPPORTED_UNION","expected_prototype":"COMPLETED_WITHOUT_UNSUPPORTED","semantic_target":"UNINIT_FAILURE","flags":["-Z","uninit-checks"]},
+  {"id":"read-in-drop","file":"tests/expected/uninit/issue-5151/read-in-drop.rs","harness":"read_in_drop_of_uninit_slot","expected_stock":"UNSUPPORTED_UNION","expected_prototype":"UNINIT_FAILURE","flags":["-Z","uninit-checks"]}
+]

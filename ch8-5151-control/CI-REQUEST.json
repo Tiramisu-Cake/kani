@@ -1,0 +1,89 @@
+{
+  "activation": {
+    "control_commit_message_suffix": "[skip ci]",
+    "requires_separate_coordinator_authorization": true,
+    "trigger": "same-tree child on uninit-ci/ch8-5151-* after skip-ci control commit",
+    "workflow_preflight": "trigger tree equals control tree; control message contains [skip ci]; control parent is pinned stock commit"
+  },
+  "artifact": {
+    "export_limit_bytes": 8388608,
+    "log_head_bytes": 131072,
+    "log_tail_bytes": 4096,
+    "retention_days": 7
+  },
+  "attempt": 1,
+  "authority": {
+    "ci": false,
+    "ledger": false,
+    "local_compiler_verifier": false,
+    "publications": false,
+    "push": false
+  },
+  "branch_prefix": "uninit-ci/ch8-5151-",
+  "caps": {
+    "attempt": 1,
+    "build_seconds": 1800,
+    "fail_fast": false,
+    "job_minutes": 55,
+    "max_parallel": 1,
+    "retries": 0,
+    "row_seconds": 60
+  },
+  "control_parent": "0aac16ef62da9e9d5645782d458593e5d78143ba",
+  "control_repository": "Tiramisu-Cake/kani",
+  "dispatch_authorized": false,
+  "expectations": {
+    "prototype": {
+      "initialized-slot": "SUCCESS",
+      "original-empty-drop": "COMPLETED_WITHOUT_UNSUPPORTED; semantic target UNINIT_FAILURE; SUCCESS is an observed empty-drop limitation",
+      "read-in-drop": "UNINIT_FAILURE"
+    },
+    "stock": "exact pinned MaybeUninit union-layout diagnostic with nonzero status on all three rows"
+  },
+  "invocation_count_per_pin": 3,
+  "limitations": [
+    "Expectations are source-level predictions until separately authorized workflow execution.",
+    "A completed SUCCESS for original-empty-drop records an unresolved semantic limitation.",
+    "Runtime proof credit remains NONE."
+  ],
+  "payload_sha256": {
+    ".github/workflows/ch8-5151.yml": "69f77d4f5c00dc0e521a1cf624d2130ae525153ca3ea716300e8a89e87040e84",
+    "ch8-5151-control/HANDOFF.md": "8065c0845ae250488b5853da5413e1f68075fea4e0a8145df3451dd311d5b5e3",
+    "ch8-5151-control/ORACLES.md": "a192b1e1c53067d6cdb07e56c65ea7bba182451140166d912d86516c25cf6993",
+    "ch8-5151-control/PACKAGE.md": "af091d1ec7cf1edc34c30dae2564cfe6e83bb5dc84f0f333d030b34f1c120a82",
+    "ch8-5151-control/check_package.py": "15fda0e5cc5fa75cf195bfd8abf95a6ca3305d3568524041574a4227c7caf66e",
+    "ch8-5151-control/rows.json": "0adec0016d1891013a564ae174cf34fc384427bfb85893c3909008158c1e5bc9",
+    "ch8-5151-control/runner.py": "c43ac4decbe9b0e2b28c78b892ef3c681f48b110fe70251842e5a2177f35d425",
+    "ch8-5151-control/test_runner.py": "8238d5792320164a9920a1e9c906356b01ed2786af8844a5eb9c428b2b2ca7cd",
+    "tests/expected/uninit/issue-5151/initialized-slot.expected": "deb74bc3e432216ac6aa5ccdc12fcd79544634c60727d2838e5a1cbd5c410f55",
+    "tests/expected/uninit/issue-5151/initialized-slot.rs": "e3dc76718ab9426ab19ecbedd05a713d8b33cba1319315ca35f546f4b9c36711",
+    "tests/expected/uninit/issue-5151/original-empty-drop.expected": "44b7f93792c645277e6d474d747e0cd98eb208e0abd18ec26ad770bd9c585afa",
+    "tests/expected/uninit/issue-5151/original-empty-drop.rs": "aba3d48a695478583354f937d9a41d894cc0c4a548dbcee7181752248cd5d2cf",
+    "tests/expected/uninit/issue-5151/read-in-drop.expected": "885c3cd269ee77010c74240d94b214474c0f0f344435532cf097ac6e205f95e3",
+    "tests/expected/uninit/issue-5151/read-in-drop.rs": "013e89594258bd63f10c85c39b25d4252cc479ba04da7652352084b9f7df6848"
+  },
+  "pins": {
+    "prototype": {
+      "repository": "Tiramisu-Cake/kani",
+      "sha": "8e299aa6243bc5f06a29c51e98aafa9564478220",
+      "tree": "9829702c1aa0ecb73c860fc0ad5451757917d6cb"
+    },
+    "stock": {
+      "repository": "model-checking/kani",
+      "sha": "0aac16ef62da9e9d5645782d458593e5d78143ba",
+      "tree": "9d8bc9312bf955ef126d32b819b3cd0ed105ed2b"
+    }
+  },
+  "planned_dispatch_count": 0,
+  "proof_credit": "NONE",
+  "rows_sha256": "0adec0016d1891013a564ae174cf34fc384427bfb85893c3909008158c1e5bc9",
+  "schema": "ch8-5151-control-request-v1",
+  "status": "READY",
+  "task": "/root/verify-rust-std-kani3300-g0/research/challenge-8/kani-k1/TASK-CH8-5151-REPRO-W13.md",
+  "toolchain": {
+    "cbmc": "6.11.0",
+    "kissat": "4.0.1",
+    "rust": "nightly-2026-10-23"
+  },
+  "total_exact_invocations": 6
+}
