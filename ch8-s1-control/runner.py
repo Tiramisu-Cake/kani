@@ -26,8 +26,8 @@ import binding_metadata
 
 HERE = Path(__file__).resolve().parent
 REQUEST_PATH = HERE / "CI-REQUEST.json"
-STD_SHA = "5be85699b8826e3286c0bf89efb9affefac0acb5"
-STD_TREE = "a9caaa953d579641ecc6a4b84b5c16fa1d23563b"
+STD_SHA = "99e8456d200fff1299ee5756279cddb23921dc65"
+STD_TREE = "b769b084f9982cbcb166229b29b6bd2bff136c51"
 TOOL_SHA = "0aac16ef62da9e9d5645782d458593e5d78143ba"
 TOOL_TREE = "9d8bc9312bf955ef126d32b819b3cd0ed105ed2b"
 MAX_ROW_SECONDS = 600
