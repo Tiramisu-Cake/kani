@@ -1,4 +1,4 @@
-name: CH8 S1-05 rich evidence
+name: CH8 S1-08 role labels
 'on':
   push:
     branches:
@@ -33,7 +33,7 @@ jobs:
       with:
         ref: ${{ github.sha }}
         path: control
-        fetch-depth: 4
+        fetch-depth: 5
         persist-credentials: false
     - name: Validate control and synthetic wrapper
       timeout-minutes: 1
@@ -42,7 +42,7 @@ jobs:
         PYTHONDONTWRITEBYTECODE: '1'
       run: 'python3 check_package.py control --repo ..
 
-        python3 -m unittest -v test_runner.py test_package.py test_s104.py test_s105.py test_s107.py
+        python3 -m unittest -v test_runner.py test_package.py test_s104.py test_s105.py test_s107.py test_s108.py test_s108r1.py
 
         '
     - name: Read immutable export pins
@@ -142,7 +142,7 @@ jobs:
       with:
         ref: ${{ github.sha }}
         path: control
-        fetch-depth: 4
+        fetch-depth: 5
         persist-credentials: false
     - name: Validate control and synthetic wrapper
       timeout-minutes: 1
@@ -151,7 +151,7 @@ jobs:
         PYTHONDONTWRITEBYTECODE: '1'
       run: 'python3 check_package.py control --repo ..
 
-        python3 -m unittest -v test_runner.py test_package.py test_s104.py test_s105.py test_s107.py
+        python3 -m unittest -v test_runner.py test_package.py test_s104.py test_s105.py test_s107.py test_s108.py test_s108r1.py
 
         '
     - name: Read immutable export pins
@@ -251,7 +251,7 @@ jobs:
       with:
         ref: ${{ github.sha }}
         path: control
-        fetch-depth: 4
+        fetch-depth: 5
         persist-credentials: false
     - name: Validate control and synthetic wrapper
       timeout-minutes: 1
@@ -260,7 +260,7 @@ jobs:
         PYTHONDONTWRITEBYTECODE: '1'
       run: 'python3 check_package.py control --repo ..
 
-        python3 -m unittest -v test_runner.py test_package.py test_s104.py test_s105.py test_s107.py
+        python3 -m unittest -v test_runner.py test_package.py test_s104.py test_s105.py test_s107.py test_s108.py test_s108r1.py
 
         '
     - name: Read immutable export pins
@@ -367,7 +367,7 @@ jobs:
       with:
         ref: ${{ github.sha }}
         path: control
-        fetch-depth: 4
+        fetch-depth: 5
         persist-credentials: false
     - name: Validate control and synthetic wrapper
       timeout-minutes: 1
@@ -376,7 +376,7 @@ jobs:
         PYTHONDONTWRITEBYTECODE: '1'
       run: 'python3 check_package.py control --repo ..
 
-        python3 -m unittest -v test_runner.py test_package.py test_s104.py test_s105.py test_s107.py
+        python3 -m unittest -v test_runner.py test_package.py test_s104.py test_s105.py test_s107.py test_s108.py test_s108r1.py
 
         '
     - name: Read immutable export pins
