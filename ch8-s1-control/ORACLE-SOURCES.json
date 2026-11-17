@@ -1,0 +1,286 @@
+{
+  "schema": "ch8-s1-08-r1-oracle-source-v1",
+  "std_sha": "99e8456d200fff1299ee5756279cddb23921dc65",
+  "std_tree": "b769b084f9982cbcb166229b29b6bd2bff136c51",
+  "logical_reference_control": "9ccd882ef2460fbc97400594e7e3dfc884a4a997",
+  "assurance": "STATIC_SOURCE_EXPECTATIONS; no new verifier/exporter results or failure-driven ID selection",
+  "sources": {
+    "production": {
+      "library/core/src/slice/sort/shared/smallsort/verify/sorting_model_controls.rs": "dd4e8eca1761be66ea07508c7678175d54e4b2baf48469ae4866c9cb68e12e0d",
+      "library/core/src/slice/sort/shared/smallsort.rs": "45ae77ad0bb2a74cfab1aa53d5e1c48311f0b483c94eb52d96d97f680bd39651"
+    },
+    "activation-default": {
+      "library/core/src/slice/sort/shared/smallsort.rs": "ad516502d4783df0379ea3f48805c408b5bcde3ec064432476610080e3ecd0bb"
+    },
+    "activation-override": {
+      "library/core/src/slice/sort/shared/smallsort.rs": "90f20bce619de5535e633fc97f4a9dfd46715dc48e54912f5d1c9029984b131f"
+    }
+  },
+  "oracles": {
+    "activation_descending_rejected": {
+      "variant": "production",
+      "mode": "Original",
+      "oracle_without_id": {
+        "selector": "slice::sort::shared::smallsort::verify::sorting_model_controls::activation_descending_rejected",
+        "group": "production-u34",
+        "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_model_controls.rs",
+        "export_file": "/home/runner/work/kani/kani/export/library/core/src/slice/sort/shared/smallsort/verify/sorting_model_controls.rs",
+        "line": 90,
+        "class": "assertion",
+        "source_sha256": "dd4e8eca1761be66ea07508c7678175d54e4b2baf48469ae4866c9cb68e12e0d",
+        "source_line": "    assert!(enabled::<T, F>(), \"S1_ACTIVATION_UNSUPPORTED_PAIR\");",
+        "assertion_context": [
+          "    assert!(enabled::<T, F>(), \"S1_ACTIVATION_UNSUPPORTED_PAIR\");",
+          "}",
+          ""
+        ],
+        "intended_message": "S1_ACTIVATION_UNSUPPORTED_PAIR",
+        "export_sha256": "f90815bd756f8cdf5065db3ccfaa65770686484be0f48ee6153ff0dd1ca98f57",
+        "binding": "EXACT_ID_LOCATION_AND_PINNED_ASSERT; not description matching"
+      },
+      "property_id_template": "slice::sort::shared::smallsort::verify::sorting_model_controls::require_active::<u8, {closure@/home/runner/work/kani/kani/export/library/core/src/slice/sort/shared/smallsort/verify/sorting_model_controls.rs:{source_closure_span}}>.assertion.1",
+      "closure_root": "activation_descending_rejected",
+      "assertion_text": "assert!(enabled::<T, F>(), \"S1_ACTIVATION_UNSUPPORTED_PAIR\");"
+    },
+    "activation_effectful_rejected": {
+      "variant": "production",
+      "mode": "Original",
+      "oracle_without_id": {
+        "selector": "slice::sort::shared::smallsort::verify::sorting_model_controls::activation_effectful_rejected",
+        "group": "production-u34",
+        "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_model_controls.rs",
+        "export_file": "/home/runner/work/kani/kani/export/library/core/src/slice/sort/shared/smallsort/verify/sorting_model_controls.rs",
+        "line": 90,
+        "class": "assertion",
+        "source_sha256": "dd4e8eca1761be66ea07508c7678175d54e4b2baf48469ae4866c9cb68e12e0d",
+        "source_line": "    assert!(enabled::<T, F>(), \"S1_ACTIVATION_UNSUPPORTED_PAIR\");",
+        "assertion_context": [
+          "    assert!(enabled::<T, F>(), \"S1_ACTIVATION_UNSUPPORTED_PAIR\");",
+          "}",
+          ""
+        ],
+        "intended_message": "S1_ACTIVATION_UNSUPPORTED_PAIR",
+        "export_sha256": "f90815bd756f8cdf5065db3ccfaa65770686484be0f48ee6153ff0dd1ca98f57",
+        "binding": "EXACT_ID_LOCATION_AND_PINNED_ASSERT; not description matching"
+      },
+      "property_id_template": "slice::sort::shared::smallsort::verify::sorting_model_controls::require_active::<u8, {closure@/home/runner/work/kani/kani/export/library/core/src/slice/sort/shared/smallsort/verify/sorting_model_controls.rs:{source_closure_span}}>.assertion.1",
+      "closure_root": "activation_effectful_rejected",
+      "assertion_text": "assert!(enabled::<T, F>(), \"S1_ACTIVATION_UNSUPPORTED_PAIR\");"
+    },
+    "activation_unsupported_type_rejected": {
+      "variant": "production",
+      "mode": "Original",
+      "oracle_without_id": {
+        "selector": "slice::sort::shared::smallsort::verify::sorting_model_controls::activation_unsupported_type_rejected",
+        "group": "production-u34",
+        "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_model_controls.rs",
+        "export_file": "/home/runner/work/kani/kani/export/library/core/src/slice/sort/shared/smallsort/verify/sorting_model_controls.rs",
+        "line": 90,
+        "class": "assertion",
+        "source_sha256": "dd4e8eca1761be66ea07508c7678175d54e4b2baf48469ae4866c9cb68e12e0d",
+        "source_line": "    assert!(enabled::<T, F>(), \"S1_ACTIVATION_UNSUPPORTED_PAIR\");",
+        "assertion_context": [
+          "    assert!(enabled::<T, F>(), \"S1_ACTIVATION_UNSUPPORTED_PAIR\");",
+          "}",
+          ""
+        ],
+        "intended_message": "S1_ACTIVATION_UNSUPPORTED_PAIR",
+        "export_sha256": "f90815bd756f8cdf5065db3ccfaa65770686484be0f48ee6153ff0dd1ca98f57",
+        "binding": "EXACT_ID_LOCATION_AND_PINNED_ASSERT; not description matching"
+      },
+      "property_id_template": "slice::sort::shared::smallsort::verify::sorting_model_controls::require_active::<mem::maybe_uninit::MaybeUninit<u8>, slice::sort::shared::smallsort::verify::sorting_model::KeyLess<mem::maybe_uninit::MaybeUninit<u8>>>.assertion.1",
+      "closure_root": null,
+      "assertion_text": "assert!(enabled::<T, F>(), \"S1_ACTIVATION_UNSUPPORTED_PAIR\");"
+    },
+    "order_corruption_rejected": {
+      "variant": "production",
+      "mode": "Original",
+      "oracle_without_id": {
+        "selector": "slice::sort::shared::smallsort::verify::sorting_model_controls::order_corruption_rejected",
+        "group": "production-u4",
+        "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_model_controls.rs",
+        "export_file": "/home/runner/work/kani/kani/export/library/core/src/slice/sort/shared/smallsort/verify/sorting_model_controls.rs",
+        "line": 136,
+        "class": "assertion",
+        "source_sha256": "dd4e8eca1761be66ea07508c7678175d54e4b2baf48469ae4866c9cb68e12e0d",
+        "source_line": "    assert!(post::<u8, KeyLess<u8>>(before, &[values[1], values[0]]),",
+        "assertion_context": [
+          "    assert!(post::<u8, KeyLess<u8>>(before, &[values[1], values[0]]),",
+          "        \"S1_ORDER_CORRUPTION_ACCEPTED\");",
+          "}"
+        ],
+        "intended_message": "S1_ORDER_CORRUPTION_ACCEPTED",
+        "export_sha256": "5e9b3be21f70c341a42e5d75d1c32d4d15a646a10a9fb1fe1ccade22459dc485",
+        "binding": "EXACT_ID_LOCATION_AND_PINNED_ASSERT; not description matching"
+      },
+      "property_id_template": "slice::sort::shared::smallsort::verify::sorting_model_controls::order_corruption_rejected.assertion.3",
+      "closure_root": null,
+      "assertion_text": "assert!(post::<u8, KeyLess<u8>>(before, &[values[1], values[0]]),\n        \"S1_ORDER_CORRUPTION_ACCEPTED\");"
+    },
+    "count_corruption_rejected": {
+      "variant": "production",
+      "mode": "Original",
+      "oracle_without_id": {
+        "selector": "slice::sort::shared::smallsort::verify::sorting_model_controls::count_corruption_rejected",
+        "group": "production-u4",
+        "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_model_controls.rs",
+        "export_file": "/home/runner/work/kani/kani/export/library/core/src/slice/sort/shared/smallsort/verify/sorting_model_controls.rs",
+        "line": 147,
+        "class": "assertion",
+        "source_sha256": "dd4e8eca1761be66ea07508c7678175d54e4b2baf48469ae4866c9cb68e12e0d",
+        "source_line": "    assert!(post::<u8, KeyLess<u8>>(before, &corrupt),",
+        "assertion_context": [
+          "    assert!(post::<u8, KeyLess<u8>>(before, &corrupt),",
+          "        \"S1_COUNT_CORRUPTION_ACCEPTED\");",
+          "}"
+        ],
+        "intended_message": "S1_COUNT_CORRUPTION_ACCEPTED",
+        "export_sha256": "5e9b3be21f70c341a42e5d75d1c32d4d15a646a10a9fb1fe1ccade22459dc485",
+        "binding": "EXACT_ID_LOCATION_AND_PINNED_ASSERT; not description matching"
+      },
+      "property_id_template": "slice::sort::shared::smallsort::verify::sorting_model_controls::count_corruption_rejected.assertion.5",
+      "closure_root": null,
+      "assertion_text": "assert!(post::<u8, KeyLess<u8>>(before, &corrupt),\n        \"S1_COUNT_CORRUPTION_ACCEPTED\");"
+    },
+    "invalid_snapshot_rejected": {
+      "variant": "production",
+      "mode": "Original",
+      "oracle_without_id": {
+        "selector": "slice::sort::shared::smallsort::verify::sorting_model_controls::invalid_snapshot_rejected",
+        "group": "production-u34",
+        "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_model_controls.rs",
+        "export_file": "/home/runner/work/kani/kani/export/library/core/src/slice/sort/shared/smallsort/verify/sorting_model_controls.rs",
+        "line": 176,
+        "class": "assertion",
+        "source_sha256": "dd4e8eca1761be66ea07508c7678175d54e4b2baf48469ae4866c9cb68e12e0d",
+        "source_line": "    assert!(post::<u8, KeyLess<u8>>(invalid, &[]), \"S1_ACTIVE_INVALID_TOKEN_ACCEPTED\");",
+        "assertion_context": [
+          "    assert!(post::<u8, KeyLess<u8>>(invalid, &[]), \"S1_ACTIVE_INVALID_TOKEN_ACCEPTED\");",
+          "}"
+        ],
+        "intended_message": "S1_ACTIVE_INVALID_TOKEN_ACCEPTED",
+        "export_sha256": "f90815bd756f8cdf5065db3ccfaa65770686484be0f48ee6153ff0dd1ca98f57",
+        "binding": "EXACT_ID_LOCATION_AND_PINNED_ASSERT; not description matching"
+      },
+      "property_id_template": "slice::sort::shared::smallsort::verify::sorting_model_controls::invalid_snapshot_rejected.assertion.1",
+      "closure_root": null,
+      "assertion_text": "assert!(post::<u8, KeyLess<u8>>(invalid, &[]), \"S1_ACTIVE_INVALID_TOKEN_ACCEPTED\");"
+    },
+    "activation-default": {
+      "variant": "activation-default",
+      "mode": "PFC",
+      "oracle_without_id": {
+        "selector": "slice::sort::shared::smallsort::verify::sorting_entry_controls::stable_default_activation",
+        "description": "|_| !verify::sorting_model::enabled::<T, F>() ||\n{ const S1_ATTACHMENT_DEFAULT: bool = false; S1_ATTACHMENT_DEFAULT }",
+        "file": "library/core/src/slice/sort/shared/smallsort.rs",
+        "export_file": "/home/runner/work/kani/kani/export/library/core/src/slice/sort/shared/smallsort.rs",
+        "line": 41,
+        "class": "assertion",
+        "status": "FAILURE",
+        "source_sha256": "ad516502d4783df0379ea3f48805c408b5bcde3ec064432476610080e3ecd0bb",
+        "source_line": "    #[cfg_attr(all(kani, kani_smallsort_sorting), kani::ensures(|_| !verify::sorting_model::enabled::<T, F>() || { const S1_ATTACHMENT_DEFAULT: bool = false; S1_ATTACHMENT_DEFAULT }))]",
+        "require_only_this_failure": true,
+        "proposal": {
+          "status": "PROPOSED_NEXT_PACKAGE_ONLY; NOT_CURRENT_DETECTION",
+          "selector": "slice::sort::shared::smallsort::verify::sorting_entry_controls::stable_default_activation",
+          "mode": "PFC",
+          "target": "<Cell<u8> as StableSmallSortTypeImpl>::small_sort",
+          "variant": "activation-default",
+          "variant_spec": {
+            "patch": "activation-default.patch",
+            "sha256": "cee9e21c4b5015d6daf53c286f781602d0890e4ed23239f968d228088335dcc3",
+            "changed_file_sha256": {
+              "library/core/src/slice/sort/shared/smallsort.rs": "ad516502d4783df0379ea3f48805c408b5bcde3ec064432476610080e3ecd0bb"
+            },
+            "marker": "S1_ATTACHMENT_DEFAULT",
+            "method": "Stable default Cell"
+          },
+          "property": {
+            "id": "<cell::Cell<u8> as slice::sort::shared::smallsort::StableSmallSortTypeImpl>::small_sort::<slice::sort::shared::smallsort::verify::sorting_model::KeyLess<cell::Cell<u8>>>::{closure#2}.assertion.1",
+            "description": "|_| !verify::sorting_model::enabled::<T, F>() ||\n{ const S1_ATTACHMENT_DEFAULT: bool = false; S1_ATTACHMENT_DEFAULT }",
+            "class": "assertion",
+            "file": "/home/runner/work/kani/kani/export/library/core/src/slice/sort/shared/smallsort.rs",
+            "line": "41",
+            "trace_available": true,
+            "status": "FAILURE"
+          },
+          "require_only_this_failure": true,
+          "requires": [
+            "Freeze and independently review before next dispatch",
+            "Bind exact check/modifies wrapper to this target/type/source/tool/config",
+            "Include same-pin unmutated positive companion and reachable return covers",
+            "Record mutant-return cover as expected UNREACHABLE after false ensures; not positive vacuity evidence"
+          ]
+        },
+        "companion": "stable_default_activation-legal",
+        "companion_required_cover_messages": [
+          "S1_actual_default_companion_return"
+        ],
+        "companion_required_status": "SATISFIED",
+        "mutant_return_cover_status": "UNREACHABLE_EXPECTED_NO_POSITIVE_CREDIT",
+        "wrapper_binding": "EXACT_SOURCE_CONTRACT_AND_SITE_FROZEN; SAME_RUN_RICH_PROPERTY_CORRELATION_REQUIRED_OFFLINE"
+      },
+      "property_id_template": "<cell::Cell<u8> as slice::sort::shared::smallsort::StableSmallSortTypeImpl>::small_sort::<slice::sort::shared::smallsort::verify::sorting_model::KeyLess<cell::Cell<u8>>>::{closure#2}.assertion.1",
+      "closure_root": null,
+      "assertion_text": "#[cfg_attr(all(kani, kani_smallsort_sorting), kani::ensures(|_| !verify::sorting_model::enabled::<T, F>() || { const S1_ATTACHMENT_DEFAULT: bool = false; S1_ATTACHMENT_DEFAULT }))]"
+    },
+    "activation-override": {
+      "variant": "activation-override",
+      "mode": "PFC",
+      "oracle_without_id": {
+        "selector": "slice::sort::shared::smallsort::verify::sorting_entry_controls::stable_freeze_activation",
+        "description": "|_| !verify::sorting_model::enabled::<T, F>() ||\n{ const S1_ATTACHMENT_OVERRIDE: bool = false; S1_ATTACHMENT_OVERRIDE }",
+        "file": "library/core/src/slice/sort/shared/smallsort.rs",
+        "export_file": "/home/runner/work/kani/kani/export/library/core/src/slice/sort/shared/smallsort.rs",
+        "line": 63,
+        "class": "assertion",
+        "status": "FAILURE",
+        "source_sha256": "90f20bce619de5535e633fc97f4a9dfd46715dc48e54912f5d1c9029984b131f",
+        "source_line": "    #[cfg_attr(all(kani, kani_smallsort_sorting), kani::ensures(|_| !verify::sorting_model::enabled::<T, F>() || { const S1_ATTACHMENT_OVERRIDE: bool = false; S1_ATTACHMENT_OVERRIDE }))]",
+        "require_only_this_failure": true,
+        "proposal": {
+          "status": "PROPOSED_NEXT_PACKAGE_ONLY; NOT_CURRENT_DETECTION",
+          "selector": "slice::sort::shared::smallsort::verify::sorting_entry_controls::stable_freeze_activation",
+          "mode": "PFC",
+          "target": "<u8 as StableSmallSortTypeImpl>::small_sort",
+          "variant": "activation-override",
+          "variant_spec": {
+            "patch": "activation-override.patch",
+            "sha256": "6dcb40cc4118035de700f0988a6766c96aad8f4def76513f0f10f275d091c356",
+            "changed_file_sha256": {
+              "library/core/src/slice/sort/shared/smallsort.rs": "90f20bce619de5535e633fc97f4a9dfd46715dc48e54912f5d1c9029984b131f"
+            },
+            "marker": "S1_ATTACHMENT_OVERRIDE",
+            "method": "Stable Freeze u8 override"
+          },
+          "property": {
+            "id": "<u8 as slice::sort::shared::smallsort::StableSmallSortTypeImpl>::small_sort::<slice::sort::shared::smallsort::verify::sorting_model::KeyLess<u8>>::{closure#2}.assertion.2",
+            "description": "|_| !verify::sorting_model::enabled::<T, F>() ||\n{ const S1_ATTACHMENT_OVERRIDE: bool = false; S1_ATTACHMENT_OVERRIDE }",
+            "class": "assertion",
+            "file": "/home/runner/work/kani/kani/export/library/core/src/slice/sort/shared/smallsort.rs",
+            "line": "63",
+            "trace_available": true,
+            "status": "FAILURE"
+          },
+          "require_only_this_failure": true,
+          "requires": [
+            "Freeze and independently review before next dispatch",
+            "Bind exact check/modifies wrapper to this target/type/source/tool/config",
+            "Include same-pin unmutated positive companion and reachable return covers",
+            "Record mutant-return cover as expected UNREACHABLE after false ensures; not positive vacuity evidence"
+          ]
+        },
+        "companion": "stable_freeze_activation-legal",
+        "companion_required_cover_messages": [
+          "S1_actual_override_companion_return"
+        ],
+        "companion_required_status": "SATISFIED",
+        "mutant_return_cover_status": "UNREACHABLE_EXPECTED_NO_POSITIVE_CREDIT",
+        "wrapper_binding": "EXACT_SOURCE_CONTRACT_AND_SITE_FROZEN; SAME_RUN_RICH_PROPERTY_CORRELATION_REQUIRED_OFFLINE"
+      },
+      "property_id_template": "<u8 as slice::sort::shared::smallsort::StableSmallSortTypeImpl>::small_sort::<slice::sort::shared::smallsort::verify::sorting_model::KeyLess<u8>>::{closure#2}.assertion.2",
+      "closure_root": null,
+      "assertion_text": "#[cfg_attr(all(kani, kani_smallsort_sorting), kani::ensures(|_| !verify::sorting_model::enabled::<T, F>() || { const S1_ATTACHMENT_OVERRIDE: bool = false; S1_ATTACHMENT_OVERRIDE }))]"
+    }
+  }
+}

@@ -23,11 +23,12 @@ from typing import Any
 
 import rich_evidence
 import binding_metadata
+import cell_retry_profile as cell_retry
 
 HERE = Path(__file__).resolve().parent
 REQUEST_PATH = HERE / "CI-REQUEST.json"
-STD_SHA = "5be85699b8826e3286c0bf89efb9affefac0acb5"
-STD_TREE = "a9caaa953d579641ecc6a4b84b5c16fa1d23563b"
+STD_SHA = "99e8456d200fff1299ee5756279cddb23921dc65"
+STD_TREE = "b769b084f9982cbcb166229b29b6bd2bff136c51"
 TOOL_SHA = "0aac16ef62da9e9d5645782d458593e5d78143ba"
 TOOL_TREE = "9d8bc9312bf955ef126d32b819b3cd0ed105ed2b"
 MAX_ROW_SECONDS = 600
@@ -99,8 +100,8 @@ def load_request(path: Path = REQUEST_PATH) -> dict[str, Any]:
         if not isinstance(row.get("required_cover_count"), int) or row["required_cover_count"] < 0:
             raise RunnerError(f"invalid cover count for {rid}")
         timeout = row.get("timeout_seconds")
-        if type(timeout) is not int or timeout != MAX_ROW_SECONDS:
-            raise RunnerError(f"timeout outside 1..{MAX_ROW_SECONDS} for {rid}")
+        if type(timeout) is not int or timeout != cell_retry.timeout_for(rid):
+            raise RunnerError(f"timeout must be {cell_retry.timeout_for(rid)}s for {rid}")
         if row["expected"] == "DETECTED" and not isinstance(row.get("failure_description"), str):
             raise RunnerError(f"negative row lacks named failure description: {rid}")
         oracle = row.get("oracle")
@@ -183,6 +184,10 @@ def load_request(path: Path = REQUEST_PATH) -> dict[str, Any]:
                 len({r.get("type") for r in member_rows}) != 1):
             raise RunnerError("replacement union target mismatch")
         union_members.update(members)
+    try:
+        cell_retry.validate_request(request)
+    except (ValueError, TypeError, KeyError) as exc:
+        raise RunnerError(str(exc)) from exc
     return request
 
 
@@ -302,9 +307,15 @@ def group_rows(rows: list[dict[str, Any]], execution_groups: list[dict[str, Any]
 
 
 def select_groups(request: dict[str, Any], group_ids: list[str] | None = None) -> list[dict[str, Any]]:
+    try:
+        cell_retry.validate_request(request)
+    except (ValueError, TypeError, KeyError) as exc:
+        raise RunnerError(str(exc)) from exc
     groups = group_rows(request["rows"], request.get("execution_groups"))
     if group_ids is None:
-        return groups
+        group_ids = [cell_retry.GROUP]
+    if group_ids != [cell_retry.GROUP]:
+        raise RunnerError("only cell-u34 may be selected in this retry profile")
     if not group_ids or any(not isinstance(x, str) or not x for x in group_ids) or len(set(group_ids)) != len(group_ids):
         raise RunnerError("--groups requires a nonempty, unique comma-separated group list")
     known = {g["id"] for g in groups}
@@ -323,12 +334,16 @@ def aggregate_replacement_union(union, rows, observations):
 
 
 def build_argv(std: Path, tool: Path, selectors: list[str], unwind: int, export: Path) -> list[str]:
+    try:
+        cell_retry.validate_selection(selectors, unwind)
+    except ValueError as exc:
+        raise RunnerError(str(exc)) from exc
     if not selectors or len(set(selectors)) != len(selectors):
         raise RunnerError("nonempty unique exact group selectors required")
     argv = [str((tool.resolve() / "scripts/kani")), "verify-std", "-Z", "unstable-options"]
     for feature in UNSTABLE:
         argv += ["-Z", feature]
-    argv += ["--no-assert-contracts", "--jobs=1", "--harness-timeout", "600s"]
+    argv += ["--no-assert-contracts", "--jobs=1", "--harness-timeout", "1200s"]
     for selector in selectors:
         argv += ["--harness", selector]
     argv += ["--exact", "--default-unwind", str(unwind), "-Z", "export-json",
@@ -682,11 +697,13 @@ def _target_tokens(value: Any) -> list[str] | None:
 
 
 def _selection_matches(value: Any, selectors: list[str], *, marker: bool = False) -> bool:
+    if any(selector in cell_retry.SELECTORS for selector in selectors) and selectors != cell_retry.SELECTORS:
+        return False
     if (not isinstance(value, dict) or value.get("schema_version") != "0.1.0" or
             value.get("kani_commit") != TOOL_SHA or value.get("kani_commit_dirty") is not False or
             value.get("run_state") not in (("INCOMPLETE", "COMPLETE") if marker else ("COMPLETE",)) or
             type(value.get("harness_timeout_s")) not in (int, float) or
-            value["harness_timeout_s"] != MAX_ROW_SECONDS):
+            value["harness_timeout_s"] != (cell_retry.SECONDS if selectors == cell_retry.SELECTORS else MAX_ROW_SECONDS)):
         return False
     selection = value.get("harness_selection")
     return (isinstance(selection, dict) and selection.get("requested_filters") == selectors and
@@ -947,12 +964,17 @@ def _artifact_size(out: Path) -> int:
 
 def _run_group(std: Path, tool: Path, out: Path, request: dict[str, Any],
                group: dict[str, Any], phase_deadline: float) -> tuple[list[dict[str, Any]], str | None]:
+    try:
+        cell_retry.validate_group(group)
+    except ValueError as exc:
+        raise RunnerError(str(exc)) from exc
     dest = out / "groups" / group["id"]
     dest.mkdir(parents=True, exist_ok=True)
     selectors = [row["selector"] for row in group["rows"]]
     export = (dest / "export.json").resolve()
     argv = build_argv(std, tool, selectors, group["unwind"], export)
     results = [{**_row_base(row, "IN_PROGRESS"), "group": group["id"],
+                "root_timeout_seconds": row["timeout_seconds"],
                 "per_root_rss_kib": None, "per_root_rss_status": "UNKNOWN_NO_EXACT_HARNESS_ATTRIBUTION",
                 "proof_credit": "NONE"} for row in group["rows"]]
     receipt = {"schema": "ch8-s1-group-v1", "state": "IN_PROGRESS", "group": group["id"],
@@ -1053,7 +1075,7 @@ def _run_group(std: Path, tool: Path, out: Path, request: dict[str, Any],
                           original_exit=None, original_exit_scope="PER_ROOT_DRIVER_EXIT_UNAVAILABLE_IN_BATCH",
                           signal=invocation.get("signal"), group_rss_peak_kib=invocation.get("rss_peak_kib"),
                           group_rss_cap_kib=memory["group_cap_kib"],
-                          root_timeout_seconds=MAX_ROW_SECONDS,
+                          root_timeout_seconds=row["timeout_seconds"],
                           timeout_scope="STOCK_KANI_CBMC_TIMEOUT_NOT_FULL_INSTRUMENTATION_WALL",
                           diagnostics=f"groups/{group['id']}")
     except BaseException as exc:

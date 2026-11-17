@@ -1,9 +1,9 @@
 {
-  "schema": "ch8-s1-07-ready-v1",
+  "schema": "ch8-s1-08-cell-retry-ready-v1",
   "status": "READY",
   "authorization": "PREPARATION_ONLY_NO_DISPATCH_OWNER_GO_REQUIRED",
-  "std_sha": "5be85699b8826e3286c0bf89efb9affefac0acb5",
-  "std_tree": "a9caaa953d579641ecc6a4b84b5c16fa1d23563b",
+  "std_sha": "99e8456d200fff1299ee5756279cddb23921dc65",
+  "std_tree": "b769b084f9982cbcb166229b29b6bd2bff136c51",
   "tool_sha": "0aac16ef62da9e9d5645782d458593e5d78143ba",
   "tool_tree": "9d8bc9312bf955ef126d32b819b3cd0ed105ed2b",
   "base_std_sha": "872d5a43380752786415bc00d2a12ce0e930cb37",
@@ -15,9 +15,9 @@
     "library/core/src/slice/sort/shared/smallsort.rs": "45ae77ad0bb2a74cfab1aa53d5e1c48311f0b483c94eb52d96d97f680bd39651",
     "library/core/src/slice/sort/shared/smallsort/verify.rs": "9aaa5be83f61212030183c75af7a9aaf0713abed798f250e83a2202f111ed958",
     "library/core/src/slice/sort/shared/smallsort/verify/sorting_entry_controls.rs": "7cb487628b9e93a086c09fc59cfc54aaeb12e12a3f917f67009f378e722d29ff",
-    "library/core/src/slice/sort/shared/smallsort/verify/sorting_entry_smoke.rs": "e011ce9ee899a6ed380a2f89983b0eb9253ca67cf7d29c6c12c4e2967552560f",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_entry_smoke.rs": "7e74bd9695cdb2b98b8298ce7daf7f107e0ac2e6e2a0cfc2203ab1639590130f",
     "library/core/src/slice/sort/shared/smallsort/verify/sorting_model.rs": "a04f72d0a4f8c42fadc6639ead77e215dc46264096e8e998903bfe1be9ca0a18",
-    "library/core/src/slice/sort/shared/smallsort/verify/sorting_model_controls.rs": "90105d9a3ead4ee642fdf519a51e6d218d12484c03c1a98f0704daed3db4dc70",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_model_controls.rs": "dd4e8eca1761be66ea07508c7678175d54e4b2baf48469ae4866c9cb68e12e0d",
     "tool_config/kani-version.toml": "16415c6185a21d873f6e4d6d1dc3058f71380e5537a5a9bb77efae857bf66717"
   },
   "variants": {
@@ -55,13 +55,13 @@
       "failure_description": null,
       "required_cover_count": 11,
       "required_success_messages": [
-        "S1_ENTRY_MODEL_ENABLED",
-        "S1_EXACT_TRAIT_THRESHOLD",
-        "S1_ENTRY_POST_INDEPENDENT_CALLER",
-        "S1_LEFT_CANARY",
-        "S1_RIGHT_CANARY"
+        "stable_default_cell::model_enabled",
+        "stable_default_cell::s1_exact_trait_threshold",
+        "stable_default_cell::post_independent_caller",
+        "stable_default_cell::left_canary",
+        "stable_default_cell::right_canary"
       ],
-      "timeout_seconds": 600,
+      "timeout_seconds": 1200,
       "planned_seconds": 180,
       "state": "NOT_RUN",
       "source_qualified_selector": "core::slice::sort::shared::smallsort::verify::sorting_entry_smoke::stable_default_cell",
@@ -93,13 +93,13 @@
       "failure_description": null,
       "required_cover_count": 11,
       "required_success_messages": [
-        "S1_ENTRY_MODEL_ENABLED",
-        "S1_EXACT_TRAIT_THRESHOLD",
-        "S1_ENTRY_POST_INDEPENDENT_CALLER",
-        "S1_LEFT_CANARY",
-        "S1_RIGHT_CANARY"
+        "unstable_default_cell::model_enabled",
+        "unstable_default_cell::s1_exact_trait_threshold",
+        "unstable_default_cell::post_independent_caller",
+        "unstable_default_cell::left_canary",
+        "unstable_default_cell::right_canary"
       ],
-      "timeout_seconds": 600,
+      "timeout_seconds": 1200,
       "planned_seconds": 180,
       "state": "NOT_RUN",
       "source_qualified_selector": "core::slice::sort::shared::smallsort::verify::sorting_entry_smoke::unstable_default_cell",
@@ -127,13 +127,13 @@
       "failure_description": null,
       "required_cover_count": 6,
       "required_success_messages": [
-        "S1_MODEL_ENABLED",
-        "S1_IDENTITY_CHECKER",
-        "S1_CONSTRUCTED_SORTED_PERMUTATION",
-        "S1_FNMUT_TWO_PROJECTIONS",
-        "S1_FNONCE_TWO_PROJECTIONS",
-        "S1_ELEMENT_LAYOUT",
-        "S1_COMPARATOR_ZST_ELEMENT_NO_DROP"
+        "model_u8_n0_3::model_enabled",
+        "model_u8_n0_3::identity_checker",
+        "model_u8_n0_3::constructed_sorted_permutation",
+        "model_u8_n0_3::fnmut_two_projections",
+        "model_u8_n0_3::fnonce_two_projections",
+        "model_u8_n0_3::element_layout",
+        "model_u8_n0_3::comparator_zst_element_no_drop"
       ],
       "companion": null,
       "timeout_seconds": 600,
@@ -159,13 +159,13 @@
       "failure_description": null,
       "required_cover_count": 6,
       "required_success_messages": [
-        "S1_MODEL_ENABLED",
-        "S1_IDENTITY_CHECKER",
-        "S1_CONSTRUCTED_SORTED_PERMUTATION",
-        "S1_FNMUT_TWO_PROJECTIONS",
-        "S1_FNONCE_TWO_PROJECTIONS",
-        "S1_ELEMENT_LAYOUT",
-        "S1_COMPARATOR_ZST_ELEMENT_NO_DROP"
+        "model_cell_n0_3::model_enabled",
+        "model_cell_n0_3::identity_checker",
+        "model_cell_n0_3::constructed_sorted_permutation",
+        "model_cell_n0_3::fnmut_two_projections",
+        "model_cell_n0_3::fnonce_two_projections",
+        "model_cell_n0_3::element_layout",
+        "model_cell_n0_3::comparator_zst_element_no_drop"
       ],
       "companion": null,
       "timeout_seconds": 600,
@@ -191,13 +191,13 @@
       "failure_description": null,
       "required_cover_count": 6,
       "required_success_messages": [
-        "S1_MODEL_ENABLED",
-        "S1_IDENTITY_CHECKER",
-        "S1_CONSTRUCTED_SORTED_PERMUTATION",
-        "S1_FNMUT_TWO_PROJECTIONS",
-        "S1_FNONCE_TWO_PROJECTIONS",
-        "S1_ELEMENT_LAYOUT",
-        "S1_COMPARATOR_ZST_ELEMENT_NO_DROP"
+        "model_noncopy_n0_3::model_enabled",
+        "model_noncopy_n0_3::identity_checker",
+        "model_noncopy_n0_3::constructed_sorted_permutation",
+        "model_noncopy_n0_3::fnmut_two_projections",
+        "model_noncopy_n0_3::fnonce_two_projections",
+        "model_noncopy_n0_3::element_layout",
+        "model_noncopy_n0_3::comparator_zst_element_no_drop"
       ],
       "companion": null,
       "timeout_seconds": 600,
@@ -255,12 +255,12 @@
       "oracle": {
         "selector": "slice::sort::shared::smallsort::verify::sorting_model_controls::activation_descending_rejected",
         "group": "production-u34",
-        "property_id": "slice::sort::shared::smallsort::verify::sorting_model_controls::require_active::<u8, {closure@/home/runner/work/kani/kani/export/library/core/src/slice/sort/shared/smallsort/verify/sorting_model_controls.rs:100:32: 100:48}>.assertion.1",
+        "property_id": "slice::sort::shared::smallsort::verify::sorting_model_controls::require_active::<u8, {closure@/home/runner/work/kani/kani/export/library/core/src/slice/sort/shared/smallsort/verify/sorting_model_controls.rs:95:32: 95:48}>.assertion.1",
         "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_model_controls.rs",
         "export_file": "/home/runner/work/kani/kani/export/library/core/src/slice/sort/shared/smallsort/verify/sorting_model_controls.rs",
-        "line": 95,
+        "line": 90,
         "class": "assertion",
-        "source_sha256": "90105d9a3ead4ee642fdf519a51e6d218d12484c03c1a98f0704daed3db4dc70",
+        "source_sha256": "dd4e8eca1761be66ea07508c7678175d54e4b2baf48469ae4866c9cb68e12e0d",
         "source_line": "    assert!(enabled::<T, F>(), \"S1_ACTIVATION_UNSUPPORTED_PAIR\");",
         "assertion_context": [
           "    assert!(enabled::<T, F>(), \"S1_ACTIVATION_UNSUPPORTED_PAIR\");",
@@ -291,12 +291,12 @@
       "oracle": {
         "selector": "slice::sort::shared::smallsort::verify::sorting_model_controls::activation_effectful_rejected",
         "group": "production-u34",
-        "property_id": "slice::sort::shared::smallsort::verify::sorting_model_controls::require_active::<u8, {closure@/home/runner/work/kani/kani/export/library/core/src/slice/sort/shared/smallsort/verify/sorting_model_controls.rs:106:21: 106:37}>.assertion.1",
+        "property_id": "slice::sort::shared::smallsort::verify::sorting_model_controls::require_active::<u8, {closure@/home/runner/work/kani/kani/export/library/core/src/slice/sort/shared/smallsort/verify/sorting_model_controls.rs:101:21: 101:37}>.assertion.1",
         "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_model_controls.rs",
         "export_file": "/home/runner/work/kani/kani/export/library/core/src/slice/sort/shared/smallsort/verify/sorting_model_controls.rs",
-        "line": 95,
+        "line": 90,
         "class": "assertion",
-        "source_sha256": "90105d9a3ead4ee642fdf519a51e6d218d12484c03c1a98f0704daed3db4dc70",
+        "source_sha256": "dd4e8eca1761be66ea07508c7678175d54e4b2baf48469ae4866c9cb68e12e0d",
         "source_line": "    assert!(enabled::<T, F>(), \"S1_ACTIVATION_UNSUPPORTED_PAIR\");",
         "assertion_context": [
           "    assert!(enabled::<T, F>(), \"S1_ACTIVATION_UNSUPPORTED_PAIR\");",
@@ -330,9 +330,9 @@
         "property_id": "slice::sort::shared::smallsort::verify::sorting_model_controls::require_active::<mem::maybe_uninit::MaybeUninit<u8>, slice::sort::shared::smallsort::verify::sorting_model::KeyLess<mem::maybe_uninit::MaybeUninit<u8>>>.assertion.1",
         "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_model_controls.rs",
         "export_file": "/home/runner/work/kani/kani/export/library/core/src/slice/sort/shared/smallsort/verify/sorting_model_controls.rs",
-        "line": 95,
+        "line": 90,
         "class": "assertion",
-        "source_sha256": "90105d9a3ead4ee642fdf519a51e6d218d12484c03c1a98f0704daed3db4dc70",
+        "source_sha256": "dd4e8eca1761be66ea07508c7678175d54e4b2baf48469ae4866c9cb68e12e0d",
         "source_line": "    assert!(enabled::<T, F>(), \"S1_ACTIVATION_UNSUPPORTED_PAIR\");",
         "assertion_context": [
           "    assert!(enabled::<T, F>(), \"S1_ACTIVATION_UNSUPPORTED_PAIR\");",
@@ -389,9 +389,9 @@
         "property_id": "slice::sort::shared::smallsort::verify::sorting_model_controls::order_corruption_rejected.assertion.3",
         "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_model_controls.rs",
         "export_file": "/home/runner/work/kani/kani/export/library/core/src/slice/sort/shared/smallsort/verify/sorting_model_controls.rs",
-        "line": 141,
+        "line": 136,
         "class": "assertion",
-        "source_sha256": "90105d9a3ead4ee642fdf519a51e6d218d12484c03c1a98f0704daed3db4dc70",
+        "source_sha256": "dd4e8eca1761be66ea07508c7678175d54e4b2baf48469ae4866c9cb68e12e0d",
         "source_line": "    assert!(post::<u8, KeyLess<u8>>(before, &[values[1], values[0]]),",
         "assertion_context": [
           "    assert!(post::<u8, KeyLess<u8>>(before, &[values[1], values[0]]),",
@@ -427,9 +427,9 @@
         "property_id": "slice::sort::shared::smallsort::verify::sorting_model_controls::count_corruption_rejected.assertion.5",
         "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_model_controls.rs",
         "export_file": "/home/runner/work/kani/kani/export/library/core/src/slice/sort/shared/smallsort/verify/sorting_model_controls.rs",
-        "line": 152,
+        "line": 147,
         "class": "assertion",
-        "source_sha256": "90105d9a3ead4ee642fdf519a51e6d218d12484c03c1a98f0704daed3db4dc70",
+        "source_sha256": "dd4e8eca1761be66ea07508c7678175d54e4b2baf48469ae4866c9cb68e12e0d",
         "source_line": "    assert!(post::<u8, KeyLess<u8>>(before, &corrupt),",
         "assertion_context": [
           "    assert!(post::<u8, KeyLess<u8>>(before, &corrupt),",
@@ -489,9 +489,9 @@
         "property_id": "slice::sort::shared::smallsort::verify::sorting_model_controls::invalid_snapshot_rejected.assertion.1",
         "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_model_controls.rs",
         "export_file": "/home/runner/work/kani/kani/export/library/core/src/slice/sort/shared/smallsort/verify/sorting_model_controls.rs",
-        "line": 181,
+        "line": 176,
         "class": "assertion",
-        "source_sha256": "90105d9a3ead4ee642fdf519a51e6d218d12484c03c1a98f0704daed3db4dc70",
+        "source_sha256": "dd4e8eca1761be66ea07508c7678175d54e4b2baf48469ae4866c9cb68e12e0d",
         "source_line": "    assert!(post::<u8, KeyLess<u8>>(invalid, &[]), \"S1_ACTIVE_INVALID_TOKEN_ACCEPTED\");",
         "assertion_context": [
           "    assert!(post::<u8, KeyLess<u8>>(invalid, &[]), \"S1_ACTIVE_INVALID_TOKEN_ACCEPTED\");",
@@ -727,11 +727,11 @@
       "failure_description": null,
       "required_cover_count": 2,
       "required_success_messages": [
-        "S1_ENTRY_MODEL_ENABLED",
-        "S1_EXACT_TRAIT_THRESHOLD",
-        "S1_ENTRY_POST_INDEPENDENT_CALLER",
-        "S1_LEFT_CANARY",
-        "S1_RIGHT_CANARY"
+        "freeze_copy_u8_n0::model_enabled",
+        "freeze_copy_u8_n0::s1_exact_trait_threshold",
+        "freeze_copy_u8_n0::post_independent_caller",
+        "freeze_copy_u8_n0::left_canary",
+        "freeze_copy_u8_n0::right_canary"
       ],
       "timeout_seconds": 600,
       "planned_seconds": 600,
@@ -758,11 +758,11 @@
       "failure_description": null,
       "required_cover_count": 2,
       "required_success_messages": [
-        "S1_ENTRY_MODEL_ENABLED",
-        "S1_EXACT_TRAIT_THRESHOLD",
-        "S1_ENTRY_POST_INDEPENDENT_CALLER",
-        "S1_LEFT_CANARY",
-        "S1_RIGHT_CANARY"
+        "freeze_copy_u8_n1::model_enabled",
+        "freeze_copy_u8_n1::s1_exact_trait_threshold",
+        "freeze_copy_u8_n1::post_independent_caller",
+        "freeze_copy_u8_n1::left_canary",
+        "freeze_copy_u8_n1::right_canary"
       ],
       "timeout_seconds": 600,
       "planned_seconds": 600,
@@ -789,11 +789,11 @@
       "failure_description": null,
       "required_cover_count": 5,
       "required_success_messages": [
-        "S1_ENTRY_MODEL_ENABLED",
-        "S1_EXACT_TRAIT_THRESHOLD",
-        "S1_ENTRY_POST_INDEPENDENT_CALLER",
-        "S1_LEFT_CANARY",
-        "S1_RIGHT_CANARY"
+        "freeze_copy_u8_n2::model_enabled",
+        "freeze_copy_u8_n2::s1_exact_trait_threshold",
+        "freeze_copy_u8_n2::post_independent_caller",
+        "freeze_copy_u8_n2::left_canary",
+        "freeze_copy_u8_n2::right_canary"
       ],
       "timeout_seconds": 600,
       "planned_seconds": 600,
@@ -823,11 +823,11 @@
       "failure_description": null,
       "required_cover_count": 5,
       "required_success_messages": [
-        "S1_ENTRY_MODEL_ENABLED",
-        "S1_EXACT_TRAIT_THRESHOLD",
-        "S1_ENTRY_POST_INDEPENDENT_CALLER",
-        "S1_LEFT_CANARY",
-        "S1_RIGHT_CANARY"
+        "freeze_copy_u8_n3::model_enabled",
+        "freeze_copy_u8_n3::s1_exact_trait_threshold",
+        "freeze_copy_u8_n3::post_independent_caller",
+        "freeze_copy_u8_n3::left_canary",
+        "freeze_copy_u8_n3::right_canary"
       ],
       "timeout_seconds": 600,
       "planned_seconds": 600,
@@ -857,11 +857,11 @@
       "failure_description": null,
       "required_cover_count": 2,
       "required_success_messages": [
-        "S1_ENTRY_MODEL_ENABLED",
-        "S1_EXACT_TRAIT_THRESHOLD",
-        "S1_ENTRY_POST_INDEPENDENT_CALLER",
-        "S1_LEFT_CANARY",
-        "S1_RIGHT_CANARY"
+        "freeze_default_noncopy_n0::model_enabled",
+        "freeze_default_noncopy_n0::s1_exact_trait_threshold",
+        "freeze_default_noncopy_n0::post_independent_caller",
+        "freeze_default_noncopy_n0::left_canary",
+        "freeze_default_noncopy_n0::right_canary"
       ],
       "timeout_seconds": 600,
       "planned_seconds": 600,
@@ -888,11 +888,11 @@
       "failure_description": null,
       "required_cover_count": 2,
       "required_success_messages": [
-        "S1_ENTRY_MODEL_ENABLED",
-        "S1_EXACT_TRAIT_THRESHOLD",
-        "S1_ENTRY_POST_INDEPENDENT_CALLER",
-        "S1_LEFT_CANARY",
-        "S1_RIGHT_CANARY"
+        "freeze_default_noncopy_n1::model_enabled",
+        "freeze_default_noncopy_n1::s1_exact_trait_threshold",
+        "freeze_default_noncopy_n1::post_independent_caller",
+        "freeze_default_noncopy_n1::left_canary",
+        "freeze_default_noncopy_n1::right_canary"
       ],
       "timeout_seconds": 600,
       "planned_seconds": 600,
@@ -919,11 +919,11 @@
       "failure_description": null,
       "required_cover_count": 5,
       "required_success_messages": [
-        "S1_ENTRY_MODEL_ENABLED",
-        "S1_EXACT_TRAIT_THRESHOLD",
-        "S1_ENTRY_POST_INDEPENDENT_CALLER",
-        "S1_LEFT_CANARY",
-        "S1_RIGHT_CANARY"
+        "freeze_default_noncopy_n2::model_enabled",
+        "freeze_default_noncopy_n2::s1_exact_trait_threshold",
+        "freeze_default_noncopy_n2::post_independent_caller",
+        "freeze_default_noncopy_n2::left_canary",
+        "freeze_default_noncopy_n2::right_canary"
       ],
       "timeout_seconds": 600,
       "planned_seconds": 600,
@@ -953,11 +953,11 @@
       "failure_description": null,
       "required_cover_count": 5,
       "required_success_messages": [
-        "S1_ENTRY_MODEL_ENABLED",
-        "S1_EXACT_TRAIT_THRESHOLD",
-        "S1_ENTRY_POST_INDEPENDENT_CALLER",
-        "S1_LEFT_CANARY",
-        "S1_RIGHT_CANARY"
+        "freeze_default_noncopy_n3::model_enabled",
+        "freeze_default_noncopy_n3::s1_exact_trait_threshold",
+        "freeze_default_noncopy_n3::post_independent_caller",
+        "freeze_default_noncopy_n3::left_canary",
+        "freeze_default_noncopy_n3::right_canary"
       ],
       "timeout_seconds": 600,
       "planned_seconds": 600,
@@ -987,11 +987,11 @@
       "failure_description": null,
       "required_cover_count": 2,
       "required_success_messages": [
-        "S1_ENTRY_MODEL_ENABLED",
-        "S1_EXACT_TRAIT_THRESHOLD",
-        "S1_ENTRY_POST_INDEPENDENT_CALLER",
-        "S1_LEFT_CANARY",
-        "S1_RIGHT_CANARY"
+        "stable_freeze_u8_n0::model_enabled",
+        "stable_freeze_u8_n0::s1_exact_trait_threshold",
+        "stable_freeze_u8_n0::post_independent_caller",
+        "stable_freeze_u8_n0::left_canary",
+        "stable_freeze_u8_n0::right_canary"
       ],
       "timeout_seconds": 600,
       "planned_seconds": 600,
@@ -1018,11 +1018,11 @@
       "failure_description": null,
       "required_cover_count": 2,
       "required_success_messages": [
-        "S1_ENTRY_MODEL_ENABLED",
-        "S1_EXACT_TRAIT_THRESHOLD",
-        "S1_ENTRY_POST_INDEPENDENT_CALLER",
-        "S1_LEFT_CANARY",
-        "S1_RIGHT_CANARY"
+        "stable_freeze_u8_n1::model_enabled",
+        "stable_freeze_u8_n1::s1_exact_trait_threshold",
+        "stable_freeze_u8_n1::post_independent_caller",
+        "stable_freeze_u8_n1::left_canary",
+        "stable_freeze_u8_n1::right_canary"
       ],
       "timeout_seconds": 600,
       "planned_seconds": 600,
@@ -1049,11 +1049,11 @@
       "failure_description": null,
       "required_cover_count": 5,
       "required_success_messages": [
-        "S1_ENTRY_MODEL_ENABLED",
-        "S1_EXACT_TRAIT_THRESHOLD",
-        "S1_ENTRY_POST_INDEPENDENT_CALLER",
-        "S1_LEFT_CANARY",
-        "S1_RIGHT_CANARY"
+        "stable_freeze_u8_n2::model_enabled",
+        "stable_freeze_u8_n2::s1_exact_trait_threshold",
+        "stable_freeze_u8_n2::post_independent_caller",
+        "stable_freeze_u8_n2::left_canary",
+        "stable_freeze_u8_n2::right_canary"
       ],
       "timeout_seconds": 600,
       "planned_seconds": 600,
@@ -1083,11 +1083,11 @@
       "failure_description": null,
       "required_cover_count": 5,
       "required_success_messages": [
-        "S1_ENTRY_MODEL_ENABLED",
-        "S1_EXACT_TRAIT_THRESHOLD",
-        "S1_ENTRY_POST_INDEPENDENT_CALLER",
-        "S1_LEFT_CANARY",
-        "S1_RIGHT_CANARY"
+        "stable_freeze_u8_n3::model_enabled",
+        "stable_freeze_u8_n3::s1_exact_trait_threshold",
+        "stable_freeze_u8_n3::post_independent_caller",
+        "stable_freeze_u8_n3::left_canary",
+        "stable_freeze_u8_n3::right_canary"
       ],
       "timeout_seconds": 600,
       "planned_seconds": 600,
@@ -1117,11 +1117,11 @@
       "failure_description": null,
       "required_cover_count": 2,
       "required_success_messages": [
-        "S1_ENTRY_MODEL_ENABLED",
-        "S1_EXACT_TRAIT_THRESHOLD",
-        "S1_ENTRY_POST_INDEPENDENT_CALLER",
-        "S1_LEFT_CANARY",
-        "S1_RIGHT_CANARY"
+        "unstable_freeze_u8_n0::model_enabled",
+        "unstable_freeze_u8_n0::s1_exact_trait_threshold",
+        "unstable_freeze_u8_n0::post_independent_caller",
+        "unstable_freeze_u8_n0::left_canary",
+        "unstable_freeze_u8_n0::right_canary"
       ],
       "timeout_seconds": 600,
       "planned_seconds": 600,
@@ -1148,11 +1148,11 @@
       "failure_description": null,
       "required_cover_count": 2,
       "required_success_messages": [
-        "S1_ENTRY_MODEL_ENABLED",
-        "S1_EXACT_TRAIT_THRESHOLD",
-        "S1_ENTRY_POST_INDEPENDENT_CALLER",
-        "S1_LEFT_CANARY",
-        "S1_RIGHT_CANARY"
+        "unstable_freeze_u8_n1::model_enabled",
+        "unstable_freeze_u8_n1::s1_exact_trait_threshold",
+        "unstable_freeze_u8_n1::post_independent_caller",
+        "unstable_freeze_u8_n1::left_canary",
+        "unstable_freeze_u8_n1::right_canary"
       ],
       "timeout_seconds": 600,
       "planned_seconds": 600,
@@ -1179,11 +1179,11 @@
       "failure_description": null,
       "required_cover_count": 5,
       "required_success_messages": [
-        "S1_ENTRY_MODEL_ENABLED",
-        "S1_EXACT_TRAIT_THRESHOLD",
-        "S1_ENTRY_POST_INDEPENDENT_CALLER",
-        "S1_LEFT_CANARY",
-        "S1_RIGHT_CANARY"
+        "unstable_freeze_u8_n2::model_enabled",
+        "unstable_freeze_u8_n2::s1_exact_trait_threshold",
+        "unstable_freeze_u8_n2::post_independent_caller",
+        "unstable_freeze_u8_n2::left_canary",
+        "unstable_freeze_u8_n2::right_canary"
       ],
       "timeout_seconds": 600,
       "planned_seconds": 600,
@@ -1213,11 +1213,11 @@
       "failure_description": null,
       "required_cover_count": 5,
       "required_success_messages": [
-        "S1_ENTRY_MODEL_ENABLED",
-        "S1_EXACT_TRAIT_THRESHOLD",
-        "S1_ENTRY_POST_INDEPENDENT_CALLER",
-        "S1_LEFT_CANARY",
-        "S1_RIGHT_CANARY"
+        "unstable_freeze_u8_n3::model_enabled",
+        "unstable_freeze_u8_n3::s1_exact_trait_threshold",
+        "unstable_freeze_u8_n3::post_independent_caller",
+        "unstable_freeze_u8_n3::left_canary",
+        "unstable_freeze_u8_n3::right_canary"
       ],
       "timeout_seconds": 600,
       "planned_seconds": 600,
@@ -1235,14 +1235,14 @@
     }
   ],
   "ci_payload_sha256": {
-    ".github/workflows/ch8-s1.yml": "2f51f3793567fb000337ae384375dbc0622729d57193236e80763a5d4f1cea38",
+    ".github/workflows/ch8-s1.yml": "3886bf8e9edc7edc06207a274391c3d3cced42a08951ffc28cb0432dc4568494",
     "ch8-s1-control/activation-default.patch": "cee9e21c4b5015d6daf53c286f781602d0890e4ed23239f968d228088335dcc3",
     "ch8-s1-control/activation-override.patch": "6dcb40cc4118035de700f0988a6766c96aad8f4def76513f0f10f275d091c356",
-    "ch8-s1-control/check_package.py": "092be5eb1c4862a3081445a53cf2f129d0c419c3f130a81da761de11472a81e5",
+    "ch8-s1-control/check_package.py": "045f044ffc8e58572035a1526b0f76ab8379e65fe83cb4fd8376ed4d58804905",
     "ch8-s1-control/collect.py": "bb9170a58af1e0cfcb93d9758730265f2ae78b019c7a0a9b50d348cca45cd6e7",
     "ch8-s1-control/negative_oracle.py": "fabd41fb31e37ea79239e4798f38aa81cd068abad0d00281d1d93d936f59681c",
-    "ch8-s1-control/runner.py": "8c35580085d490ae42053d8064b3a35a21ad457d9c80440f595efe095ab8edb7",
-    "ch8-s1-control/test_package.py": "ab1dac733bf15fe43e7b62fa66f384ce8ef8c6c8910045262e227b21d1dd44c7",
+    "ch8-s1-control/runner.py": "4902328df07bb9c28bc667ba522542cb61d7825639d806ca8b949789b027336f",
+    "ch8-s1-control/test_package.py": "2673c3698622dd30a72ef1cd79f145748de9521df9bff997f1da2d9cf885e36a",
     "ch8-s1-control/test_runner.py": "d8e9e479c4dbf21178f6d28b0e68bbddf6defe8d8ffc2e003fa31bb5e838c55a",
     "ch8-s1-control/test_s104.py": "cf729fca7df6db47628bb2c17dda1eececf80ddaaa2dc07de57e0731ba16e59d",
     "ch8-s1-control/fixtures/s104-rich-fragment.json": "08958a31eb173ce59173a588ffd9e785ed9cef0086a733b7fc998af843c054cc",
@@ -1250,7 +1250,17 @@
     "ch8-s1-control/rich_evidence.py": "1c778852fd6c7d4542634424af7801e49e2f7074574b411f6c34a9fb86ab5139",
     "ch8-s1-control/test_s105.py": "588a346818b33e00fb02b510d616b7b787f184b00ac5a5b10cfad8b8cf46455e",
     "ch8-s1-control/test_s107.py": "07f08fba39af05d4745b524ddc18e21edcc776a8b7d487a1fea49ac88afaf5f0",
-    "ch8-s1-control/binding_metadata.py": "8af48498fe256283dcbe7a1f7bd766e213c2ab83e28008e23bd6bb9811c57030"
+    "ch8-s1-control/binding_metadata.py": "8af48498fe256283dcbe7a1f7bd766e213c2ab83e28008e23bd6bb9811c57030",
+    "ch8-s1-control/ORACLE-SOURCES.json": "69bf8d8494094a079a6ac3422ab90f30b7b5093b53e91ee6ce393a043538eaa2",
+    "ch8-s1-control/ROLE-MAP.json": "bad63e0616c0061bf40d7e8d5c72324c8089574624a20f07a1f98a2806e5043d",
+    "ch8-s1-control/fixtures/s108r1-smallsort.rs.txt": "45ae77ad0bb2a74cfab1aa53d5e1c48311f0b483c94eb52d96d97f680bd39651",
+    "ch8-s1-control/fixtures/s108r1-sorting_model_controls.rs.txt": "dd4e8eca1761be66ea07508c7678175d54e4b2baf48469ae4866c9cb68e12e0d",
+    "ch8-s1-control/oracle_source.py": "75a9a665b7a9fc1c64cd51c1c8d281fd323f22411aee83c017d08f37a27f20ce",
+    "ch8-s1-control/s108_package.py": "8f1443262d41b6ba755b89d089ffa7515692734f0986a80789a2bf89c7900237",
+    "ch8-s1-control/test_s108.py": "c8f694e0f35abfffa5aa8adc51598cf69e2d66dcdf996f8e33750ae006d6e854",
+    "ch8-s1-control/test_s108r1.py": "cd23ab865dd05bf7beef1b312e747512bebc5ae61e9ce382d284da2014b06f03",
+    "ch8-s1-control/cell_retry_profile.py": "c05ed67047832f808b1b22df9d0822d49eb9519e50cdab710db65238ffb97511",
+    "ch8-s1-control/test_cell_retry.py": "c338e2dcb6b5ce5b9869f941aea1d92302e77c0a6959bb1ba276e2cba470b016"
   },
   "budgets": {
     "jobs": 1,
@@ -1265,16 +1275,20 @@
     "stderr_bytes": 1048576,
     "export_bytes": 8388608,
     "artifact_bytes": 268435456,
-    "planned_rows_seconds": 21000,
+    "planned_rows_seconds": 2400,
     "rss_cap_kib": 6291456,
     "compile_seconds": 900,
     "planned_compile_seconds_per_group": 30,
     "group_rss_max_kib": 12582912,
     "memory_reserve_kib": 2097152,
-    "projected_group_count": 14
+    "projected_group_count": 1,
+    "cell_row_seconds": 1200,
+    "group_child_seconds": 3300,
+    "group_cleanup_seconds": 10,
+    "group_envelope_seconds": 3310
   },
   "reservations": {
-    "S1-05": "NOT_RESERVED; preparation only; no dispatch/push/ledger"
+    "S1-08-cell-retry": "NOT_RESERVED; NOT_RUN; preparation/review only; coordinator decision after terminal run and intake"
   },
   "flags": {
     "unstable": [
@@ -1325,21 +1339,31 @@
     ".github/workflows/verify-std-check.yml",
     ".github/workflows/z3-update.yml",
     "ch8-s1-control/CI-REQUEST.json",
+    "ch8-s1-control/ORACLE-SOURCES.json",
+    "ch8-s1-control/ROLE-MAP.json",
     "ch8-s1-control/activation-default.patch",
     "ch8-s1-control/activation-override.patch",
     "ch8-s1-control/binding_metadata.py",
+    "ch8-s1-control/cell_retry_profile.py",
     "ch8-s1-control/check_package.py",
     "ch8-s1-control/collect.py",
     "ch8-s1-control/fixtures/s104-rich-fragment.json",
+    "ch8-s1-control/fixtures/s108r1-smallsort.rs.txt",
+    "ch8-s1-control/fixtures/s108r1-sorting_model_controls.rs.txt",
     "ch8-s1-control/negative_oracle.py",
+    "ch8-s1-control/oracle_source.py",
     "ch8-s1-control/pack_evidence.py",
     "ch8-s1-control/rich_evidence.py",
     "ch8-s1-control/runner.py",
+    "ch8-s1-control/s108_package.py",
+    "ch8-s1-control/test_cell_retry.py",
     "ch8-s1-control/test_package.py",
     "ch8-s1-control/test_runner.py",
     "ch8-s1-control/test_s104.py",
     "ch8-s1-control/test_s105.py",
-    "ch8-s1-control/test_s107.py"
+    "ch8-s1-control/test_s107.py",
+    "ch8-s1-control/test_s108.py",
+    "ch8-s1-control/test_s108r1.py"
   ],
   "source_bindings": {
     "stable_default_cell": {
@@ -1347,10 +1371,10 @@
       "mode": "PFC",
       "crate": "core",
       "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_entry_smoke.rs",
-      "sha256": "e011ce9ee899a6ed380a2f89983b0eb9253ca67cf7d29c6c12c4e2967552560f",
+      "sha256": "7e74bd9695cdb2b98b8298ce7daf7f107e0ac2e6e2a0cfc2203ab1639590130f",
       "locations": [
         {
-          "line": 151,
+          "line": 141,
           "source": "smoke!(stable_default_cell, Cell<u8>, Cell::new, StableSmallSortTypeImpl, 16, stable_empty);"
         },
         {
@@ -1365,10 +1389,10 @@
       "mode": "PFC",
       "crate": "core",
       "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_entry_smoke.rs",
-      "sha256": "e011ce9ee899a6ed380a2f89983b0eb9253ca67cf7d29c6c12c4e2967552560f",
+      "sha256": "7e74bd9695cdb2b98b8298ce7daf7f107e0ac2e6e2a0cfc2203ab1639590130f",
       "locations": [
         {
-          "line": 153,
+          "line": 143,
           "source": "smoke!(unstable_default_cell, Cell<u8>, Cell::new, UnstableSmallSortTypeImpl, 16, unstable);"
         },
         {
@@ -1383,10 +1407,10 @@
       "mode": "Original",
       "crate": "core",
       "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_model_controls.rs",
-      "sha256": "90105d9a3ead4ee642fdf519a51e6d218d12484c03c1a98f0704daed3db4dc70",
+      "sha256": "dd4e8eca1761be66ea07508c7678175d54e4b2baf48469ae4866c9cb68e12e0d",
       "locations": [
         {
-          "line": 66,
+          "line": 61,
           "source": "positive!(model_u8_n0_3, u8, byte);"
         },
         {
@@ -1401,10 +1425,10 @@
       "mode": "Original",
       "crate": "core",
       "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_model_controls.rs",
-      "sha256": "90105d9a3ead4ee642fdf519a51e6d218d12484c03c1a98f0704daed3db4dc70",
+      "sha256": "dd4e8eca1761be66ea07508c7678175d54e4b2baf48469ae4866c9cb68e12e0d",
       "locations": [
         {
-          "line": 67,
+          "line": 62,
           "source": "positive!(model_cell_n0_3, Cell<u8>, Cell::new);"
         },
         {
@@ -1419,10 +1443,10 @@
       "mode": "Original",
       "crate": "core",
       "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_model_controls.rs",
-      "sha256": "90105d9a3ead4ee642fdf519a51e6d218d12484c03c1a98f0704daed3db4dc70",
+      "sha256": "dd4e8eca1761be66ea07508c7678175d54e4b2baf48469ae4866c9cb68e12e0d",
       "locations": [
         {
-          "line": 68,
+          "line": 63,
           "source": "positive!(model_noncopy_n0_3, NonCopyByte, NonCopyByte::new);"
         },
         {
@@ -1437,10 +1461,10 @@
       "mode": "Original",
       "crate": "core",
       "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_model_controls.rs",
-      "sha256": "90105d9a3ead4ee642fdf519a51e6d218d12484c03c1a98f0704daed3db4dc70",
+      "sha256": "dd4e8eca1761be66ea07508c7678175d54e4b2baf48469ae4866c9cb68e12e0d",
       "locations": [
         {
-          "line": 78,
+          "line": 73,
           "source": "fn inactive_pairs_read_free() {"
         }
       ],
@@ -1451,10 +1475,10 @@
       "mode": "Original",
       "crate": "core",
       "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_model_controls.rs",
-      "sha256": "90105d9a3ead4ee642fdf519a51e6d218d12484c03c1a98f0704daed3db4dc70",
+      "sha256": "dd4e8eca1761be66ea07508c7678175d54e4b2baf48469ae4866c9cb68e12e0d",
       "locations": [
         {
-          "line": 99,
+          "line": 94,
           "source": "fn activation_descending_rejected() {"
         }
       ],
@@ -1465,10 +1489,10 @@
       "mode": "Original",
       "crate": "core",
       "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_model_controls.rs",
-      "sha256": "90105d9a3ead4ee642fdf519a51e6d218d12484c03c1a98f0704daed3db4dc70",
+      "sha256": "dd4e8eca1761be66ea07508c7678175d54e4b2baf48469ae4866c9cb68e12e0d",
       "locations": [
         {
-          "line": 104,
+          "line": 99,
           "source": "fn activation_effectful_rejected() {"
         }
       ],
@@ -1479,10 +1503,10 @@
       "mode": "Original",
       "crate": "core",
       "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_model_controls.rs",
-      "sha256": "90105d9a3ead4ee642fdf519a51e6d218d12484c03c1a98f0704daed3db4dc70",
+      "sha256": "dd4e8eca1761be66ea07508c7678175d54e4b2baf48469ae4866c9cb68e12e0d",
       "locations": [
         {
-          "line": 111,
+          "line": 106,
           "source": "fn activation_unsupported_type_rejected() {"
         }
       ],
@@ -1493,10 +1517,10 @@
       "mode": "Original",
       "crate": "core",
       "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_model_controls.rs",
-      "sha256": "90105d9a3ead4ee642fdf519a51e6d218d12484c03c1a98f0704daed3db4dc70",
+      "sha256": "dd4e8eca1761be66ea07508c7678175d54e4b2baf48469ae4866c9cb68e12e0d",
       "locations": [
         {
-          "line": 125,
+          "line": 120,
           "source": "fn corruption_companion() {"
         }
       ],
@@ -1507,10 +1531,10 @@
       "mode": "Original",
       "crate": "core",
       "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_model_controls.rs",
-      "sha256": "90105d9a3ead4ee642fdf519a51e6d218d12484c03c1a98f0704daed3db4dc70",
+      "sha256": "dd4e8eca1761be66ea07508c7678175d54e4b2baf48469ae4866c9cb68e12e0d",
       "locations": [
         {
-          "line": 138,
+          "line": 133,
           "source": "fn order_corruption_rejected() {"
         }
       ],
@@ -1521,10 +1545,10 @@
       "mode": "Original",
       "crate": "core",
       "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_model_controls.rs",
-      "sha256": "90105d9a3ead4ee642fdf519a51e6d218d12484c03c1a98f0704daed3db4dc70",
+      "sha256": "dd4e8eca1761be66ea07508c7678175d54e4b2baf48469ae4866c9cb68e12e0d",
       "locations": [
         {
-          "line": 147,
+          "line": 142,
           "source": "fn count_corruption_rejected() {"
         }
       ],
@@ -1535,10 +1559,10 @@
       "mode": "Original",
       "crate": "core",
       "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_model_controls.rs",
-      "sha256": "90105d9a3ead4ee642fdf519a51e6d218d12484c03c1a98f0704daed3db4dc70",
+      "sha256": "dd4e8eca1761be66ea07508c7678175d54e4b2baf48469ae4866c9cb68e12e0d",
       "locations": [
         {
-          "line": 158,
+          "line": 153,
           "source": "fn snapshot_guards_companion() {"
         }
       ],
@@ -1549,10 +1573,10 @@
       "mode": "Original",
       "crate": "core",
       "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_model_controls.rs",
-      "sha256": "90105d9a3ead4ee642fdf519a51e6d218d12484c03c1a98f0704daed3db4dc70",
+      "sha256": "dd4e8eca1761be66ea07508c7678175d54e4b2baf48469ae4866c9cb68e12e0d",
       "locations": [
         {
-          "line": 179,
+          "line": 174,
           "source": "fn invalid_snapshot_rejected() {"
         }
       ],
@@ -1633,14 +1657,14 @@
       "mode": "PFC",
       "crate": "core",
       "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_entry_smoke.rs",
-      "sha256": "e011ce9ee899a6ed380a2f89983b0eb9253ca67cf7d29c6c12c4e2967552560f",
+      "sha256": "7e74bd9695cdb2b98b8298ce7daf7f107e0ac2e6e2a0cfc2203ab1639590130f",
       "locations": [
         {
-          "line": 175,
+          "line": 165,
           "source": "smoke_exact_n!(freeze_copy_u8_n0, u8, byte, UnstableSmallSortFreezeTypeImpl, 32, unstable, 0);"
         },
         {
-          "line": 116,
+          "line": 111,
           "source": "        fn $name() {"
         }
       ],
@@ -1651,14 +1675,14 @@
       "mode": "PFC",
       "crate": "core",
       "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_entry_smoke.rs",
-      "sha256": "e011ce9ee899a6ed380a2f89983b0eb9253ca67cf7d29c6c12c4e2967552560f",
+      "sha256": "7e74bd9695cdb2b98b8298ce7daf7f107e0ac2e6e2a0cfc2203ab1639590130f",
       "locations": [
         {
-          "line": 176,
+          "line": 166,
           "source": "smoke_exact_n!(freeze_copy_u8_n1, u8, byte, UnstableSmallSortFreezeTypeImpl, 32, unstable, 1);"
         },
         {
-          "line": 116,
+          "line": 111,
           "source": "        fn $name() {"
         }
       ],
@@ -1669,14 +1693,14 @@
       "mode": "PFC",
       "crate": "core",
       "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_entry_smoke.rs",
-      "sha256": "e011ce9ee899a6ed380a2f89983b0eb9253ca67cf7d29c6c12c4e2967552560f",
+      "sha256": "7e74bd9695cdb2b98b8298ce7daf7f107e0ac2e6e2a0cfc2203ab1639590130f",
       "locations": [
         {
-          "line": 177,
+          "line": 167,
           "source": "smoke_exact_n!(freeze_copy_u8_n2, u8, byte, UnstableSmallSortFreezeTypeImpl, 32, unstable, 2);"
         },
         {
-          "line": 116,
+          "line": 111,
           "source": "        fn $name() {"
         }
       ],
@@ -1687,14 +1711,14 @@
       "mode": "PFC",
       "crate": "core",
       "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_entry_smoke.rs",
-      "sha256": "e011ce9ee899a6ed380a2f89983b0eb9253ca67cf7d29c6c12c4e2967552560f",
+      "sha256": "7e74bd9695cdb2b98b8298ce7daf7f107e0ac2e6e2a0cfc2203ab1639590130f",
       "locations": [
         {
-          "line": 178,
+          "line": 168,
           "source": "smoke_exact_n!(freeze_copy_u8_n3, u8, byte, UnstableSmallSortFreezeTypeImpl, 32, unstable, 3);"
         },
         {
-          "line": 116,
+          "line": 111,
           "source": "        fn $name() {"
         }
       ],
@@ -1705,14 +1729,14 @@
       "mode": "PFC",
       "crate": "core",
       "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_entry_smoke.rs",
-      "sha256": "e011ce9ee899a6ed380a2f89983b0eb9253ca67cf7d29c6c12c4e2967552560f",
+      "sha256": "7e74bd9695cdb2b98b8298ce7daf7f107e0ac2e6e2a0cfc2203ab1639590130f",
       "locations": [
         {
-          "line": 167,
+          "line": 157,
           "source": "smoke_exact_n!(freeze_default_noncopy_n0, NonCopyByte, NonCopyByte::new,"
         },
         {
-          "line": 116,
+          "line": 111,
           "source": "        fn $name() {"
         }
       ],
@@ -1723,14 +1747,14 @@
       "mode": "PFC",
       "crate": "core",
       "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_entry_smoke.rs",
-      "sha256": "e011ce9ee899a6ed380a2f89983b0eb9253ca67cf7d29c6c12c4e2967552560f",
+      "sha256": "7e74bd9695cdb2b98b8298ce7daf7f107e0ac2e6e2a0cfc2203ab1639590130f",
       "locations": [
         {
-          "line": 169,
+          "line": 159,
           "source": "smoke_exact_n!(freeze_default_noncopy_n1, NonCopyByte, NonCopyByte::new,"
         },
         {
-          "line": 116,
+          "line": 111,
           "source": "        fn $name() {"
         }
       ],
@@ -1741,14 +1765,14 @@
       "mode": "PFC",
       "crate": "core",
       "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_entry_smoke.rs",
-      "sha256": "e011ce9ee899a6ed380a2f89983b0eb9253ca67cf7d29c6c12c4e2967552560f",
+      "sha256": "7e74bd9695cdb2b98b8298ce7daf7f107e0ac2e6e2a0cfc2203ab1639590130f",
       "locations": [
         {
-          "line": 171,
+          "line": 161,
           "source": "smoke_exact_n!(freeze_default_noncopy_n2, NonCopyByte, NonCopyByte::new,"
         },
         {
-          "line": 116,
+          "line": 111,
           "source": "        fn $name() {"
         }
       ],
@@ -1759,14 +1783,14 @@
       "mode": "PFC",
       "crate": "core",
       "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_entry_smoke.rs",
-      "sha256": "e011ce9ee899a6ed380a2f89983b0eb9253ca67cf7d29c6c12c4e2967552560f",
+      "sha256": "7e74bd9695cdb2b98b8298ce7daf7f107e0ac2e6e2a0cfc2203ab1639590130f",
       "locations": [
         {
-          "line": 173,
+          "line": 163,
           "source": "smoke_exact_n!(freeze_default_noncopy_n3, NonCopyByte, NonCopyByte::new,"
         },
         {
-          "line": 116,
+          "line": 111,
           "source": "        fn $name() {"
         }
       ],
@@ -1777,14 +1801,14 @@
       "mode": "PFC",
       "crate": "core",
       "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_entry_smoke.rs",
-      "sha256": "e011ce9ee899a6ed380a2f89983b0eb9253ca67cf7d29c6c12c4e2967552560f",
+      "sha256": "7e74bd9695cdb2b98b8298ce7daf7f107e0ac2e6e2a0cfc2203ab1639590130f",
       "locations": [
         {
-          "line": 159,
+          "line": 149,
           "source": "smoke_exact_n!(stable_freeze_u8_n0, u8, byte, StableSmallSortTypeImpl, 32, stable_general, 0);"
         },
         {
-          "line": 116,
+          "line": 111,
           "source": "        fn $name() {"
         }
       ],
@@ -1795,14 +1819,14 @@
       "mode": "PFC",
       "crate": "core",
       "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_entry_smoke.rs",
-      "sha256": "e011ce9ee899a6ed380a2f89983b0eb9253ca67cf7d29c6c12c4e2967552560f",
+      "sha256": "7e74bd9695cdb2b98b8298ce7daf7f107e0ac2e6e2a0cfc2203ab1639590130f",
       "locations": [
         {
-          "line": 160,
+          "line": 150,
           "source": "smoke_exact_n!(stable_freeze_u8_n1, u8, byte, StableSmallSortTypeImpl, 32, stable_general, 1);"
         },
         {
-          "line": 116,
+          "line": 111,
           "source": "        fn $name() {"
         }
       ],
@@ -1813,14 +1837,14 @@
       "mode": "PFC",
       "crate": "core",
       "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_entry_smoke.rs",
-      "sha256": "e011ce9ee899a6ed380a2f89983b0eb9253ca67cf7d29c6c12c4e2967552560f",
+      "sha256": "7e74bd9695cdb2b98b8298ce7daf7f107e0ac2e6e2a0cfc2203ab1639590130f",
       "locations": [
         {
-          "line": 161,
+          "line": 151,
           "source": "smoke_exact_n!(stable_freeze_u8_n2, u8, byte, StableSmallSortTypeImpl, 32, stable_general, 2);"
         },
         {
-          "line": 116,
+          "line": 111,
           "source": "        fn $name() {"
         }
       ],
@@ -1831,14 +1855,14 @@
       "mode": "PFC",
       "crate": "core",
       "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_entry_smoke.rs",
-      "sha256": "e011ce9ee899a6ed380a2f89983b0eb9253ca67cf7d29c6c12c4e2967552560f",
+      "sha256": "7e74bd9695cdb2b98b8298ce7daf7f107e0ac2e6e2a0cfc2203ab1639590130f",
       "locations": [
         {
-          "line": 162,
+          "line": 152,
           "source": "smoke_exact_n!(stable_freeze_u8_n3, u8, byte, StableSmallSortTypeImpl, 32, stable_general, 3);"
         },
         {
-          "line": 116,
+          "line": 111,
           "source": "        fn $name() {"
         }
       ],
@@ -1849,14 +1873,14 @@
       "mode": "PFC",
       "crate": "core",
       "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_entry_smoke.rs",
-      "sha256": "e011ce9ee899a6ed380a2f89983b0eb9253ca67cf7d29c6c12c4e2967552560f",
+      "sha256": "7e74bd9695cdb2b98b8298ce7daf7f107e0ac2e6e2a0cfc2203ab1639590130f",
       "locations": [
         {
-          "line": 163,
+          "line": 153,
           "source": "smoke_exact_n!(unstable_freeze_u8_n0, u8, byte, UnstableSmallSortTypeImpl, 32, unstable, 0);"
         },
         {
-          "line": 116,
+          "line": 111,
           "source": "        fn $name() {"
         }
       ],
@@ -1867,14 +1891,14 @@
       "mode": "PFC",
       "crate": "core",
       "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_entry_smoke.rs",
-      "sha256": "e011ce9ee899a6ed380a2f89983b0eb9253ca67cf7d29c6c12c4e2967552560f",
+      "sha256": "7e74bd9695cdb2b98b8298ce7daf7f107e0ac2e6e2a0cfc2203ab1639590130f",
       "locations": [
         {
-          "line": 164,
+          "line": 154,
           "source": "smoke_exact_n!(unstable_freeze_u8_n1, u8, byte, UnstableSmallSortTypeImpl, 32, unstable, 1);"
         },
         {
-          "line": 116,
+          "line": 111,
           "source": "        fn $name() {"
         }
       ],
@@ -1885,14 +1909,14 @@
       "mode": "PFC",
       "crate": "core",
       "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_entry_smoke.rs",
-      "sha256": "e011ce9ee899a6ed380a2f89983b0eb9253ca67cf7d29c6c12c4e2967552560f",
+      "sha256": "7e74bd9695cdb2b98b8298ce7daf7f107e0ac2e6e2a0cfc2203ab1639590130f",
       "locations": [
         {
-          "line": 165,
+          "line": 155,
           "source": "smoke_exact_n!(unstable_freeze_u8_n2, u8, byte, UnstableSmallSortTypeImpl, 32, unstable, 2);"
         },
         {
-          "line": 116,
+          "line": 111,
           "source": "        fn $name() {"
         }
       ],
@@ -1903,14 +1927,14 @@
       "mode": "PFC",
       "crate": "core",
       "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_entry_smoke.rs",
-      "sha256": "e011ce9ee899a6ed380a2f89983b0eb9253ca67cf7d29c6c12c4e2967552560f",
+      "sha256": "7e74bd9695cdb2b98b8298ce7daf7f107e0ac2e6e2a0cfc2203ab1639590130f",
       "locations": [
         {
-          "line": 166,
+          "line": 156,
           "source": "smoke_exact_n!(unstable_freeze_u8_n3, u8, byte, UnstableSmallSortTypeImpl, 32, unstable, 3);"
         },
         {
-          "line": 116,
+          "line": 111,
           "source": "        fn $name() {"
         }
       ],
@@ -1921,15 +1945,15 @@
     "group_by": [
       "explicit execution_groups"
     ],
-    "harness_timeout": "600s",
+    "harness_timeout": "1200s; selected cell pair only; reference other rows600s",
     "jobs": 1,
     "compile_boundary": "Stock initial export marker after std_project, before verification;900s cap in same process",
     "per_root_rss": "UNKNOWN; group process peak is not per-root RSS",
     "group_rss_cap": "min(12GiB,available-2GiB); cgroup headroom considered",
     "phase_seconds": 8100,
-    "group_wall_seconds": "compile900 + sum(root600) + cleanup10; per job group partition only"
+    "group_wall_seconds": "compile900 + 2*root1200 =3300 child; cleanup10; envelope3310; phase8100 unchanged"
   },
-  "control_parent": "b25dd39a46ba90b167500997d546a5f2f5bd8f3b",
+  "control_parent": "9208b373c0a08a265fa0d7493a6529e331065271",
   "legacy_symbolic_rows": [
     {
       "id": "freeze_copy_u8",
@@ -1958,11 +1982,11 @@
         "S1_entry_useful_return"
       ],
       "required_success_messages": [
-        "S1_ENTRY_MODEL_ENABLED",
-        "S1_EXACT_TRAIT_THRESHOLD",
-        "S1_ENTRY_POST_INDEPENDENT_CALLER",
-        "S1_LEFT_CANARY",
-        "S1_RIGHT_CANARY"
+        "freeze_copy_u8::model_enabled",
+        "freeze_copy_u8::s1_exact_trait_threshold",
+        "freeze_copy_u8::post_independent_caller",
+        "freeze_copy_u8::left_canary",
+        "freeze_copy_u8::right_canary"
       ],
       "timeout_seconds": 600,
       "planned_seconds": 180,
@@ -1996,11 +2020,11 @@
         "S1_entry_useful_return"
       ],
       "required_success_messages": [
-        "S1_ENTRY_MODEL_ENABLED",
-        "S1_EXACT_TRAIT_THRESHOLD",
-        "S1_ENTRY_POST_INDEPENDENT_CALLER",
-        "S1_LEFT_CANARY",
-        "S1_RIGHT_CANARY"
+        "freeze_default_noncopy::model_enabled",
+        "freeze_default_noncopy::s1_exact_trait_threshold",
+        "freeze_default_noncopy::post_independent_caller",
+        "freeze_default_noncopy::left_canary",
+        "freeze_default_noncopy::right_canary"
       ],
       "timeout_seconds": 600,
       "planned_seconds": 180,
@@ -2034,11 +2058,11 @@
         "S1_entry_useful_return"
       ],
       "required_success_messages": [
-        "S1_ENTRY_MODEL_ENABLED",
-        "S1_EXACT_TRAIT_THRESHOLD",
-        "S1_ENTRY_POST_INDEPENDENT_CALLER",
-        "S1_LEFT_CANARY",
-        "S1_RIGHT_CANARY"
+        "stable_freeze_u8::model_enabled",
+        "stable_freeze_u8::s1_exact_trait_threshold",
+        "stable_freeze_u8::post_independent_caller",
+        "stable_freeze_u8::left_canary",
+        "stable_freeze_u8::right_canary"
       ],
       "timeout_seconds": 600,
       "planned_seconds": 180,
@@ -2072,11 +2096,11 @@
         "S1_entry_useful_return"
       ],
       "required_success_messages": [
-        "S1_ENTRY_MODEL_ENABLED",
-        "S1_EXACT_TRAIT_THRESHOLD",
-        "S1_ENTRY_POST_INDEPENDENT_CALLER",
-        "S1_LEFT_CANARY",
-        "S1_RIGHT_CANARY"
+        "unstable_freeze_u8::model_enabled",
+        "unstable_freeze_u8::s1_exact_trait_threshold",
+        "unstable_freeze_u8::post_independent_caller",
+        "unstable_freeze_u8::left_canary",
+        "unstable_freeze_u8::right_canary"
       ],
       "timeout_seconds": 600,
       "planned_seconds": 180,
@@ -2107,13 +2131,35 @@
         "S1_entry_useful_return"
       ],
       "required_success_messages": [
-        "S1_ENTRY_MODEL_ENABLED",
-        "S1_EXACT_TRAIT_THRESHOLD",
-        "S1_ENTRY_POST_INDEPENDENT_CALLER",
-        "S1_LEFT_CANARY",
-        "S1_RIGHT_CANARY"
+        "freeze_copy_u8_n0::model_enabled",
+        "freeze_copy_u8_n0::s1_exact_trait_threshold",
+        "freeze_copy_u8_n0::post_independent_caller",
+        "freeze_copy_u8_n0::left_canary",
+        "freeze_copy_u8_n0::right_canary",
+        "freeze_copy_u8_n1::model_enabled",
+        "freeze_copy_u8_n1::s1_exact_trait_threshold",
+        "freeze_copy_u8_n1::post_independent_caller",
+        "freeze_copy_u8_n1::left_canary",
+        "freeze_copy_u8_n1::right_canary",
+        "freeze_copy_u8_n2::model_enabled",
+        "freeze_copy_u8_n2::s1_exact_trait_threshold",
+        "freeze_copy_u8_n2::post_independent_caller",
+        "freeze_copy_u8_n2::left_canary",
+        "freeze_copy_u8_n2::right_canary",
+        "freeze_copy_u8_n3::model_enabled",
+        "freeze_copy_u8_n3::s1_exact_trait_threshold",
+        "freeze_copy_u8_n3::post_independent_caller",
+        "freeze_copy_u8_n3::left_canary",
+        "freeze_copy_u8_n3::right_canary"
       ],
-      "qualification": "All four same-pin PFC cases; every required success and exported cover binding; no partial-union acceptance"
+      "qualification": "All four same-pin PFC cases; each member exact root/role labels and required exported covers; no partial-union acceptance; offline admission",
+      "required_success_roles": [
+        "model_enabled",
+        "s1_exact_trait_threshold",
+        "post_independent_caller",
+        "left_canary",
+        "right_canary"
+      ]
     },
     {
       "id": "freeze_default_noncopy",
@@ -2137,13 +2183,35 @@
         "S1_entry_useful_return"
       ],
       "required_success_messages": [
-        "S1_ENTRY_MODEL_ENABLED",
-        "S1_EXACT_TRAIT_THRESHOLD",
-        "S1_ENTRY_POST_INDEPENDENT_CALLER",
-        "S1_LEFT_CANARY",
-        "S1_RIGHT_CANARY"
+        "freeze_default_noncopy_n0::model_enabled",
+        "freeze_default_noncopy_n0::s1_exact_trait_threshold",
+        "freeze_default_noncopy_n0::post_independent_caller",
+        "freeze_default_noncopy_n0::left_canary",
+        "freeze_default_noncopy_n0::right_canary",
+        "freeze_default_noncopy_n1::model_enabled",
+        "freeze_default_noncopy_n1::s1_exact_trait_threshold",
+        "freeze_default_noncopy_n1::post_independent_caller",
+        "freeze_default_noncopy_n1::left_canary",
+        "freeze_default_noncopy_n1::right_canary",
+        "freeze_default_noncopy_n2::model_enabled",
+        "freeze_default_noncopy_n2::s1_exact_trait_threshold",
+        "freeze_default_noncopy_n2::post_independent_caller",
+        "freeze_default_noncopy_n2::left_canary",
+        "freeze_default_noncopy_n2::right_canary",
+        "freeze_default_noncopy_n3::model_enabled",
+        "freeze_default_noncopy_n3::s1_exact_trait_threshold",
+        "freeze_default_noncopy_n3::post_independent_caller",
+        "freeze_default_noncopy_n3::left_canary",
+        "freeze_default_noncopy_n3::right_canary"
       ],
-      "qualification": "All four same-pin PFC cases; every required success and exported cover binding; no partial-union acceptance"
+      "qualification": "All four same-pin PFC cases; each member exact root/role labels and required exported covers; no partial-union acceptance; offline admission",
+      "required_success_roles": [
+        "model_enabled",
+        "s1_exact_trait_threshold",
+        "post_independent_caller",
+        "left_canary",
+        "right_canary"
+      ]
     },
     {
       "id": "stable_freeze_u8",
@@ -2167,13 +2235,35 @@
         "S1_entry_useful_return"
       ],
       "required_success_messages": [
-        "S1_ENTRY_MODEL_ENABLED",
-        "S1_EXACT_TRAIT_THRESHOLD",
-        "S1_ENTRY_POST_INDEPENDENT_CALLER",
-        "S1_LEFT_CANARY",
-        "S1_RIGHT_CANARY"
+        "stable_freeze_u8_n0::model_enabled",
+        "stable_freeze_u8_n0::s1_exact_trait_threshold",
+        "stable_freeze_u8_n0::post_independent_caller",
+        "stable_freeze_u8_n0::left_canary",
+        "stable_freeze_u8_n0::right_canary",
+        "stable_freeze_u8_n1::model_enabled",
+        "stable_freeze_u8_n1::s1_exact_trait_threshold",
+        "stable_freeze_u8_n1::post_independent_caller",
+        "stable_freeze_u8_n1::left_canary",
+        "stable_freeze_u8_n1::right_canary",
+        "stable_freeze_u8_n2::model_enabled",
+        "stable_freeze_u8_n2::s1_exact_trait_threshold",
+        "stable_freeze_u8_n2::post_independent_caller",
+        "stable_freeze_u8_n2::left_canary",
+        "stable_freeze_u8_n2::right_canary",
+        "stable_freeze_u8_n3::model_enabled",
+        "stable_freeze_u8_n3::s1_exact_trait_threshold",
+        "stable_freeze_u8_n3::post_independent_caller",
+        "stable_freeze_u8_n3::left_canary",
+        "stable_freeze_u8_n3::right_canary"
       ],
-      "qualification": "All four same-pin PFC cases; every required success and exported cover binding; no partial-union acceptance"
+      "qualification": "All four same-pin PFC cases; each member exact root/role labels and required exported covers; no partial-union acceptance; offline admission",
+      "required_success_roles": [
+        "model_enabled",
+        "s1_exact_trait_threshold",
+        "post_independent_caller",
+        "left_canary",
+        "right_canary"
+      ]
     },
     {
       "id": "unstable_freeze_u8",
@@ -2197,13 +2287,35 @@
         "S1_entry_useful_return"
       ],
       "required_success_messages": [
-        "S1_ENTRY_MODEL_ENABLED",
-        "S1_EXACT_TRAIT_THRESHOLD",
-        "S1_ENTRY_POST_INDEPENDENT_CALLER",
-        "S1_LEFT_CANARY",
-        "S1_RIGHT_CANARY"
+        "unstable_freeze_u8_n0::model_enabled",
+        "unstable_freeze_u8_n0::s1_exact_trait_threshold",
+        "unstable_freeze_u8_n0::post_independent_caller",
+        "unstable_freeze_u8_n0::left_canary",
+        "unstable_freeze_u8_n0::right_canary",
+        "unstable_freeze_u8_n1::model_enabled",
+        "unstable_freeze_u8_n1::s1_exact_trait_threshold",
+        "unstable_freeze_u8_n1::post_independent_caller",
+        "unstable_freeze_u8_n1::left_canary",
+        "unstable_freeze_u8_n1::right_canary",
+        "unstable_freeze_u8_n2::model_enabled",
+        "unstable_freeze_u8_n2::s1_exact_trait_threshold",
+        "unstable_freeze_u8_n2::post_independent_caller",
+        "unstable_freeze_u8_n2::left_canary",
+        "unstable_freeze_u8_n2::right_canary",
+        "unstable_freeze_u8_n3::model_enabled",
+        "unstable_freeze_u8_n3::s1_exact_trait_threshold",
+        "unstable_freeze_u8_n3::post_independent_caller",
+        "unstable_freeze_u8_n3::left_canary",
+        "unstable_freeze_u8_n3::right_canary"
       ],
-      "qualification": "All four same-pin PFC cases; every required success and exported cover binding; no partial-union acceptance"
+      "qualification": "All four same-pin PFC cases; each member exact root/role labels and required exported covers; no partial-union acceptance; offline admission",
+      "required_success_roles": [
+        "model_enabled",
+        "s1_exact_trait_threshold",
+        "post_independent_caller",
+        "left_canary",
+        "right_canary"
+      ]
     }
   ],
   "execution_groups": [
@@ -2356,40 +2468,46 @@
     }
   ],
   "workflow_stages": {
-    "s1_light": [
-      "light-model-u5",
-      "light-corruption-u4",
-      "light-controls-u34"
-    ],
-    "s1_activation": [
-      "activation-default-u34",
-      "activation-override-u34"
-    ],
     "s1_cell": [
       "cell-u34"
-    ],
-    "s1_heavy": [
-      "freeze_copy_u8-n01-u34",
-      "freeze_copy_u8-n23-u34",
-      "freeze_default_noncopy-n01-u34",
-      "freeze_default_noncopy-n23-u34",
-      "stable_freeze_u8-n01-u34",
-      "stable_freeze_u8-n23-u34",
-      "unstable_freeze_u8-n01-u34",
-      "unstable_freeze_u8-n23-u34"
     ]
   },
   "artifact_policy": {
     "file": "group-evidence.json.gz",
     "files_per_group": 1,
-    "groups": 14,
+    "groups": 1,
     "compressed_cap_per_group": 8388608,
     "uncompressed_cap_per_group": 33554432,
-    "aggregate_compressed_cap": 117440512,
+    "aggregate_compressed_cap": 8388608,
     "raw_stdout_uploaded": false
   },
   "binary_snapshot_policy": "Fixed kani-driver/kani-compiler/CBMC before and protected after child shutdown; independent of export/rich validation; missing/drift/error => UNKNOWN",
   "location_exception_policy": "S1-07_EXACT_STOCK_UNREACHABLE_LOCATION_ONLY_V1: exact 18 row/variant observations, 2 IDs, class/description/SUCCESS/original display; null sites retained; offline w11 admission",
   "binding_metadata_policy": "Same-invocation fresh target namespace; bounded exact native kani-metadata JSON bytes plus export/rich/compile manifest and input/config/source/variant/binary hashes; runner UUID is not compiler-instance identity. Missing compiler-instance/impl/substitution/clause/expansion/property-MIR edges remain UNKNOWN for offline w11.",
-  "binding_metadata_requirements_sha256": "48dba27cacf1933770e4ec61c257a24318456ce5096cac949f9ad886887e3589"
+  "binding_metadata_requirements_sha256": "48dba27cacf1933770e4ec61c257a24318456ce5096cac949f9ad886887e3589",
+  "role_map": {
+    "path": "ROLE-MAP.json",
+    "sha256": "bad63e0616c0061bf40d7e8d5c72324c8089574624a20f07a1f98a2806e5043d",
+    "required_success_bindings": 127,
+    "new_labels": 111,
+    "preserved_semantic_bindings": 16,
+    "observed_s108_messages": "NOT_RUN",
+    "admission": "OFFLINE_ONLY"
+  },
+  "execution_scope": {
+    "profile": "cell-retry1200-v1",
+    "declared_reference_groups": 14,
+    "declared_reference_rows": 35,
+    "selected_groups": [
+      "cell-u34"
+    ],
+    "selected_row_ids": [
+      "stable_default_cell",
+      "unstable_default_cell"
+    ],
+    "selectors": [
+      "slice::sort::shared::smallsort::verify::sorting_entry_smoke::stable_default_cell",
+      "slice::sort::shared::smallsort::verify::sorting_entry_smoke::unstable_default_cell"
+    ]
+  }
 }

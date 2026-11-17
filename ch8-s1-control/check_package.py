@@ -10,9 +10,9 @@ import subprocess
 import time
 
 HERE = Path(__file__).resolve().parent
-# Frozen graph: S1-07 control -> b25 control_parent -> 40b control -> tool_sha. Export/tool identity
+# Frozen graph: S1-08 -> S1-07 -> b25 -> 40b -> tool_sha. Export/tool identity
 # operations use only HEAD, its tree and the pinned commit; retain their depth 2.
-CHECKOUT_DEPTHS = {'control': 4, 'export': 2, 'tool': 2}
+CHECKOUT_DEPTHS = {'control': 5, 'export': 2, 'tool': 2}
 
 
 def load_yaml(text):
@@ -82,9 +82,11 @@ def check_yaml(path):
     assert doc['on']['push']['branches'] == ['uninit-ci/ch8-s1k-*']
     assert doc['permissions'] == {'contents': 'read'}
     assert doc['concurrency'] == {'group': 'ch8-s1-fork', 'cancel-in-progress': False}
-    stages=['s1_light','s1_activation','s1_cell','s1_heavy']
+    stages=['s1_cell']
     assert list(doc['jobs']) == stages
     request=json.loads((HERE/'CI-REQUEST.json').read_text())
+    import cell_retry_profile
+    cell_retry_profile.validate_request(request)
     expected=request['workflow_stages']
     for index,name in enumerate(stages):
         job=doc['jobs'][name]
@@ -139,8 +141,9 @@ def check_yaml(path):
         assert steps[-1]['with']['retention-days']==7
         assert steps[-1]['with']['path']=='${{ env.RECEIPT_ROOT }}/group-evidence.json.gz'
         assert 'pack_evidence.py --root' in steps[-2]['run']
-        assert 'test_s105.py' in steps[2]['run']
-        assert 'test_s107.py' in steps[2]['run']
+        assert 'test_cell_retry.py' in steps[2]['run']
+        assert 'test_s108.py' in steps[2]['run']
+        assert 'test_s108r1.py' in steps[2]['run']
     return {'yaml':'PASS','scalar_types':'NATIVE_LITERAL_PASS',
             'runner_context':'STEP_ENV_ONLY','checkout_depth':dict(CHECKOUT_DEPTHS),
             'layout':['control','export','tool'],'dispatch':'NOT_RUN'}
@@ -193,12 +196,9 @@ def fallback(out, group_ids=None):
     r=json.loads((HERE/'CI-REQUEST.json').read_text())
     # SIGKILL cannot run finally: retain observations and mark incomplete work UNKNOWN.
     from runner import _write_json, _bounded_log
-    from runner import group_rows
-    groups=group_rows(r['rows'],r.get('execution_groups'))
-    if group_ids is not None:
-        selected=set(group_ids)
-        assert selected and selected.issubset({g['id'] for g in groups})
-        groups=[g for g in groups if g['id'] in selected]
+    from runner import load_request, select_groups
+    r=load_request()
+    groups=select_groups(r,group_ids)
     selected_rows={row['id'] for g in groups for row in g['rows']}
     for group in groups:
         dest=out/'groups'/group['id'];dest.mkdir(parents=True,exist_ok=True)

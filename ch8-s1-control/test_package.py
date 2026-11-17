@@ -132,7 +132,7 @@ class PackageTests(unittest.TestCase):
                     if not step.get('uses','').startswith('actions/checkout@'):
                         continue
                     checkout=step['with']['path']
-                    for depth in ([0,1,2,3,5] if checkout=='control' else [0,1,3]):
+                    for depth in ([0,1,2,3,4,6] if checkout=='control' else [0,1,3]):
                         bad=copy.deepcopy(doc)
                         bad['jobs'][job_name]['steps'][index]['with']['fetch-depth']=depth
                         path.write_text(fast_dump(bad,sort_keys=False))
@@ -162,6 +162,7 @@ class PackageTests(unittest.TestCase):
             tool_sha=commit(origin,'tool');git(origin,'branch','tool',tool_sha)
             tool_tree=git(origin,'rev-parse','HEAD^{tree}')
             commit(origin,'prior control')
+            commit(origin,'reviewed S1-07 control')
             parent=commit(origin,'parent');git(origin,'branch','export',parent)
             std_tree=git(origin,'rev-parse','HEAD^{tree}')
             here=origin/'ch8-s1-control';here.mkdir()
@@ -272,34 +273,67 @@ class PackageTests(unittest.TestCase):
             self.assertTrue(all(row['outcome']=='UNKNOWN' for row in result['rows'] if row['id'] in group['row_ids']))
 
     def test_fallback_terminal_after_setup_failure_and_mid_run_interruption(self):
+        """Original terminal/interruption control adapted to the exact cell pair."""
         import collect
-        request=json.loads((Path(__file__).resolve().parent/'CI-REQUEST.json').read_text())
-        chosen=request['execution_groups'][-1]
+        import runner
+        import cell_retry_profile as cell
+        request=runner.load_request()
         with tempfile.TemporaryDirectory() as d:
             out=Path(d)/'receipts'
-            c.fallback(out,[chosen['id']])
+            c.fallback(out,[cell.GROUP])
             terminal=json.loads((out/'receipt.json').read_text())
             self.assertEqual(terminal['state'],'FALLBACK_INCOMPLETE')
-            self.assertEqual(terminal['selected_groups'],[chosen['id']])
+            self.assertEqual(terminal['selected_groups'],[cell.GROUP])
+            self.assertEqual([row['id'] for row in terminal['rows']],cell.ROW_IDS)
+            self.assertTrue(all(row['status']=='NOT_RUN' and row['outcome']=='UNKNOWN' for row in terminal['rows']))
+            self.assertEqual({p.name for p in (out/'groups').iterdir()},{cell.GROUP})
             result=collect.collect([out],request)
             self.assertTrue(all(row['outcome']=='UNKNOWN' for row in result['rows']))
             self.assertEqual(result['proof_credit'],'NONE')
-            original={'state':'IN_PROGRESS','rows':[],'stop_reason':'captured exception'}
-            (out/'receipt.json').write_text(json.dumps(original))
-            rid=chosen['row_ids'][0];rowpath=out/rid/'receipt.json'
-            row=json.loads(rowpath.read_text());row.update(status='IN_PROGRESS',original_exit_code=42)
-            rowpath.write_text(json.dumps(row))
-            c.fallback(out,[chosen['id']])
+            original={'state':'IN_PROGRESS','rows':[],'stop_reason':'captured exception',
+                      'original_exception':{'type':'OSError','message':'terminal interruption'}}
+            original_text=json.dumps(original)
+            (out/'receipt.json').write_text(original_text)
+            rid=cell.ROW_IDS[0];rowpath=out/rid/'receipt.json'
+            captured=json.loads(rowpath.read_text())
+            captured.update(status='IN_PROGRESS',original_exit=42,original_exit_code=42,signal=15,
+                original_exception={'type':'OSError','message':'captured row exception'},group=cell.GROUP)
+            rowpath.write_text(json.dumps(captured))
+            group_dir=out/'groups'/cell.GROUP
+            group_value={'state':'IN_PROGRESS','execution':{'original_exit_code':42,'signal':15},
+                         'original_exception':{'type':'OSError','message':'captured group exception'}}
+            for path in (group_dir/'receipt.json',group_dir/'compile/receipt.json'):
+                path.write_text(json.dumps(group_value))
+            (group_dir/'stdout.log').write_text('captured stdout tail')
+            (group_dir/'stderr.log').write_text('captured stderr tail')
+            c.fallback(out,[cell.GROUP])
             self.assertEqual(json.loads((out/'interrupted-terminal.json').read_text()),original)
             terminal=json.loads((out/'receipt.json').read_text())
             observed=next(row for row in terminal['rows'] if row['id']==rid)
-            self.assertEqual(observed['original_exit_code'],42)
-            self.assertEqual(observed['status'],'INTERRUPTED')
+            self.assertEqual(observed.get('original_exit'),42)
+            for key in ('original_exit_code','signal','original_exception'):
+                self.assertEqual(observed.get(key),captured[key])
+            self.assertEqual(observed['status'],'INTERRUPTED');self.assertEqual(observed['outcome'],'UNKNOWN')
+            self.assertIn('captured stdout tail',observed['stdout']['head'])
+            self.assertIn('captured stderr tail',observed['stderr']['head'])
+            for path in (group_dir/'receipt.json',group_dir/'compile/receipt.json'):
+                value=json.loads(path.read_text())
+                self.assertEqual(value['state'],'INTERRUPTED');self.assertEqual(value['outcome'],'UNKNOWN')
+                for key in ('execution','original_exception'):self.assertEqual(value[key],group_value[key])
+            self.assertEqual(json.loads((out/cell.ROW_IDS[1]/'receipt.json').read_text())['status'],'NOT_RUN')
             self.assertEqual(collect.collect([out],request)['proof_credit'],'NONE')
-            for raw in ['null','[]','{']:
+            # A complete identity envelope must remain byte-exact on later fallback.
+            complete=(out/'receipt.json').read_bytes()
+            interrupted=(out/'interrupted-terminal.json').read_bytes()
+            c.fallback(out,[cell.GROUP])
+            self.assertEqual((out/'receipt.json').read_bytes(),complete)
+            self.assertEqual((out/'interrupted-terminal.json').read_bytes(),interrupted)
+            for raw in ('null','[]','{'):
                 (out/'receipt.json').write_text(raw)
-                c.fallback(out,[chosen['id']])
-                self.assertTrue((out/'interrupted-terminal.json').exists())
+                c.fallback(out,[cell.GROUP])
+                expected={'state':'INVALID_JSON','captured_text':raw} if raw=='{' else json.loads(raw)
+                self.assertEqual(json.loads((out/'interrupted-terminal.json').read_text()),expected)
+                self.assertEqual(json.loads((out/'receipt.json').read_text())['state'],'FALLBACK_INCOMPLETE')
                 self.assertEqual(collect.collect([out],request)['proof_credit'],'NONE')
 
     def test_build_wrapper_receipts_and_errors_without_build(self):
@@ -325,38 +359,74 @@ class PackageTests(unittest.TestCase):
                 execute.assert_not_called()
 
     def test_fallback_preserves_receipt_materializes_tail_and_bounds(self):
+        """Original captured receipt/tail/bounds control, using exact cell roots."""
+        import runner
+        import cell_retry_profile as cell
+        request=runner.load_request()
+        selected=runner.select_groups(request,[cell.GROUP])
         with tempfile.TemporaryDirectory() as d:
-            root=Path(d);here=root/'control';here.mkdir();out=root/'receipts';out.mkdir()
-            request={'rows':[{'id':s,'selector':'x::'+s,'mode':'Original','variant':'production','unwind':34} for s in ['done','tail']],
-                     'budgets':{'artifact_bytes':10000}}
-            (here/'CI-REQUEST.json').write_text(json.dumps(request))
-            done=out/'done';done.mkdir();(done/'receipt.json').write_text('{"original_exit_code":42}')
-            with patch.object(c,'HERE',here):
+            out=Path(d)/'receipts';out.mkdir()
+            done=out/cell.ROW_IDS[0];done.mkdir()
+            captured={'id':cell.ROW_IDS[0],'status':'OBSERVED','outcome':'UNKNOWN',
+                      'original_exit':42,'original_exit_code':42,'signal':15,
+                      'original_exception':{'type':'OSError','message':'captured before fallback'}}
+            done_bytes=json.dumps(captured,indent=1).encode()+b'\n'
+            (done/'receipt.json').write_bytes(done_bytes)
+            c.fallback(out)
+            self.assertEqual(json.loads((done/'receipt.json').read_text()).get('original_exit'),42)
+            self.assertEqual((done/'receipt.json').read_bytes(),done_bytes)
+            tail=out/cell.ROW_IDS[1]/'receipt.json'
+            self.assertEqual(json.loads(tail.read_text())['status'],'NOT_RUN')
+            group_dir=out/'groups'/cell.GROUP
+            self.assertEqual({p.name for p in (out/'groups').iterdir()},{cell.GROUP})
+            for path in (group_dir/'receipt.json',group_dir/'compile/receipt.json'):
+                self.assertEqual(json.loads(path.read_text())['state'],'NOT_RUN_OR_INTERRUPTED')
+                pending={'state':'IN_PROGRESS','execution':{'original_exit_code':42,'signal':15},
+                         'original_exception':{'type':'OSError','message':'compile or group captured'}}
+                path.write_text(json.dumps(pending))
+            c.fallback(out)
+            for path in (group_dir/'receipt.json',group_dir/'compile/receipt.json'):
+                value=json.loads(path.read_text());self.assertEqual(value['state'],'INTERRUPTED')
+                self.assertEqual(value['execution'],pending['execution'])
+                self.assertEqual(value['original_exception'],pending['original_exception'])
+            complete=b'{"state":"COMPLETE","execution":{"original_exit_code":0,"signal":null}}\n'
+            for path in (group_dir/'receipt.json',group_dir/'compile/receipt.json'):path.write_bytes(complete)
+            completed={**captured,'status':'OBSERVED','outcome':'RECORDED','original_exit':0,'signal':None}
+            done_bytes=json.dumps(completed).encode()+b'\n';(done/'receipt.json').write_bytes(done_bytes)
+            tail_value={'status':'IN_PROGRESS','original_exit':42,'signal':15,'group':cell.GROUP,
+                        'original_exception':{'type':'OSError','message':'tail interrupted'}}
+            tail.write_text(json.dumps(tail_value))
+            (group_dir/'stdout.log').write_text('row interrupted tail')
+            (group_dir/'stderr.log').write_text('row stderr tail')
+            c.fallback(out)
+            self.assertEqual((done/'receipt.json').read_bytes(),done_bytes)
+            for path in (group_dir/'receipt.json',group_dir/'compile/receipt.json'):self.assertEqual(path.read_bytes(),complete)
+            value=json.loads(tail.read_text());self.assertEqual(value['status'],'INTERRUPTED')
+            self.assertEqual(value['outcome'],'UNKNOWN')
+            for key in ('original_exit','signal','original_exception'):self.assertEqual(value[key],tail_value[key])
+            self.assertIn('row interrupted tail',value['stdout']['head'])
+            self.assertIn('row stderr tail',value['stderr']['head'])
+            self.assertFalse((out/'list').exists())
+            # Isolate artifact bounding with a small cap AFTER exact production
+            # request/selection validation. No on-disk pin or runtime cap changes.
+            bounded=copy.deepcopy(request);bounded['budgets']['artifact_bytes']=10000
+            raw=b'x'*20000;oversize=out/'oversize.log';oversize.write_bytes(raw)
+            with patch.object(runner,'load_request',return_value=bounded), \
+                 patch.object(runner,'select_groups',return_value=selected):
                 c.fallback(out)
-                self.assertEqual(json.loads((done/'receipt.json').read_text())['original_exit_code'],42)
-                self.assertEqual(json.loads((out/'tail/receipt.json').read_text())['status'],'NOT_RUN')
-                list_receipt=out/'groups/production-u34/compile/receipt.json'
-                self.assertEqual(json.loads(list_receipt.read_text())['state'],'NOT_RUN_OR_INTERRUPTED')
-                list_receipt.write_text(json.dumps({'state':'IN_PROGRESS','execution':{'signal':None}}))
-                c.fallback(out)
-                self.assertEqual(json.loads(list_receipt.read_text())['state'],'INTERRUPTED')
-                complete='{"state":"COMPLETE","execution":{"original_exit_code":0}}'
-                list_receipt.write_text(complete)
-                c.fallback(out)
-                self.assertEqual(list_receipt.read_text(),complete)
-                pending=out/'tail/receipt.json'
-                pending.write_text(json.dumps({'status':'IN_PROGRESS','original_exit':None,'signal':None,'group':'production-u34'}))
-                (out/'groups/production-u34/stdout.log').write_text('row interrupted tail')
-                c.fallback(out)
-                value=json.loads(pending.read_text())
-                self.assertEqual(value['status'],'INTERRUPTED')
-                self.assertEqual(value['outcome'],'UNKNOWN')
-                self.assertIn('row interrupted tail',value['stdout']['head'])
-                self.assertFalse((out/'list').exists())
-                (out/'oversize.log').write_bytes(b'x'*20000)
-                c.fallback(out)
-                self.assertTrue((out/'TRUNCATED.json').is_file())
-                self.assertFalse((out/'oversize.log').exists())
+            truncated=json.loads((out/'TRUNCATED.json').read_text())
+            self.assertEqual(truncated['outcome'],'UNKNOWN');self.assertEqual(truncated['reason'],'artifact cap')
+            drop=next(row for row in truncated['dropped'] if row['path']=='oversize.log')
+            self.assertEqual(drop['bytes'],len(raw));self.assertEqual(drop['sha256'],hashlib.sha256(raw).hexdigest())
+            self.assertFalse(oversize.exists())
+            self.assertGreater(truncated['original_bytes'],10000)
+            self.assertLessEqual(sum(p.stat().st_size for p in out.rglob('*') if p.is_file()),10000)
+            self.assertEqual((done/'receipt.json').read_bytes(),done_bytes)
+            for path in (group_dir/'receipt.json',group_dir/'compile/receipt.json'):self.assertEqual(path.read_bytes(),complete)
+            self.assertEqual(sum(p.stat().st_size for p in out.rglob('*') if p.is_file()),
+                             truncated['original_bytes']-sum(row['bytes'] for row in truncated['dropped'])+(out/'TRUNCATED.json').stat().st_size)
+            self.assertEqual(runner.load_request()['budgets']['artifact_bytes'],256*1024*1024)
+
 
 
 if __name__=='__main__':unittest.main()
