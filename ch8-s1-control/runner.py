@@ -23,11 +23,12 @@ from typing import Any
 
 import rich_evidence
 import binding_metadata
+import s2_policy
 
 HERE = Path(__file__).resolve().parent
 REQUEST_PATH = HERE / "CI-REQUEST.json"
-STD_SHA = "99e8456d200fff1299ee5756279cddb23921dc65"
-STD_TREE = "b769b084f9982cbcb166229b29b6bd2bff136c51"
+STD_SHA = "97ac4d39d7f959ea70b1f57785ffd1fd66ecd22a"
+STD_TREE = "2b305686df9758381cfc5d07e195ba05d6b87637"
 TOOL_SHA = "0aac16ef62da9e9d5645782d458593e5d78143ba"
 TOOL_TREE = "9d8bc9312bf955ef126d32b819b3cd0ed105ed2b"
 MAX_ROW_SECONDS = 600
@@ -144,14 +145,6 @@ def load_request(path: Path = REQUEST_PATH) -> dict[str, Any]:
         oracle = row.get("oracle")
         if oracle is not None and row["variant"] == "production" and oracle["file"] != binding["file"]:
             raise RunnerError(f"negative oracle source location mismatch: {row['id']}")
-    smoke_ids = {"stable_default_cell", "stable_freeze_u8_n0", "unstable_default_cell",
-                 "unstable_freeze_u8_n0", "freeze_default_noncopy_n0", "freeze_copy_u8_n0"}
-    if not smoke_ids.issubset(bindings) or len({bindings[k]["target"] for k in smoke_ids}) != 6:
-        raise RunnerError("six distinct PFC source targets required")
-    for diagnostic, positive in (("activation-default", "stable_default_cell"),
-                                 ("activation-override", "stable_freeze_u8_n0")):
-        if bindings.get(diagnostic, {}).get("target") != bindings[positive]["target"]:
-            raise RunnerError("activation source target mismatch")
     execution_groups = request.get("execution_groups")
     if not isinstance(execution_groups, list) or not execution_groups:
         raise RunnerError("execution_groups must be a non-empty ordered array")
@@ -183,6 +176,9 @@ def load_request(path: Path = REQUEST_PATH) -> dict[str, Any]:
                 len({r.get("type") for r in member_rows}) != 1):
             raise RunnerError("replacement union target mismatch")
         union_members.update(members)
+    if request.get("schema") == "ch8-s2-batch3probes-v1":
+        try: s2_policy.validate_request(request)
+        except (AssertionError, KeyError, TypeError) as exc: raise RunnerError("S2 request policy mismatch") from exc
     return request
 
 
@@ -235,6 +231,8 @@ def verify_source(std: Path, tool: Path, request: dict[str, Any]) -> dict[str, A
         source_lines = path.read_text(encoding="utf-8").splitlines()
         if oracle["line"] > len(source_lines) or source_lines[oracle["line"]-1] != oracle["source_line"]:
             raise RunnerError(f"negative oracle assertion anchor drift: {rid}")
+    if request.get("schema") == "ch8-s2-batch3probes-v1":
+        s2_policy.validate_source(std,request)
     # Variants may describe test overlays; their path/hash are checked when selected.
     return {"std_sha": STD_SHA, "std_tree": STD_TREE, "tool_sha": TOOL_SHA,
             "tool_tree": TOOL_TREE, "changed_file_sha256": request["changed_file_sha256"]}
@@ -339,7 +337,7 @@ def build_argv(std: Path, tool: Path, selectors: list[str], unwind: int, export:
 
 def ci_env(std: Path | None = None) -> dict[str, str]:
     env = os.environ.copy()
-    fixed = "--cfg=kani_smallsort_sorting --cfg=kani_smallsort_controls"
+    fixed = "--cfg=kani_smallsort_sorting --cfg=kani_smallsort_controls --cfg=kani_smallsort_s2_assumed"
     inherited = env.get("RUSTFLAGS", "").strip()
     if inherited and inherited != fixed:
         raise RunnerError("refusing inherited RUSTFLAGS outside the frozen sorting+controls cfg")
@@ -414,6 +412,23 @@ def _group_rss_kib(pgid: int) -> int:
         except (OSError, ValueError, IndexError):
             continue
     return total
+
+
+def _component_rss_kib(pgid: int) -> dict[str, int]:
+    values = {"driver": 0, "backend": 0, "compiler": 0, "other": 0}
+    for entry in Path("/proc").iterdir():
+        if not entry.name.isdigit(): continue
+        try:
+            stat = (entry/"stat").read_text()
+            if int(stat[stat.rfind(")")+2:].split()[2]) != pgid: continue
+            name = (entry/"comm").read_text().strip()
+            rss = next(int(x.split()[1]) for x in (entry/"status").read_text().splitlines() if x.startswith("VmRSS:"))
+            kind = ("backend" if name in ("cbmc", "goto-instrument", "goto-cc", "goto-analyzer")
+                    else "compiler" if name.startswith(("rustc", "kani-compiler"))
+                    else "driver" if name.startswith(("kani", "cargo-kani")) else "other")
+            values[kind] += rss
+        except (OSError, ValueError, IndexError, StopIteration): continue
+    return values
 
 
 def _group_has_live_members(pgid: int) -> bool:
@@ -574,6 +589,10 @@ def execute(argv: list[str], cwd: Path, out: Path, timeout: int,
             previous_handlers[sig] = signal.getsignal(sig)
             signal.signal(sig, handle_external)
         while proc.poll() is None or any(thread.is_alive() for thread in threads):
+            components = _component_rss_kib(proc.pid)
+            peaks = info.setdefault("component_group_peak_kib", {})
+            for kind, value in components.items(): peaks[kind] = max(peaks.get(kind,0),value)
+            info["component_rss_scope"] = "SAMPLED_PROCESS_GROUP_BY_COMM_NOT_PER_ROOT; peaks are not simultaneous"
             rss = _group_rss_kib(proc.pid)
             info["rss_peak_kib"] = max(info["rss_peak_kib"], rss)
             if rss > rss_cap_kib:
@@ -953,7 +972,7 @@ def _run_group(std: Path, tool: Path, out: Path, request: dict[str, Any],
     export = (dest / "export.json").resolve()
     argv = build_argv(std, tool, selectors, group["unwind"], export)
     results = [{**_row_base(row, "IN_PROGRESS"), "group": group["id"],
-                "per_root_rss_kib": None, "per_root_rss_status": "UNKNOWN_NO_EXACT_HARNESS_ATTRIBUTION",
+                "per_root_rss_kib": None, "cost_phases": {k: "UNKNOWN_NOT_EXPORTED_BY_STOCK" for k in ("body_wall_s", "model_wall_s", "checker_wall_s", "summary_wall_s", "driver_root_rss_kib", "backend_root_rss_kib", "aggregate_root_rss_kib")}, "per_root_rss_status": "UNKNOWN_NO_EXACT_HARNESS_ATTRIBUTION",
                 "proof_credit": "NONE"} for row in group["rows"]]
     receipt = {"schema": "ch8-s1-group-v1", "state": "IN_PROGRESS", "group": group["id"],
                "invocation_id": uuid.uuid4().hex,

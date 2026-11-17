@@ -10,9 +10,9 @@ import subprocess
 import time
 
 HERE = Path(__file__).resolve().parent
-# Frozen graph: S1-08 -> S1-07 -> b25 -> 40b -> tool_sha. Export/tool identity
-# operations use only HEAD, its tree and the pinned commit; retain their depth 2.
-CHECKOUT_DEPTHS = {'control': 5, 'export': 2, 'tool': 2}
+# Actual control: S2 -> 7c413 -> 9208 -> b25 -> 40b -> stock0aac (depth6).
+# Actual source: S2-active -> S2-witness -> S2-attrs -> accepted99e (depth4); stock tool depth2.
+CHECKOUT_DEPTHS = {'control': 6, 'export': 4, 'tool': 2}
 
 
 def load_yaml(text):
@@ -76,101 +76,62 @@ def git(repo, *args):
 
 
 def check_yaml(path):
-    doc = load_yaml(path.read_text())
-    check_scalar_types(doc)
-    assert set(doc['on']) == {'push'}
-    assert doc['on']['push']['branches'] == ['uninit-ci/ch8-s1k-*']
-    assert doc['permissions'] == {'contents': 'read'}
-    assert doc['concurrency'] == {'group': 'ch8-s1-fork', 'cancel-in-progress': False}
-    stages=['s1_light','s1_activation','s1_cell','s1_heavy']
-    assert list(doc['jobs']) == stages
-    request=json.loads((HERE/'CI-REQUEST.json').read_text())
-    expected=request['workflow_stages']
-    for index,name in enumerate(stages):
-        job=doc['jobs'][name]
-        assert job['runs-on']=='ubuntu-24.04' and int(job['timeout-minutes'])==180
-        assert "github.repository == 'Tiramisu-Cake/kani'" in job['if']
-        assert "github.event_name == 'push'" in job['if']
-        assert int(job['strategy']['max-parallel'])==1
-        assert job['strategy']['fail-fast'] is False
-        assert job['strategy']['matrix']=={'group':expected[name]}
-        if index:
-            assert job['needs']==stages[index-1]
-            assert 'always() && !cancelled()' in job['if']
-        else:
-            assert 'needs' not in job
-        assert not re.search(r'\$\{\{\s*runner\.', json.dumps({k:v for k,v in job.items() if k!='steps'}))
-        steps=job['steps']
-        for step in steps:
-            assert not re.search(r'\$\{\{\s*runner\.', json.dumps({k:v for k,v in step.items() if k!='env'}))
-        checkouts=[s for s in steps if s.get('uses','').startswith('actions/checkout@')]
-        assert len(checkouts) == 3
-        assert {s['with']['path'] for s in checkouts} == {'control','export','tool'}
-        by_path={s['with']['path']:s['with'] for s in checkouts}
-        assert by_path['control']['ref'] == '${{ github.sha }}'
-        assert by_path['control'].get('repository', 'Tiramisu-Cake/kani') == 'Tiramisu-Cake/kani'
-        assert by_path['export']['repository'] == 'Tiramisu-Cake/verify-rust-std'
-        assert by_path['export']['ref'] == '${{ steps.pins.outputs.std }}'
-        assert by_path['export']['submodules'] is True
-        assert by_path['tool']['repository'] == 'model-checking/kani'
-        assert by_path['tool']['ref'] == '${{ steps.pins.outputs.tool }}'
-        for checkout_path, depth in CHECKOUT_DEPTHS.items():
-            assert by_path[checkout_path]['fetch-depth'] == depth, (
-                f'{name}.{checkout_path}: checkout depth must be {depth}')
-        assert all(s['with']['persist-credentials'] is False for s in checkouts)
-        assert all(s.get('if') == 'always()' for s in steps[-2:])
-        assert all('timeout-minutes' in s for s in steps)
-        build_index=next(i for i,s in enumerate(steps) if s['name']=='Build exact stock tool once')
-        assert sum(int(s['timeout-minutes']) for s in steps[:build_index]) <= 30
-        # Build wrapper uses the remaining absolute30min setup budget; step caps overlap it.
-        assert int(steps[build_index]['timeout-minutes'])==15
-        assert int(steps[build_index+1]['timeout-minutes'])==135
-        recipe=steps[build_index+1]['run']
-        assert 'runner.py warmup' not in recipe
-        assert recipe.count('runner.py run') == 1
-        assert 'runner.py run --std export --tool tool' in recipe
-        assert '--groups "$S1_GROUP"' in recipe
-        assert steps[build_index+1]['env']['S1_GROUP']=='${{ matrix.group }}'
-        assert '--groups "$S1_GROUP"' in steps[-2]['run']
-        assert steps[-2]['env']['S1_GROUP']=='${{ matrix.group }}'
-        assert '${{ matrix.group }}' in steps[-1]['with']['name']
-        assert 'runner.py list' not in recipe
-        assert sum(int(s['timeout-minutes']) for s in steps[-2:])==15
-        assert steps[-1]['with']['retention-days']==7
-        assert steps[-1]['with']['path']=='${{ env.RECEIPT_ROOT }}/group-evidence.json.gz'
-        assert 'pack_evidence.py --root' in steps[-2]['run']
-        assert 'test_s105.py' in steps[2]['run']
-        assert 'test_s107.py' in steps[2]['run']
-        assert 'test_s108.py' in steps[2]['run']
-        assert 'test_s108r1.py' in steps[2]['run']
-    return {'yaml':'PASS','scalar_types':'NATIVE_LITERAL_PASS',
-            'runner_context':'STEP_ENV_ONLY','checkout_depth':dict(CHECKOUT_DEPTHS),
-            'layout':['control','export','tool'],'dispatch':'NOT_RUN'}
+    doc=load_yaml(path.read_text()); check_scalar_types(doc)
+    assert doc['on']=={'push':{'branches':['uninit-ci/ch8-s2-batch3probes-*']}}
+    assert doc['permissions']=={'contents':'read'}
+    assert doc['concurrency']=={'group':'ch8-s2-fork','cancel-in-progress':False}
+    assert set(doc['jobs'])=={'s2_batch'}
+    job=doc['jobs']['s2_batch']
+    assert job['runs-on']=='ubuntu-24.04' and job['timeout-minutes']==180
+    assert 'strategy' not in job and 'needs' not in job
+    assert job['if']=="${{ github.repository == 'Tiramisu-Cake/kani' && github.event_name == 'push' }}"
+    steps=job['steps']
+    assert sum(s['timeout-minutes'] for s in steps)==177
+    checkouts={s['with']['path']:s['with'] for s in steps if s.get('uses','').startswith('actions/checkout@')}
+    assert {k:v['fetch-depth'] for k,v in checkouts.items()}==CHECKOUT_DEPTHS
+    assert all(v['persist-credentials'] is False for v in checkouts.values())
+    assert checkouts['control']['ref']=='${{ github.sha }}'
+    assert checkouts['export']['ref']=='${{ steps.pins.outputs.std }}'
+    assert checkouts['tool']['ref']=='${{ steps.pins.outputs.tool }}'
+    runs=[s for s in steps if s.get('name','').startswith('Run S2')]
+    assert len(runs)==1 and runs[0]['timeout-minutes']==126
+    assert runs[0]['env']['S1_GROUP']=='s2-batch3probes-u34'
+    assert '--groups' in runs[0]['run'] and 'runner.py run --std export --tool tool' in runs[0]['run']
+    assert steps[-1]['uses']=='actions/upload-artifact@v4' and steps[-1]['if']=='always()'
+    assert steps[-1]['timeout-minutes']==6 and steps[-2]['timeout-minutes']==2
+    assert steps[-1]['with']['if-no-files-found']=='error'
+    assert steps[-1]['with']['path']=='${{ env.RECEIPT_ROOT }}/group-evidence.json.gz'
+    byname={s['name']:s for s in steps}
+    assert byname['Checkout immutable upstream tool']['with']['repository']=='model-checking/kani'
+    assert byname['Checkout production model export']['with']['repository']=='Tiramisu-Cake/verify-rust-std'
+    assert byname['Setup exact stock tool']['uses']=='./tool/.github/actions/setup'
+    assert byname['Build exact stock tool once']['timeout-minutes']==15
+    assert byname['Setup exact stock tool']['timeout-minutes']==15
+    assert byname['Check all source identities']['run']=='python3 control/ch8-s1-control/runner.py check-source --std export --tool tool'
+    assert 'test_runner.py test_s107.FinalizationTests test_s2.py' in byname['Validate control and synthetic wrapper']['run']
+    assert steps[-2]['if']=='always()' and 'fallback' in steps[-2]['run'] and 'pack_evidence.py' in steps[-2]['run']
+    return {'jobs':1,'serial':True,'max_runner_minutes':180,'step_timeout_sum_minutes':177,'checkout_depths':CHECKOUT_DEPTHS}
 
 
 def control(repo):
-    r=json.loads((HERE/'CI-REQUEST.json').read_text())
-    assert r['status']=='READY'
+    from runner import load_request
+    r=load_request()
     assert os.environ['GITHUB_REPOSITORY']=='Tiramisu-Cake/kani'
     assert os.environ['GITHUB_EVENT_NAME']=='push'
-    assert os.environ['GITHUB_REF'].startswith('refs/heads/uninit-ci/ch8-s1k-')
-    assert os.environ['GITHUB_RUN_ATTEMPT']=='1', 'Every rerun needs another coordinator reservation'
+    assert os.environ['GITHUB_REF'].startswith('refs/heads/uninit-ci/ch8-s2-batch3probes-')
+    assert os.environ['GITHUB_RUN_ATTEMPT']=='1', 'Rerun requires separate coordinator GO'
     assert git(repo,'rev-parse','HEAD')==os.environ['GITHUB_SHA']
-    assert git(repo,'rev-parse','HEAD^')==r.get('control_parent',r['tool_sha']), 'control parent must match frozen base'
-    assert git(repo,'rev-list','--parents','-n','1','HEAD').split()==[os.environ['GITHUB_SHA'],r.get('control_parent',r['tool_sha'])], 'single-parent control required'
+    assert git(repo,'rev-list','--parents','-n','1','HEAD').split()==[os.environ['GITHUB_SHA'],r['control_parent']]
     assert not git(repo,'status','--porcelain','--untracked-files=no')
+    assert git(repo,'ls-tree','-r','--name-only','HEAD','.github/workflows').splitlines()==['.github/workflows/ch8-s2.yml']
     changed=git(repo,'diff','--name-only',r['tool_sha'],'HEAD').splitlines()
-    assert changed and all(p.startswith(('ch8-s1-control/','.github/workflows/')) for p in changed)
-    assert sorted(changed)==r['ci_changed_paths'], 'control changed path inventory drift'
-    workflows=git(repo,'ls-tree','-r','--name-only','HEAD','.github/workflows').splitlines()
-    assert workflows == ['.github/workflows/ch8-s1.yml']
+    assert sorted(changed)==r['ci_changed_paths']
+    assert all(p.startswith(('ch8-s1-control/','.github/workflows/')) for p in changed)
     for rel,digest in r['ci_payload_sha256'].items():
-        assert hashlib.sha256((repo/rel).read_bytes()).hexdigest()==digest, rel
-    check_yaml(repo/'.github/workflows/ch8-s1.yml')
-    # Export and tool are sibling workspaces. Never checkout/build a child of control.
-    assert not (repo.parent/'Cargo.toml').exists(), 'outer Cargo workspace forbidden'
-    return {'control_sha':git(repo,'rev-parse','HEAD'),'control_parent':r.get('control_parent',r['tool_sha']),
-            'tool_sha':r['tool_sha'],'status':'PASS'}
+        assert hashlib.sha256((repo/rel).read_bytes()).hexdigest()==digest,rel
+    check_yaml(repo/'.github/workflows/ch8-s2.yml')
+    assert not (repo.parent/'Cargo.toml').exists()
+    return {'control_sha':git(repo,'rev-parse','HEAD'),'status':'STATIC_PASS','proof_credit':'NONE'}
 
 
 def build(tool, epoch, out):

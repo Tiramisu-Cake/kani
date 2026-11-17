@@ -298,8 +298,8 @@ class NoListBindingTests(unittest.TestCase):
             lambda r:r['source_bindings'][r['rows'][0]['id']].update(selector='other'),
             lambda r:r['source_bindings'][r['rows'][0]['id']].update(mode='Original'),
             lambda r:r['source_bindings'][r['rows'][0]['id']].update(locations=[]),
-            lambda r:r['source_bindings']['stable_freeze_u8_n0'].update(target=r['source_bindings']['stable_default_cell']['target']),
-            lambda r:r['source_bindings']['activation-default'].update(target='other'),
+            lambda r:r['source_bindings']['swap_pfc'].update(target='other_target'),
+            lambda r:r['source_bindings']['merge32_real'].update(target='spurious_target'),
             lambda r:r['budgets'].update(compile_seconds=1500),
         ]
         with tempfile.TemporaryDirectory() as d:
@@ -363,7 +363,7 @@ def feed_regular(parser, stock):
 class GroupTests(unittest.TestCase):
     def test_groups_keep_rows_flags_variants_and_every_selector(self):
         request=runner.load_request();groups=runner.group_rows(request['rows'],request['execution_groups'])
-        self.assertEqual(len(groups),14)
+        self.assertEqual(len(groups),1)
         self.assertEqual([g['id'] for g in groups],[g['id'] for g in request['execution_groups']])
         self.assertEqual(sorted(r['id'] for g in groups for r in g['rows']),sorted(r['id'] for r in request['rows']))
         for g in groups:
@@ -380,7 +380,11 @@ class GroupTests(unittest.TestCase):
         with self.assertRaises(runner.RunnerError):runner.group_rows(duplicate)
 
     def test_execution_groups_are_exact_ordered_partition_and_subset_selection(self):
-        request=runner.load_request();all_groups=runner.select_groups(request)
+        rows=[row(id='one',selector='one'),row(id='two',selector='two')]
+        request={'rows':rows,'execution_groups':[
+            {'id':'first','variant':'production','unwind':4,'row_ids':['one']},
+            {'id':'last','variant':'production','unwind':4,'row_ids':['two']}]}
+        all_groups=runner.select_groups(request)
         ids=[all_groups[-1]['id'],all_groups[0]['id']]
         selected=runner.select_groups(request,ids)
         self.assertEqual([g['id'] for g in selected],[all_groups[0]['id'],all_groups[-1]['id']])
@@ -471,27 +475,21 @@ class GroupTests(unittest.TestCase):
             code=runner.run_rows(std,tool,out,request)
         return code,json.loads((out/'receipt.json').read_text()),calls,out
 
-    def test_all35_rows_fourteen_invocations_record_only_without_oracle_classification(self):
+    def test_all_s2_rows_one_invocation_record_only(self):
         request=runner.load_request()
         with tempfile.TemporaryDirectory() as d:
             code,summary,calls,out=self.run_mock_batch(Path(d),request)
             self.assertEqual(code,0,json.dumps(summary))
-            self.assertEqual(len(calls),14)
+            self.assertEqual(len(calls),1)
             self.assertEqual([r['id'] for r in summary['rows']],[r['id'] for r in request['rows']])
             for r in summary['rows']:
-                expected='RECORDED'
-                self.assertEqual(r['outcome'],expected);self.assertIsNone(r['original_exit'])
-                self.assertIsNone(r['per_root_rss_kib']);self.assertIn('UNKNOWN',r['per_root_rss_status'])
-                self.assertEqual(r['group_rss_peak_kib'],100);self.assertEqual(r['proof_credit'],'NONE')
-                self.assertEqual(r['diagnostic_scope'],'SHARED_GROUP_CAPTURE_NOT_PER_ROOT')
-            corruption=next(r for r in summary['rows'] if r['id']=='corruption_companion')
-            self.assertEqual(corruption['group_original_exit'],1) # positive root in mixed failure group
-            for rid in ('activation-default','activation-override'):
-                self.assertEqual(summary['rows'][next(i for i,r in enumerate(summary['rows']) if r['id']==rid)]['export']['state'],'RECORDED_OBSERVATION')
-            for g in runner.group_rows(request['rows'],request['execution_groups']):
-                receipt=json.loads((out/'groups'/g['id']/'receipt.json').read_text())
-                self.assertEqual(receipt['group_budget_seconds'],900+600*len(g['rows']))
-                self.assertEqual(json.loads((out/'groups'/g['id']/'compile/receipt.json').read_text())['state'],'COMPLETE')
+                self.assertEqual(r['outcome'],'RECORDED')
+                self.assertIsNone(r['original_exit']); self.assertIsNone(r['per_root_rss_kib'])
+                self.assertEqual(r['proof_credit'],'NONE')
+                self.assertEqual(r['group_original_exit'],1)
+                self.assertEqual(r['cost_phases']['aggregate_root_rss_kib'],'UNKNOWN_NOT_EXPORTED_BY_STOCK')
+            receipt=json.loads((out/'groups/s2-batch3probes-u34/receipt.json').read_text())
+            self.assertEqual(receipt['group_budget_seconds'],7500)
 
     def test_group_and_row_errors_keep_original_group_exit_and_unknown(self):
         rows=[row(id='positive'),row(id='negative',selector='slice::sort::negative',expected='DETECTED')]
