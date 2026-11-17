@@ -1,0 +1,59 @@
+# Copyright Kani Contributors
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+name: Shared function initialization checks
+on:
+  push:
+    branches:
+      - 'f4-confirm-ci/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  confirm:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      RUST_BACKTRACE: '0'
+      NO_COLOR: '1'
+      RUSTFLAGS: ''
+      KANIFLAGS: ''
+      KANI_LOG: ''
+      KANI_FAIL_ON_UNEXPECTED_DESCRIPTION: 'true'
+      PYTHONDONTWRITEBYTECODE: '1'
+      F4_EVIDENCE_DIR: ${{ github.workspace }}/f4-confirm-evidence
+      F4_PROFILE_SHA256: '2e6a6cf8ba9b698c95a857bddfc7dd6e5c98391f6c66062f915a8784022e0568'
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          fetch-depth: 3
+      - name: Check source identities
+        run: python3 tests/script-based-pre/delayed-shared-body/runner.py before
+      - name: Check collector service controls
+        run: python3 tests/script-based-pre/delayed-shared-body/check_service.py
+      - name: Setup Kani dependencies
+        timeout-minutes: 30
+        uses: ./.github/actions/setup
+        with:
+          os: ubuntu-24.04
+      - name: Build Kani
+        timeout-minutes: 16
+        run: python3 tests/script-based-pre/delayed-shared-body/runner.py build
+      - name: Compare initialization checks
+        timeout-minutes: 16
+        run: |
+          unset CARGO_ENCODED_RUSTFLAGS CARGO_TARGET_DIR CARGO_BUILD_TARGET
+          ulimit -c 0
+          python3 tests/script-based-pre/delayed-shared-body/runner.py run
+      - name: Complete compact result
+        if: ${{ always() }}
+        env:
+          F4_JOB_STATUS: ${{ job.status }}
+        run: python3 tests/script-based-pre/delayed-shared-body/runner.py finish
+      - name: Upload compact result
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: f4-confirm-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ env.F4_EVIDENCE_DIR }}/result.json
+          if-no-files-found: error
+          retention-days: 7
