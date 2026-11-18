@@ -10,9 +10,9 @@ import subprocess
 import time
 
 HERE = Path(__file__).resolve().parent
-# Actual control: S2 -> 7c413 -> 9208 -> b25 -> 40b -> stock0aac (depth6).
+# Actual control: S2-strict -> S2 -> 7c413 -> 9208 -> b25 -> 40b -> stock0aac (depth7).
 # Actual source: S2-active -> S2-witness -> S2-attrs -> accepted99e (depth4); stock tool depth2.
-CHECKOUT_DEPTHS = {'control': 6, 'export': 4, 'tool': 2}
+CHECKOUT_DEPTHS = {'control': 7, 'export': 4, 'tool': 2}
 
 
 def load_yaml(text):

@@ -32,6 +32,8 @@ def validate_request(r):
     assert r['replacement_unions']==[] and r['variants']=={}
     for row in r['rows']:
         rid=row['id'];b=r['source_bindings'][rid]
+        assert row['mode']==('PFC' if rid=='swap_pfc' else 'Original')
+        assert b['target']==('swap_if_less' if rid=='swap_pfc' else None)
         assert row['selector']==PREFIX+rid and row['source_qualified_selector']=='core::'+PREFIX+rid
         assert row['variant']=='production' and row['unwind']==34 and row['timeout_seconds']==600
         assert row['proof_credit']=='NONE' and row['state']=='NOT_RUN'

@@ -8,7 +8,7 @@
   "tool_sha": "0aac16ef62da9e9d5645782d458593e5d78143ba",
   "tool_tree": "9d8bc9312bf955ef126d32b819b3cd0ed105ed2b",
   "base_std_sha": "99e8456d200fff1299ee5756279cddb23921dc65",
-  "control_parent": "7c41333f9bfcfd7eb4e0ede7bd316443090c9025",
+  "control_parent": "9e14e033f9ee31522b571c127609dcdff76d230b",
   "rows": [
     {
       "id": "swap_pfc",
@@ -669,14 +669,14 @@
     "ch8-s1-control/test_s2.py"
   ],
   "ci_payload_sha256": {
-    ".github/workflows/ch8-s2.yml": "f031daa4e19b7f2a2367bc1f4b961dde3efe84f0df6127fbd74c3a9f1414e2cf",
+    ".github/workflows/ch8-s2.yml": "0f0dbfc57b0db8d138ba74d91d64aaa23e27ad8ff39960994a0261da4ac91f9f",
     "ch8-s1-control/ORACLE-SOURCES.json": "69bf8d8494094a079a6ac3422ab90f30b7b5093b53e91ee6ce393a043538eaa2",
     "ch8-s1-control/ROLE-MAP.json": "bad63e0616c0061bf40d7e8d5c72324c8089574624a20f07a1f98a2806e5043d",
     "ch8-s1-control/S2-SOURCE.json": "0b7c9b7327214c057ce3258872f9be431f6210a55620c0e49bf68db5b1b33e72",
     "ch8-s1-control/activation-default.patch": "cee9e21c4b5015d6daf53c286f781602d0890e4ed23239f968d228088335dcc3",
     "ch8-s1-control/activation-override.patch": "6dcb40cc4118035de700f0988a6766c96aad8f4def76513f0f10f275d091c356",
     "ch8-s1-control/binding_metadata.py": "8af48498fe256283dcbe7a1f7bd766e213c2ab83e28008e23bd6bb9811c57030",
-    "ch8-s1-control/check_package.py": "353dcdad87fa128bc81898b1ae5ada356f5b14bdd72ec0f0c025cc3af244f156",
+    "ch8-s1-control/check_package.py": "a39258f24fd2c591ad1a9b31605833ac15a86f20bd4805a182fc2754dd75068e",
     "ch8-s1-control/collect.py": "bb9170a58af1e0cfcb93d9758730265f2ae78b019c7a0a9b50d348cca45cd6e7",
     "ch8-s1-control/fixtures/s104-rich-fragment.json": "08958a31eb173ce59173a588ffd9e785ed9cef0086a733b7fc998af843c054cc",
     "ch8-s1-control/fixtures/s108r1-smallsort.rs.txt": "45ae77ad0bb2a74cfab1aa53d5e1c48311f0b483c94eb52d96d97f680bd39651",
@@ -685,9 +685,9 @@
     "ch8-s1-control/oracle_source.py": "75a9a665b7a9fc1c64cd51c1c8d281fd323f22411aee83c017d08f37a27f20ce",
     "ch8-s1-control/pack_evidence.py": "833004929291e3a6a96011c8579852fce7520e5dea6abd3af2c7611675619e8b",
     "ch8-s1-control/rich_evidence.py": "1c778852fd6c7d4542634424af7801e49e2f7074574b411f6c34a9fb86ab5139",
-    "ch8-s1-control/runner.py": "6e65b5d2f0bfab686ec3b73858803dc179d1a562ae100d3b8855b76d3e36b7c2",
+    "ch8-s1-control/runner.py": "fab290c6350e06285ae31c7f07e365bd5ac3fd9616947285f9d26932d06ebf17",
     "ch8-s1-control/s108_package.py": "8f1443262d41b6ba755b89d089ffa7515692734f0986a80789a2bf89c7900237",
-    "ch8-s1-control/s2_policy.py": "5c9ba7b6d8ac72e6ba1d230c853713648dbb063d3f28b2eab65117a851db6327",
+    "ch8-s1-control/s2_policy.py": "e8fb871771651a4c219a628a1cea1eb2e64fab1158777c39a90d079857f8c2cd",
     "ch8-s1-control/test_package.py": "70f00d0726b7011db8a02339c1b031bda49b4af3c2f7e881b68d06b7663b5ca7",
     "ch8-s1-control/test_runner.py": "91be0156d1d8e55bc2e768891996f69cb1cd248096521d1ff5358dc8f57daaa4",
     "ch8-s1-control/test_s104.py": "cf729fca7df6db47628bb2c17dda1eececf80ddaaa2dc07de57e0731ba16e59d",
@@ -695,7 +695,8 @@
     "ch8-s1-control/test_s107.py": "07f08fba39af05d4745b524ddc18e21edcc776a8b7d487a1fea49ac88afaf5f0",
     "ch8-s1-control/test_s108.py": "c8f694e0f35abfffa5aa8adc51598cf69e2d66dcdf996f8e33750ae006d6e854",
     "ch8-s1-control/test_s108r1.py": "cd23ab865dd05bf7beef1b312e747512bebc5ae61e9ce382d284da2014b06f03",
-    "ch8-s1-control/test_s2.py": "eb1d7cb906b1c90adeaabc3ef0f76d3048b26bd0f7ec0566a1513a87d32b3a4e"
+    "ch8-s1-control/test_s2.py": "bee559fda2acc2cd107334af385d21ad3aa4feb2f0f14c2271ece37e3f735793"
   },
-  "ci_request_hash_policy": "Request excluded from its own payload map; exact request SHA in g0 package and every invocation receipt."
+  "ci_request_hash_policy": "Request excluded from its own payload map; exact request SHA in g0 package and every invocation receipt.",
+  "control_reference": "7c41333f9bfcfd7eb4e0ede7bd316443090c9025"
 }

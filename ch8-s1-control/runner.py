@@ -176,9 +176,8 @@ def load_request(path: Path = REQUEST_PATH) -> dict[str, Any]:
                 len({r.get("type") for r in member_rows}) != 1):
             raise RunnerError("replacement union target mismatch")
         union_members.update(members)
-    if request.get("schema") == "ch8-s2-batch3probes-v1":
-        try: s2_policy.validate_request(request)
-        except (AssertionError, KeyError, TypeError) as exc: raise RunnerError("S2 request policy mismatch") from exc
+    try: s2_policy.validate_request(request)
+    except (AssertionError, KeyError, TypeError) as exc: raise RunnerError("S2 request policy mismatch") from exc
     return request
 
 

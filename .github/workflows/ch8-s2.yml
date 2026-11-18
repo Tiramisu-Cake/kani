@@ -25,7 +25,7 @@ jobs:
       with:
         ref: ${{ github.sha }}
         path: control
-        fetch-depth: 6
+        fetch-depth: 7
         persist-credentials: false
     - name: Validate control and synthetic wrapper
       timeout-minutes: 1

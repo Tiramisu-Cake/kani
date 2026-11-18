@@ -34,7 +34,7 @@ class S2Tests(unittest.TestCase):
 
     def test_strict_inventory_assurance_budget_and_group_identity(self):
         req=r.load_request()
-        cases=[lambda x:x['diagnostic_assumed_inventory'].clear(),lambda x:x['formal_expected_inventory'].append('sort13_assumed'),
+        cases=[lambda x:x.update(schema='wrong-schema'),lambda x:x['diagnostic_assumed_inventory'].clear(),lambda x:x['formal_expected_inventory'].append('sort13_assumed'),
             lambda x:x['rows'][3].update(assurance='FORMAL'),lambda x:x['flags'].update(RUSTFLAGS='--cfg kani_smallsort_sorting'),
             lambda x:x['rows'][-1]['oracle'].update(property_id='wrong.assertion.1'),lambda x:x['rows'].pop(),
             lambda x:x['budgets'].update(compile_seconds=1200)]
@@ -73,7 +73,7 @@ class S2Tests(unittest.TestCase):
         path=HERE.parent/'.github/workflows/ch8-s2.yml'
         self.assertEqual(cp.check_yaml(path)['step_timeout_sum_minutes'],177)
         text=path.read_text()
-        for before,after in [('timeout-minutes: 180','timeout-minutes: 181'),('fetch-depth: 6','fetch-depth: 5'),('persist-credentials: false','persist-credentials: true'),('timeout-minutes: 126','timeout-minutes: 135')]:
+        for before,after in [('timeout-minutes: 180','timeout-minutes: 181'),('fetch-depth: 7','fetch-depth: 6'),('persist-credentials: false','persist-credentials: true'),('timeout-minutes: 126','timeout-minutes: 135')]:
             with tempfile.TemporaryDirectory() as d:
                 f=Path(d)/'bad.yml';f.write_text(text.replace(before,after,1))
                 with self.assertRaises(AssertionError):cp.check_yaml(f)
