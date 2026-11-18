@@ -27,8 +27,8 @@ import s2_policy
 
 HERE = Path(__file__).resolve().parent
 REQUEST_PATH = HERE / "CI-REQUEST.json"
-STD_SHA = "97ac4d39d7f959ea70b1f57785ffd1fd66ecd22a"
-STD_TREE = "2b305686df9758381cfc5d07e195ba05d6b87637"
+STD_SHA = "9fd558c9dab5ec26abdb1226eb5f2b9cd9ffbff6"
+STD_TREE = "64d96010b0b4b896322e26d700c253f834ba9fd6"
 TOOL_SHA = "0aac16ef62da9e9d5645782d458593e5d78143ba"
 TOOL_TREE = "9d8bc9312bf955ef126d32b819b3cd0ed105ed2b"
 MAX_ROW_SECONDS = 600
@@ -176,9 +176,8 @@ def load_request(path: Path = REQUEST_PATH) -> dict[str, Any]:
                 len({r.get("type") for r in member_rows}) != 1):
             raise RunnerError("replacement union target mismatch")
         union_members.update(members)
-    if request.get("schema") == "ch8-s2-batch3probes-v1":
-        try: s2_policy.validate_request(request)
-        except (AssertionError, KeyError, TypeError) as exc: raise RunnerError("S2 request policy mismatch") from exc
+    try: s2_policy.validate_request(request)
+    except (AssertionError, KeyError, TypeError) as exc: raise RunnerError("S2 request policy mismatch") from exc
     return request
 
 

@@ -4,6 +4,7 @@
 import hashlib
 import re
 import negative_oracle
+import cfg_pfc
 ROOTS=('swap_pfc','summary_witness','merge32_real','sort13_assumed','general32_assumed',
  'merge_order_corrupt','merge_count_corrupt','checker_count_corrupt','checker_order_corrupt','sort13_weak','general32_weak')
 PREFIX='slice::sort::shared::smallsort::verify::sorting_s2_batch::'
@@ -20,6 +21,7 @@ def digest(data):return hashlib.sha256(data).hexdigest()
 
 def validate_request(r):
     assert r['schema']=='ch8-s2-batch3probes-v1'
+    assert isinstance(r['cfg_pfc_source_sha256'],dict) and len(r['cfg_pfc_source_sha256'])==8
     assert [x['id'] for x in r['rows']]==list(ROOTS)
     assert r['base_std_sha']==BASE and r['tool_sha']==TOOL
     assert r['formal_expected_inventory']==['merge32_real']
@@ -32,6 +34,8 @@ def validate_request(r):
     assert r['replacement_unions']==[] and r['variants']=={}
     for row in r['rows']:
         rid=row['id'];b=r['source_bindings'][rid]
+        assert row['mode']==('PFC' if rid=='swap_pfc' else 'Original')
+        assert b['target']==('swap_if_less' if rid=='swap_pfc' else None)
         assert row['selector']==PREFIX+rid and row['source_qualified_selector']=='core::'+PREFIX+rid
         assert row['variant']=='production' and row['unwind']==34 and row['timeout_seconds']==600
         assert row['proof_credit']=='NONE' and row['state']=='NOT_RUN'
@@ -53,6 +57,7 @@ def validate_request(r):
 
 def validate_source(std,r):
     validate_request(r)
+    cfg_pfc.check(std,r)
     lines=(std/BATCH).read_text().splitlines()
     for row in r['rows']:
         rid=row['id'];b=r['source_bindings'][rid]
