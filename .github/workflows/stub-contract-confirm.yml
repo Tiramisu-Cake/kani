@@ -1,0 +1,59 @@
+# Copyright Kani Contributors
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+name: Ordinary stubbing of a contracted function
+on:
+  push:
+    branches:
+      - 'stub-contract-confirm-ci/**'
+permissions:
+  contents: read
+jobs:
+  confirm:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      SC_SOURCE_DIR: ${{ github.workspace }}/stock
+      SC_EVIDENCE_DIR: ${{ github.workspace }}/stub-contract-evidence
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          path: control
+          fetch-depth: 2
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          repository: model-checking/kani
+          ref: faffcee3bca2770c03bd21c3bde89cc8f6f7a14e
+          path: stock
+          fetch-depth: 2
+      - name: Check source identities
+        run: python3 control/tests/script-based-pre/stub-contract-confirm/runner.py before
+      - name: Check collector service controls
+        run: python3 control/tests/script-based-pre/stub-contract-confirm/check_service.py
+      - name: Setup stock Kani dependencies
+        id: setup
+        timeout-minutes: 30
+        uses: ./stock/.github/actions/setup
+        with:
+          os: ubuntu-24.04
+          kani_dir: stock
+      - name: Build stock Kani
+        timeout-minutes: 16
+        run: python3 control/tests/script-based-pre/stub-contract-confirm/runner.py build
+      - name: Collect isolated contract cases
+        timeout-minutes: 7
+        run: python3 control/tests/script-based-pre/stub-contract-confirm/runner.py run
+      - name: Complete compact result
+        if: ${{ always() }}
+        env:
+          SC_JOB_STATUS: ${{ job.status }}
+          SC_SETUP_OUTCOME: ${{ steps.setup.outcome }}
+        run: python3 control/tests/script-based-pre/stub-contract-confirm/runner.py finish
+      - name: Upload compact result
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: stub-contract-confirm-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ env.SC_EVIDENCE_DIR }}/result.json
+          if-no-files-found: error
+          retention-days: 7
