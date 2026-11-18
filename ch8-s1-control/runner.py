@@ -22,13 +22,14 @@ import uuid
 from typing import Any
 
 import rich_evidence
+import rustc_diagnostics
 import binding_metadata
 import s2_policy
 
 HERE = Path(__file__).resolve().parent
 REQUEST_PATH = HERE / "CI-REQUEST.json"
-STD_SHA = "97ac4d39d7f959ea70b1f57785ffd1fd66ecd22a"
-STD_TREE = "2b305686df9758381cfc5d07e195ba05d6b87637"
+STD_SHA = "bd62e54df1b4749154790aa3db3cc7978f547f75"
+STD_TREE = "dc2e7a7f258719a05c65bbb9b1e2c7f1e8271ac8"
 TOOL_SHA = "0aac16ef62da9e9d5645782d458593e5d78143ba"
 TOOL_TREE = "9d8bc9312bf955ef126d32b819b3cd0ed105ed2b"
 MAX_ROW_SECONDS = 600
@@ -176,9 +177,8 @@ def load_request(path: Path = REQUEST_PATH) -> dict[str, Any]:
                 len({r.get("type") for r in member_rows}) != 1):
             raise RunnerError("replacement union target mismatch")
         union_members.update(members)
-    if request.get("schema") == "ch8-s2-batch3probes-v1":
-        try: s2_policy.validate_request(request)
-        except (AssertionError, KeyError, TypeError) as exc: raise RunnerError("S2 request policy mismatch") from exc
+    try: s2_policy.validate_request(request)
+    except (AssertionError, KeyError, TypeError) as exc: raise RunnerError("S2 request policy mismatch") from exc
     return request
 
 
@@ -351,8 +351,8 @@ def ci_env(std: Path | None = None) -> dict[str, str]:
     return env
 
 
-def _read_pipe(pipe, target: Path, cap: int, state: dict[str, Any], lock: threading.Lock, key: str,
-               capture_tail: bool = False, rich_parser=None) -> None:
+def _read_pipe_body(pipe, target: Path, cap: int, state: dict[str, Any], lock: threading.Lock, key: str,
+               capture_tail: bool = False, rich_parser=None, diagnostics=None) -> None:
     storage_cap = min(cap, 65536) if rich_parser is not None else cap
     head_cap = storage_cap // 2 if capture_tail else storage_cap
     tail_cap = storage_cap - head_cap if capture_tail else 0
@@ -363,8 +363,6 @@ def _read_pipe(pipe, target: Path, cap: int, state: dict[str, Any], lock: thread
             data = pipe.read(65536)
             if not data:
                 break
-            if rich_parser is not None:
-                rich_parser.feed(data)
             with lock:
                 room = max(0, cap - state[key + "_kept"])
                 if len(data) > room:
@@ -376,6 +374,10 @@ def _read_pipe(pipe, target: Path, cap: int, state: dict[str, Any], lock: thread
                 tail_preview = state.setdefault(key + "_preview_tail", bytearray())
                 tail_preview.extend(data)
                 del tail_preview[:-2048]
+            if diagnostics is not None:
+                diagnostics.feed(data)
+            if rich_parser is not None:
+                rich_parser.feed(data)
             head = min(len(data), head_cap - head_kept)
             output.seek(head_kept)
             output.write(data[:head])
@@ -392,7 +394,20 @@ def _read_pipe(pipe, target: Path, cap: int, state: dict[str, Any], lock: thread
         output.write(tail)
     if rich_parser is not None:
         rich_parser.finish()
+    if diagnostics is not None:
+        diagnostics.finish('AWAITING_EXECUTION_FINALIZATION')
     pipe.close()
+
+
+def _read_pipe(pipe, target, cap, state, lock, key, capture_tail=False, rich_parser=None, diagnostics=None):
+    try:
+        _read_pipe_body(pipe, target, cap, state, lock, key, capture_tail, rich_parser, diagnostics)
+    except Exception as exc:
+        with lock:
+            state[key+'_reader_error'] = f'{type(exc).__name__}: {exc}'
+        if diagnostics is not None:
+            diagnostics.finish('PIPE_READER_ERROR', eof=False)
+        pipe.close()
 
 
 def _group_rss_kib(pgid: int) -> int:
@@ -514,6 +529,7 @@ class CompileMonitor:
                                 execution.get("runner_error") or "NO_VALID_INITIAL_EXPORT_BOUNDARY")
             for name in ("stdout", "stderr"):
                 self.receipt[name] = _stream_preview(state, name)
+        self.receipt["rustc_diagnostics"] = execution.get('rustc_diagnostics', rustc_diagnostics.summary(self.path.parent.parent))
         self.receipt["group_execution"] = execution
         _write_json(self.path, self.receipt)
 
@@ -559,11 +575,19 @@ def execute(argv: list[str], cwd: Path, out: Path, timeout: int,
                              "stdout_kept": 0, "stderr_kept": 0,
                              "stdout_bytes": 0, "stderr_bytes": 0}
     lock = threading.Lock()
+    captures = {stream: rustc_diagnostics.Capture(stream, cap, out / ('rustc-'+stream+'-receipt.json'))
+                for stream, cap in (('stdout', stdout_cap), ('stderr', stderr_cap))}
     try:
         proc = subprocess.Popen(argv, cwd=cwd, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                 start_new_session=True, bufsize=0)
     except OSError as exc:
         info.update(runner_error=f"exec failed: {exc}", elapsed_seconds=time.monotonic() - started)
+        for stream, capture in captures.items():
+            try:
+                capture.finish('SPAWN_FAILED', eof=False)
+            except Exception as diagnostic_exc:
+                info.setdefault('diagnostic_errors', {})[stream] = f'{type(diagnostic_exc).__name__}: {diagnostic_exc}'
+        info['rustc_diagnostics'] = rustc_diagnostics.summary(out)
         if compile_monitor is not None:
             try:
                 compile_monitor.finish(info, state)
@@ -571,9 +595,9 @@ def execute(argv: list[str], cwd: Path, out: Path, timeout: int,
                 info["runner_exception"] = {"type": type(finish_exc).__name__, "message": str(finish_exc)}
         return info
     threads = [threading.Thread(target=_read_pipe, args=(proc.stdout, out / "stdout.log", stdout_cap,
-                                                         state, lock, "stdout", capture_tail, rich_parser), daemon=True),
+                                                         state, lock, "stdout", capture_tail, rich_parser, captures["stdout"]), daemon=True),
                threading.Thread(target=_read_pipe, args=(proc.stderr, out / "stderr.log", stderr_cap,
-                                                         state, lock, "stderr", capture_tail), daemon=True)]
+                                                         state, lock, "stderr", capture_tail, None, captures["stderr"]), daemon=True)]
     deadline = started + timeout
     killed_for = None
     external_signal: list[int] = []
@@ -681,6 +705,22 @@ def execute(argv: list[str], cwd: Path, out: Path, timeout: int,
         info.setdefault("runner_exception", {"type": type(exc).__name__, "message": str(exc)})
         info.setdefault("termination_reason", "export_stat_error")
     info["elapsed_seconds"] = round(time.monotonic() - started, 3)
+    for stream, capture in captures.items():
+        reader_error = state.get(stream+'_reader_error')
+        if reader_error:
+            info.setdefault('pipe_reader_errors', {})[stream] = reader_error
+            info.setdefault('termination_reason', 'pipe_reader_error')
+        # No concurrent parser access if a stuck reader survived bounded shutdown.
+        if not threads[0 if stream == 'stdout' else 1].is_alive():
+            try:
+                capture.finish(info.get('termination_reason') or ('SIGNAL_EOF' if code < 0 else None),
+                               eof=capture.eof)
+            except Exception as diagnostic_exc:
+                info.setdefault('diagnostic_errors', {})[stream] = f'{type(diagnostic_exc).__name__}: {diagnostic_exc}'
+    info['rustc_diagnostics'] = rustc_diagnostics.summary(out)
+    if info.get('diagnostic_errors'):
+        info['rustc_diagnostics'].update(complete=False, incomplete_reasons=
+            info['rustc_diagnostics']['incomplete_reasons']+['DIAGNOSTIC_FINALIZATION_ERROR'])
     if compile_monitor is not None:
         try:
             compile_monitor.finish(info, state)
@@ -1125,11 +1165,13 @@ def _run_group(std: Path, tool: Path, out: Path, request: dict[str, Any],
             receipt["state"] = "COMPLETE"
         for stream in ("stdout", "stderr"):
             receipt[stream] = _bounded_log(dest / (stream+".log"), execution.get(stream+"_bytes"))
+        receipt['rustc_diagnostics'] = execution.get('rustc_diagnostics', rustc_diagnostics.summary(dest))
         receipt["compilation"] = "compile/receipt.json"
         for result in results:
             result.update(group_original_exit=execution.get("original_exit_code"), signal=execution.get("signal"),
                           group_rss_peak_kib=execution.get("rss_peak_kib"),
                           stdout=receipt["stdout"], stderr=receipt["stderr"],
+                          rustc_diagnostics=receipt['rustc_diagnostics'],
                           diagnostic_scope="SHARED_GROUP_CAPTURE_NOT_PER_ROOT")
             _write_json(out / result["id"] / "receipt.json", result)
         _write_json(dest / "receipt.json", receipt)
