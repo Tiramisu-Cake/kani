@@ -10,9 +10,9 @@ import subprocess
 import time
 
 HERE = Path(__file__).resolve().parent
-# Actual control: S2 -> 7c413 -> 9208 -> b25 -> 40b -> stock0aac (depth6).
-# Actual source: S2-active -> S2-witness -> S2-attrs -> accepted99e (depth4); stock tool depth2.
-CHECKOUT_DEPTHS = {'control': 6, 'export': 4, 'tool': 2}
+# Actual control: r1 sibling -> 9e14 -> 7c413 -> 9208 -> b25 -> 40b -> stock0aac (depth7).
+# Actual source: r1 -> S2-active -> S2-witness -> S2-attrs -> accepted99e (depth5).
+CHECKOUT_DEPTHS = {'control': 7, 'export': 5, 'tool': 2}
 
 
 def load_yaml(text):
@@ -86,7 +86,7 @@ def check_yaml(path):
     assert 'strategy' not in job and 'needs' not in job
     assert job['if']=="${{ github.repository == 'Tiramisu-Cake/kani' && github.event_name == 'push' }}"
     steps=job['steps']
-    assert sum(s['timeout-minutes'] for s in steps)==177
+    assert sum(s['timeout-minutes'] for s in steps)==186
     checkouts={s['with']['path']:s['with'] for s in steps if s.get('uses','').startswith('actions/checkout@')}
     assert {k:v['fetch-depth'] for k,v in checkouts.items()}==CHECKOUT_DEPTHS
     assert all(v['persist-credentials'] is False for v in checkouts.values())
@@ -102,15 +102,29 @@ def check_yaml(path):
     assert steps[-1]['with']['if-no-files-found']=='error'
     assert steps[-1]['with']['path']=='${{ env.RECEIPT_ROOT }}/group-evidence.json.gz'
     byname={s['name']:s for s in steps}
+    # Exact approved setup caps; aggregate setup clock remains independent.
+    assert [(s['name'],s['timeout-minutes']) for s in steps] == [
+        ('Begin setup budget',1),('Checkout CI control',2),
+        ('Validate control and synthetic wrapper',10),('Read immutable export pins',1),
+        ('Checkout production model export',5),('Checkout immutable upstream tool',2),
+        ('Check all source identities',1),('Setup exact stock tool',15),
+        ('Build exact stock tool once',15),('Run S2 batch3probes with bounded observations',126),
+        ('Materialize bounded fallback',2),('Upload bounded evidence',6)]
     assert byname['Checkout immutable upstream tool']['with']['repository']=='model-checking/kani'
     assert byname['Checkout production model export']['with']['repository']=='Tiramisu-Cake/verify-rust-std'
     assert byname['Setup exact stock tool']['uses']=='./tool/.github/actions/setup'
     assert byname['Build exact stock tool once']['timeout-minutes']==15
     assert byname['Setup exact stock tool']['timeout-minutes']==15
     assert byname['Check all source identities']['run']=='python3 control/ch8-s1-control/runner.py check-source --std export --tool tool'
-    assert 'test_runner.py test_s107.FinalizationTests test_s2.py' in byname['Validate control and synthetic wrapper']['run']
+    names=[s['name'] for s in steps]
+    assert names.index('Checkout production model export') < names.index('Check all source identities') < names.index('Setup exact stock tool') < names.index('Build exact stock tool once') < names.index('Run S2 batch3probes with bounded observations')
+    assert not any(byname['Check all source identities'].get(k) for k in ('if','continue-on-error'))
+    assert 'test_runner.py test_s107.FinalizationTests test_s2.py test_cfg_pfc.py' in byname['Validate control and synthetic wrapper']['run']
+    assert byname['Validate control and synthetic wrapper']['run'].splitlines() == [
+        'python3 check_package.py control --repo ..',
+        'python3 -m unittest -v test_runner.py test_s107.FinalizationTests test_s2.py test_cfg_pfc.py test_rustc_diagnostics.py test_contract_stacks.py test_r1403_lexical.py']
     assert steps[-2]['if']=='always()' and 'fallback' in steps[-2]['run'] and 'pack_evidence.py' in steps[-2]['run']
-    return {'jobs':1,'serial':True,'max_runner_minutes':180,'step_timeout_sum_minutes':177,'checkout_depths':CHECKOUT_DEPTHS}
+    return {'jobs':1,'serial':True,'max_runner_minutes':180,'step_timeout_sum_minutes':186,'checkout_depths':CHECKOUT_DEPTHS}
 
 
 def control(repo):
@@ -157,6 +171,7 @@ def fallback(out, group_ids=None):
     # SIGKILL cannot run finally: retain observations and mark incomplete work UNKNOWN.
     from runner import _write_json, _bounded_log
     from runner import group_rows
+    import rustc_diagnostics
     groups=group_rows(r['rows'],r.get('execution_groups'))
     if group_ids is not None:
         selected=set(group_ids)
@@ -172,9 +187,13 @@ def fallback(out, group_ids=None):
                     value.update(state='INTERRUPTED',outcome='UNKNOWN')
                     for stream in ('stdout','stderr'):
                         value[stream]=_bounded_log(dest/(stream+'.log'),None)
+                    value['rustc_diagnostics']=rustc_diagnostics.summary(dest)
+                    value['rustc_diagnostics'].update(complete=False,
+                        incomplete_reasons=['FALLBACK_INTERRUPTED_EXECUTION']+value['rustc_diagnostics']['incomplete_reasons'])
                     _write_json(path,value)
             else:
-                _write_json(path,{'state':'NOT_RUN_OR_INTERRUPTED','outcome':'UNKNOWN','proof_credit':'NONE'})
+                _write_json(path,{'state':'NOT_RUN_OR_INTERRUPTED','outcome':'UNKNOWN','proof_credit':'NONE',
+                                  'rustc_diagnostics':rustc_diagnostics.summary(dest)})
     # Materialize every absent row, preserving any execution receipt already captured.
     for row in r['rows']:
         if row['id'] not in selected_rows: continue

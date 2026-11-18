@@ -4,6 +4,11 @@
 import hashlib
 import re
 import negative_oracle
+import cfg_pfc
+import contract_stacks
+import ordinary_contracts
+import s2_correspondence
+import lexical_bindings
 ROOTS=('swap_pfc','summary_witness','merge32_real','sort13_assumed','general32_assumed',
  'merge_order_corrupt','merge_count_corrupt','checker_count_corrupt','checker_order_corrupt','sort13_weak','general32_weak')
 PREFIX='slice::sort::shared::smallsort::verify::sorting_s2_batch::'
@@ -14,12 +19,14 @@ BASE='99e8456d200fff1299ee5756279cddb23921dc65'
 TOOL='0aac16ef62da9e9d5645782d458593e5d78143ba'
 STUBS={'sort13_assumed':['#[kani::stub_verified(swap_if_less)]'],
  'general32_assumed':['#[kani::stub_verified(sort8_stable)]','#[kani::stub_verified(insert_tail)]','#[kani::stub_verified(bidirectional_merge)]'],
- 'sort13_weak':['#[kani::stub(swap_if_less,weak_swap)]'],
- 'general32_weak':['#[kani::stub_verified(sort8_stable)]','#[kani::stub_verified(insert_tail)]','#[kani::stub(bidirectional_merge,weak_merge)]']}
+ 'sort13_weak':['#[kani::stub(s2_swap_seam,weak_swap)]'],
+ 'general32_weak':['#[kani::stub_verified(sort8_stable)]','#[kani::stub_verified(insert_tail)]','#[kani::stub(s2_merge_seam,weak_merge)]']}
 def digest(data):return hashlib.sha256(data).hexdigest()
 
 def validate_request(r):
     assert r['schema']=='ch8-s2-batch3probes-v1'
+    assert isinstance(r['cfg_pfc_source_sha256'],dict) and len(r['cfg_pfc_source_sha256'])==8
+    assert isinstance(r['contract_stack_source_sha256'],dict) and len(r['contract_stack_source_sha256'])==23
     assert [x['id'] for x in r['rows']]==list(ROOTS)
     assert r['base_std_sha']==BASE and r['tool_sha']==TOOL
     assert r['formal_expected_inventory']==['merge32_real']
@@ -32,6 +39,8 @@ def validate_request(r):
     assert r['replacement_unions']==[] and r['variants']=={}
     for row in r['rows']:
         rid=row['id'];b=r['source_bindings'][rid]
+        assert row['mode']==('PFC' if rid=='swap_pfc' else 'Original')
+        assert b['target']==('swap_if_less' if rid=='swap_pfc' else None)
         assert row['selector']==PREFIX+rid and row['source_qualified_selector']=='core::'+PREFIX+rid
         assert row['variant']=='production' and row['unwind']==34 and row['timeout_seconds']==600
         assert row['proof_credit']=='NONE' and row['state']=='NOT_RUN'
@@ -53,6 +62,10 @@ def validate_request(r):
 
 def validate_source(std,r):
     validate_request(r)
+    lexical_bindings.check(std,r)
+    cfg_pfc.check(std,r)
+    contract_stacks.check(std,r)
+    s2_correspondence.check((std/BATCH).read_text(), (std/SMALLSORT).read_text())
     lines=(std/BATCH).read_text().splitlines()
     for row in r['rows']:
         rid=row['id'];b=r['source_bindings'][rid]
@@ -72,7 +85,9 @@ def validate_source(std,r):
             assert len(assertions)==1 and line in assertions
         assert [s for s in attrs if 'stub' in s]==STUBS.get(rid,[])
     added='#[cfg_attr(all(kani, kani_smallsort_sorting, kani_smallsort_s2_assumed),'
-    small=(std/SMALLSORT).read_text()
+    # The r3 gate above establishes the exact conditional normalization of r2.
+    # Retain the old-field/runtime projection check on its SHA-pinned baseline.
+    small=contract_stacks.frozen()
     stripped='\n'.join(s for s in small.splitlines() if not s.startswith(added))+'\n'
     assert digest(stripped.encode())==r['runtime_smallsort_base_sha256']
     assert sum(s.startswith(added) for s in small.splitlines())==8

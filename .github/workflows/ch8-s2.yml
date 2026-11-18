@@ -25,16 +25,16 @@ jobs:
       with:
         ref: ${{ github.sha }}
         path: control
-        fetch-depth: 6
+        fetch-depth: 7
         persist-credentials: false
     - name: Validate control and synthetic wrapper
-      timeout-minutes: 1
+      timeout-minutes: 10
       working-directory: control/ch8-s1-control
       env:
         PYTHONDONTWRITEBYTECODE: '1'
       run: 'python3 check_package.py control --repo ..
 
-        python3 -m unittest -v test_runner.py test_s107.FinalizationTests test_s2.py
+        python3 -m unittest -v test_runner.py test_s107.FinalizationTests test_s2.py test_cfg_pfc.py test_rustc_diagnostics.py test_contract_stacks.py test_r1403_lexical.py
 
         '
     - name: Read immutable export pins
@@ -48,7 +48,7 @@ jobs:
         repository: Tiramisu-Cake/verify-rust-std
         ref: ${{ steps.pins.outputs.std }}
         path: export
-        fetch-depth: 4
+        fetch-depth: 5
         persist-credentials: false
         submodules: true
     - name: Checkout immutable upstream tool
