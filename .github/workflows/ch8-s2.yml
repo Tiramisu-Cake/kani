@@ -13,6 +13,8 @@ jobs:
     if: ${{ github.repository == 'Tiramisu-Cake/kani' && github.event_name == 'push' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 180
+    env:
+      S2_PROFILE: ch8-s2-r5-isolated-v1
     steps:
     - name: Begin setup budget
       timeout-minutes: 1
@@ -25,16 +27,16 @@ jobs:
       with:
         ref: ${{ github.sha }}
         path: control
-        fetch-depth: 6
+        fetch-depth: 7
         persist-credentials: false
     - name: Validate control and synthetic wrapper
-      timeout-minutes: 1
+      timeout-minutes: 12
       working-directory: control/ch8-s1-control
       env:
         PYTHONDONTWRITEBYTECODE: '1'
       run: 'python3 check_package.py control --repo ..
 
-        python3 -m unittest -v test_runner.py test_s107.FinalizationTests test_s2.py
+        python3 -m unittest -v test_runner.py test_s107.FinalizationTests test_s2.py test_cfg_pfc.py test_rustc_diagnostics.py test_contract_stacks.py test_r1403_lexical.py test_r5.py
 
         '
     - name: Read immutable export pins
@@ -48,7 +50,7 @@ jobs:
         repository: Tiramisu-Cake/verify-rust-std
         ref: ${{ steps.pins.outputs.std }}
         path: export
-        fetch-depth: 4
+        fetch-depth: 5
         persist-credentials: false
         submodules: true
     - name: Checkout immutable upstream tool
@@ -83,7 +85,7 @@ jobs:
         RECEIPT_ROOT: ${{ runner.temp }}/ch8-s1-receipts
         PYTHONDONTWRITEBYTECODE: '1'
         S1_GROUP: s2-batch3probes-u34
-      run: 'python3 control/ch8-s1-control/runner.py run --std export --tool tool --out "$RECEIPT_ROOT" --groups "$S1_GROUP"
+      run: 'python3 control/ch8-s1-control/r5_campaign.py run --std export --tool tool --out "$RECEIPT_ROOT"
 
         '
     - name: Materialize bounded fallback
@@ -93,9 +95,7 @@ jobs:
         RECEIPT_ROOT: ${{ runner.temp }}/ch8-s1-receipts
         JOB_STATUS: ${{ job.status }}
         S1_GROUP: s2-batch3probes-u34
-      run: 'python3 control/ch8-s1-control/check_package.py fallback --out "$RECEIPT_ROOT" --groups "$S1_GROUP"
-
-        python3 control/ch8-s1-control/pack_evidence.py --root "$RECEIPT_ROOT"
+      run: 'python3 control/ch8-s1-control/r5_campaign.py finish --out "$RECEIPT_ROOT"
 
         '
     - name: Upload bounded evidence

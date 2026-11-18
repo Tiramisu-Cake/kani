@@ -2,13 +2,13 @@
   "schema": "ch8-s2-batch3probes-v1",
   "status": "READY",
   "authorization": "PREPARATION_ONLY; review14 then separate coordinator GO; dispatch not authorized",
-  "entry_g0": "9856043dab21de8346b68196fa91929b96331293",
-  "std_sha": "97ac4d39d7f959ea70b1f57785ffd1fd66ecd22a",
-  "std_tree": "2b305686df9758381cfc5d07e195ba05d6b87637",
+  "entry_g0": "6d7c4739def196654459faf05b7e1c36ace03e93",
+  "std_sha": "bd62e54df1b4749154790aa3db3cc7978f547f75",
+  "std_tree": "dc2e7a7f258719a05c65bbb9b1e2c7f1e8271ac8",
   "tool_sha": "0aac16ef62da9e9d5645782d458593e5d78143ba",
   "tool_tree": "9d8bc9312bf955ef126d32b819b3cd0ed105ed2b",
   "base_std_sha": "99e8456d200fff1299ee5756279cddb23921dc65",
-  "control_parent": "7c41333f9bfcfd7eb4e0ede7bd316443090c9025",
+  "control_parent": "9e14e033f9ee31522b571c127609dcdff76d230b",
   "rows": [
     {
       "id": "swap_pfc",
@@ -169,9 +169,9 @@
         "property_id": "slice::sort::shared::smallsort::verify::sorting_s2_batch::merge_order_corrupt.assertion.1",
         "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs",
         "export_file": "/home/runner/work/kani/kani/export/library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs",
-        "line": 120,
+        "line": 121,
         "class": "assertion",
-        "source_sha256": "37125e0d65bbce0b70fc6626960cbf0c17dab3d2d07675c183cf15407a37c850",
+        "source_sha256": "e0f47062d71f256fed49b8ad8144c2a83c9a96ecd85646605b1c2fe9b707d0dc",
         "source_line": "    assert!(post::<u8,KeyLess<u8>>(snapshot::<u8,KeyLess<u8>>(&src),&out), \"S2_NEG_MERGE_ORDER\");",
         "intended_message": "S2_NEG_MERGE_ORDER",
         "binding": "SOURCE_EXPECTED_ID_UNOBSERVED; requires exact rich inventory + source coordinates; mismatch UNKNOWN"
@@ -199,9 +199,9 @@
         "property_id": "slice::sort::shared::smallsort::verify::sorting_s2_batch::merge_count_corrupt.assertion.1",
         "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs",
         "export_file": "/home/runner/work/kani/kani/export/library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs",
-        "line": 127,
+        "line": 128,
         "class": "assertion",
-        "source_sha256": "37125e0d65bbce0b70fc6626960cbf0c17dab3d2d07675c183cf15407a37c850",
+        "source_sha256": "e0f47062d71f256fed49b8ad8144c2a83c9a96ecd85646605b1c2fe9b707d0dc",
         "source_line": "    assert!(post::<u8,KeyLess<u8>>(snapshot::<u8,KeyLess<u8>>(&src),&out), \"S2_NEG_MERGE_COUNT\");",
         "intended_message": "S2_NEG_MERGE_COUNT",
         "binding": "SOURCE_EXPECTED_ID_UNOBSERVED; requires exact rich inventory + source coordinates; mismatch UNKNOWN"
@@ -229,9 +229,9 @@
         "property_id": "slice::sort::shared::smallsort::verify::sorting_s2_batch::checker_count_corrupt.assertion.1",
         "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs",
         "export_file": "/home/runner/work/kani/kani/export/library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs",
-        "line": 133,
+        "line": 134,
         "class": "assertion",
-        "source_sha256": "37125e0d65bbce0b70fc6626960cbf0c17dab3d2d07675c183cf15407a37c850",
+        "source_sha256": "e0f47062d71f256fed49b8ad8144c2a83c9a96ecd85646605b1c2fe9b707d0dc",
         "source_line": "    assert!(post::<u8,KeyLess<u8>>(snapshot::<u8,KeyLess<u8>>(&input),&out), \"S2_NEG_CHECKER_COUNT\");",
         "intended_message": "S2_NEG_CHECKER_COUNT",
         "binding": "SOURCE_EXPECTED_ID_UNOBSERVED; requires exact rich inventory + source coordinates; mismatch UNKNOWN"
@@ -259,9 +259,9 @@
         "property_id": "slice::sort::shared::smallsort::verify::sorting_s2_batch::checker_order_corrupt.assertion.1",
         "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs",
         "export_file": "/home/runner/work/kani/kani/export/library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs",
-        "line": 139,
+        "line": 140,
         "class": "assertion",
-        "source_sha256": "37125e0d65bbce0b70fc6626960cbf0c17dab3d2d07675c183cf15407a37c850",
+        "source_sha256": "e0f47062d71f256fed49b8ad8144c2a83c9a96ecd85646605b1c2fe9b707d0dc",
         "source_line": "    assert!(post::<u8,KeyLess<u8>>(snapshot::<u8,KeyLess<u8>>(&input),&out), \"S2_NEG_CHECKER_ORDER\");",
         "intended_message": "S2_NEG_CHECKER_ORDER",
         "binding": "SOURCE_EXPECTED_ID_UNOBSERVED; requires exact rich inventory + source coordinates; mismatch UNKNOWN"
@@ -289,9 +289,9 @@
         "property_id": "slice::sort::shared::smallsort::verify::sorting_s2_batch::sort13_weak.assertion.1",
         "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs",
         "export_file": "/home/runner/work/kani/kani/export/library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs",
-        "line": 148,
+        "line": 149,
         "class": "assertion",
-        "source_sha256": "37125e0d65bbce0b70fc6626960cbf0c17dab3d2d07675c183cf15407a37c850",
+        "source_sha256": "e0f47062d71f256fed49b8ad8144c2a83c9a96ecd85646605b1c2fe9b707d0dc",
         "source_line": "    assert!(post::<u8,KeyLess<u8>>(snapshot::<u8,KeyLess<u8>>(&before),&v), \"S2_NEG_SORT13_WEAK\");",
         "intended_message": "S2_NEG_SORT13_WEAK",
         "binding": "SOURCE_EXPECTED_ID_UNOBSERVED; requires exact rich inventory + source coordinates; mismatch UNKNOWN"
@@ -319,9 +319,9 @@
         "property_id": "slice::sort::shared::smallsort::verify::sorting_s2_batch::general32_weak.assertion.1",
         "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs",
         "export_file": "/home/runner/work/kani/kani/export/library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs",
-        "line": 162,
+        "line": 163,
         "class": "assertion",
-        "source_sha256": "37125e0d65bbce0b70fc6626960cbf0c17dab3d2d07675c183cf15407a37c850",
+        "source_sha256": "e0f47062d71f256fed49b8ad8144c2a83c9a96ecd85646605b1c2fe9b707d0dc",
         "source_line": "    assert!(post::<u8,KeyLess<u8>>(snapshot::<u8,KeyLess<u8>>(&before),&v), \"S2_NEG_GENERAL32_WEAK\");",
         "intended_message": "S2_NEG_GENERAL32_WEAK",
         "binding": "SOURCE_EXPECTED_ID_UNOBSERVED; requires exact rich inventory + source coordinates; mismatch UNKNOWN"
@@ -334,16 +334,16 @@
       "mode": "PFC",
       "crate": "core",
       "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs",
-      "sha256": "37125e0d65bbce0b70fc6626960cbf0c17dab3d2d07675c183cf15407a37c850",
+      "sha256": "e0f47062d71f256fed49b8ad8144c2a83c9a96ecd85646605b1c2fe9b707d0dc",
       "target": "swap_if_less",
       "locations": [
         {
-          "line": 73,
-          "source": "fn swap_pfc() {"
+          "line": 72,
+          "source": "#[kani::proof_for_contract(swap_if_less)]"
         },
         {
-          "line": 71,
-          "source": "#[kani::proof_for_contract(swap_if_less)]"
+          "line": 74,
+          "source": "fn swap_pfc() {"
         }
       ]
     },
@@ -352,16 +352,16 @@
       "mode": "Original",
       "crate": "core",
       "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs",
-      "sha256": "37125e0d65bbce0b70fc6626960cbf0c17dab3d2d07675c183cf15407a37c850",
+      "sha256": "e0f47062d71f256fed49b8ad8144c2a83c9a96ecd85646605b1c2fe9b707d0dc",
       "target": null,
       "locations": [
         {
-          "line": 101,
-          "source": "fn summary_witness() {"
+          "line": 100,
+          "source": "#[kani::proof]"
         },
         {
-          "line": 99,
-          "source": "#[kani::proof]"
+          "line": 102,
+          "source": "fn summary_witness() {"
         }
       ]
     },
@@ -370,16 +370,16 @@
       "mode": "Original",
       "crate": "core",
       "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs",
-      "sha256": "37125e0d65bbce0b70fc6626960cbf0c17dab3d2d07675c183cf15407a37c850",
+      "sha256": "e0f47062d71f256fed49b8ad8144c2a83c9a96ecd85646605b1c2fe9b707d0dc",
       "target": null,
       "locations": [
         {
-          "line": 28,
-          "source": "fn merge32_real() {"
+          "line": 27,
+          "source": "#[kani::proof]"
         },
         {
-          "line": 26,
-          "source": "#[kani::proof]"
+          "line": 29,
+          "source": "fn merge32_real() {"
         }
       ]
     },
@@ -388,16 +388,16 @@
       "mode": "Original",
       "crate": "core",
       "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs",
-      "sha256": "37125e0d65bbce0b70fc6626960cbf0c17dab3d2d07675c183cf15407a37c850",
+      "sha256": "e0f47062d71f256fed49b8ad8144c2a83c9a96ecd85646605b1c2fe9b707d0dc",
       "target": null,
       "locations": [
         {
-          "line": 41,
-          "source": "fn sort13_assumed() {"
+          "line": 39,
+          "source": "#[kani::proof]"
         },
         {
-          "line": 38,
-          "source": "#[kani::proof]"
+          "line": 42,
+          "source": "fn sort13_assumed() {"
         }
       ]
     },
@@ -406,16 +406,16 @@
       "mode": "Original",
       "crate": "core",
       "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs",
-      "sha256": "37125e0d65bbce0b70fc6626960cbf0c17dab3d2d07675c183cf15407a37c850",
+      "sha256": "e0f47062d71f256fed49b8ad8144c2a83c9a96ecd85646605b1c2fe9b707d0dc",
       "target": null,
       "locations": [
         {
-          "line": 58,
-          "source": "fn general32_assumed() {"
+          "line": 54,
+          "source": "#[kani::proof]"
         },
         {
-          "line": 53,
-          "source": "#[kani::proof]"
+          "line": 59,
+          "source": "fn general32_assumed() {"
         }
       ]
     },
@@ -424,16 +424,16 @@
       "mode": "Original",
       "crate": "core",
       "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs",
-      "sha256": "37125e0d65bbce0b70fc6626960cbf0c17dab3d2d07675c183cf15407a37c850",
+      "sha256": "e0f47062d71f256fed49b8ad8144c2a83c9a96ecd85646605b1c2fe9b707d0dc",
       "target": null,
       "locations": [
         {
-          "line": 117,
-          "source": "fn merge_order_corrupt() {"
+          "line": 116,
+          "source": "#[kani::proof]"
         },
         {
-          "line": 115,
-          "source": "#[kani::proof]"
+          "line": 118,
+          "source": "fn merge_order_corrupt() {"
         }
       ]
     },
@@ -442,16 +442,16 @@
       "mode": "Original",
       "crate": "core",
       "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs",
-      "sha256": "37125e0d65bbce0b70fc6626960cbf0c17dab3d2d07675c183cf15407a37c850",
+      "sha256": "e0f47062d71f256fed49b8ad8144c2a83c9a96ecd85646605b1c2fe9b707d0dc",
       "target": null,
       "locations": [
         {
-          "line": 124,
-          "source": "fn merge_count_corrupt() {"
+          "line": 123,
+          "source": "#[kani::proof]"
         },
         {
-          "line": 122,
-          "source": "#[kani::proof]"
+          "line": 125,
+          "source": "fn merge_count_corrupt() {"
         }
       ]
     },
@@ -460,16 +460,16 @@
       "mode": "Original",
       "crate": "core",
       "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs",
-      "sha256": "37125e0d65bbce0b70fc6626960cbf0c17dab3d2d07675c183cf15407a37c850",
+      "sha256": "e0f47062d71f256fed49b8ad8144c2a83c9a96ecd85646605b1c2fe9b707d0dc",
       "target": null,
       "locations": [
         {
-          "line": 131,
-          "source": "fn checker_count_corrupt() {"
+          "line": 130,
+          "source": "#[kani::proof]"
         },
         {
-          "line": 129,
-          "source": "#[kani::proof]"
+          "line": 132,
+          "source": "fn checker_count_corrupt() {"
         }
       ]
     },
@@ -478,16 +478,16 @@
       "mode": "Original",
       "crate": "core",
       "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs",
-      "sha256": "37125e0d65bbce0b70fc6626960cbf0c17dab3d2d07675c183cf15407a37c850",
+      "sha256": "e0f47062d71f256fed49b8ad8144c2a83c9a96ecd85646605b1c2fe9b707d0dc",
       "target": null,
       "locations": [
         {
-          "line": 137,
-          "source": "fn checker_order_corrupt() {"
+          "line": 136,
+          "source": "#[kani::proof]"
         },
         {
-          "line": 135,
-          "source": "#[kani::proof]"
+          "line": 138,
+          "source": "fn checker_order_corrupt() {"
         }
       ]
     },
@@ -496,16 +496,16 @@
       "mode": "Original",
       "crate": "core",
       "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs",
-      "sha256": "37125e0d65bbce0b70fc6626960cbf0c17dab3d2d07675c183cf15407a37c850",
+      "sha256": "e0f47062d71f256fed49b8ad8144c2a83c9a96ecd85646605b1c2fe9b707d0dc",
       "target": null,
       "locations": [
         {
-          "line": 145,
-          "source": "fn sort13_weak() {"
+          "line": 143,
+          "source": "#[kani::proof]"
         },
         {
-          "line": 142,
-          "source": "#[kani::proof]"
+          "line": 146,
+          "source": "fn sort13_weak() {"
         }
       ]
     },
@@ -514,16 +514,16 @@
       "mode": "Original",
       "crate": "core",
       "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs",
-      "sha256": "37125e0d65bbce0b70fc6626960cbf0c17dab3d2d07675c183cf15407a37c850",
+      "sha256": "e0f47062d71f256fed49b8ad8144c2a83c9a96ecd85646605b1c2fe9b707d0dc",
       "target": null,
       "locations": [
         {
-          "line": 159,
-          "source": "fn general32_weak() {"
+          "line": 155,
+          "source": "#[kani::proof]"
         },
         {
-          "line": 154,
-          "source": "#[kani::proof]"
+          "line": 160,
+          "source": "fn general32_weak() {"
         }
       ]
     }
@@ -532,9 +532,9 @@
   "changed_file_sha256": {
     "library/core/Cargo.toml": "01ceacdf72a9622d78af2fe5bba09eda4d838d4798d1da2ab03ecb08364f0db6",
     "library/core/src/lib.rs": "cab6061d100493bec1b820356a54e64c5d923c63fb830bb86250d12124f91504",
-    "library/core/src/slice/sort/shared/smallsort.rs": "603762bb0cabb64e82114501b8da686f6e7d941f8e2227eebb956bc7062e7fe0",
+    "library/core/src/slice/sort/shared/smallsort.rs": "eb8867b764dd410109787124dc1a249d5c42e947255a1ef90242ba39295e2fdc",
     "library/core/src/slice/sort/shared/smallsort/verify.rs": "e11d2f0c5b58e71f16594192a6dbb8598f6781185f5a0cd623996da3c6a7885d",
-    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs": "37125e0d65bbce0b70fc6626960cbf0c17dab3d2d07675c183cf15407a37c850",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs": "e0f47062d71f256fed49b8ad8144c2a83c9a96ecd85646605b1c2fe9b707d0dc",
     "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_span.rs": "c25a476d596ecd2b58d6053307f446e1392171f19b0f48398989373f336db1d6",
     "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_swap.rs": "18ffcca0f828239c686484a72e58ff391c0e8a511f94fe357ae3e635d430fc61",
     "tool_config/kani-version.toml": "16415c6185a21d873f6e4d6d1dc3058f71380e5537a5a9bb77efae857bf66717"
@@ -552,13 +552,13 @@
     "stderr_bytes": 1048576,
     "export_bytes": 8388608,
     "artifact_bytes": 268435456,
-    "planned_rows_seconds": 21000,
+    "planned_rows_seconds": 6600,
     "rss_cap_kib": 6291456,
     "compile_seconds": 900,
     "planned_compile_seconds_per_group": 30,
     "group_rss_max_kib": 12582912,
     "memory_reserve_kib": 2097152,
-    "projected_group_count": 14
+    "projected_group_count": 1
   },
   "execution_groups": [
     {
@@ -614,9 +614,10 @@
     "RUSTFLAGS": "--cfg=kani_smallsort_sorting --cfg=kani_smallsort_controls --cfg=kani_smallsort_s2_assumed"
   },
   "accounting_reference": {
-    "item2_used": 9,
+    "ledger_g0": "943d67bd487ea3ab33e5e77a0d0dfe8453a83532",
+    "item2_used": 10,
     "item2_cap": 14,
-    "prospective_charge": 10,
+    "future_accounting": "OWNER_ONLY",
     "changed": false
   },
   "future_runs": 1,
@@ -647,20 +648,39 @@
     "ch8-s1-control/activation-default.patch",
     "ch8-s1-control/activation-override.patch",
     "ch8-s1-control/binding_metadata.py",
+    "ch8-s1-control/cfg_pfc.py",
     "ch8-s1-control/check_package.py",
     "ch8-s1-control/collect.py",
+    "ch8-s1-control/contract_stacks.py",
     "ch8-s1-control/fixtures/s104-rich-fragment.json",
     "ch8-s1-control/fixtures/s108r1-smallsort.rs.txt",
     "ch8-s1-control/fixtures/s108r1-sorting_model_controls.rs.txt",
+    "ch8-s1-control/fixtures/s2-old97ac-batch.rs.txt",
+    "ch8-s1-control/fixtures/s2-r1-batch.rs.txt",
+    "ch8-s1-control/fixtures/s2-r2-smallsort.rs.txt",
+    "ch8-s1-control/fixtures/s2-r3-batch.rs.txt",
+    "ch8-s1-control/fixtures/s2-r4-batch.rs.txt",
+    "ch8-s1-control/lexical_bindings.py",
     "ch8-s1-control/negative_oracle.py",
     "ch8-s1-control/oracle_source.py",
+    "ch8-s1-control/ordinary_contracts.py",
     "ch8-s1-control/pack_evidence.py",
+    "ch8-s1-control/r5_campaign.py",
+    "ch8-s1-control/r5_profile.py",
+    "ch8-s1-control/r5_runtime.py",
     "ch8-s1-control/rich_evidence.py",
     "ch8-s1-control/runner.py",
+    "ch8-s1-control/rustc_diagnostics.py",
     "ch8-s1-control/s108_package.py",
+    "ch8-s1-control/s2_correspondence.py",
     "ch8-s1-control/s2_policy.py",
+    "ch8-s1-control/test_cfg_pfc.py",
+    "ch8-s1-control/test_contract_stacks.py",
     "ch8-s1-control/test_package.py",
+    "ch8-s1-control/test_r1403_lexical.py",
+    "ch8-s1-control/test_r5.py",
     "ch8-s1-control/test_runner.py",
+    "ch8-s1-control/test_rustc_diagnostics.py",
     "ch8-s1-control/test_s104.py",
     "ch8-s1-control/test_s105.py",
     "ch8-s1-control/test_s107.py",
@@ -669,33 +689,178 @@
     "ch8-s1-control/test_s2.py"
   ],
   "ci_payload_sha256": {
-    ".github/workflows/ch8-s2.yml": "f031daa4e19b7f2a2367bc1f4b961dde3efe84f0df6127fbd74c3a9f1414e2cf",
+    ".github/workflows/ch8-s2.yml": "80d1273b9564a16eb4619089db5604ccccdfaa1cb7a155e9703d169c14b58c90",
     "ch8-s1-control/ORACLE-SOURCES.json": "69bf8d8494094a079a6ac3422ab90f30b7b5093b53e91ee6ce393a043538eaa2",
     "ch8-s1-control/ROLE-MAP.json": "bad63e0616c0061bf40d7e8d5c72324c8089574624a20f07a1f98a2806e5043d",
-    "ch8-s1-control/S2-SOURCE.json": "0b7c9b7327214c057ce3258872f9be431f6210a55620c0e49bf68db5b1b33e72",
+    "ch8-s1-control/S2-SOURCE.json": "950631f2d0594b7b14dc0c203d12379d48e3aeeba612f1651f029691b376daa6",
     "ch8-s1-control/activation-default.patch": "cee9e21c4b5015d6daf53c286f781602d0890e4ed23239f968d228088335dcc3",
     "ch8-s1-control/activation-override.patch": "6dcb40cc4118035de700f0988a6766c96aad8f4def76513f0f10f275d091c356",
     "ch8-s1-control/binding_metadata.py": "8af48498fe256283dcbe7a1f7bd766e213c2ab83e28008e23bd6bb9811c57030",
-    "ch8-s1-control/check_package.py": "353dcdad87fa128bc81898b1ae5ada356f5b14bdd72ec0f0c025cc3af244f156",
-    "ch8-s1-control/collect.py": "bb9170a58af1e0cfcb93d9758730265f2ae78b019c7a0a9b50d348cca45cd6e7",
+    "ch8-s1-control/cfg_pfc.py": "e72ba0cff247613a3db7f4a5bd237cfeab64cb49d2410c61e85b3f80e91ecb11",
+    "ch8-s1-control/check_package.py": "410d143c8ac58f683f9d085364089b3d4f46f066f1782c8d69be93a222b587f3",
+    "ch8-s1-control/collect.py": "1d91b4a44d7cf9d4a7e9f7d571b2477381d4c01cc94860221daba440608b3346",
+    "ch8-s1-control/contract_stacks.py": "c4b0f92fe2ede42399f2743071e58380806e61339bfbc0d1beccbf6b2a11ea0d",
     "ch8-s1-control/fixtures/s104-rich-fragment.json": "08958a31eb173ce59173a588ffd9e785ed9cef0086a733b7fc998af843c054cc",
     "ch8-s1-control/fixtures/s108r1-smallsort.rs.txt": "45ae77ad0bb2a74cfab1aa53d5e1c48311f0b483c94eb52d96d97f680bd39651",
     "ch8-s1-control/fixtures/s108r1-sorting_model_controls.rs.txt": "dd4e8eca1761be66ea07508c7678175d54e4b2baf48469ae4866c9cb68e12e0d",
+    "ch8-s1-control/fixtures/s2-old97ac-batch.rs.txt": "37125e0d65bbce0b70fc6626960cbf0c17dab3d2d07675c183cf15407a37c850",
+    "ch8-s1-control/fixtures/s2-r1-batch.rs.txt": "207f05964330722a66a98212fa8801b6baf9d2c55ba7cd608ae73d80d69fd5e2",
+    "ch8-s1-control/fixtures/s2-r2-smallsort.rs.txt": "603762bb0cabb64e82114501b8da686f6e7d941f8e2227eebb956bc7062e7fe0",
+    "ch8-s1-control/fixtures/s2-r3-batch.rs.txt": "00abe964a5e2eac63f1f864455d6f9be1903422a0c5b28398360cf2039cc08d5",
+    "ch8-s1-control/fixtures/s2-r4-batch.rs.txt": "794fb18e5f6aa5a79f79b6e200b9cf5a4074442ddf51bdba9df4ea5f32567ef7",
+    "ch8-s1-control/lexical_bindings.py": "31abcb93bdb52bb1205e59ce6f4c8fe2206c2c63c9b2f82142492c8752f3e484",
     "ch8-s1-control/negative_oracle.py": "fabd41fb31e37ea79239e4798f38aa81cd068abad0d00281d1d93d936f59681c",
     "ch8-s1-control/oracle_source.py": "75a9a665b7a9fc1c64cd51c1c8d281fd323f22411aee83c017d08f37a27f20ce",
-    "ch8-s1-control/pack_evidence.py": "833004929291e3a6a96011c8579852fce7520e5dea6abd3af2c7611675619e8b",
+    "ch8-s1-control/ordinary_contracts.py": "bdbdbe13fa2da6dae8d6dfb7a57a66caed1e52b6d93c1586e8effecaa16cb78e",
+    "ch8-s1-control/pack_evidence.py": "8782f1abd29342cec1202d851c94222c50fed0e6c358549971048135ab24d206",
+    "ch8-s1-control/r5_campaign.py": "9590e50ad38d8f0009584eddb17a648bf06779e2b6ad3a746cf3cc6deb2ab9fa",
+    "ch8-s1-control/r5_profile.py": "e237b05f7bbc26b2820173254c92035572b22280c4a0b7ee66481bfb41f64f4d",
+    "ch8-s1-control/r5_runtime.py": "e796129e9da910879026cbe9a2037cf4834793f97032b2ff21bdf128268c697f",
     "ch8-s1-control/rich_evidence.py": "1c778852fd6c7d4542634424af7801e49e2f7074574b411f6c34a9fb86ab5139",
-    "ch8-s1-control/runner.py": "6e65b5d2f0bfab686ec3b73858803dc179d1a562ae100d3b8855b76d3e36b7c2",
+    "ch8-s1-control/runner.py": "d66a62853b2592604c2cc91187b5bf6e1c3fded8be0accd38cd0c1262f4e9215",
+    "ch8-s1-control/rustc_diagnostics.py": "0c94acd85a9f2f7a241958a2c5b9dffce09517bd8d08ddf30bfbdd81ef839b32",
     "ch8-s1-control/s108_package.py": "8f1443262d41b6ba755b89d089ffa7515692734f0986a80789a2bf89c7900237",
-    "ch8-s1-control/s2_policy.py": "5c9ba7b6d8ac72e6ba1d230c853713648dbb063d3f28b2eab65117a851db6327",
+    "ch8-s1-control/s2_correspondence.py": "46f2cd69373b4ebd3a3395d455338aadff3d473df5df2734e1bd5d4d2432dd4f",
+    "ch8-s1-control/s2_policy.py": "d87ce00811570c0ad7ea999fec3062166af542e576b188682308301519cb319c",
+    "ch8-s1-control/test_cfg_pfc.py": "96c7e07fd3d78cb6c6769a5c018d49b1f1e1d28eee39db6322cba63ea31a91ea",
+    "ch8-s1-control/test_contract_stacks.py": "28175e593a49600fc3478a61a7488b4066b0d9d06ef33b082418f19db1eba75d",
     "ch8-s1-control/test_package.py": "70f00d0726b7011db8a02339c1b031bda49b4af3c2f7e881b68d06b7663b5ca7",
-    "ch8-s1-control/test_runner.py": "91be0156d1d8e55bc2e768891996f69cb1cd248096521d1ff5358dc8f57daaa4",
+    "ch8-s1-control/test_r1403_lexical.py": "5518422d03b2db340a09f7dbc9d074651ca607ef028e592e8dd7c4ac938b9c61",
+    "ch8-s1-control/test_r5.py": "59a2a741f07f28fba85f79435d70f06dcfa0a0aa2ee3bb8a6ff8fecde72c5b1d",
+    "ch8-s1-control/test_runner.py": "42ab9ff6ce08ba17331b62d6e10f26656719850d44968a5497751886a0f91630",
+    "ch8-s1-control/test_rustc_diagnostics.py": "fadad233e902b6fdaaea2a308e2a6321a3c594e8d0ba3492531459cbef0ac88d",
     "ch8-s1-control/test_s104.py": "cf729fca7df6db47628bb2c17dda1eececf80ddaaa2dc07de57e0731ba16e59d",
     "ch8-s1-control/test_s105.py": "588a346818b33e00fb02b510d616b7b787f184b00ac5a5b10cfad8b8cf46455e",
-    "ch8-s1-control/test_s107.py": "07f08fba39af05d4745b524ddc18e21edcc776a8b7d487a1fea49ac88afaf5f0",
+    "ch8-s1-control/test_s107.py": "bb33d7a1088572107a243ea364207a67081fb91fd6db90f4de00e627983aa420",
     "ch8-s1-control/test_s108.py": "c8f694e0f35abfffa5aa8adc51598cf69e2d66dcdf996f8e33750ae006d6e854",
     "ch8-s1-control/test_s108r1.py": "cd23ab865dd05bf7beef1b312e747512bebc5ae61e9ce382d284da2014b06f03",
-    "ch8-s1-control/test_s2.py": "eb1d7cb906b1c90adeaabc3ef0f76d3048b26bd0f7ec0566a1513a87d32b3a4e"
+    "ch8-s1-control/test_s2.py": "1c57b2de286916bdc0a5ce78a4aa111fdb1bbc66a8357a32214fc56df42cbfd2"
   },
-  "ci_request_hash_policy": "Request excluded from its own payload map; exact request SHA in g0 package and every invocation receipt."
+  "ci_request_hash_policy": "Request excluded from its own payload map; exact request SHA in g0 package and every invocation receipt.",
+  "control_reference": "d67bd1ecd555030c46a06b8462d0313ea416711a",
+  "cfg_pfc_source_sha256": {
+    "library/core/src/lib.rs": "cab6061d100493bec1b820356a54e64c5d923c63fb830bb86250d12124f91504",
+    "library/core/src/slice/mod.rs": "1c94e306a979f2c59a4e3687a32a3e4efbeef967b7bf5eeb8d1977371c2c17dd",
+    "library/core/src/slice/sort/mod.rs": "f67551bff44a854a3f03901db10a099bdab3b67b47d8724bef43858d97134f3c",
+    "library/core/src/slice/sort/shared/mod.rs": "fa9eec2901bafba25c9c1e1684df76dbb1f86e0bbd04f18f3e67cee54dcdfcc8",
+    "library/core/src/slice/sort/shared/smallsort.rs": "eb8867b764dd410109787124dc1a249d5c42e947255a1ef90242ba39295e2fdc",
+    "library/core/src/slice/sort/shared/smallsort/verify.rs": "e11d2f0c5b58e71f16594192a6dbb8598f6781185f5a0cd623996da3c6a7885d",
+    "library/core/src/slice/sort/shared/smallsort/verify/helper_contracts.rs": "86bac48e888365eab2187756dfd8ffbce059d6cc2ce35b1d8ab7b39d788118ac",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs": "e0f47062d71f256fed49b8ad8144c2a83c9a96ecd85646605b1c2fe9b707d0dc"
+  },
+  "contract_stack_source_sha256": {
+    "library/core/src/slice/sort/shared/smallsort.rs": "eb8867b764dd410109787124dc1a249d5c42e947255a1ef90242ba39295e2fdc",
+    "library/core/src/slice/sort/shared/smallsort/verify.rs": "e11d2f0c5b58e71f16594192a6dbb8598f6781185f5a0cd623996da3c6a7885d",
+    "library/core/src/slice/sort/shared/smallsort/verify/comparators.rs": "7095d7272d929b4e495896ff957a69120a7b86b3f0b99655ede4c989e0543b47",
+    "library/core/src/slice/sort/shared/smallsort/verify/fixed_inputs.rs": "5b648cbdedd89ef92f0a794580d0c682fc3fe3035cf63142f1b6bec6baccb7c7",
+    "library/core/src/slice/sort/shared/smallsort/verify/forwarding_contracts.rs": "575aa575ffb977d945adb2fc40496c805fe6f8cdb1fc6fe471dbe277f5b2630f",
+    "library/core/src/slice/sort/shared/smallsort/verify/helper_contracts.rs": "86bac48e888365eab2187756dfd8ffbce059d6cc2ce35b1d8ab7b39d788118ac",
+    "library/core/src/slice/sort/shared/smallsort/verify/helper_contracts_wide.rs": "85bdd131f3a7e62106e69e98e4b1b85d2f68c91a4bfff4df629955539493748c",
+    "library/core/src/slice/sort/shared/smallsort/verify/insert_tail_contracts.rs": "6f1a2540156a3c603639ee96245aca16ad9da3dbce401630c1b8866d343aa406",
+    "library/core/src/slice/sort/shared/smallsort/verify/merge.rs": "e37e6971e6458a17d858de9a6a6ea38265d7584934ef71c8243c97a487505e54",
+    "library/core/src/slice/sort/shared/smallsort/verify/merge/profiles.rs": "3a220d9fcd8269b253efaa8d7c18c13aa7a6e6f8cf59504ac2ec4c004b9abffe",
+    "library/core/src/slice/sort/shared/smallsort/verify/mutations.rs": "e008037d4c5a32e31dc25490437bcd2bc520915bfda4af3c2fc84df6e331450e",
+    "library/core/src/slice/sort/shared/smallsort/verify/network.rs": "d59ceb99741990afcfe3f312119053a520f16c071f200953fc517a33729527bf",
+    "library/core/src/slice/sort/shared/smallsort/verify/scratch_geometry.rs": "905045ba504b5391af44a575dd7e616b0bebb124623490d24343f759eb7f7d16",
+    "library/core/src/slice/sort/shared/smallsort/verify/smoke.rs": "f576bfa8185c3ded0a27374dd4904db52f9711102a62c37f10406b2ccbd87f23",
+    "library/core/src/slice/sort/shared/smallsort/verify/tag_permutation.rs": "dafe3017a7dbf946c045756d8c0f122555bd1372868554563d1cb373eeea7837",
+    "library/core/src/slice/sort/shared/smallsort/verify/types.rs": "c5b4b5007cda1764af15639fba0fd23bfab9e489d052b0ead6872a440bed1f4f",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_model.rs": "a04f72d0a4f8c42fadc6639ead77e215dc46264096e8e998903bfe1be9ca0a18",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_entry_smoke.rs": "7e74bd9695cdb2b98b8298ce7daf7f107e0ac2e6e2a0cfc2203ab1639590130f",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_model_controls.rs": "dd4e8eca1761be66ea07508c7678175d54e4b2baf48469ae4866c9cb68e12e0d",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_entry_controls.rs": "7cb487628b9e93a086c09fc59cfc54aaeb12e12a3f917f67009f378e722d29ff",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_swap.rs": "18ffcca0f828239c686484a72e58ff391c0e8a511f94fe357ae3e635d430fc61",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_span.rs": "c25a476d596ecd2b58d6053307f446e1392171f19b0f48398989373f336db1d6",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs": "e0f47062d71f256fed49b8ad8144c2a83c9a96ecd85646605b1c2fe9b707d0dc"
+  },
+  "ordinary_contract_source_sha256": {
+    "library/core/src/slice/sort/shared/smallsort.rs": "eb8867b764dd410109787124dc1a249d5c42e947255a1ef90242ba39295e2fdc",
+    "library/core/src/slice/sort/shared/smallsort/verify.rs": "e11d2f0c5b58e71f16594192a6dbb8598f6781185f5a0cd623996da3c6a7885d",
+    "library/core/src/slice/sort/shared/smallsort/verify/comparators.rs": "7095d7272d929b4e495896ff957a69120a7b86b3f0b99655ede4c989e0543b47",
+    "library/core/src/slice/sort/shared/smallsort/verify/fixed_inputs.rs": "5b648cbdedd89ef92f0a794580d0c682fc3fe3035cf63142f1b6bec6baccb7c7",
+    "library/core/src/slice/sort/shared/smallsort/verify/forwarding_contracts.rs": "575aa575ffb977d945adb2fc40496c805fe6f8cdb1fc6fe471dbe277f5b2630f",
+    "library/core/src/slice/sort/shared/smallsort/verify/helper_contracts.rs": "86bac48e888365eab2187756dfd8ffbce059d6cc2ce35b1d8ab7b39d788118ac",
+    "library/core/src/slice/sort/shared/smallsort/verify/helper_contracts_wide.rs": "85bdd131f3a7e62106e69e98e4b1b85d2f68c91a4bfff4df629955539493748c",
+    "library/core/src/slice/sort/shared/smallsort/verify/insert_tail_contracts.rs": "6f1a2540156a3c603639ee96245aca16ad9da3dbce401630c1b8866d343aa406",
+    "library/core/src/slice/sort/shared/smallsort/verify/merge.rs": "e37e6971e6458a17d858de9a6a6ea38265d7584934ef71c8243c97a487505e54",
+    "library/core/src/slice/sort/shared/smallsort/verify/merge/profiles.rs": "3a220d9fcd8269b253efaa8d7c18c13aa7a6e6f8cf59504ac2ec4c004b9abffe",
+    "library/core/src/slice/sort/shared/smallsort/verify/mutations.rs": "e008037d4c5a32e31dc25490437bcd2bc520915bfda4af3c2fc84df6e331450e",
+    "library/core/src/slice/sort/shared/smallsort/verify/network.rs": "d59ceb99741990afcfe3f312119053a520f16c071f200953fc517a33729527bf",
+    "library/core/src/slice/sort/shared/smallsort/verify/scratch_geometry.rs": "905045ba504b5391af44a575dd7e616b0bebb124623490d24343f759eb7f7d16",
+    "library/core/src/slice/sort/shared/smallsort/verify/smoke.rs": "f576bfa8185c3ded0a27374dd4904db52f9711102a62c37f10406b2ccbd87f23",
+    "library/core/src/slice/sort/shared/smallsort/verify/tag_permutation.rs": "dafe3017a7dbf946c045756d8c0f122555bd1372868554563d1cb373eeea7837",
+    "library/core/src/slice/sort/shared/smallsort/verify/types.rs": "c5b4b5007cda1764af15639fba0fd23bfab9e489d052b0ead6872a440bed1f4f",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_model.rs": "a04f72d0a4f8c42fadc6639ead77e215dc46264096e8e998903bfe1be9ca0a18",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_entry_smoke.rs": "7e74bd9695cdb2b98b8298ce7daf7f107e0ac2e6e2a0cfc2203ab1639590130f",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_model_controls.rs": "dd4e8eca1761be66ea07508c7678175d54e4b2baf48469ae4866c9cb68e12e0d",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_entry_controls.rs": "7cb487628b9e93a086c09fc59cfc54aaeb12e12a3f917f67009f378e722d29ff",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_swap.rs": "18ffcca0f828239c686484a72e58ff391c0e8a511f94fe357ae3e635d430fc61",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_span.rs": "c25a476d596ecd2b58d6053307f446e1392171f19b0f48398989373f336db1d6",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs": "e0f47062d71f256fed49b8ad8144c2a83c9a96ecd85646605b1c2fe9b707d0dc"
+  },
+  "lexical_source_sha256": {
+    "library/core/src/lib.rs": "cab6061d100493bec1b820356a54e64c5d923c63fb830bb86250d12124f91504",
+    "library/core/src/slice/mod.rs": "1c94e306a979f2c59a4e3687a32a3e4efbeef967b7bf5eeb8d1977371c2c17dd",
+    "library/core/src/slice/sort/mod.rs": "f67551bff44a854a3f03901db10a099bdab3b67b47d8724bef43858d97134f3c",
+    "library/core/src/slice/sort/shared/mod.rs": "fa9eec2901bafba25c9c1e1684df76dbb1f86e0bbd04f18f3e67cee54dcdfcc8",
+    "library/core/src/slice/sort/shared/smallsort.rs": "eb8867b764dd410109787124dc1a249d5c42e947255a1ef90242ba39295e2fdc",
+    "library/core/src/slice/sort/shared/smallsort/verify.rs": "e11d2f0c5b58e71f16594192a6dbb8598f6781185f5a0cd623996da3c6a7885d",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs": "e0f47062d71f256fed49b8ad8144c2a83c9a96ecd85646605b1c2fe9b707d0dc",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_model.rs": "a04f72d0a4f8c42fadc6639ead77e215dc46264096e8e998903bfe1be9ca0a18",
+    "library/core/src/mem/mod.rs": "7504ca7c3188077e142917d8c8b7fc7976f08f417439bb68399d1c0352eb8738",
+    "library/core/src/mem/maybe_uninit.rs": "1230d267542337ee2842c29d8227cf8a58fe75c53a2a70efaee3922c4e8e25c0",
+    "library/core/src/ptr/mod.rs": "cc17237f8e88211f0d082f8c8d88b6fd55f905c7baaa3c32cd75632269c03ff2",
+    "library/core/src/slice/raw.rs": "3190285ba163dacd220b6c827d49e580eeb85256cd1fffafdacb345a87a08bb7",
+    "library/core/src/intrinsics/mod.rs": "95bad83ea99a46bcbdbd4163e42112866fdfadc4660ca1d1c4298fed57b1c5fc",
+    "library/core/src/prelude/v1.rs": "b57d120c6762622bd33114f46267dab8ba6c88be38f1433adb62d4ba36cd3a68"
+  },
+  "profile": "ch8-s2-r5-isolated-v1",
+  "r5": {
+    "selected": [
+      "checker_order_corrupt",
+      "checker_count_corrupt",
+      "swap_pfc",
+      "sort13_weak",
+      "merge32_real",
+      "sort13_assumed",
+      "merge_count_corrupt",
+      "merge_order_corrupt",
+      "summary_witness"
+    ],
+    "deferred": [
+      "general32_assumed",
+      "general32_weak"
+    ],
+    "caps": {
+      "child_seconds": 600,
+      "compile_seconds": 180,
+      "slot_seconds": 720,
+      "controller_seconds": 180,
+      "cleanup_seconds": 240,
+      "campaign_seconds": 6900,
+      "outer_seconds": 7500,
+      "phase_seconds": 8100,
+      "step_seconds": 7560,
+      "local_rss_kib": 6291456,
+      "outer_rss_kib": 12582912,
+      "headroom_kib": 2097152,
+      "stdout_bytes": 16777216,
+      "stderr_bytes": 1048576,
+      "export_bytes": 8388608,
+      "artifact_bytes": 268435456
+    },
+    "plan_commit": "07d891b23ba65405920090de87ed7eec9730fec4",
+    "intake_commit": "5ca0641af6c5b588ae2a4257ccc0fe52df6a827a",
+    "full_inventory": {
+      "roots": 11,
+      "covers": 20,
+      "negatives": 6
+    },
+    "selected_inventory": {
+      "roots": 9,
+      "covers": 16,
+      "negatives": 5
+    },
+    "deferred_reason": "DEFERRED_TO_S3_PROVED_LEAVES; NOT_SELECTED; UNKNOWN"
+  }
 }

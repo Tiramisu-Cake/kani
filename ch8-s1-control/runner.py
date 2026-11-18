@@ -22,13 +22,14 @@ import uuid
 from typing import Any
 
 import rich_evidence
+import rustc_diagnostics
 import binding_metadata
 import s2_policy
 
 HERE = Path(__file__).resolve().parent
 REQUEST_PATH = HERE / "CI-REQUEST.json"
-STD_SHA = "97ac4d39d7f959ea70b1f57785ffd1fd66ecd22a"
-STD_TREE = "2b305686df9758381cfc5d07e195ba05d6b87637"
+STD_SHA = "bd62e54df1b4749154790aa3db3cc7978f547f75"
+STD_TREE = "dc2e7a7f258719a05c65bbb9b1e2c7f1e8271ac8"
 TOOL_SHA = "0aac16ef62da9e9d5645782d458593e5d78143ba"
 TOOL_TREE = "9d8bc9312bf955ef126d32b819b3cd0ed105ed2b"
 MAX_ROW_SECONDS = 600
@@ -176,9 +177,8 @@ def load_request(path: Path = REQUEST_PATH) -> dict[str, Any]:
                 len({r.get("type") for r in member_rows}) != 1):
             raise RunnerError("replacement union target mismatch")
         union_members.update(members)
-    if request.get("schema") == "ch8-s2-batch3probes-v1":
-        try: s2_policy.validate_request(request)
-        except (AssertionError, KeyError, TypeError) as exc: raise RunnerError("S2 request policy mismatch") from exc
+    try: s2_policy.validate_request(request)
+    except (AssertionError, KeyError, TypeError) as exc: raise RunnerError("S2 request policy mismatch") from exc
     return request
 
 
@@ -351,8 +351,8 @@ def ci_env(std: Path | None = None) -> dict[str, str]:
     return env
 
 
-def _read_pipe(pipe, target: Path, cap: int, state: dict[str, Any], lock: threading.Lock, key: str,
-               capture_tail: bool = False, rich_parser=None) -> None:
+def _read_pipe_body(pipe, target: Path, cap: int, state: dict[str, Any], lock: threading.Lock, key: str,
+               capture_tail: bool = False, rich_parser=None, diagnostics=None) -> None:
     storage_cap = min(cap, 65536) if rich_parser is not None else cap
     head_cap = storage_cap // 2 if capture_tail else storage_cap
     tail_cap = storage_cap - head_cap if capture_tail else 0
@@ -363,8 +363,6 @@ def _read_pipe(pipe, target: Path, cap: int, state: dict[str, Any], lock: thread
             data = pipe.read(65536)
             if not data:
                 break
-            if rich_parser is not None:
-                rich_parser.feed(data)
             with lock:
                 room = max(0, cap - state[key + "_kept"])
                 if len(data) > room:
@@ -376,6 +374,10 @@ def _read_pipe(pipe, target: Path, cap: int, state: dict[str, Any], lock: thread
                 tail_preview = state.setdefault(key + "_preview_tail", bytearray())
                 tail_preview.extend(data)
                 del tail_preview[:-2048]
+            if diagnostics is not None:
+                diagnostics.feed(data)
+            if rich_parser is not None:
+                rich_parser.feed(data)
             head = min(len(data), head_cap - head_kept)
             output.seek(head_kept)
             output.write(data[:head])
@@ -392,7 +394,20 @@ def _read_pipe(pipe, target: Path, cap: int, state: dict[str, Any], lock: thread
         output.write(tail)
     if rich_parser is not None:
         rich_parser.finish()
+    if diagnostics is not None:
+        diagnostics.finish('AWAITING_EXECUTION_FINALIZATION')
     pipe.close()
+
+
+def _read_pipe(pipe, target, cap, state, lock, key, capture_tail=False, rich_parser=None, diagnostics=None):
+    try:
+        _read_pipe_body(pipe, target, cap, state, lock, key, capture_tail, rich_parser, diagnostics)
+    except Exception as exc:
+        with lock:
+            state[key+'_reader_error'] = f'{type(exc).__name__}: {exc}'
+        if diagnostics is not None:
+            diagnostics.finish('PIPE_READER_ERROR', eof=False)
+        pipe.close()
 
 
 def _group_rss_kib(pgid: int) -> int:
@@ -514,6 +529,7 @@ class CompileMonitor:
                                 execution.get("runner_error") or "NO_VALID_INITIAL_EXPORT_BOUNDARY")
             for name in ("stdout", "stderr"):
                 self.receipt[name] = _stream_preview(state, name)
+        self.receipt["rustc_diagnostics"] = execution.get('rustc_diagnostics', rustc_diagnostics.summary(self.path.parent.parent))
         self.receipt["group_execution"] = execution
         _write_json(self.path, self.receipt)
 
@@ -549,21 +565,29 @@ def execute(argv: list[str], cwd: Path, out: Path, timeout: int,
             stderr_cap: int = STDERR_CAP_BYTES, export_path: Path | None = None,
             export_cap: int = EXPORT_CAP_BYTES, env: dict[str, str] | None = None,
             capture_tail: bool = False, compile_monitor: CompileMonitor | None = None,
-            rich_parser=None) -> dict[str, Any]:
+            rich_parser=None, record_identity: bool = False) -> dict[str, Any]:
     out.mkdir(parents=True, exist_ok=True)
     started = time.monotonic()
     info: dict[str, Any] = {"original_exit_code": None, "signal": None, "timed_out": False,
                             "rss_peak_kib": 0, "rss_status": "SAMPLED_PROCESS_GROUP",
-                            "output_truncated": False, "output_bytes": 0}
+                            "output_truncated": False, "output_bytes": 0, "stdout_bytes":0, "stderr_bytes":0}
     state: dict[str, Any] = {"stdout_cap": False, "stderr_cap": False,
                              "stdout_kept": 0, "stderr_kept": 0,
                              "stdout_bytes": 0, "stderr_bytes": 0}
     lock = threading.Lock()
+    captures = {stream: rustc_diagnostics.Capture(stream, cap, out / ('rustc-'+stream+'-receipt.json'))
+                for stream, cap in (('stdout', stdout_cap), ('stderr', stderr_cap))}
     try:
         proc = subprocess.Popen(argv, cwd=cwd, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                 start_new_session=True, bufsize=0)
     except OSError as exc:
         info.update(runner_error=f"exec failed: {exc}", elapsed_seconds=time.monotonic() - started)
+        for stream, capture in captures.items():
+            try:
+                capture.finish('SPAWN_FAILED', eof=False)
+            except Exception as diagnostic_exc:
+                info.setdefault('diagnostic_errors', {})[stream] = f'{type(diagnostic_exc).__name__}: {diagnostic_exc}'
+        info['rustc_diagnostics'] = rustc_diagnostics.summary(out)
         if compile_monitor is not None:
             try:
                 compile_monitor.finish(info, state)
@@ -571,9 +595,9 @@ def execute(argv: list[str], cwd: Path, out: Path, timeout: int,
                 info["runner_exception"] = {"type": type(finish_exc).__name__, "message": str(finish_exc)}
         return info
     threads = [threading.Thread(target=_read_pipe, args=(proc.stdout, out / "stdout.log", stdout_cap,
-                                                         state, lock, "stdout", capture_tail, rich_parser), daemon=True),
+                                                         state, lock, "stdout", capture_tail, rich_parser, captures["stdout"]), daemon=True),
                threading.Thread(target=_read_pipe, args=(proc.stderr, out / "stderr.log", stderr_cap,
-                                                         state, lock, "stderr", capture_tail), daemon=True)]
+                                                         state, lock, "stderr", capture_tail, None, captures["stderr"]), daemon=True)]
     deadline = started + timeout
     killed_for = None
     external_signal: list[int] = []
@@ -583,6 +607,10 @@ def execute(argv: list[str], cwd: Path, out: Path, timeout: int,
         external_signal.append(signum)
         _kill_group(proc.pid)
     try:
+        if record_identity:
+            from r5_runtime import census
+            info['process_identity']=census().get(proc.pid) or {'pid':proc.pid,'state':'EARLY_EXIT_UNOBSERVED_PGID_STARTTIME'}
+            info['rss_scope']='SAMPLED_NONATOMIC_PGID_VmRSS; possible overshoot; not strict tree/kernel/cgroup'
         for thread in threads:
             thread.start()
         for sig in (signal.SIGTERM, signal.SIGINT):
@@ -643,6 +671,8 @@ def execute(argv: list[str], cwd: Path, out: Path, timeout: int,
                 thread.join(timeout=2)
                 if thread.is_alive():
                     cleanup_errors.append("pipe reader did not stop")
+        for pipe, thread in zip((proc.stdout,proc.stderr),threads):
+            if thread.ident is None:pipe.close()
         for sig, handler in previous_handlers.items():
             try:
                 signal.signal(sig, handler)
@@ -681,6 +711,22 @@ def execute(argv: list[str], cwd: Path, out: Path, timeout: int,
         info.setdefault("runner_exception", {"type": type(exc).__name__, "message": str(exc)})
         info.setdefault("termination_reason", "export_stat_error")
     info["elapsed_seconds"] = round(time.monotonic() - started, 3)
+    for stream, capture in captures.items():
+        reader_error = state.get(stream+'_reader_error')
+        if reader_error:
+            info.setdefault('pipe_reader_errors', {})[stream] = reader_error
+            info.setdefault('termination_reason', 'pipe_reader_error')
+        # No concurrent parser access if a stuck reader survived bounded shutdown.
+        if not threads[0 if stream == 'stdout' else 1].is_alive():
+            try:
+                capture.finish(info.get('termination_reason') or ('SIGNAL_EOF' if code < 0 else None),
+                               eof=capture.eof)
+            except Exception as diagnostic_exc:
+                info.setdefault('diagnostic_errors', {})[stream] = f'{type(diagnostic_exc).__name__}: {diagnostic_exc}'
+    info['rustc_diagnostics'] = rustc_diagnostics.summary(out)
+    if info.get('diagnostic_errors'):
+        info['rustc_diagnostics'].update(complete=False, incomplete_reasons=
+            info['rustc_diagnostics']['incomplete_reasons']+['DIAGNOSTIC_FINALIZATION_ERROR'])
     if compile_monitor is not None:
         try:
             compile_monitor.finish(info, state)
@@ -965,7 +1011,13 @@ def _artifact_size(out: Path) -> int:
 
 
 def _run_group(std: Path, tool: Path, out: Path, request: dict[str, Any],
-               group: dict[str, Any], phase_deadline: float) -> tuple[list[dict[str, Any]], str | None]:
+               group: dict[str, Any], phase_deadline: float, isolated_limits=None) -> tuple[list[dict[str, Any]], str | None]:
+    if isolated_limits is not None:
+        import r5_profile
+        r5_profile.validate(request)
+        assert len(group['rows'])==1 and group['rows'][0]['id'] in r5_profile.ORDER
+        assert group['id']=='r5-'+group['rows'][0]['id']
+    compile_limit=180 if isolated_limits is not None else COMPILE_SECONDS
     dest = out / "groups" / group["id"]
     dest.mkdir(parents=True, exist_ok=True)
     selectors = [row["selector"] for row in group["rows"]]
@@ -978,15 +1030,19 @@ def _run_group(std: Path, tool: Path, out: Path, request: dict[str, Any],
                "invocation_id": uuid.uuid4().hex,
                "argv": argv, "selectors": selectors, "variant": group["variant"],
                "unwind": group["unwind"], "proof_credit": "NONE",
-               "compile_limit_seconds": COMPILE_SECONDS,
-               "group_budget_seconds": COMPILE_SECONDS + sum(r["timeout_seconds"] for r in group["rows"]),
+               "compile_limit_seconds": compile_limit,
+               "group_budget_seconds": 600 if isolated_limits is not None else compile_limit + sum(r["timeout_seconds"] for r in group["rows"]),
                "std_sha": STD_SHA, "tool_sha": TOOL_SHA,
                "request_sha256": sha256(REQUEST_PATH)}
     patch = None
     metadata_target = None
     fatal = None
-    rich = rich_evidence.RegularEvidence(selectors, std.resolve())
-    monitor = CompileMonitor(dest / "compile/receipt.json", export, selectors)
+    if isolated_limits is not None:
+        from r5_runtime import NativeStarts
+        rich=NativeStarts(selectors,std.resolve())
+    else:
+        rich = rich_evidence.RegularEvidence(selectors, std.resolve())
+    monitor = CompileMonitor(dest / "compile/receipt.json", export, selectors, seconds=compile_limit)
     try:
         _write_json(dest / "receipt.json", receipt)
         for result in results:
@@ -997,6 +1053,9 @@ def _run_group(std: Path, tool: Path, out: Path, request: dict[str, Any],
         if not before["required_hashes_present"]:
             raise RunnerError("missing required tool binary hash")
         memory = group_memory_budget()
+        if isolated_limits is not None:
+            memory['group_cap_kib']=min(memory['group_cap_kib'],RSS_CAP_KIB)
+            memory['rss_scope']='POLLED_NONATOMIC_PGID_VmRSS; possible overshoot; not strict kernel/tree/cgroup'
         patch, variant_files = _run_variant(std, group["variant"], request)
         receipt.update(source_before=source_before, tool_fingerprints_before=before,
                        memory=memory, source_under_test={"base_std_sha": STD_SHA,
@@ -1015,6 +1074,13 @@ def _run_group(std: Path, tool: Path, out: Path, request: dict[str, Any],
             raise RunnerError("phase_seconds_cap_before_group")
         # Group envelope is compile + all row budgets; the separate phase deadline is authoritative.
         timeout = min(receipt["group_budget_seconds"], remaining)
+        if isolated_limits is not None:
+            if remaining<600:raise RunnerError('r5_preflight_slot_budget_no_full_child')
+            timeout=600
+            receipt['r5_limits']={'child_wall_seconds':600,'compile_seconds_inside_child':180,
+                'rss_effective_kib':memory['group_cap_kib'],'output_remaining':isolated_limits,
+                'rss_scope':memory['rss_scope'],'inner_backend_timeout_seconds':600}
+
         receipt.update(timeout_seconds=timeout, phase_limited=timeout < receipt["group_budget_seconds"])
         export.unlink(missing_ok=True)
         for stream in ("stdout", "stderr"):
@@ -1022,10 +1088,16 @@ def _run_group(std: Path, tool: Path, out: Path, request: dict[str, Any],
         _write_json(dest / "receipt.json", receipt)
         try:
             invocation = execute(argv, std.resolve(), dest, timeout,
-                                 rss_cap_kib=memory["group_cap_kib"], stdout_cap=STDOUT_CAP_BYTES,
-                                 stderr_cap=STDERR_CAP_BYTES, export_path=export, export_cap=EXPORT_CAP_BYTES,
-                                 env=child_env, capture_tail=True, compile_monitor=monitor, rich_parser=rich)
+                                 rss_cap_kib=memory["group_cap_kib"],
+                                 stdout_cap=min(STDOUT_CAP_BYTES,isolated_limits['stdout_bytes']) if isolated_limits is not None else STDOUT_CAP_BYTES,
+                                 stderr_cap=min(STDERR_CAP_BYTES,isolated_limits['stderr_bytes']) if isolated_limits is not None else STDERR_CAP_BYTES,
+                                 export_path=export,
+                                 export_cap=min(EXPORT_CAP_BYTES,isolated_limits['export_bytes']) if isolated_limits is not None else EXPORT_CAP_BYTES,
+                                 env=child_env, capture_tail=True, compile_monitor=monitor, rich_parser=rich,
+                                 **({"record_identity":True} if isolated_limits is not None else {}))
             receipt["execution"] = invocation
+            if isolated_limits is not None and invocation.get('elapsed_seconds',0)>=timeout:
+                invocation.update(timed_out=True,termination_reason=invocation.get('termination_reason') or 'child_wall_cutoff')
         except BaseException as exc:
             receipt["execution_exception"] = {"type": type(exc).__name__, "message": str(exc)}
             raise
@@ -1110,6 +1182,12 @@ def _run_group(std: Path, tool: Path, out: Path, request: dict[str, Any],
                 fatal = (fatal + "; " if fatal else "") + "compile_receipt_error: " + receipt["compile_receipt_error"]
         _write_json(dest / "properties.json", rich.document())
         receipt["location_exceptions"] = rich.location_exceptions()
+        if isolated_limits is not None:
+            receipt['native_start_events']=rich.starts
+            receipt['native_start_scope']='OBSERVED_STOCK_STDOUT_HEADER; source-reported not compiler/origin proof'
+            receipt['native_start_verified']=[x['selector'] for x in rich.starts]==selectors
+            if any(x['selector'] not in selectors for x in rich.starts) or len(rich.starts)>1:
+                fatal='native_selector_mismatch_or_duplicate'
         try:
             receipt["binding_metadata"] = capture_binding_metadata(dest, metadata_target, request, group, receipt)
             if receipt["binding_metadata"]["errors"]:
@@ -1125,11 +1203,13 @@ def _run_group(std: Path, tool: Path, out: Path, request: dict[str, Any],
             receipt["state"] = "COMPLETE"
         for stream in ("stdout", "stderr"):
             receipt[stream] = _bounded_log(dest / (stream+".log"), execution.get(stream+"_bytes"))
+        receipt['rustc_diagnostics'] = execution.get('rustc_diagnostics', rustc_diagnostics.summary(dest))
         receipt["compilation"] = "compile/receipt.json"
         for result in results:
             result.update(group_original_exit=execution.get("original_exit_code"), signal=execution.get("signal"),
                           group_rss_peak_kib=execution.get("rss_peak_kib"),
                           stdout=receipt["stdout"], stderr=receipt["stderr"],
+                          rustc_diagnostics=receipt['rustc_diagnostics'],
                           diagnostic_scope="SHARED_GROUP_CAPTURE_NOT_PER_ROOT")
             _write_json(out / result["id"] / "receipt.json", result)
         _write_json(dest / "receipt.json", receipt)
@@ -1146,6 +1226,8 @@ def _run_group(std: Path, tool: Path, out: Path, request: dict[str, Any],
 def run_rows(std: Path, tool: Path, out: Path, request: dict[str, Any],
              group_ids: list[str] | None = None) -> int:
     out.mkdir(parents=True, exist_ok=True)
+    import r5_profile
+    if r5_profile.enabled(request):raise RunnerError('r5 multi-root legacy run refused; use isolated campaign')
     phase_started = time.monotonic()
     deadline = phase_started+PHASE_SECONDS
     all_groups = group_rows(request["rows"], request.get("execution_groups"))
@@ -1208,6 +1290,8 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "check-source":
             print(json.dumps(verify_source(args.std, args.tool, request), sort_keys=True))
         else:
+            import r5_profile
+            if r5_profile.enabled(request):raise RunnerError('r5 requires isolated r5_campaign.py run; legacy multi-root run refused')
             group_ids = args.groups.split(",") if args.groups is not None else None
             code = run_rows(args.std, args.tool, args.out, request, group_ids)
             if code:
