@@ -4,6 +4,7 @@
 import hashlib
 import re
 import negative_oracle
+import cfg_pfc
 ROOTS=('swap_pfc','summary_witness','merge32_real','sort13_assumed','general32_assumed',
  'merge_order_corrupt','merge_count_corrupt','checker_count_corrupt','checker_order_corrupt','sort13_weak','general32_weak')
 PREFIX='slice::sort::shared::smallsort::verify::sorting_s2_batch::'
@@ -13,13 +14,14 @@ BATCH='library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs'
 BASE='99e8456d200fff1299ee5756279cddb23921dc65'
 TOOL='0aac16ef62da9e9d5645782d458593e5d78143ba'
 STUBS={'sort13_assumed':['#[kani::stub_verified(swap_if_less)]'],
- 'general32_assumed':['#[kani::stub_verified(sort8_stable)]','#[kani::stub_verified(insert_tail)]','#[kani::stub_verified(bidirectional_merge)]'],
+ 'general32_assumed':['#[kani::stub(sort8_stable,diagnostic_sort8)]','#[kani::stub_verified(insert_tail)]','#[kani::stub_verified(bidirectional_merge)]'],
  'sort13_weak':['#[kani::stub(swap_if_less,weak_swap)]'],
- 'general32_weak':['#[kani::stub_verified(sort8_stable)]','#[kani::stub_verified(insert_tail)]','#[kani::stub(bidirectional_merge,weak_merge)]']}
+ 'general32_weak':['#[kani::stub(sort8_stable,diagnostic_sort8)]','#[kani::stub_verified(insert_tail)]','#[kani::stub(bidirectional_merge,weak_merge)]']}
 def digest(data):return hashlib.sha256(data).hexdigest()
 
 def validate_request(r):
     assert r['schema']=='ch8-s2-batch3probes-v1'
+    assert isinstance(r['cfg_pfc_source_sha256'],dict) and len(r['cfg_pfc_source_sha256'])==8
     assert [x['id'] for x in r['rows']]==list(ROOTS)
     assert r['base_std_sha']==BASE and r['tool_sha']==TOOL
     assert r['formal_expected_inventory']==['merge32_real']
@@ -32,6 +34,8 @@ def validate_request(r):
     assert r['replacement_unions']==[] and r['variants']=={}
     for row in r['rows']:
         rid=row['id'];b=r['source_bindings'][rid]
+        assert row['mode']==('PFC' if rid=='swap_pfc' else 'Original')
+        assert b['target']==('swap_if_less' if rid=='swap_pfc' else None)
         assert row['selector']==PREFIX+rid and row['source_qualified_selector']=='core::'+PREFIX+rid
         assert row['variant']=='production' and row['unwind']==34 and row['timeout_seconds']==600
         assert row['proof_credit']=='NONE' and row['state']=='NOT_RUN'
@@ -53,6 +57,8 @@ def validate_request(r):
 
 def validate_source(std,r):
     validate_request(r)
+    cfg_pfc.check(std,r)
+    validate_sort8_model((std/BATCH).read_text())
     lines=(std/BATCH).read_text().splitlines()
     for row in r['rows']:
         rid=row['id'];b=r['source_bindings'][rid]
@@ -102,3 +108,21 @@ def expected_observation(row,parsed,properties):
     successful={p.get('description') for p in records if p.get('class')!='cover' and p.get('status')=='SUCCESS'}
     satisfied={p.get('description') for p in records if p.get('class')=='cover' and p.get('status')=='SATISFIED'}
     return (set(row['required_success_messages']).issubset(successful) and set(row['required_cover_messages'])==satisfied and covers.get('total')==row['required_cover_count'])
+
+
+def validate_sort8_model(text):
+    """Offline exact source-delta check; no compile or qualification claim."""
+    from pathlib import Path
+    baseline = (Path(__file__).parent/'fixtures/s2-r1-batch.rs.txt').read_text()
+    marker = "\n// Registration for Kani's stub_verified lookup in this same opt-in crate/cfg.\n"
+    assert len(baseline[baseline.index(marker):].splitlines()) == 13
+    prefix = baseline[:baseline.index(marker)].replace(
+        '#[kani::stub_verified(sort8_stable)]',
+        '#[kani::stub(sort8_stable,diagnostic_sort8)]')
+    assert text.startswith(prefix)
+    # Whitespace-independent bounded Rust tokens; every guard/write/post remains.
+    expected = '// Ordinary DIAGNOSTIC_ASSUMED relation, restricted to u8/KeyLess<u8>.\n// Same signature as the actual callee; no Copy bound or comparator invocation.\n// Read only initialized source8. Havoc only dst8/temp8, then constrain the full\n// sorted permutation of the owned pre-state. Never read uninitialized outputs.\nunsafe fn diagnostic_sort8<T:crate::slice::sort::shared::FreezeMarker,F:FnMut(&T,&T)->bool>(\n    v_base:*mut T,dst:*mut T,scratch_base:*mut T,_is_less:&mut F,\n) {\n    assert!(span::active::<T,F>());\n    assert!(crate::ub_checks::can_dereference(ptr::slice_from_raw_parts(v_base,8))\n        && crate::ub_checks::can_write(ptr::slice_from_raw_parts_mut(dst,8))\n        && crate::ub_checks::can_write(ptr::slice_from_raw_parts_mut(scratch_base,8))\n        && super::super::merge_contract_regions_disjoint(v_base,dst,8)\n        && super::super::merge_contract_regions_disjoint(v_base,scratch_base,8)\n        && super::super::merge_contract_regions_disjoint(dst,scratch_base,8));\n    // active is true exactly for u8/KeyLess<u8>; these casts never admit another T.\n    let before = span::capture::<T,F>(v_base,8);\n    for i in 0..8 {\n        unsafe {\n            dst.cast::<u8>().add(i).write(kani::any::<u8>());\n            scratch_base.cast::<u8>().add(i).write(kani::any::<u8>());\n        }\n    }\n    kani::assume(span::post::<T,F>(before,dst,8));\n}\n'
+    assert cfg_pfc.spelling(cfg_pfc.tokens(text[len(prefix):])) == cfg_pfc.spelling(cfg_pfc.tokens(expected))
+    assert text.count('#[kani::stub(sort8_stable,diagnostic_sort8)]') == 2
+    assert 'sort8_registration_only' not in text
+    return True

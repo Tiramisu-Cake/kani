@@ -10,9 +10,9 @@ import subprocess
 import time
 
 HERE = Path(__file__).resolve().parent
-# Actual control: S2 -> 7c413 -> 9208 -> b25 -> 40b -> stock0aac (depth6).
-# Actual source: S2-active -> S2-witness -> S2-attrs -> accepted99e (depth4); stock tool depth2.
-CHECKOUT_DEPTHS = {'control': 6, 'export': 4, 'tool': 2}
+# Actual control: r1 sibling -> 9e14 -> 7c413 -> 9208 -> b25 -> 40b -> stock0aac (depth7).
+# Actual source: r1 -> S2-active -> S2-witness -> S2-attrs -> accepted99e (depth5).
+CHECKOUT_DEPTHS = {'control': 7, 'export': 5, 'tool': 2}
 
 
 def load_yaml(text):
@@ -108,7 +108,10 @@ def check_yaml(path):
     assert byname['Build exact stock tool once']['timeout-minutes']==15
     assert byname['Setup exact stock tool']['timeout-minutes']==15
     assert byname['Check all source identities']['run']=='python3 control/ch8-s1-control/runner.py check-source --std export --tool tool'
-    assert 'test_runner.py test_s107.FinalizationTests test_s2.py' in byname['Validate control and synthetic wrapper']['run']
+    names=[s['name'] for s in steps]
+    assert names.index('Checkout production model export') < names.index('Check all source identities') < names.index('Setup exact stock tool') < names.index('Build exact stock tool once') < names.index('Run S2 batch3probes with bounded observations')
+    assert not any(byname['Check all source identities'].get(k) for k in ('if','continue-on-error'))
+    assert 'test_runner.py test_s107.FinalizationTests test_s2.py test_cfg_pfc.py' in byname['Validate control and synthetic wrapper']['run']
     assert steps[-2]['if']=='always()' and 'fallback' in steps[-2]['run'] and 'pack_evidence.py' in steps[-2]['run']
     return {'jobs':1,'serial':True,'max_runner_minutes':180,'step_timeout_sum_minutes':177,'checkout_depths':CHECKOUT_DEPTHS}
 
@@ -157,6 +160,7 @@ def fallback(out, group_ids=None):
     # SIGKILL cannot run finally: retain observations and mark incomplete work UNKNOWN.
     from runner import _write_json, _bounded_log
     from runner import group_rows
+    import rustc_diagnostics
     groups=group_rows(r['rows'],r.get('execution_groups'))
     if group_ids is not None:
         selected=set(group_ids)
@@ -172,9 +176,13 @@ def fallback(out, group_ids=None):
                     value.update(state='INTERRUPTED',outcome='UNKNOWN')
                     for stream in ('stdout','stderr'):
                         value[stream]=_bounded_log(dest/(stream+'.log'),None)
+                    value['rustc_diagnostics']=rustc_diagnostics.summary(dest)
+                    value['rustc_diagnostics'].update(complete=False,
+                        incomplete_reasons=['FALLBACK_INTERRUPTED_EXECUTION']+value['rustc_diagnostics']['incomplete_reasons'])
                     _write_json(path,value)
             else:
-                _write_json(path,{'state':'NOT_RUN_OR_INTERRUPTED','outcome':'UNKNOWN','proof_credit':'NONE'})
+                _write_json(path,{'state':'NOT_RUN_OR_INTERRUPTED','outcome':'UNKNOWN','proof_credit':'NONE',
+                                  'rustc_diagnostics':rustc_diagnostics.summary(dest)})
     # Materialize every absent row, preserving any execution receipt already captured.
     for row in r['rows']:
         if row['id'] not in selected_rows: continue
