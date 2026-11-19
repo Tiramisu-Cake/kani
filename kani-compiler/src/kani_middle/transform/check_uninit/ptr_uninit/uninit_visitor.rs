@@ -406,8 +406,8 @@ impl MirVisitor for CheckUninitVisitor<'_> {
                         }
                     }
                     InstanceKind::Item | InstanceKind::Shim => {
-                        // The resolver accepts MIR bodies and foreign items. Foreign items use
-                        // the models below; other calls transfer union argument and return state.
+                        // Foreign allocation calls use the models below; other calls store
+                        // initialization state for union arguments.
                         if instance.is_foreign_item() {
                             match instance.name().as_str() {
                                 "alloc::alloc::__rust_alloc" | "alloc::alloc::__rust_realloc" => {

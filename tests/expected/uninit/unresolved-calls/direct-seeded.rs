@@ -8,17 +8,11 @@ fn direct(value: u8) -> u8 {
     value
 }
 
-// The copy intrinsic initializes the destination and creates an analysis target.
-#[inline(never)]
-fn seed() {
-    let source = 7u8;
-    let mut destination = 0u8;
-    unsafe { std::ptr::copy_nonoverlapping(&source, &mut destination, 1) };
-    assert_eq!(destination, source);
-}
+#[path = "auxiliary/analysis_target.rs"]
+mod analysis_target;
 
 #[kani::proof]
 fn check() {
-    seed();
+    analysis_target::check_byte_copy();
     assert_eq!(direct(42), 42);
 }
