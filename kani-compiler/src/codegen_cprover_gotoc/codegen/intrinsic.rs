@@ -16,6 +16,9 @@ use rustc_public::rustc_internal;
 use rustc_public::ty::{GenericArgs, RigidTy, Span, Ty, TyKind, UintTy};
 use tracing::debug;
 
+const VOLATILE_LOAD_UNINHABITED: &str =
+    "volatile load of an uninhabited type has undefined behavior";
+
 pub struct SizeAlign {
     pub size: Expr,
     pub align: Expr,
@@ -89,15 +92,10 @@ impl GotocCtx<'_, '_> {
                 span,
             ),
             // Reject uninhabited ZST results even when MIR has no return target.
-            "volatile_load"
-                if {
-                    let ret_ty = instance.ty().kind().fn_sig().unwrap().skip_binder().output();
-                    self.is_zst_stable(ret_ty) && self.layout_of_stable(ret_ty).is_uninhabited()
-                } =>
-            {
+            "volatile_load" if self.returns_uninhabited_zst(instance) => {
                 self.codegen_fatal_error(
                     PropertyClass::SafetyCheck,
-                    "volatile load of an uninhabited type has undefined behavior",
+                    VOLATILE_LOAD_UNINHABITED,
                     span,
                 )
             }
@@ -107,6 +105,11 @@ impl GotocCtx<'_, '_> {
                 span,
             ),
         }
+    }
+
+    fn returns_uninhabited_zst(&self, instance: Instance) -> bool {
+        let ret_ty = instance.ty().kind().fn_sig().unwrap().skip_binder().output();
+        self.is_zst_stable(ret_ty) && self.layout_of_stable(ret_ty).is_uninhabited()
     }
 
     /// c.f. `rustc_codegen_llvm::intrinsic` `impl IntrinsicCallMethods<'tcx>
@@ -1934,7 +1937,7 @@ impl GotocCtx<'_, '_> {
             if self.layout_of_stable(pointee_type).is_uninhabited() {
                 let validity_check = self.codegen_assert_assume_false(
                     PropertyClass::SafetyCheck,
-                    "volatile load of an uninhabited type has undefined behavior",
+                    VOLATILE_LOAD_UNINHABITED,
                     loc,
                 );
                 return Stmt::block(vec![align_check, validity_check], loc);
