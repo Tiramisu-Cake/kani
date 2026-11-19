@@ -1,0 +1,894 @@
+{
+  "schema": "s4p3-network-boundaries-role-contract-v1",
+  "status": "REQUIRED_ACCEPTANCE_CONTRACT_FOR_FUTURE_PACKAGE",
+  "rows": [
+    {
+      "design_id": "PLAN_N08_V34_B01_FULLU8",
+      "lengths": [
+        8
+      ],
+      "mode": "Original",
+      "target": null,
+      "type": "u8",
+      "comparator": "KeyLess<u8>",
+      "allocation": 34,
+      "base": 1,
+      "unwind": 36,
+      "assertion_roles": {
+        "ACTIVE_CONCRETE_MODEL": "SUCCESS",
+        "SORTED_FULL_VALUE_COUNT": "SUCCESS",
+        "FULL_OUTSIDE_FRAME": "SUCCESS",
+        "ARBITRARY_OUTSIDE_CANARY": "SUCCESS"
+      },
+      "cover_roles": {
+        "N08": "SATISFIED",
+        "UNSORTED": "SATISFIED",
+        "DUPLICATE": "SATISFIED",
+        "NONCONSTANT": "SATISFIED",
+        "MAX_DESCENDING": "SATISFIED",
+        "USEFUL_RETURN": "SATISFIED"
+      },
+      "cover_count": 6,
+      "structurally_not_applicable_roles": [],
+      "static_assignments": [
+        {
+          "role": "N08",
+          "n": 8,
+          "active_input": [
+            8,
+            7,
+            6,
+            5,
+            4,
+            3,
+            2,
+            1
+          ],
+          "candidate_output": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8
+          ]
+        },
+        {
+          "role": "UNSORTED",
+          "n": 8,
+          "active_input": [
+            8,
+            7,
+            6,
+            5,
+            4,
+            3,
+            2,
+            1
+          ],
+          "candidate_output": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8
+          ]
+        },
+        {
+          "role": "DUPLICATE",
+          "n": 8,
+          "active_input": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "candidate_output": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "role": "NONCONSTANT",
+          "n": 8,
+          "active_input": [
+            8,
+            7,
+            6,
+            5,
+            4,
+            3,
+            2,
+            1
+          ],
+          "candidate_output": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8
+          ]
+        },
+        {
+          "role": "MAX_DESCENDING",
+          "n": 8,
+          "active_input": [
+            8,
+            7,
+            6,
+            5,
+            4,
+            3,
+            2,
+            1
+          ],
+          "candidate_output": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8
+          ]
+        },
+        {
+          "role": "USEFUL_RETURN",
+          "n": 8,
+          "active_input": [
+            8,
+            7,
+            6,
+            5,
+            4,
+            3,
+            2,
+            1
+          ],
+          "candidate_output": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8
+          ]
+        }
+      ],
+      "source_active_site_count": 4,
+      "native_property_count": "UNKNOWN_UNTIL_SAME_INVOCATION_EXPORT"
+    },
+    {
+      "design_id": "PLAN_N09_V34_B01_FULLU8",
+      "lengths": [
+        9
+      ],
+      "mode": "Original",
+      "target": null,
+      "type": "u8",
+      "comparator": "KeyLess<u8>",
+      "allocation": 34,
+      "base": 1,
+      "unwind": 36,
+      "assertion_roles": {
+        "ACTIVE_CONCRETE_MODEL": "SUCCESS",
+        "SORTED_FULL_VALUE_COUNT": "SUCCESS",
+        "FULL_OUTSIDE_FRAME": "SUCCESS",
+        "ARBITRARY_OUTSIDE_CANARY": "SUCCESS"
+      },
+      "cover_roles": {
+        "N09": "SATISFIED",
+        "UNSORTED": "SATISFIED",
+        "DUPLICATE": "SATISFIED",
+        "NONCONSTANT": "SATISFIED",
+        "MAX_DESCENDING": "SATISFIED",
+        "USEFUL_RETURN": "SATISFIED"
+      },
+      "cover_count": 6,
+      "structurally_not_applicable_roles": [],
+      "static_assignments": [
+        {
+          "role": "N09",
+          "n": 9,
+          "active_input": [
+            9,
+            8,
+            7,
+            6,
+            5,
+            4,
+            3,
+            2,
+            1
+          ],
+          "candidate_output": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ]
+        },
+        {
+          "role": "UNSORTED",
+          "n": 9,
+          "active_input": [
+            9,
+            8,
+            7,
+            6,
+            5,
+            4,
+            3,
+            2,
+            1
+          ],
+          "candidate_output": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ]
+        },
+        {
+          "role": "DUPLICATE",
+          "n": 9,
+          "active_input": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "candidate_output": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "role": "NONCONSTANT",
+          "n": 9,
+          "active_input": [
+            9,
+            8,
+            7,
+            6,
+            5,
+            4,
+            3,
+            2,
+            1
+          ],
+          "candidate_output": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ]
+        },
+        {
+          "role": "MAX_DESCENDING",
+          "n": 9,
+          "active_input": [
+            9,
+            8,
+            7,
+            6,
+            5,
+            4,
+            3,
+            2,
+            1
+          ],
+          "candidate_output": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ]
+        },
+        {
+          "role": "USEFUL_RETURN",
+          "n": 9,
+          "active_input": [
+            9,
+            8,
+            7,
+            6,
+            5,
+            4,
+            3,
+            2,
+            1
+          ],
+          "candidate_output": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ]
+        }
+      ],
+      "source_active_site_count": 4,
+      "native_property_count": "UNKNOWN_UNTIL_SAME_INVOCATION_EXPORT"
+    },
+    {
+      "design_id": "PLAN_N13_V34_B01_FULLU8",
+      "lengths": [
+        13
+      ],
+      "mode": "Original",
+      "target": null,
+      "type": "u8",
+      "comparator": "KeyLess<u8>",
+      "allocation": 34,
+      "base": 1,
+      "unwind": 36,
+      "assertion_roles": {
+        "ACTIVE_CONCRETE_MODEL": "SUCCESS",
+        "SORTED_FULL_VALUE_COUNT": "SUCCESS",
+        "FULL_OUTSIDE_FRAME": "SUCCESS",
+        "ARBITRARY_OUTSIDE_CANARY": "SUCCESS"
+      },
+      "cover_roles": {
+        "N13": "SATISFIED",
+        "UNSORTED": "SATISFIED",
+        "DUPLICATE": "SATISFIED",
+        "NONCONSTANT": "SATISFIED",
+        "MAX_DESCENDING": "SATISFIED",
+        "USEFUL_RETURN": "SATISFIED"
+      },
+      "cover_count": 6,
+      "structurally_not_applicable_roles": [],
+      "static_assignments": [
+        {
+          "role": "N13",
+          "n": 13,
+          "active_input": [
+            13,
+            12,
+            11,
+            10,
+            9,
+            8,
+            7,
+            6,
+            5,
+            4,
+            3,
+            2,
+            1
+          ],
+          "candidate_output": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13
+          ]
+        },
+        {
+          "role": "UNSORTED",
+          "n": 13,
+          "active_input": [
+            13,
+            12,
+            11,
+            10,
+            9,
+            8,
+            7,
+            6,
+            5,
+            4,
+            3,
+            2,
+            1
+          ],
+          "candidate_output": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13
+          ]
+        },
+        {
+          "role": "DUPLICATE",
+          "n": 13,
+          "active_input": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "candidate_output": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "role": "NONCONSTANT",
+          "n": 13,
+          "active_input": [
+            13,
+            12,
+            11,
+            10,
+            9,
+            8,
+            7,
+            6,
+            5,
+            4,
+            3,
+            2,
+            1
+          ],
+          "candidate_output": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13
+          ]
+        },
+        {
+          "role": "MAX_DESCENDING",
+          "n": 13,
+          "active_input": [
+            13,
+            12,
+            11,
+            10,
+            9,
+            8,
+            7,
+            6,
+            5,
+            4,
+            3,
+            2,
+            1
+          ],
+          "candidate_output": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13
+          ]
+        },
+        {
+          "role": "USEFUL_RETURN",
+          "n": 13,
+          "active_input": [
+            13,
+            12,
+            11,
+            10,
+            9,
+            8,
+            7,
+            6,
+            5,
+            4,
+            3,
+            2,
+            1
+          ],
+          "candidate_output": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13
+          ]
+        }
+      ],
+      "source_active_site_count": 4,
+      "native_property_count": "UNKNOWN_UNTIL_SAME_INVOCATION_EXPORT"
+    },
+    {
+      "design_id": "PLAN_N17_V34_B01_FULLU8",
+      "lengths": [
+        17
+      ],
+      "mode": "Original",
+      "target": null,
+      "type": "u8",
+      "comparator": "KeyLess<u8>",
+      "allocation": 34,
+      "base": 1,
+      "unwind": 36,
+      "assertion_roles": {
+        "ACTIVE_CONCRETE_MODEL": "SUCCESS",
+        "SORTED_FULL_VALUE_COUNT": "SUCCESS",
+        "FULL_OUTSIDE_FRAME": "SUCCESS",
+        "ARBITRARY_OUTSIDE_CANARY": "SUCCESS"
+      },
+      "cover_roles": {
+        "N17": "SATISFIED",
+        "UNSORTED": "SATISFIED",
+        "DUPLICATE": "SATISFIED",
+        "NONCONSTANT": "SATISFIED",
+        "MAX_DESCENDING": "SATISFIED",
+        "USEFUL_RETURN": "SATISFIED"
+      },
+      "cover_count": 6,
+      "structurally_not_applicable_roles": [],
+      "static_assignments": [
+        {
+          "role": "N17",
+          "n": 17,
+          "active_input": [
+            17,
+            16,
+            15,
+            14,
+            13,
+            12,
+            11,
+            10,
+            9,
+            8,
+            7,
+            6,
+            5,
+            4,
+            3,
+            2,
+            1
+          ],
+          "candidate_output": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17
+          ]
+        },
+        {
+          "role": "UNSORTED",
+          "n": 17,
+          "active_input": [
+            17,
+            16,
+            15,
+            14,
+            13,
+            12,
+            11,
+            10,
+            9,
+            8,
+            7,
+            6,
+            5,
+            4,
+            3,
+            2,
+            1
+          ],
+          "candidate_output": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17
+          ]
+        },
+        {
+          "role": "DUPLICATE",
+          "n": 17,
+          "active_input": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "candidate_output": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "role": "NONCONSTANT",
+          "n": 17,
+          "active_input": [
+            17,
+            16,
+            15,
+            14,
+            13,
+            12,
+            11,
+            10,
+            9,
+            8,
+            7,
+            6,
+            5,
+            4,
+            3,
+            2,
+            1
+          ],
+          "candidate_output": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17
+          ]
+        },
+        {
+          "role": "MAX_DESCENDING",
+          "n": 17,
+          "active_input": [
+            17,
+            16,
+            15,
+            14,
+            13,
+            12,
+            11,
+            10,
+            9,
+            8,
+            7,
+            6,
+            5,
+            4,
+            3,
+            2,
+            1
+          ],
+          "candidate_output": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17
+          ]
+        },
+        {
+          "role": "USEFUL_RETURN",
+          "n": 17,
+          "active_input": [
+            17,
+            16,
+            15,
+            14,
+            13,
+            12,
+            11,
+            10,
+            9,
+            8,
+            7,
+            6,
+            5,
+            4,
+            3,
+            2,
+            1
+          ],
+          "candidate_output": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17
+          ]
+        }
+      ],
+      "source_active_site_count": 4,
+      "native_property_count": "UNKNOWN_UNTIL_SAME_INVOCATION_EXPORT"
+    }
+  ]
+}

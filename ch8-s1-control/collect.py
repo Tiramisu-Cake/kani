@@ -51,6 +51,10 @@ def read(path):
 
 
 def collect(roots,request):
+    import s4p3_profile
+    if s4p3_profile.enabled(request) or request.get('schema')==s4p3_profile.SCHEMA:
+        import s4p3_campaign
+        return s4p3_campaign.collect(roots,request)
     import s4p2r2_profile
     if s4p2r2_profile.enabled(request) or request.get('schema')==s4p2r2_profile.SCHEMA:
         import s4p2r2_campaign
