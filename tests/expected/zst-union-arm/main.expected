@@ -1,0 +1,17 @@
+Status: SATISFIED\
+Description: "copy_array_first post-copy data and projection"
+
+Status: SATISFIED\
+Description: "copy_nested_unit_array post-copy data and projection"
+
+Status: SATISFIED\
+Description: "copy_nested_empty_byte_array post-copy data and projection"
+
+Status: SATISFIED\
+Description: "copy_aligned_array post-copy data and projection"
+
+Status: SATISFIED\
+Description: "copy_struct_array post-copy data and projection"
+
+VERIFICATION:- SUCCESSFUL
+Complete - 12 successfully verified harnesses, 0 failures, 12 total.

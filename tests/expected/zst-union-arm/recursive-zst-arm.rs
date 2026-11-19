@@ -7,7 +7,7 @@ struct Node2 {
     next: *const Link,
 }
 
-// Only the pointer graph should retain this union; reading it would change the root.
+// The pointer field reaches this union while the enclosing struct is incomplete.
 #[allow(dead_code)]
 #[repr(C)]
 union Link {

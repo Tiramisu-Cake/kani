@@ -2,3 +2,4 @@ Status: SATISFIED\
 Description: "recursive_zst_arm retained null root"
 
 VERIFICATION:- SUCCESSFUL
+Complete - 1 successfully verified harnesses, 0 failures, 1 total.

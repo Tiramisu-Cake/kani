@@ -170,3 +170,173 @@ fn zst_array_indexing() {
         assert_eq!(value.zst_array.len(), 2);
     }
 }
+
+mod array_first {
+    use std::mem::{size_of, size_of_val};
+    use std::ptr;
+
+    #[repr(C)]
+    union Edge {
+        zst: [(); 2],
+        bytes: [u8; 16],
+    }
+
+    #[kani::proof]
+    fn copy_array_first() {
+        let mut src = Edge { zst: [(); 2] };
+        let mut dst = Edge { zst: [(); 2] };
+        assert_eq!(size_of::<[(); 2]>(), 0);
+        assert_eq!(size_of::<Edge>(), 16);
+        unsafe {
+            ptr::write_bytes((&mut src as *mut Edge).cast::<u8>(), 0x5a, size_of::<Edge>());
+            ptr::write(&mut dst, ptr::read(&src));
+            assert_eq!(dst.zst.len(), 2);
+            assert_eq!(size_of_val(&dst.zst[1]), 0);
+
+            // The byte arm spans the full extent; these are initialized data bytes.
+            assert_eq!(dst.bytes, [0x5a; 16]);
+            kani::cover!(
+                dst.bytes[15] == 0x5a && dst.zst.len() == 2,
+                "copy_array_first post-copy data and projection"
+            );
+        }
+    }
+}
+
+mod nested_unit_array {
+    use std::mem::{size_of, size_of_val};
+    use std::ptr;
+
+    #[repr(C)]
+    union Edge {
+        zst: [[(); 2]; 3],
+        bytes: [u8; 16],
+    }
+
+    #[kani::proof]
+    fn copy_nested_unit_array() {
+        let mut src = Edge { zst: [[(); 2]; 3] };
+        let mut dst = Edge { zst: [[(); 2]; 3] };
+        assert_eq!(size_of::<[[(); 2]; 3]>(), 0);
+        assert_eq!(size_of::<Edge>(), 16);
+        unsafe {
+            ptr::write_bytes((&mut src as *mut Edge).cast::<u8>(), 0x5a, size_of::<Edge>());
+            ptr::write(&mut dst, ptr::read(&src));
+            assert_eq!(dst.zst[2].len(), 2);
+            assert_eq!(size_of_val(&dst.zst[2][1]), 0);
+            assert_eq!(dst.zst.len(), 3);
+            // The byte arm spans the full extent; these are initialized data bytes.
+            assert_eq!(dst.bytes, [0x5a; 16]);
+            kani::cover!(
+                dst.bytes[15] == 0x5a && dst.zst[2].len() == 2,
+                "copy_nested_unit_array post-copy data and projection"
+            );
+        }
+    }
+}
+
+mod nested_empty_byte_array {
+    use std::mem::{size_of, size_of_val};
+    use std::ptr;
+
+    #[repr(C)]
+    union Edge {
+        zst: [[u8; 0]; 2],
+        bytes: [u8; 16],
+    }
+
+    #[kani::proof]
+    fn copy_nested_empty_byte_array() {
+        let mut src = Edge { zst: [[0u8; 0]; 2] };
+        let mut dst = Edge { zst: [[0u8; 0]; 2] };
+        assert_eq!(size_of::<[[u8; 0]; 2]>(), 0);
+        assert_eq!(size_of::<Edge>(), 16);
+        unsafe {
+            ptr::write_bytes((&mut src as *mut Edge).cast::<u8>(), 0x5a, size_of::<Edge>());
+            ptr::write(&mut dst, ptr::read(&src));
+            assert_eq!(dst.zst.len(), 2);
+            assert_eq!(size_of_val(&dst.zst[1]), 0);
+            assert_eq!(dst.zst[1].len(), 0);
+            // The byte arm spans the full extent; these are initialized data bytes.
+            assert_eq!(dst.bytes, [0x5a; 16]);
+            kani::cover!(
+                dst.bytes[15] == 0x5a && dst.zst.len() == 2,
+                "copy_nested_empty_byte_array post-copy data and projection"
+            );
+        }
+    }
+}
+
+mod aligned_array {
+    use std::mem::{align_of, size_of, size_of_val};
+    use std::ptr;
+
+    #[repr(align(8))]
+    #[derive(Clone, Copy)]
+    struct Z;
+
+    #[repr(C)]
+    union Edge {
+        zst: [Z; 2],
+        bytes: [u8; 16],
+    }
+
+    #[kani::proof]
+    fn copy_aligned_array() {
+        let mut src = Edge { zst: [Z; 2] };
+        let mut dst = Edge { zst: [Z; 2] };
+        assert_eq!(size_of::<[Z; 2]>(), 0);
+        assert_eq!(size_of::<Edge>(), 16);
+        unsafe {
+            ptr::write_bytes((&mut src as *mut Edge).cast::<u8>(), 0x5a, size_of::<Edge>());
+            ptr::write(&mut dst, ptr::read(&src));
+            assert_eq!(dst.zst.len(), 2);
+            assert_eq!(size_of_val(&dst.zst[1]), 0);
+            assert_eq!(align_of::<[Z; 2]>(), 8);
+            assert_eq!(align_of::<Edge>(), 8);
+            // The byte arm spans the full extent; these are initialized data bytes.
+            assert_eq!(dst.bytes, [0x5a; 16]);
+            kani::cover!(
+                dst.bytes[15] == 0x5a && dst.zst.len() == 2,
+                "copy_aligned_array post-copy data and projection"
+            );
+        }
+    }
+}
+
+mod struct_array {
+    use std::mem::{size_of, size_of_val};
+    use std::ptr;
+
+    #[derive(Clone, Copy)]
+    struct Wrapped {
+        array: [(); 2],
+    }
+
+    #[repr(C)]
+    union Edge {
+        zst: Wrapped,
+        bytes: [u8; 16],
+    }
+
+    #[kani::proof]
+    fn copy_struct_array() {
+        let mut src = Edge { zst: Wrapped { array: [(); 2] } };
+        let mut dst = Edge { zst: Wrapped { array: [(); 2] } };
+        assert_eq!(size_of::<Wrapped>(), 0);
+        assert_eq!(size_of::<Edge>(), 16);
+        unsafe {
+            ptr::write_bytes((&mut src as *mut Edge).cast::<u8>(), 0x5a, size_of::<Edge>());
+            ptr::write(&mut dst, ptr::read(&src));
+            assert_eq!(dst.zst.array.len(), 2);
+            assert_eq!(size_of_val(&dst.zst.array[1]), 0);
+
+            // The byte arm spans the full extent; these are initialized data bytes.
+            assert_eq!(dst.bytes, [0x5a; 16]);
+            kani::cover!(
+                dst.bytes[15] == 0x5a && dst.zst.array.len() == 2,
+                "copy_struct_array post-copy data and projection"
+            );
+        }
+    }
+}

@@ -6,7 +6,7 @@ struct Node {
     next: *const U,
 }
 
-// Only the pointer graph should retain this union; reading it would change the root.
+// The pointer field reaches this union while the enclosing struct is incomplete.
 #[allow(dead_code)]
 union U {
     big: [u8; 16],
