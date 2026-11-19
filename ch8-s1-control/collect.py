@@ -51,6 +51,30 @@ def read(path):
 
 
 def collect(roots,request):
+    import s4p_profile
+    if s4p_profile.enabled(request):
+        import s4p_campaign
+        return s4p_campaign.collect(roots,request)
+    import s34_profile
+    if s34_profile.enabled(request):
+        import s34_campaign
+        return s34_campaign.collect(roots,request)
+    import s32_profile
+    if s32_profile.enabled(request):
+        import s32_campaign
+        return s32_campaign.collect(roots,request)
+    import s3_profile
+    if s3_profile.enabled(request):
+        import s3_campaign
+        return s3_campaign.collect(roots,request)
+    import r5_profile
+    if r5_profile.enabled(request):
+        import r5_campaign
+        return r5_campaign.collect(roots,request)
+    return legacy_collect(roots,request)
+
+
+def legacy_collect(roots,request):
     groups={g['id']:g for g in r.group_rows(request['rows'],request['execution_groups'])}
     expected_identity={key:request[key] for key in ('std_sha','std_tree','tool_sha','tool_tree')}
     request_hash=r.sha256(r.REQUEST_PATH)

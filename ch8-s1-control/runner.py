@@ -22,13 +22,14 @@ import uuid
 from typing import Any
 
 import rich_evidence
+import rustc_diagnostics
 import binding_metadata
 import s2_policy
 
 HERE = Path(__file__).resolve().parent
 REQUEST_PATH = HERE / "CI-REQUEST.json"
-STD_SHA = "97ac4d39d7f959ea70b1f57785ffd1fd66ecd22a"
-STD_TREE = "2b305686df9758381cfc5d07e195ba05d6b87637"
+STD_SHA = "bd62e54df1b4749154790aa3db3cc7978f547f75"
+STD_TREE = "dc2e7a7f258719a05c65bbb9b1e2c7f1e8271ac8"
 TOOL_SHA = "0aac16ef62da9e9d5645782d458593e5d78143ba"
 TOOL_TREE = "9d8bc9312bf955ef126d32b819b3cd0ed105ed2b"
 MAX_ROW_SECONDS = 600
@@ -69,8 +70,17 @@ def load_request(path: Path = REQUEST_PATH) -> dict[str, Any]:
         request = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise RunnerError(f"cannot read CI request: {exc}") from exc
+    if not isinstance(request,dict):raise RunnerError("request must be an object")
+    import s3_profile, s3_pins
+    if request.get('profile')=='ch8-s3-2-capped-fullbyte-v1':
+        import s32_profile as s3_profile, s32_pins as s3_pins
+    if request.get('profile')=='ch8-s3s4-bridge1-fullbyte-v1':
+        import s34_profile as s3_profile, s34_pins as s3_pins
+    if request.get('profile')=='ch8-s4p-1-fullbyte-length-blocks-v1':
+        import s4p_profile as s3_profile, s4p_pins as s3_pins
+    s3 = s3_profile.enabled(request)
     expected = {
-        "status": "READY", "std_sha": STD_SHA, "std_tree": STD_TREE,
+        "status": "READY", "std_sha": s3_pins.STD_SHA if s3 else STD_SHA, "std_tree": s3_pins.STD_TREE if s3 else STD_TREE,
         "tool_sha": TOOL_SHA, "tool_tree": TOOL_TREE,
     }
     for key, value in expected.items():
@@ -176,9 +186,10 @@ def load_request(path: Path = REQUEST_PATH) -> dict[str, Any]:
                 len({r.get("type") for r in member_rows}) != 1):
             raise RunnerError("replacement union target mismatch")
         union_members.update(members)
-    if request.get("schema") == "ch8-s2-batch3probes-v1":
-        try: s2_policy.validate_request(request)
-        except (AssertionError, KeyError, TypeError) as exc: raise RunnerError("S2 request policy mismatch") from exc
+    try:
+        if s3: s3_profile.validate(request)
+        else: s2_policy.validate_request(request)
+    except (AssertionError, KeyError, TypeError) as exc: raise RunnerError("S2 request policy mismatch") from exc
     return request
 
 
@@ -191,9 +202,9 @@ def _source_root(std: Path, tool: Path) -> None:
         raise RunnerError("source checkout must remain outside CI control workspace")
 
 
-def verify_source(std: Path, tool: Path, request: dict[str, Any]) -> dict[str, Any]:
+def verify_source(std: Path, tool: Path, request: dict[str, Any], *, prebuild=False) -> dict[str, Any]:
     _source_root(std, tool)
-    bindings = ((std, STD_SHA, STD_TREE, "std"), (tool, TOOL_SHA, TOOL_TREE, "tool"))
+    bindings = ((std, request["std_sha"], request["std_tree"], "std"), (tool, request["tool_sha"], request["tool_tree"], "tool"))
     for repo, wanted_sha, wanted_tree, label in bindings:
         if git(repo, "rev-parse", "HEAD") != wanted_sha:
             raise RunnerError(f"{label} HEAD drift")
@@ -233,9 +244,22 @@ def verify_source(std: Path, tool: Path, request: dict[str, Any]) -> dict[str, A
             raise RunnerError(f"negative oracle assertion anchor drift: {rid}")
     if request.get("schema") == "ch8-s2-batch3probes-v1":
         s2_policy.validate_source(std,request)
+    if request.get("schema") in ("ch8-s3-1-v1", "ch8-s3-2-v1", "ch8-s3s4-bridge1-v1", "ch8-s4p-1-v1"):
+        import s3_policy
+        if request.get("schema")=="ch8-s3-2-v1":import s32_policy as s3_policy
+        if request.get("schema")=="ch8-s3s4-bridge1-v1":import s34_policy as s3_policy
+        if request.get("schema")=="ch8-s4p-1-v1":import s4p_policy as s3_policy
+        # Native check-source runs every semantic gate before build. Runtime
+        # epochs rehash the complete gated dependency set and anchors, avoiding
+        # repeated parsing inside the shared180 controller allowance.
+        for key in ('cfg_pfc_source_sha256','ordinary_contract_source_sha256','contract_stack_source_sha256','lexical_source_sha256'):
+            for rel,digest in request[key].items():
+                path=(std/rel).resolve()
+                if std.resolve() not in path.parents or not path.is_file() or sha256(path)!=digest:
+                    raise RunnerError('S3 dependency snapshot drift: '+rel)
+        if prebuild:s3_policy.validate_source(std,request)
     # Variants may describe test overlays; their path/hash are checked when selected.
-    return {"std_sha": STD_SHA, "std_tree": STD_TREE, "tool_sha": TOOL_SHA,
-            "tool_tree": TOOL_TREE, "changed_file_sha256": request["changed_file_sha256"]}
+    return {k:request[k] for k in ("std_sha","std_tree","tool_sha","tool_tree","changed_file_sha256")}
 
 
 def _variant_info(request: dict[str, Any], name: str) -> tuple[Path, str, dict[str, str]]:
@@ -335,9 +359,15 @@ def build_argv(std: Path, tool: Path, selectors: list[str], unwind: int, export:
     return argv
 
 
-def ci_env(std: Path | None = None) -> dict[str, str]:
+def ci_env(std: Path | None = None, request=None) -> dict[str, str]:
     env = os.environ.copy()
     fixed = "--cfg=kani_smallsort_sorting --cfg=kani_smallsort_controls --cfg=kani_smallsort_s2_assumed"
+    if request and request.get("schema") in ("ch8-s3-1-v1", "ch8-s3-2-v1", "ch8-s3s4-bridge1-v1", "ch8-s4p-1-v1"):
+        import s3_profile
+        fixed=s3_profile.CFG
+        if request.get("schema")=="ch8-s4p-1-v1":
+            import s4p_profile
+            fixed=s4p_profile.CFG
     inherited = env.get("RUSTFLAGS", "").strip()
     if inherited and inherited != fixed:
         raise RunnerError("refusing inherited RUSTFLAGS outside the frozen sorting+controls cfg")
@@ -351,8 +381,8 @@ def ci_env(std: Path | None = None) -> dict[str, str]:
     return env
 
 
-def _read_pipe(pipe, target: Path, cap: int, state: dict[str, Any], lock: threading.Lock, key: str,
-               capture_tail: bool = False, rich_parser=None) -> None:
+def _read_pipe_body(pipe, target: Path, cap: int, state: dict[str, Any], lock: threading.Lock, key: str,
+               capture_tail: bool = False, rich_parser=None, diagnostics=None) -> None:
     storage_cap = min(cap, 65536) if rich_parser is not None else cap
     head_cap = storage_cap // 2 if capture_tail else storage_cap
     tail_cap = storage_cap - head_cap if capture_tail else 0
@@ -363,8 +393,6 @@ def _read_pipe(pipe, target: Path, cap: int, state: dict[str, Any], lock: thread
             data = pipe.read(65536)
             if not data:
                 break
-            if rich_parser is not None:
-                rich_parser.feed(data)
             with lock:
                 room = max(0, cap - state[key + "_kept"])
                 if len(data) > room:
@@ -376,6 +404,10 @@ def _read_pipe(pipe, target: Path, cap: int, state: dict[str, Any], lock: thread
                 tail_preview = state.setdefault(key + "_preview_tail", bytearray())
                 tail_preview.extend(data)
                 del tail_preview[:-2048]
+            if diagnostics is not None:
+                diagnostics.feed(data)
+            if rich_parser is not None:
+                rich_parser.feed(data)
             head = min(len(data), head_cap - head_kept)
             output.seek(head_kept)
             output.write(data[:head])
@@ -392,7 +424,20 @@ def _read_pipe(pipe, target: Path, cap: int, state: dict[str, Any], lock: thread
         output.write(tail)
     if rich_parser is not None:
         rich_parser.finish()
+    if diagnostics is not None:
+        diagnostics.finish('AWAITING_EXECUTION_FINALIZATION')
     pipe.close()
+
+
+def _read_pipe(pipe, target, cap, state, lock, key, capture_tail=False, rich_parser=None, diagnostics=None):
+    try:
+        _read_pipe_body(pipe, target, cap, state, lock, key, capture_tail, rich_parser, diagnostics)
+    except Exception as exc:
+        with lock:
+            state[key+'_reader_error'] = f'{type(exc).__name__}: {exc}'
+        if diagnostics is not None:
+            diagnostics.finish('PIPE_READER_ERROR', eof=False)
+        pipe.close()
 
 
 def _group_rss_kib(pgid: int) -> int:
@@ -471,11 +516,15 @@ def _stream_preview(state: dict[str, Any], stream: str) -> dict[str, Any]:
 class CompileMonitor:
     """The stock initial export marker is written after std_project, before verification."""
     def __init__(self, receipt_path: Path, export: Path, selectors: list[str],
-                 seconds: float = COMPILE_SECONDS):
+                 seconds: float = COMPILE_SECONDS, *, identities=None):
         self.path, self.export, self.selectors, self.seconds = receipt_path, export, selectors, seconds
+        source_tool={"std_sha":STD_SHA,"tool_sha":TOOL_SHA} if identities is None else dict(identities)
+        if identities is not None:
+            from s3_evidence import identity
+            source_tool=identity(source_tool)
         self.receipt: dict[str, Any] = {
             "schema": "ch8-s1-compile-receipt-v1", "state": "IN_PROGRESS",
-            "limit_seconds": seconds, "std_sha": STD_SHA, "tool_sha": TOOL_SHA,
+            "limit_seconds": seconds, **source_tool,
             "request_sha256": sha256(REQUEST_PATH), "selectors": selectors,
             "scope": "STD_PROJECT_COMPILATION_AND_LINK_UNTIL_INITIAL_EXPORT",
             "proof_credit": "NONE", "elapsed_upper_bound_seconds": None}
@@ -514,6 +563,7 @@ class CompileMonitor:
                                 execution.get("runner_error") or "NO_VALID_INITIAL_EXPORT_BOUNDARY")
             for name in ("stdout", "stderr"):
                 self.receipt[name] = _stream_preview(state, name)
+        self.receipt["rustc_diagnostics"] = execution.get('rustc_diagnostics', rustc_diagnostics.summary(self.path.parent.parent))
         self.receipt["group_execution"] = execution
         _write_json(self.path, self.receipt)
 
@@ -549,21 +599,29 @@ def execute(argv: list[str], cwd: Path, out: Path, timeout: int,
             stderr_cap: int = STDERR_CAP_BYTES, export_path: Path | None = None,
             export_cap: int = EXPORT_CAP_BYTES, env: dict[str, str] | None = None,
             capture_tail: bool = False, compile_monitor: CompileMonitor | None = None,
-            rich_parser=None) -> dict[str, Any]:
+            rich_parser=None, record_identity: bool = False) -> dict[str, Any]:
     out.mkdir(parents=True, exist_ok=True)
     started = time.monotonic()
     info: dict[str, Any] = {"original_exit_code": None, "signal": None, "timed_out": False,
                             "rss_peak_kib": 0, "rss_status": "SAMPLED_PROCESS_GROUP",
-                            "output_truncated": False, "output_bytes": 0}
+                            "output_truncated": False, "output_bytes": 0, "stdout_bytes":0, "stderr_bytes":0}
     state: dict[str, Any] = {"stdout_cap": False, "stderr_cap": False,
                              "stdout_kept": 0, "stderr_kept": 0,
                              "stdout_bytes": 0, "stderr_bytes": 0}
     lock = threading.Lock()
+    captures = {stream: rustc_diagnostics.Capture(stream, cap, out / ('rustc-'+stream+'-receipt.json'))
+                for stream, cap in (('stdout', stdout_cap), ('stderr', stderr_cap))}
     try:
         proc = subprocess.Popen(argv, cwd=cwd, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                 start_new_session=True, bufsize=0)
     except OSError as exc:
         info.update(runner_error=f"exec failed: {exc}", elapsed_seconds=time.monotonic() - started)
+        for stream, capture in captures.items():
+            try:
+                capture.finish('SPAWN_FAILED', eof=False)
+            except Exception as diagnostic_exc:
+                info.setdefault('diagnostic_errors', {})[stream] = f'{type(diagnostic_exc).__name__}: {diagnostic_exc}'
+        info['rustc_diagnostics'] = rustc_diagnostics.summary(out)
         if compile_monitor is not None:
             try:
                 compile_monitor.finish(info, state)
@@ -571,9 +629,9 @@ def execute(argv: list[str], cwd: Path, out: Path, timeout: int,
                 info["runner_exception"] = {"type": type(finish_exc).__name__, "message": str(finish_exc)}
         return info
     threads = [threading.Thread(target=_read_pipe, args=(proc.stdout, out / "stdout.log", stdout_cap,
-                                                         state, lock, "stdout", capture_tail, rich_parser), daemon=True),
+                                                         state, lock, "stdout", capture_tail, rich_parser, captures["stdout"]), daemon=True),
                threading.Thread(target=_read_pipe, args=(proc.stderr, out / "stderr.log", stderr_cap,
-                                                         state, lock, "stderr", capture_tail), daemon=True)]
+                                                         state, lock, "stderr", capture_tail, None, captures["stderr"]), daemon=True)]
     deadline = started + timeout
     killed_for = None
     external_signal: list[int] = []
@@ -583,6 +641,10 @@ def execute(argv: list[str], cwd: Path, out: Path, timeout: int,
         external_signal.append(signum)
         _kill_group(proc.pid)
     try:
+        if record_identity:
+            from r5_runtime import census
+            info['process_identity']=census().get(proc.pid) or {'pid':proc.pid,'state':'EARLY_EXIT_UNOBSERVED_PGID_STARTTIME'}
+            info['rss_scope']='SAMPLED_NONATOMIC_PGID_VmRSS; possible overshoot; not strict tree/kernel/cgroup'
         for thread in threads:
             thread.start()
         for sig in (signal.SIGTERM, signal.SIGINT):
@@ -643,6 +705,8 @@ def execute(argv: list[str], cwd: Path, out: Path, timeout: int,
                 thread.join(timeout=2)
                 if thread.is_alive():
                     cleanup_errors.append("pipe reader did not stop")
+        for pipe, thread in zip((proc.stdout,proc.stderr),threads):
+            if thread.ident is None:pipe.close()
         for sig, handler in previous_handlers.items():
             try:
                 signal.signal(sig, handler)
@@ -681,6 +745,22 @@ def execute(argv: list[str], cwd: Path, out: Path, timeout: int,
         info.setdefault("runner_exception", {"type": type(exc).__name__, "message": str(exc)})
         info.setdefault("termination_reason", "export_stat_error")
     info["elapsed_seconds"] = round(time.monotonic() - started, 3)
+    for stream, capture in captures.items():
+        reader_error = state.get(stream+'_reader_error')
+        if reader_error:
+            info.setdefault('pipe_reader_errors', {})[stream] = reader_error
+            info.setdefault('termination_reason', 'pipe_reader_error')
+        # No concurrent parser access if a stuck reader survived bounded shutdown.
+        if not threads[0 if stream == 'stdout' else 1].is_alive():
+            try:
+                capture.finish(info.get('termination_reason') or ('SIGNAL_EOF' if code < 0 else None),
+                               eof=capture.eof)
+            except Exception as diagnostic_exc:
+                info.setdefault('diagnostic_errors', {})[stream] = f'{type(diagnostic_exc).__name__}: {diagnostic_exc}'
+    info['rustc_diagnostics'] = rustc_diagnostics.summary(out)
+    if info.get('diagnostic_errors'):
+        info['rustc_diagnostics'].update(complete=False, incomplete_reasons=
+            info['rustc_diagnostics']['incomplete_reasons']+['DIAGNOSTIC_FINALIZATION_ERROR'])
     if compile_monitor is not None:
         try:
             compile_monitor.finish(info, state)
@@ -728,6 +808,11 @@ def parse_export(path: Path, row: dict[str, Any], max_bytes: int = EXPORT_CAP_BY
         value = json.loads(data)
     except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
         return {"state": "INVALID_OR_PARTIAL", "error": str(exc), "outcome": "UNKNOWN"}
+    return validate_export_value(value,row,source_binding=source_binding,std=std,group_selectors=group_selectors)
+
+
+def validate_export_value(value, row, *, source_binding=None, std=None, group_selectors=None):
+    """Same stock binder for local capture and sealed structured-only replay."""
     if value is None:
         return {"state": "NULL", "outcome": "UNKNOWN"}
     if not isinstance(value, dict):
@@ -811,6 +896,7 @@ def parse_export(path: Path, row: dict[str, Any], max_bytes: int = EXPORT_CAP_BY
     except ValueError as exc:
         return {"state": "INCONSISTENT_PROPERTY_COUNTS", "outcome": "UNKNOWN", "error": str(exc)}
     return {"state": "RECORDED_OBSERVATION", "outcome": "RECORDED",
+            **({"source_root":str(std.resolve())} if 'roles' in row else {}),
             "reported_outcome": outcome, "harness": harness,
             "selected_root": harness["name"], "selected_mode": kind,
             "expected_target_fn": binding.get("target"), "source_binding": binding,
@@ -964,8 +1050,33 @@ def _artifact_size(out: Path) -> int:
     return total
 
 
+def source_under_test_record(request,variant,variant_files,patch):
+    value={'base_std_sha':STD_SHA,'variant':variant,
+           'file_sha256':{**request['changed_file_sha256'],**variant_files},
+           'patch_sha256':sha256(patch) if patch is not None else None}
+    if request.get('schema') in ("ch8-s3-1-v1", "ch8-s3-2-v1", "ch8-s3s4-bridge1-v1", "ch8-s4p-1-v1"):
+        from s3_evidence import identity
+        value.update(identity(request),base_std_sha=request['std_sha'],
+                     historical_patch_base_std_sha=request['base_std_sha'])
+    return value
+
+
 def _run_group(std: Path, tool: Path, out: Path, request: dict[str, Any],
-               group: dict[str, Any], phase_deadline: float) -> tuple[list[dict[str, Any]], str | None]:
+               group: dict[str, Any], phase_deadline: float, isolated_limits=None) -> tuple[list[dict[str, Any]], str | None]:
+    if isolated_limits is not None:
+        if request.get('schema') in ("ch8-s3-1-v1", "ch8-s3-2-v1", "ch8-s3s4-bridge1-v1", "ch8-s4p-1-v1"):
+            import s3_profile as profile
+            if request.get("schema")=="ch8-s3-2-v1":import s32_profile as profile
+            if request.get("schema")=="ch8-s3s4-bridge1-v1":import s34_profile as profile
+            if request.get("schema")=="ch8-s4p-1-v1":import s4p_profile as profile
+            prefix='s3-'
+        else:
+            import r5_profile as profile
+            prefix='r5-'
+        profile.validate(request)
+        assert len(group['rows'])==1 and group['rows'][0]['id'] in profile.ORDER
+        assert group['id']==prefix+group['rows'][0]['id']
+    compile_limit=180 if isolated_limits is not None else COMPILE_SECONDS
     dest = out / "groups" / group["id"]
     dest.mkdir(parents=True, exist_ok=True)
     selectors = [row["selector"] for row in group["rows"]]
@@ -978,15 +1089,25 @@ def _run_group(std: Path, tool: Path, out: Path, request: dict[str, Any],
                "invocation_id": uuid.uuid4().hex,
                "argv": argv, "selectors": selectors, "variant": group["variant"],
                "unwind": group["unwind"], "proof_credit": "NONE",
-               "compile_limit_seconds": COMPILE_SECONDS,
-               "group_budget_seconds": COMPILE_SECONDS + sum(r["timeout_seconds"] for r in group["rows"]),
-               "std_sha": STD_SHA, "tool_sha": TOOL_SHA,
+               "compile_limit_seconds": compile_limit,
+               "group_budget_seconds": 600 if isolated_limits is not None else compile_limit + sum(r["timeout_seconds"] for r in group["rows"]),
+               "std_sha": request["std_sha"] if request.get("schema") in ("ch8-s3-1-v1", "ch8-s3-2-v1", "ch8-s3s4-bridge1-v1", "ch8-s4p-1-v1") else STD_SHA,
+               "tool_sha": request["tool_sha"] if request.get("schema") in ("ch8-s3-1-v1", "ch8-s3-2-v1", "ch8-s3s4-bridge1-v1", "ch8-s4p-1-v1") else TOOL_SHA,
                "request_sha256": sha256(REQUEST_PATH)}
     patch = None
     metadata_target = None
     fatal = None
-    rich = rich_evidence.RegularEvidence(selectors, std.resolve())
-    monitor = CompileMonitor(dest / "compile/receipt.json", export, selectors)
+    if isolated_limits is not None:
+        from r5_runtime import NativeStarts
+        rich=NativeStarts(selectors,std.resolve())
+    else:
+        rich = rich_evidence.RegularEvidence(selectors, std.resolve())
+    s3=request.get("schema") in ("ch8-s3-1-v1", "ch8-s3-2-v1", "ch8-s3s4-bridge1-v1", "ch8-s4p-1-v1")
+    if s3:
+        from s3_evidence import identity
+        receipt.update(identity(request))
+    monitor = CompileMonitor(dest / "compile/receipt.json", export, selectors, seconds=compile_limit,
+                             **({"identities":identity(request)} if s3 else {}))
     try:
         _write_json(dest / "receipt.json", receipt)
         for result in results:
@@ -997,12 +1118,13 @@ def _run_group(std: Path, tool: Path, out: Path, request: dict[str, Any],
         if not before["required_hashes_present"]:
             raise RunnerError("missing required tool binary hash")
         memory = group_memory_budget()
+        if isolated_limits is not None:
+            memory['group_cap_kib']=min(memory['group_cap_kib'],RSS_CAP_KIB)
+            memory['rss_scope']='POLLED_NONATOMIC_PGID_VmRSS; possible overshoot; not strict kernel/tree/cgroup'
         patch, variant_files = _run_variant(std, group["variant"], request)
         receipt.update(source_before=source_before, tool_fingerprints_before=before,
-                       memory=memory, source_under_test={"base_std_sha": STD_SHA,
-                       "variant": group["variant"], "file_sha256": {**request["changed_file_sha256"], **variant_files},
-                       "patch_sha256": sha256(patch) if patch is not None else None})
-        child_env = ci_env(std)
+                       memory=memory, source_under_test=source_under_test_record(request,group["variant"],variant_files,patch))
+        child_env = ci_env(std,request) if request.get("schema") in ("ch8-s3-1-v1", "ch8-s3-2-v1", "ch8-s3s4-bridge1-v1", "ch8-s4p-1-v1") else ci_env(std)
         # Fresh namespace prevents old/native-cache metadata from being labelled
         # as this invocation. This is a runner key, not a compiler instance ID.
         metadata_target = Path(child_env["CARGO_TARGET_DIR"]) / receipt["invocation_id"]
@@ -1015,6 +1137,13 @@ def _run_group(std: Path, tool: Path, out: Path, request: dict[str, Any],
             raise RunnerError("phase_seconds_cap_before_group")
         # Group envelope is compile + all row budgets; the separate phase deadline is authoritative.
         timeout = min(receipt["group_budget_seconds"], remaining)
+        if isolated_limits is not None:
+            if remaining<600:raise RunnerError('r5_preflight_slot_budget_no_full_child')
+            timeout=600
+            receipt['r5_limits']={'child_wall_seconds':600,'compile_seconds_inside_child':180,
+                'rss_effective_kib':memory['group_cap_kib'],'output_remaining':isolated_limits,
+                'rss_scope':memory['rss_scope'],'inner_backend_timeout_seconds':600}
+
         receipt.update(timeout_seconds=timeout, phase_limited=timeout < receipt["group_budget_seconds"])
         export.unlink(missing_ok=True)
         for stream in ("stdout", "stderr"):
@@ -1022,12 +1151,19 @@ def _run_group(std: Path, tool: Path, out: Path, request: dict[str, Any],
         _write_json(dest / "receipt.json", receipt)
         try:
             invocation = execute(argv, std.resolve(), dest, timeout,
-                                 rss_cap_kib=memory["group_cap_kib"], stdout_cap=STDOUT_CAP_BYTES,
-                                 stderr_cap=STDERR_CAP_BYTES, export_path=export, export_cap=EXPORT_CAP_BYTES,
-                                 env=child_env, capture_tail=True, compile_monitor=monitor, rich_parser=rich)
+                                 rss_cap_kib=memory["group_cap_kib"],
+                                 stdout_cap=min(STDOUT_CAP_BYTES,isolated_limits['stdout_bytes']) if isolated_limits is not None else STDOUT_CAP_BYTES,
+                                 stderr_cap=min(STDERR_CAP_BYTES,isolated_limits['stderr_bytes']) if isolated_limits is not None else STDERR_CAP_BYTES,
+                                 export_path=export,
+                                 export_cap=min(EXPORT_CAP_BYTES,isolated_limits['export_bytes']) if isolated_limits is not None else EXPORT_CAP_BYTES,
+                                 env=child_env, capture_tail=True, compile_monitor=monitor, rich_parser=rich,
+                                 **({"record_identity":True} if isolated_limits is not None else {}))
             receipt["execution"] = invocation
+            if isolated_limits is not None and invocation.get('elapsed_seconds',0)>=timeout:
+                invocation.update(timed_out=True,termination_reason=invocation.get('termination_reason') or 'child_wall_cutoff')
         except BaseException as exc:
-            receipt["execution_exception"] = {"type": type(exc).__name__, "message": str(exc)}
+            from s3_runtime import diagnostic
+            receipt["execution_exception"] = diagnostic(exc,"runner.execute",epoch="CHILD")
             raise
         finally:
             # execute owns child shutdown/reaping. No export parsing or rich
@@ -1063,6 +1199,9 @@ def _run_group(std: Path, tool: Path, out: Path, request: dict[str, Any],
         for row, result in zip(group["rows"], results):
             parsed = parse_export(export, row, source_binding=request["source_bindings"][row["id"]],
                                   std=std.resolve(), group_selectors=selectors)
+            if request.get('schema') in ("ch8-s3-1-v1", "ch8-s3-2-v1", "ch8-s3s4-bridge1-v1", "ch8-s4p-1-v1") and parsed.get('outcome')!='RECORDED':
+                receipt['source_stage_target_binding_error']=parsed
+                raise RunnerError('S3 export source/stage/target binding rejected')
             result.update(status="OBSERVED", outcome=parsed["outcome"], export=parsed,
                           group_export_sha256=receipt["export_sha256"],
                           rich_evidence="groups/" + group["id"] + "/properties.json",
@@ -1078,7 +1217,7 @@ def _run_group(std: Path, tool: Path, out: Path, request: dict[str, Any],
     except BaseException as exc:
         fatal = f"{type(exc).__name__}: {exc}"
         receipt.update(state="FAILED", reason=fatal,
-                       original_exception={"type": type(exc).__name__, "message": str(exc)})
+                       original_exception=__import__("s3_runtime").diagnostic(exc,"runner._run_group",epoch="WORKER"))
         for result in results:
             result.update(status="UNKNOWN", outcome="UNKNOWN", reason=fatal)
     finally:
@@ -1100,6 +1239,7 @@ def _run_group(std: Path, tool: Path, out: Path, request: dict[str, Any],
             if source_after != receipt.get("source_before"):
                 raise RunnerError("source_identity_drift")
         except Exception as exc:
+            receipt["source_after_error"]=__import__("s3_runtime").diagnostic(exc,"snapshot.source_after",epoch="WORKER_POST")
             fatal = (fatal + "; " if fatal else "") + f"source_drift: {exc}"
         execution = receipt.get("execution", {})
         if monitor.receipt["state"] == "IN_PROGRESS":
@@ -1110,6 +1250,12 @@ def _run_group(std: Path, tool: Path, out: Path, request: dict[str, Any],
                 fatal = (fatal + "; " if fatal else "") + "compile_receipt_error: " + receipt["compile_receipt_error"]
         _write_json(dest / "properties.json", rich.document())
         receipt["location_exceptions"] = rich.location_exceptions()
+        if isolated_limits is not None:
+            receipt['native_start_events']=rich.starts
+            receipt['native_start_scope']='OBSERVED_STOCK_STDOUT_HEADER; source-reported not compiler/origin proof'
+            receipt['native_start_verified']=[x['selector'] for x in rich.starts]==selectors
+            if any(x['selector'] not in selectors for x in rich.starts) or len(rich.starts)>1:
+                fatal='native_selector_mismatch_or_duplicate'
         try:
             receipt["binding_metadata"] = capture_binding_metadata(dest, metadata_target, request, group, receipt)
             if receipt["binding_metadata"]["errors"]:
@@ -1125,11 +1271,13 @@ def _run_group(std: Path, tool: Path, out: Path, request: dict[str, Any],
             receipt["state"] = "COMPLETE"
         for stream in ("stdout", "stderr"):
             receipt[stream] = _bounded_log(dest / (stream+".log"), execution.get(stream+"_bytes"))
+        receipt['rustc_diagnostics'] = execution.get('rustc_diagnostics', rustc_diagnostics.summary(dest))
         receipt["compilation"] = "compile/receipt.json"
         for result in results:
             result.update(group_original_exit=execution.get("original_exit_code"), signal=execution.get("signal"),
                           group_rss_peak_kib=execution.get("rss_peak_kib"),
                           stdout=receipt["stdout"], stderr=receipt["stderr"],
+                          rustc_diagnostics=receipt['rustc_diagnostics'],
                           diagnostic_scope="SHARED_GROUP_CAPTURE_NOT_PER_ROOT")
             _write_json(out / result["id"] / "receipt.json", result)
         _write_json(dest / "receipt.json", receipt)
@@ -1146,6 +1294,9 @@ def _run_group(std: Path, tool: Path, out: Path, request: dict[str, Any],
 def run_rows(std: Path, tool: Path, out: Path, request: dict[str, Any],
              group_ids: list[str] | None = None) -> int:
     out.mkdir(parents=True, exist_ok=True)
+    import r5_profile
+    if request.get('schema') in ("ch8-s3-1-v1", "ch8-s3-2-v1", "ch8-s3s4-bridge1-v1", "ch8-s4p-1-v1"):raise RunnerError('S3 multi-root path refused; use S3 singleton campaign')
+    if r5_profile.enabled(request):raise RunnerError('r5 multi-root legacy run refused; use isolated campaign')
     phase_started = time.monotonic()
     deadline = phase_started+PHASE_SECONDS
     all_groups = group_rows(request["rows"], request.get("execution_groups"))
@@ -1206,8 +1357,11 @@ def main(argv: list[str] | None = None) -> int:
     try:
         request = load_request()
         if args.command == "check-source":
-            print(json.dumps(verify_source(args.std, args.tool, request), sort_keys=True))
+            print(json.dumps(verify_source(args.std, args.tool, request, prebuild=True), sort_keys=True))
         else:
+            import r5_profile
+            if request.get('schema') in ("ch8-s3-1-v1", "ch8-s3-2-v1", "ch8-s3s4-bridge1-v1", "ch8-s4p-1-v1"):raise RunnerError('S3 multi-root path refused; use S3 singleton campaign')
+            if r5_profile.enabled(request):raise RunnerError('r5 requires isolated r5_campaign.py run; legacy multi-root run refused')
             group_ids = args.groups.split(",") if args.groups is not None else None
             code = run_rows(args.std, args.tool, args.out, request, group_ids)
             if code:

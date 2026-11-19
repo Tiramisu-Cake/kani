@@ -1,0 +1,116 @@
+name: CH8 S3-2 capped full-byte diagnostic/leaf candidate
+'on':
+  push:
+    branches:
+    - uninit-ci/ch8-s3-2-*
+permissions:
+  contents: read
+concurrency:
+  group: ch8-s2-fork
+  cancel-in-progress: false
+jobs:
+  s3_leaf:
+    if: ${{ github.repository == 'Tiramisu-Cake/kani' && github.event_name == 'push'
+      }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    env:
+      S3_PROFILE: ch8-s3-2-capped-fullbyte-v1
+    steps:
+    - name: Begin setup budget
+      timeout-minutes: 1
+      env:
+        SETUP_EPOCH: ${{ runner.temp }}/ch8-s1-setup-epoch
+      run: python3 -c 'import os,time; open(os.environ["SETUP_EPOCH"],"w").write(str(time.time()))'
+    - name: Checkout CI control
+      timeout-minutes: 2
+      uses: actions/checkout@v6
+      with:
+        ref: ${{ github.sha }}
+        path: control
+        fetch-depth: 7
+        persist-credentials: false
+    - name: Validate control and synthetic wrapper
+      timeout-minutes: 18
+      working-directory: control/ch8-s1-control
+      env:
+        PYTHONDONTWRITEBYTECODE: '1'
+      run: 'python3 check_package.py control --repo ..
+
+        python3 s32_validate.py
+
+        '
+    - name: Read immutable export pins
+      timeout-minutes: 1
+      id: pins
+      run: "python3 - <<'PYCODE'\nimport json, os\nr = json.load(open('control/ch8-s1-control/CI-REQUEST.json'))\n\
+        assert r['status'] == 'READY'\nwith open(os.environ['GITHUB_OUTPUT'], 'a')\
+        \ as f:\n    f.write('std=' + r['std_sha'] + '\\n')\n    f.write('tool=' +\
+        \ r['tool_sha'] + '\\n')\nPYCODE\n"
+    - name: Checkout production model export
+      timeout-minutes: 5
+      uses: actions/checkout@v6
+      with:
+        repository: Tiramisu-Cake/verify-rust-std
+        ref: ${{ steps.pins.outputs.std }}
+        path: export
+        fetch-depth: 5
+        persist-credentials: false
+        submodules: true
+    - name: Checkout immutable upstream tool
+      timeout-minutes: 2
+      uses: actions/checkout@v6
+      with:
+        repository: model-checking/kani
+        ref: ${{ steps.pins.outputs.tool }}
+        path: tool
+        fetch-depth: 2
+        persist-credentials: false
+    - name: Check all source identities
+      timeout-minutes: 3
+      run: python3 control/ch8-s1-control/runner.py check-source --std export --tool
+        tool
+    - name: Setup exact stock tool
+      timeout-minutes: 15
+      uses: ./tool/.github/actions/setup
+      with:
+        os: ubuntu-24.04
+        kani_dir: tool
+    - name: Build exact stock tool once
+      timeout-minutes: 15
+      working-directory: tool
+      env:
+        CARGO_BUILD_JOBS: '1'
+        SETUP_EPOCH: ${{ runner.temp }}/ch8-s1-setup-epoch
+        RECEIPT_ROOT: ${{ runner.temp }}/ch8-s1-receipts
+      run: python3 ../control/ch8-s1-control/check_package.py build --tool . --epoch
+        "$SETUP_EPOCH" --out "$RECEIPT_ROOT/setup"
+    - name: Run S3 actual leaves with bounded observations
+      timeout-minutes: 126
+      env:
+        RECEIPT_ROOT: ${{ runner.temp }}/ch8-s1-receipts
+        PYTHONDONTWRITEBYTECODE: '1'
+      run: 'python3 control/ch8-s1-control/s32_campaign.py run --std export --tool
+        tool --out "$RECEIPT_ROOT"
+
+        '
+    - name: Materialize bounded fallback
+      if: always()
+      timeout-minutes: 2
+      env:
+        RECEIPT_ROOT: ${{ runner.temp }}/ch8-s1-receipts
+        JOB_STATUS: ${{ job.status }}
+      run: 'python3 control/ch8-s1-control/s32_campaign.py finish --out "$RECEIPT_ROOT"
+
+        '
+    - name: Upload bounded evidence
+      if: always()
+      timeout-minutes: 6
+      uses: actions/upload-artifact@v4
+      env:
+        RECEIPT_ROOT: ${{ runner.temp }}/ch8-s1-receipts
+      with:
+        name: ch8-s3-2-${{ github.run_id }}-${{ github.run_attempt }}
+        path: ${{ env.RECEIPT_ROOT }}/group-evidence.json.gz
+        if-no-files-found: error
+        retention-days: 7

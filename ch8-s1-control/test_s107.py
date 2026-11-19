@@ -281,7 +281,7 @@ class LocationTests(unittest.TestCase):
         with self.assertRaises(ValueError):replay.validate(stock)
 
     def test_collector_rechecks_snapshots_and_exact_exception_receipts(self):
-        request=r.load_request()
+        request=runner_tests.legacy_request()
         helper=runner_tests.GroupTests('test_all35_rows_fourteen_invocations_record_only_without_oracle_classification')
         with tempfile.TemporaryDirectory() as tmp:
             original=runner_tests.feed_regular
