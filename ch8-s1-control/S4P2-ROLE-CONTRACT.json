@@ -1,0 +1,434 @@
+{
+  "schema": "network-plan-w14-offline-implementation-role-contract-v1",
+  "status": "REQUIRED_ACCEPTANCE_CONTRACT_FOR_FUTURE_PACKAGE",
+  "rows": [
+    {
+      "design_id": "PLAN_N01_V34_B01_FULLU8",
+      "lengths": [
+        0,
+        1
+      ],
+      "mode": "Original",
+      "target": null,
+      "type": "u8",
+      "comparator": "KeyLess<u8>",
+      "allocation": 34,
+      "base": 1,
+      "unwind": 36,
+      "assertion_roles": {
+        "ACTIVE_CONCRETE_MODEL": "SUCCESS",
+        "SORTED_FULL_VALUE_COUNT": "SUCCESS",
+        "FULL_OUTSIDE_FRAME": "SUCCESS",
+        "ARBITRARY_OUTSIDE_CANARY": "SUCCESS"
+      },
+      "cover_roles": {
+        "N00": "SATISFIED",
+        "N01": "SATISFIED",
+        "USEFUL_RETURN": "SATISFIED"
+      },
+      "cover_count": 3,
+      "structurally_not_applicable_roles": [
+        "UNSORTED",
+        "DUPLICATE",
+        "NONCONSTANT",
+        "MAX_DESCENDING_AT_OLD_HI_2_OR_4"
+      ],
+      "static_assignments": [
+        {
+          "role": "N00",
+          "n": 0,
+          "active_input": [],
+          "candidate_output": []
+        },
+        {
+          "role": "N01",
+          "n": 1,
+          "active_input": [
+            0
+          ],
+          "candidate_output": [
+            0
+          ]
+        },
+        {
+          "role": "USEFUL_RETURN",
+          "n": 0,
+          "active_input": [],
+          "candidate_output": []
+        }
+      ],
+      "source_active_site_count": 4,
+      "native_property_count": "UNKNOWN_UNTIL_SAME_INVOCATION_EXPORT"
+    },
+    {
+      "design_id": "PLAN_N02_V34_B01_FULLU8",
+      "lengths": [
+        2
+      ],
+      "mode": "Original",
+      "target": null,
+      "type": "u8",
+      "comparator": "KeyLess<u8>",
+      "allocation": 34,
+      "base": 1,
+      "unwind": 36,
+      "assertion_roles": {
+        "ACTIVE_CONCRETE_MODEL": "SUCCESS",
+        "SORTED_FULL_VALUE_COUNT": "SUCCESS",
+        "FULL_OUTSIDE_FRAME": "SUCCESS",
+        "ARBITRARY_OUTSIDE_CANARY": "SUCCESS"
+      },
+      "cover_roles": {
+        "N02": "SATISFIED",
+        "UNSORTED": "SATISFIED",
+        "DUPLICATE": "SATISFIED",
+        "NONCONSTANT": "SATISFIED",
+        "MAX_DESCENDING": "SATISFIED",
+        "USEFUL_RETURN": "SATISFIED"
+      },
+      "cover_count": 6,
+      "structurally_not_applicable_roles": [],
+      "static_assignments": [
+        {
+          "role": "N02",
+          "n": 2,
+          "active_input": [
+            0,
+            0
+          ],
+          "candidate_output": [
+            0,
+            0
+          ]
+        },
+        {
+          "role": "UNSORTED",
+          "n": 2,
+          "active_input": [
+            1,
+            0
+          ],
+          "candidate_output": [
+            0,
+            1
+          ]
+        },
+        {
+          "role": "NONCONSTANT",
+          "n": 2,
+          "active_input": [
+            1,
+            0
+          ],
+          "candidate_output": [
+            0,
+            1
+          ]
+        },
+        {
+          "role": "MAX_DESCENDING",
+          "n": 2,
+          "active_input": [
+            1,
+            0
+          ],
+          "candidate_output": [
+            0,
+            1
+          ]
+        },
+        {
+          "role": "DUPLICATE",
+          "n": 2,
+          "active_input": [
+            0,
+            0
+          ],
+          "candidate_output": [
+            0,
+            0
+          ]
+        },
+        {
+          "role": "USEFUL_RETURN",
+          "n": 2,
+          "active_input": [
+            0,
+            0
+          ],
+          "candidate_output": [
+            0,
+            0
+          ]
+        }
+      ],
+      "source_active_site_count": 4,
+      "native_property_count": "UNKNOWN_UNTIL_SAME_INVOCATION_EXPORT"
+    },
+    {
+      "design_id": "PLAN_N03_V34_B01_FULLU8",
+      "lengths": [
+        3
+      ],
+      "mode": "Original",
+      "target": null,
+      "type": "u8",
+      "comparator": "KeyLess<u8>",
+      "allocation": 34,
+      "base": 1,
+      "unwind": 36,
+      "assertion_roles": {
+        "ACTIVE_CONCRETE_MODEL": "SUCCESS",
+        "SORTED_FULL_VALUE_COUNT": "SUCCESS",
+        "FULL_OUTSIDE_FRAME": "SUCCESS",
+        "ARBITRARY_OUTSIDE_CANARY": "SUCCESS"
+      },
+      "cover_roles": {
+        "N03": "SATISFIED",
+        "UNSORTED": "SATISFIED",
+        "DUPLICATE": "SATISFIED",
+        "NONCONSTANT": "SATISFIED",
+        "MAX_DESCENDING": "SATISFIED",
+        "USEFUL_RETURN": "SATISFIED"
+      },
+      "cover_count": 6,
+      "structurally_not_applicable_roles": [],
+      "static_assignments": [
+        {
+          "role": "N03",
+          "n": 3,
+          "active_input": [
+            0,
+            0,
+            0
+          ],
+          "candidate_output": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "role": "UNSORTED",
+          "n": 3,
+          "active_input": [
+            2,
+            1,
+            0
+          ],
+          "candidate_output": [
+            0,
+            1,
+            2
+          ]
+        },
+        {
+          "role": "NONCONSTANT",
+          "n": 3,
+          "active_input": [
+            2,
+            1,
+            0
+          ],
+          "candidate_output": [
+            0,
+            1,
+            2
+          ]
+        },
+        {
+          "role": "MAX_DESCENDING",
+          "n": 3,
+          "active_input": [
+            2,
+            1,
+            0
+          ],
+          "candidate_output": [
+            0,
+            1,
+            2
+          ]
+        },
+        {
+          "role": "DUPLICATE",
+          "n": 3,
+          "active_input": [
+            0,
+            0,
+            0
+          ],
+          "candidate_output": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "role": "USEFUL_RETURN",
+          "n": 3,
+          "active_input": [
+            0,
+            0,
+            0
+          ],
+          "candidate_output": [
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "source_active_site_count": 4,
+      "native_property_count": "UNKNOWN_UNTIL_SAME_INVOCATION_EXPORT"
+    },
+    {
+      "design_id": "PLAN_N04_V34_B01_FULLU8",
+      "lengths": [
+        4
+      ],
+      "mode": "Original",
+      "target": null,
+      "type": "u8",
+      "comparator": "KeyLess<u8>",
+      "allocation": 34,
+      "base": 1,
+      "unwind": 36,
+      "assertion_roles": {
+        "ACTIVE_CONCRETE_MODEL": "SUCCESS",
+        "SORTED_FULL_VALUE_COUNT": "SUCCESS",
+        "FULL_OUTSIDE_FRAME": "SUCCESS",
+        "ARBITRARY_OUTSIDE_CANARY": "SUCCESS"
+      },
+      "cover_roles": {
+        "N04": "SATISFIED",
+        "UNSORTED": "SATISFIED",
+        "DUPLICATE": "SATISFIED",
+        "NONCONSTANT": "SATISFIED",
+        "MAX_DESCENDING": "SATISFIED",
+        "USEFUL_RETURN": "SATISFIED"
+      },
+      "cover_count": 6,
+      "structurally_not_applicable_roles": [],
+      "static_assignments": [
+        {
+          "role": "N04",
+          "n": 4,
+          "active_input": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "candidate_output": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "role": "UNSORTED",
+          "n": 4,
+          "active_input": [
+            3,
+            2,
+            1,
+            0
+          ],
+          "candidate_output": [
+            0,
+            1,
+            2,
+            3
+          ]
+        },
+        {
+          "role": "NONCONSTANT",
+          "n": 4,
+          "active_input": [
+            3,
+            2,
+            1,
+            0
+          ],
+          "candidate_output": [
+            0,
+            1,
+            2,
+            3
+          ]
+        },
+        {
+          "role": "MAX_DESCENDING",
+          "n": 4,
+          "active_input": [
+            3,
+            2,
+            1,
+            0
+          ],
+          "candidate_output": [
+            0,
+            1,
+            2,
+            3
+          ]
+        },
+        {
+          "role": "DUPLICATE",
+          "n": 4,
+          "active_input": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "candidate_output": [
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "role": "USEFUL_RETURN",
+          "n": 4,
+          "active_input": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "candidate_output": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "source_active_site_count": 4,
+      "native_property_count": "UNKNOWN_UNTIL_SAME_INVOCATION_EXPORT"
+    }
+  ],
+  "execution_order": [
+    "checker_order_corrupt",
+    "checker_count_corrupt",
+    "sort13_weak",
+    "s4p_cell_count_corrupt",
+    "PLAN_N02_V34_B01_FULLU8",
+    "PLAN_N03_V34_B01_FULLU8",
+    "PLAN_N04_V34_B01_FULLU8",
+    "PLAN_N01_V34_B01_FULLU8"
+  ],
+  "positive_source_assertion_sites": 16,
+  "negative_source_assertion_sites": 5,
+  "total_source_assertion_sites": 21,
+  "total_source_cover_sites": 21,
+  "native_counts": "UNKNOWN; never equate source sites with native property count",
+  "exact_label_binding": "Implementation must bind each listed semantic role to a unique exact literal label/source file/line/hash in the new request; source_check must reject missing/extra/wrong role/domain/status/label. Do not predict native property ordinals; obtain same-invocation exported IDs.",
+  "zero_one_resolution": "Pair predicates include n>=2 and old max-descending n==2/4; all are false on{0,1}. Omit those four cover sites only for the new explicitly exact degenerate root and record structural N/A in the new profile. This is not acceptance of UNSAT native cover records. Keep four assertions even when trivially true. Nontrivial N2/N3/N4 each retain all four witness kinds, descending at that exact singleton length.",
+  "native_cover_gate": "Every actually declared and exported cover must be SATISFIED. Any UNSATISFIABLE/UNREACHABLE/unknown/missing/wrong-type cover continues to reject. No global N/A or UNSAT exception, no future-run location transfer.",
+  "feasibility_assurance": "Static candidate assignments consistent with predicates/full multiplicities only; actual native SAT/normal return remains UNKNOWN until actual same-invocation results."
+}

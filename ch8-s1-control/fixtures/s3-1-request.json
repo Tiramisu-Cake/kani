@@ -1,0 +1,1609 @@
+{
+  "schema": "ch8-s3-1-v1",
+  "status": "READY",
+  "authorization": "PREPARATION_ONLY; SAME14 delta then separately authorized root GO; no dispatch",
+  "entry_g0": "cd90cf0bde2d7658a2dfe690dd2887bdd72aefb6",
+  "std_sha": "513341f41ce53833a279571401c924bdddddb6c8",
+  "std_tree": "a818efb2157d57af0c9c604f6d0ca85873b8712c",
+  "tool_sha": "0aac16ef62da9e9d5645782d458593e5d78143ba",
+  "tool_tree": "9d8bc9312bf955ef126d32b819b3cd0ed105ed2b",
+  "base_std_sha": "99e8456d200fff1299ee5756279cddb23921dc65",
+  "control_parent": "9e14e033f9ee31522b571c127609dcdff76d230b",
+  "variants": {},
+  "changed_file_sha256": {
+    "library/core/Cargo.toml": "01ceacdf72a9622d78af2fe5bba09eda4d838d4798d1da2ab03ecb08364f0db6",
+    "library/core/src/lib.rs": "cab6061d100493bec1b820356a54e64c5d923c63fb830bb86250d12124f91504",
+    "library/core/src/slice/sort/shared/smallsort.rs": "590a1703f3939bda126a7acc2bcd7559d8a19d7227dcca1f2ea60b401ec70ead",
+    "library/core/src/slice/sort/shared/smallsort/verify.rs": "16c4cd102e8597e146ce62c98ac57464658f99bbc09b1ac99a8408ab6ee6c83a",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs": "456de2ac2e30f40d2af89f21c1cb234ce51ae9d66f05523f8f4b231f411f80e3",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_span.rs": "c25a476d596ecd2b58d6053307f446e1392171f19b0f48398989373f336db1d6",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_swap.rs": "18ffcca0f828239c686484a72e58ff391c0e8a511f94fe357ae3e635d430fc61",
+    "tool_config/kani-version.toml": "16415c6185a21d873f6e4d6d1dc3058f71380e5537a5a9bb77efae857bf66717",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096"
+  },
+  "budgets": {
+    "jobs": 1,
+    "max_parallel": 1,
+    "workflow_minutes": 180,
+    "setup_seconds": 1800,
+    "phase_seconds": 8100,
+    "row_seconds": 600,
+    "rss_kib": 6291456,
+    "stdout_bytes": 16777216,
+    "stderr_bytes": 1048576,
+    "export_bytes": 8388608,
+    "artifact_bytes": 268435456,
+    "planned_rows_seconds": null,
+    "rss_cap_kib": 6291456,
+    "compile_seconds": 900,
+    "group_rss_max_kib": 12582912,
+    "memory_reserve_kib": 2097152,
+    "projected_group_count": 9,
+    "child_compile_subcap_seconds": 180,
+    "whole_child_including_compile_seconds": 600,
+    "shared_campaign_seconds": 6900
+  },
+  "execution_groups": [
+    {
+      "id": "s3-checker_order_corrupt",
+      "variant": "production",
+      "unwind": 34,
+      "row_ids": [
+        "checker_order_corrupt"
+      ]
+    },
+    {
+      "id": "s3-checker_count_corrupt",
+      "variant": "production",
+      "unwind": 34,
+      "row_ids": [
+        "checker_count_corrupt"
+      ]
+    },
+    {
+      "id": "s3-s3_swap_u8_geometry",
+      "variant": "production",
+      "unwind": 36,
+      "row_ids": [
+        "s3_swap_u8_geometry"
+      ]
+    },
+    {
+      "id": "s3-s3_sort4_u8_separate",
+      "variant": "production",
+      "unwind": 8,
+      "row_ids": [
+        "s3_sort4_u8_separate"
+      ]
+    },
+    {
+      "id": "s3-s3_sort4_u8_same_alloc",
+      "variant": "production",
+      "unwind": 50,
+      "row_ids": [
+        "s3_sort4_u8_same_alloc"
+      ]
+    },
+    {
+      "id": "s3-s3_insert_tail_u8_rel16",
+      "variant": "production",
+      "unwind": 36,
+      "row_ids": [
+        "s3_insert_tail_u8_rel16"
+      ]
+    },
+    {
+      "id": "s3-s3_merge8_u8_separate",
+      "variant": "production",
+      "unwind": 12,
+      "row_ids": [
+        "s3_merge8_u8_separate"
+      ]
+    },
+    {
+      "id": "s3-s3_merge8_u8_same_alloc",
+      "variant": "production",
+      "unwind": 50,
+      "row_ids": [
+        "s3_merge8_u8_same_alloc"
+      ]
+    },
+    {
+      "id": "s3-sort13_weak",
+      "variant": "production",
+      "unwind": 34,
+      "row_ids": [
+        "sort13_weak"
+      ]
+    }
+  ],
+  "replacement_unions": [],
+  "formal_expected_inventory": [],
+  "diagnostic_assumed_inventory": [],
+  "qualification_inventory": [
+    "s3_swap_u8_geometry",
+    "s3_sort4_u8_separate",
+    "s3_sort4_u8_same_alloc",
+    "s3_insert_tail_u8_rel16",
+    "s3_merge8_u8_separate",
+    "s3_merge8_u8_same_alloc"
+  ],
+  "flags": {
+    "unstable": [
+      "function-contracts",
+      "mem-predicates",
+      "float-lib",
+      "c-ffi",
+      "loop-contracts",
+      "quantifiers",
+      "stubbing",
+      "export-json"
+    ],
+    "assert_contracts": false,
+    "jobs": 1,
+    "harness_timeout": "600s",
+    "exact": true,
+    "default_unwind": 50,
+    "cbmc_args": [
+      "--object-bits",
+      "12"
+    ],
+    "RUSTFLAGS": "--cfg=kani_smallsort_sorting --cfg=kani_smallsort_controls --cfg=kani_smallsort_s2_assumed --cfg=kani_smallsort_s3_leaf"
+  },
+  "accounting_reference": {
+    "ledger_g0": "df7a140991",
+    "item1_used": 30,
+    "item1_cap": 31,
+    "item2_used": 11,
+    "item2_cap": 17,
+    "total_used": 41,
+    "total_cap": 48,
+    "future_accounting": "OWNER_ONLY; first S3 if executed would consume item2 12/17",
+    "reservation": false,
+    "changed": false
+  },
+  "future_runs": 1,
+  "proof_credit": "NONE",
+  "runtime_smallsort_base_sha256": "45ae77ad0bb2a74cfab1aa53d5e1c48311f0b483c94eb52d96d97f680bd39651",
+  "ci_request_hash_policy": "Request excluded from its own payload map; exact request SHA in g0 package and every invocation receipt.",
+  "control_reference": "1dfc267b66abd83d536eb41a17052a4f3d767d2b",
+  "profile": "ch8-s3-1-actual-fullbyte-v1",
+  "native_status": "NOT_RUN",
+  "source_parent": "97ac4d39d7f959ea70b1f57785ffd1fd66ecd22a",
+  "rows": [
+    {
+      "id": "checker_order_corrupt",
+      "selector": "slice::sort::shared::smallsort::verify::sorting_s2_batch::checker_order_corrupt",
+      "source_qualified_selector": "core::slice::sort::shared::smallsort::verify::sorting_s2_batch::checker_order_corrupt",
+      "mode": "Original",
+      "variant": "production",
+      "unwind": 34,
+      "expected": "DETECTED",
+      "failure_description": "S2_NEG_CHECKER_ORDER",
+      "required_cover_count": 0,
+      "required_cover_messages": [],
+      "required_success_messages": [],
+      "timeout_seconds": 600,
+      "planned_seconds": null,
+      "state": "NOT_RUN",
+      "assurance": "NEGATIVE_CONTROL",
+      "proof_credit": "NONE",
+      "roles": [
+        {
+          "class": "assertion",
+          "status": "FAILURE",
+          "description": "S2_NEG_CHECKER_ORDER",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs",
+          "line": 140,
+          "source_line": "    kani::assert(post::<u8,KeyLess<u8>>(snapshot::<u8,KeyLess<u8>>(&input),&out), \"S2_NEG_CHECKER_ORDER\");",
+          "source_sha256": "456de2ac2e30f40d2af89f21c1cb234ce51ae9d66f05523f8f4b231f411f80e3",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        }
+      ]
+    },
+    {
+      "id": "checker_count_corrupt",
+      "selector": "slice::sort::shared::smallsort::verify::sorting_s2_batch::checker_count_corrupt",
+      "source_qualified_selector": "core::slice::sort::shared::smallsort::verify::sorting_s2_batch::checker_count_corrupt",
+      "mode": "Original",
+      "variant": "production",
+      "unwind": 34,
+      "expected": "DETECTED",
+      "failure_description": "S2_NEG_CHECKER_COUNT",
+      "required_cover_count": 0,
+      "required_cover_messages": [],
+      "required_success_messages": [],
+      "timeout_seconds": 600,
+      "planned_seconds": null,
+      "state": "NOT_RUN",
+      "assurance": "NEGATIVE_CONTROL",
+      "proof_credit": "NONE",
+      "roles": [
+        {
+          "class": "assertion",
+          "status": "FAILURE",
+          "description": "S2_NEG_CHECKER_COUNT",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs",
+          "line": 134,
+          "source_line": "    kani::assert(post::<u8,KeyLess<u8>>(snapshot::<u8,KeyLess<u8>>(&input),&out), \"S2_NEG_CHECKER_COUNT\");",
+          "source_sha256": "456de2ac2e30f40d2af89f21c1cb234ce51ae9d66f05523f8f4b231f411f80e3",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        }
+      ]
+    },
+    {
+      "id": "s3_swap_u8_geometry",
+      "selector": "slice::sort::shared::smallsort::verify::sorting_s3_leaf::s3_swap_u8_geometry",
+      "source_qualified_selector": "core::slice::sort::shared::smallsort::verify::sorting_s3_leaf::s3_swap_u8_geometry",
+      "mode": "PFC",
+      "variant": "production",
+      "unwind": 36,
+      "expected": "SUCCESS",
+      "failure_description": null,
+      "required_cover_count": 7,
+      "required_cover_messages": [
+        "S3_SWAP_EQUAL",
+        "S3_SWAP_TAKEN",
+        "S3_SWAP_REVERSE_UNTAKEN",
+        "S3_SWAP_DUPLICATE",
+        "S3_SWAP_BASE_ZERO",
+        "S3_SWAP_BASE_LAST",
+        "S3_SWAP_USEFUL_RETURN"
+      ],
+      "required_success_messages": [
+        "S3_SWAP_ACTIVE",
+        "S3_SWAP_EXACT_TRANSFER",
+        "S3_SWAP_FULL_FRAME"
+      ],
+      "timeout_seconds": 600,
+      "planned_seconds": null,
+      "state": "NOT_RUN",
+      "assurance": "ACTUAL_BODY_PFC_CANDIDATE",
+      "proof_credit": "NONE",
+      "roles": [
+        {
+          "class": "assertion",
+          "status": "SUCCESS",
+          "description": "S3_SWAP_ACTIVE",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 25,
+          "source_line": "    kani::assert(active(), \"S3_SWAP_ACTIVE\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "assertion",
+          "status": "SUCCESS",
+          "description": "S3_SWAP_EXACT_TRANSFER",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 35,
+          "source_line": "    kani::assert(pair::post::<u8, KeyLess<u8>>(pre, p, a, b), \"S3_SWAP_EXACT_TRANSFER\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "assertion",
+          "status": "SUCCESS",
+          "description": "S3_SWAP_FULL_FRAME",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 37,
+          "source_line": "        kani::assert(i == base + a || i == base + b || v[i] == before[i], \"S3_SWAP_FULL_FRAME\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "S3_SWAP_EQUAL",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 39,
+          "source_line": "    kani::cover(a == b, \"S3_SWAP_EQUAL\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "S3_SWAP_TAKEN",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 40,
+          "source_line": "    kani::cover(a < b && before[base + b] < before[base + a], \"S3_SWAP_TAKEN\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "S3_SWAP_REVERSE_UNTAKEN",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 41,
+          "source_line": "    kani::cover(a > b && before[base + b] >= before[base + a], \"S3_SWAP_REVERSE_UNTAKEN\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "S3_SWAP_DUPLICATE",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 42,
+          "source_line": "    kani::cover(a != b && before[base + a] == before[base + b], \"S3_SWAP_DUPLICATE\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "S3_SWAP_BASE_ZERO",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 43,
+          "source_line": "    kani::cover(base == 0, \"S3_SWAP_BASE_ZERO\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "S3_SWAP_BASE_LAST",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 44,
+          "source_line": "    kani::cover(base == 20, \"S3_SWAP_BASE_LAST\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "S3_SWAP_USEFUL_RETURN",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 45,
+          "source_line": "    kani::cover(true, \"S3_SWAP_USEFUL_RETURN\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        }
+      ],
+      "target": "swap_if_less"
+    },
+    {
+      "id": "s3_sort4_u8_separate",
+      "selector": "slice::sort::shared::smallsort::verify::sorting_s3_leaf::s3_sort4_u8_separate",
+      "source_qualified_selector": "core::slice::sort::shared::smallsort::verify::sorting_s3_leaf::s3_sort4_u8_separate",
+      "mode": "PFC",
+      "variant": "production",
+      "unwind": 8,
+      "expected": "SUCCESS",
+      "failure_description": null,
+      "required_cover_count": 4,
+      "required_cover_messages": [
+        "S3_SORT4_SEPARATE_UNSORTED",
+        "S3_SORT4_SEPARATE_DUPLICATE",
+        "S3_SORT4_SEPARATE_NONCONSTANT",
+        "S3_SORT4_SEPARATE_USEFUL_RETURN"
+      ],
+      "required_success_messages": [
+        "S3_SORT4_SEPARATE_ACTIVE",
+        "S3_SORT4_SEPARATE_SORTED_FULL_COUNT",
+        "S3_SORT4_SEPARATE_SOURCE_FRAME",
+        "S3_SORT4_SEPARATE_CANARIES"
+      ],
+      "timeout_seconds": 600,
+      "planned_seconds": null,
+      "state": "NOT_RUN",
+      "assurance": "ACTUAL_BODY_PFC_CANDIDATE",
+      "proof_credit": "NONE",
+      "roles": [
+        {
+          "class": "assertion",
+          "status": "SUCCESS",
+          "description": "S3_SORT4_SEPARATE_ACTIVE",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 51,
+          "source_line": "    kani::assert(active(), \"S3_SORT4_SEPARATE_ACTIVE\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "assertion",
+          "status": "SUCCESS",
+          "description": "S3_SORT4_SEPARATE_SORTED_FULL_COUNT",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 59,
+          "source_line": "    kani::assert(post::<u8, KeyLess<u8>>(snapshot::<u8, KeyLess<u8>>(&before[1..5]), &out), \"S3_SORT4_SEPARATE_SORTED_FULL_COUNT\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "assertion",
+          "status": "SUCCESS",
+          "description": "S3_SORT4_SEPARATE_SOURCE_FRAME",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 60,
+          "source_line": "    kani::assert(src == before, \"S3_SORT4_SEPARATE_SOURCE_FRAME\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "assertion",
+          "status": "SUCCESS",
+          "description": "S3_SORT4_SEPARATE_CANARIES",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 61,
+          "source_line": "    kani::assert(unsafe { dst[0].assume_init() == 0xa5 && dst[5].assume_init() == 0x5a }, \"S3_SORT4_SEPARATE_CANARIES\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "S3_SORT4_SEPARATE_UNSORTED",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 62,
+          "source_line": "    kani::cover(!ordered(&before[1..5]), \"S3_SORT4_SEPARATE_UNSORTED\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "S3_SORT4_SEPARATE_DUPLICATE",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 63,
+          "source_line": "    kani::cover(before[1] == before[4], \"S3_SORT4_SEPARATE_DUPLICATE\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "S3_SORT4_SEPARATE_NONCONSTANT",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 64,
+          "source_line": "    kani::cover(out[0] < out[3], \"S3_SORT4_SEPARATE_NONCONSTANT\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "S3_SORT4_SEPARATE_USEFUL_RETURN",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 65,
+          "source_line": "    kani::cover(true, \"S3_SORT4_SEPARATE_USEFUL_RETURN\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        }
+      ],
+      "target": "sort4_stable"
+    },
+    {
+      "id": "s3_sort4_u8_same_alloc",
+      "selector": "slice::sort::shared::smallsort::verify::sorting_s3_leaf::s3_sort4_u8_same_alloc",
+      "source_qualified_selector": "core::slice::sort::shared::smallsort::verify::sorting_s3_leaf::s3_sort4_u8_same_alloc",
+      "mode": "PFC",
+      "variant": "production",
+      "unwind": 50,
+      "expected": "SUCCESS",
+      "failure_description": null,
+      "required_cover_count": 7,
+      "required_cover_messages": [
+        "S3_SORT4_SAME_FORWARD_ADJACENT",
+        "S3_SORT4_SAME_REVERSE_ADJACENT",
+        "S3_SORT4_SAME_EXTREME",
+        "S3_SORT4_SAME_UNSORTED",
+        "S3_SORT4_SAME_DUPLICATE",
+        "S3_SORT4_SAME_NONCONSTANT",
+        "S3_SORT4_SAME_USEFUL_RETURN"
+      ],
+      "required_success_messages": [
+        "S3_SORT4_SAME_ACTIVE",
+        "S3_SORT4_SAME_SORTED_FULL_COUNT",
+        "S3_SORT4_SAME_OUTSIDE_FRAME",
+        "S3_SORT4_SAME_SOURCE_FRAME",
+        "S3_SORT4_SAME_CANARY"
+      ],
+      "timeout_seconds": 600,
+      "planned_seconds": null,
+      "state": "NOT_RUN",
+      "assurance": "ACTUAL_BODY_PFC_CANDIDATE",
+      "proof_credit": "NONE",
+      "roles": [
+        {
+          "class": "assertion",
+          "status": "SUCCESS",
+          "description": "S3_SORT4_SAME_ACTIVE",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 71,
+          "source_line": "    kani::assert(active(), \"S3_SORT4_SAME_ACTIVE\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "assertion",
+          "status": "SUCCESS",
+          "description": "S3_SORT4_SAME_SORTED_FULL_COUNT",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 84,
+          "source_line": "    kani::assert(post::<u8, KeyLess<u8>>(snapshot::<u8, KeyLess<u8>>(&before[src..src + 4]), &out), \"S3_SORT4_SAME_SORTED_FULL_COUNT\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "assertion",
+          "status": "SUCCESS",
+          "description": "S3_SORT4_SAME_OUTSIDE_FRAME",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 86,
+          "source_line": "        kani::assert((dst <= i && i < dst + 4) || unsafe { v[i].assume_init() } == before[i], \"S3_SORT4_SAME_OUTSIDE_FRAME\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "assertion",
+          "status": "SUCCESS",
+          "description": "S3_SORT4_SAME_SOURCE_FRAME",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 89,
+          "source_line": "        kani::assert(unsafe { v[src+i].assume_init() } == before[src+i], \"S3_SORT4_SAME_SOURCE_FRAME\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "assertion",
+          "status": "SUCCESS",
+          "description": "S3_SORT4_SAME_CANARY",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 93,
+          "source_line": "    kani::assert(unsafe { v[canary].assume_init() } == before[canary], \"S3_SORT4_SAME_CANARY\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "S3_SORT4_SAME_FORWARD_ADJACENT",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 94,
+          "source_line": "    kani::cover(src + 4 == dst, \"S3_SORT4_SAME_FORWARD_ADJACENT\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "S3_SORT4_SAME_REVERSE_ADJACENT",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 95,
+          "source_line": "    kani::cover(dst + 4 == src, \"S3_SORT4_SAME_REVERSE_ADJACENT\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "S3_SORT4_SAME_EXTREME",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 96,
+          "source_line": "    kani::cover(src == 44 && dst == 0, \"S3_SORT4_SAME_EXTREME\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "S3_SORT4_SAME_UNSORTED",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 97,
+          "source_line": "    kani::cover(!ordered(&before[src..src + 4]), \"S3_SORT4_SAME_UNSORTED\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "S3_SORT4_SAME_DUPLICATE",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 98,
+          "source_line": "    kani::cover(before[src] == before[src + 3], \"S3_SORT4_SAME_DUPLICATE\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "S3_SORT4_SAME_NONCONSTANT",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 99,
+          "source_line": "    kani::cover(out[0] < out[3], \"S3_SORT4_SAME_NONCONSTANT\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "S3_SORT4_SAME_USEFUL_RETURN",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 100,
+          "source_line": "    kani::cover(true, \"S3_SORT4_SAME_USEFUL_RETURN\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        }
+      ],
+      "target": "sort4_stable"
+    },
+    {
+      "id": "s3_insert_tail_u8_rel16",
+      "selector": "slice::sort::shared::smallsort::verify::sorting_s3_leaf::s3_insert_tail_u8_rel16",
+      "source_qualified_selector": "core::slice::sort::shared::smallsort::verify::sorting_s3_leaf::s3_insert_tail_u8_rel16",
+      "mode": "PFC",
+      "variant": "production",
+      "unwind": 36,
+      "expected": "SUCCESS",
+      "failure_description": null,
+      "required_cover_count": 9,
+      "required_cover_messages": [
+        "S3_INSERT_LENGTH2",
+        "S3_INSERT_LENGTH17",
+        "S3_INSERT_BASE_FIRST",
+        "S3_INSERT_BASE_LAST",
+        "S3_INSERT_EARLY_RETURN",
+        "S3_INSERT_FULL_SIFT",
+        "S3_INSERT_DUPLICATE",
+        "S3_INSERT_NONCONSTANT",
+        "S3_INSERT_USEFUL_RETURN"
+      ],
+      "required_success_messages": [
+        "S3_INSERT_ACTIVE",
+        "S3_INSERT_SORTED_FULL_COUNT",
+        "S3_INSERT_OUTSIDE_FRAME"
+      ],
+      "timeout_seconds": 600,
+      "planned_seconds": null,
+      "state": "NOT_RUN",
+      "assurance": "ACTUAL_BODY_PFC_CANDIDATE",
+      "proof_credit": "NONE",
+      "roles": [
+        {
+          "class": "assertion",
+          "status": "SUCCESS",
+          "description": "S3_INSERT_ACTIVE",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 106,
+          "source_line": "    kani::assert(active(), \"S3_INSERT_ACTIVE\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "assertion",
+          "status": "SUCCESS",
+          "description": "S3_INSERT_SORTED_FULL_COUNT",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 115,
+          "source_line": "    kani::assert(post::<u8, KeyLess<u8>>(snapshot::<u8, KeyLess<u8>>(&before[begin..begin + tail + 1]), &v[begin..begin + tail + 1]), \"S3_INSERT_SORTED_FULL_COUNT\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "assertion",
+          "status": "SUCCESS",
+          "description": "S3_INSERT_OUTSIDE_FRAME",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 117,
+          "source_line": "        kani::assert((begin <= i && i <= begin + tail) || v[i] == before[i], \"S3_INSERT_OUTSIDE_FRAME\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "S3_INSERT_LENGTH2",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 119,
+          "source_line": "    kani::cover(tail == 1, \"S3_INSERT_LENGTH2\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "S3_INSERT_LENGTH17",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 120,
+          "source_line": "    kani::cover(tail == 16, \"S3_INSERT_LENGTH17\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "S3_INSERT_BASE_FIRST",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 121,
+          "source_line": "    kani::cover(begin == 1, \"S3_INSERT_BASE_FIRST\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "S3_INSERT_BASE_LAST",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 122,
+          "source_line": "    kani::cover(begin == 16, \"S3_INSERT_BASE_LAST\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "S3_INSERT_EARLY_RETURN",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 123,
+          "source_line": "    kani::cover(before[begin + tail] >= before[begin + tail - 1], \"S3_INSERT_EARLY_RETURN\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "S3_INSERT_FULL_SIFT",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 124,
+          "source_line": "    kani::cover(before[begin + tail] < before[begin], \"S3_INSERT_FULL_SIFT\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "S3_INSERT_DUPLICATE",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 125,
+          "source_line": "    kani::cover(before[begin + tail] == before[begin], \"S3_INSERT_DUPLICATE\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "S3_INSERT_NONCONSTANT",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 126,
+          "source_line": "    kani::cover(v[begin] < v[begin + tail], \"S3_INSERT_NONCONSTANT\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "S3_INSERT_USEFUL_RETURN",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 127,
+          "source_line": "    kani::cover(true, \"S3_INSERT_USEFUL_RETURN\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        }
+      ],
+      "target": "insert_tail"
+    },
+    {
+      "id": "s3_merge8_u8_separate",
+      "selector": "slice::sort::shared::smallsort::verify::sorting_s3_leaf::s3_merge8_u8_separate",
+      "source_qualified_selector": "core::slice::sort::shared::smallsort::verify::sorting_s3_leaf::s3_merge8_u8_separate",
+      "mode": "PFC",
+      "variant": "production",
+      "unwind": 12,
+      "expected": "SUCCESS",
+      "failure_description": null,
+      "required_cover_count": 6,
+      "required_cover_messages": [
+        "S3_MERGE8_SEPARATE_LEFT_FIRST",
+        "S3_MERGE8_SEPARATE_RIGHT_FIRST",
+        "S3_MERGE8_SEPARATE_TIE",
+        "S3_MERGE8_SEPARATE_UNSORTED",
+        "S3_MERGE8_SEPARATE_NONCONSTANT",
+        "S3_MERGE8_SEPARATE_USEFUL_RETURN"
+      ],
+      "required_success_messages": [
+        "S3_MERGE8_SEPARATE_ACTIVE",
+        "S3_MERGE8_SEPARATE_SORTED_FULL_COUNT",
+        "S3_MERGE8_SEPARATE_SOURCE_FRAME",
+        "S3_MERGE8_SEPARATE_CANARIES"
+      ],
+      "timeout_seconds": 600,
+      "planned_seconds": null,
+      "state": "NOT_RUN",
+      "assurance": "ACTUAL_BODY_PFC_CANDIDATE",
+      "proof_credit": "NONE",
+      "roles": [
+        {
+          "class": "assertion",
+          "status": "SUCCESS",
+          "description": "S3_MERGE8_SEPARATE_ACTIVE",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 133,
+          "source_line": "    kani::assert(active(), \"S3_MERGE8_SEPARATE_ACTIVE\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "assertion",
+          "status": "SUCCESS",
+          "description": "S3_MERGE8_SEPARATE_SORTED_FULL_COUNT",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 142,
+          "source_line": "    kani::assert(post::<u8, KeyLess<u8>>(snapshot::<u8, KeyLess<u8>>(&before[1..9]), &out), \"S3_MERGE8_SEPARATE_SORTED_FULL_COUNT\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "assertion",
+          "status": "SUCCESS",
+          "description": "S3_MERGE8_SEPARATE_SOURCE_FRAME",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 143,
+          "source_line": "    kani::assert(src == before, \"S3_MERGE8_SEPARATE_SOURCE_FRAME\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "assertion",
+          "status": "SUCCESS",
+          "description": "S3_MERGE8_SEPARATE_CANARIES",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 144,
+          "source_line": "    kani::assert(unsafe { dst[0].assume_init() == 0xa5 && dst[9].assume_init() == 0x5a }, \"S3_MERGE8_SEPARATE_CANARIES\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "S3_MERGE8_SEPARATE_LEFT_FIRST",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 145,
+          "source_line": "    kani::cover(src[1] < src[5], \"S3_MERGE8_SEPARATE_LEFT_FIRST\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "S3_MERGE8_SEPARATE_RIGHT_FIRST",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 146,
+          "source_line": "    kani::cover(src[1] > src[5], \"S3_MERGE8_SEPARATE_RIGHT_FIRST\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "S3_MERGE8_SEPARATE_TIE",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 147,
+          "source_line": "    kani::cover(src[4] == src[5], \"S3_MERGE8_SEPARATE_TIE\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "S3_MERGE8_SEPARATE_UNSORTED",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 148,
+          "source_line": "    kani::cover(src[4] > src[5], \"S3_MERGE8_SEPARATE_UNSORTED\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "S3_MERGE8_SEPARATE_NONCONSTANT",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 149,
+          "source_line": "    kani::cover(out[0] < out[7], \"S3_MERGE8_SEPARATE_NONCONSTANT\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "S3_MERGE8_SEPARATE_USEFUL_RETURN",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 150,
+          "source_line": "    kani::cover(true, \"S3_MERGE8_SEPARATE_USEFUL_RETURN\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        }
+      ],
+      "target": "bidirectional_merge"
+    },
+    {
+      "id": "s3_merge8_u8_same_alloc",
+      "selector": "slice::sort::shared::smallsort::verify::sorting_s3_leaf::s3_merge8_u8_same_alloc",
+      "source_qualified_selector": "core::slice::sort::shared::smallsort::verify::sorting_s3_leaf::s3_merge8_u8_same_alloc",
+      "mode": "PFC",
+      "variant": "production",
+      "unwind": 50,
+      "expected": "SUCCESS",
+      "failure_description": null,
+      "required_cover_count": 11,
+      "required_cover_messages": [
+        "S3_MERGE8_SAME_FORWARD_ADJACENT",
+        "S3_MERGE8_SAME_REVERSE_ADJACENT",
+        "S3_MERGE8_SAME_EXTREME",
+        "S3_MERGE8_SAME_LEFT_FIRST",
+        "S3_MERGE8_SAME_RIGHT_FIRST",
+        "S3_MERGE8_SAME_TIE",
+        "S3_MERGE8_SAME_UNSORTED",
+        "S3_MERGE8_SAME_NONCONSTANT",
+        "S3_MERGE8_SAME_SORT8_FIRST_GEOMETRY",
+        "S3_MERGE8_SAME_SORT8_SECOND_GEOMETRY",
+        "S3_MERGE8_SAME_USEFUL_RETURN"
+      ],
+      "required_success_messages": [
+        "S3_MERGE8_SAME_ACTIVE",
+        "S3_MERGE8_SAME_SORTED_FULL_COUNT",
+        "S3_MERGE8_SAME_OUTSIDE_FRAME",
+        "S3_MERGE8_SAME_SOURCE_FRAME",
+        "S3_MERGE8_SAME_CANARY"
+      ],
+      "timeout_seconds": 600,
+      "planned_seconds": null,
+      "state": "NOT_RUN",
+      "assurance": "ACTUAL_BODY_PFC_CANDIDATE",
+      "proof_credit": "NONE",
+      "roles": [
+        {
+          "class": "assertion",
+          "status": "SUCCESS",
+          "description": "S3_MERGE8_SAME_ACTIVE",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 156,
+          "source_line": "    kani::assert(active(), \"S3_MERGE8_SAME_ACTIVE\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "assertion",
+          "status": "SUCCESS",
+          "description": "S3_MERGE8_SAME_SORTED_FULL_COUNT",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 172,
+          "source_line": "    kani::assert(post::<u8, KeyLess<u8>>(snapshot::<u8, KeyLess<u8>>(&before[src..src + 8]), &out), \"S3_MERGE8_SAME_SORTED_FULL_COUNT\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "assertion",
+          "status": "SUCCESS",
+          "description": "S3_MERGE8_SAME_OUTSIDE_FRAME",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 174,
+          "source_line": "        kani::assert((dst <= i && i < dst + 8) || unsafe { v[i].assume_init() } == before[i], \"S3_MERGE8_SAME_OUTSIDE_FRAME\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "assertion",
+          "status": "SUCCESS",
+          "description": "S3_MERGE8_SAME_SOURCE_FRAME",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 177,
+          "source_line": "        kani::assert(unsafe { v[src+i].assume_init() } == before[src+i], \"S3_MERGE8_SAME_SOURCE_FRAME\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "assertion",
+          "status": "SUCCESS",
+          "description": "S3_MERGE8_SAME_CANARY",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 181,
+          "source_line": "    kani::assert(unsafe { v[canary].assume_init() } == before[canary], \"S3_MERGE8_SAME_CANARY\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "S3_MERGE8_SAME_FORWARD_ADJACENT",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 182,
+          "source_line": "    kani::cover(src + 8 == dst, \"S3_MERGE8_SAME_FORWARD_ADJACENT\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "S3_MERGE8_SAME_REVERSE_ADJACENT",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 183,
+          "source_line": "    kani::cover(dst + 8 == src, \"S3_MERGE8_SAME_REVERSE_ADJACENT\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "S3_MERGE8_SAME_EXTREME",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 184,
+          "source_line": "    kani::cover(src == 40 && dst == 0, \"S3_MERGE8_SAME_EXTREME\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "S3_MERGE8_SAME_LEFT_FIRST",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 185,
+          "source_line": "    kani::cover(before[src] < before[src + 4], \"S3_MERGE8_SAME_LEFT_FIRST\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "S3_MERGE8_SAME_RIGHT_FIRST",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 186,
+          "source_line": "    kani::cover(before[src] > before[src + 4], \"S3_MERGE8_SAME_RIGHT_FIRST\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "S3_MERGE8_SAME_TIE",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 187,
+          "source_line": "    kani::cover(before[src + 3] == before[src + 4], \"S3_MERGE8_SAME_TIE\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "S3_MERGE8_SAME_UNSORTED",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 188,
+          "source_line": "    kani::cover(before[src + 3] > before[src + 4], \"S3_MERGE8_SAME_UNSORTED\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "S3_MERGE8_SAME_NONCONSTANT",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 189,
+          "source_line": "    kani::cover(out[0] < out[7], \"S3_MERGE8_SAME_NONCONSTANT\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "S3_MERGE8_SAME_SORT8_FIRST_GEOMETRY",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 190,
+          "source_line": "    kani::cover(src == 32 && dst == 0, \"S3_MERGE8_SAME_SORT8_FIRST_GEOMETRY\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "S3_MERGE8_SAME_SORT8_SECOND_GEOMETRY",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 191,
+          "source_line": "    kani::cover(src == 40 && dst == 16, \"S3_MERGE8_SAME_SORT8_SECOND_GEOMETRY\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "S3_MERGE8_SAME_USEFUL_RETURN",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+          "line": 192,
+          "source_line": "    kani::cover(true, \"S3_MERGE8_SAME_USEFUL_RETURN\");",
+          "source_sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        }
+      ],
+      "target": "bidirectional_merge"
+    },
+    {
+      "id": "sort13_weak",
+      "selector": "slice::sort::shared::smallsort::verify::sorting_s2_batch::sort13_weak",
+      "source_qualified_selector": "core::slice::sort::shared::smallsort::verify::sorting_s2_batch::sort13_weak",
+      "mode": "Original",
+      "variant": "production",
+      "unwind": 34,
+      "expected": "DETECTED",
+      "failure_description": "S2_NEG_SORT13_WEAK",
+      "required_cover_count": 0,
+      "required_cover_messages": [],
+      "required_success_messages": [],
+      "timeout_seconds": 600,
+      "planned_seconds": null,
+      "state": "NOT_RUN",
+      "assurance": "NEGATIVE_CONTROL",
+      "proof_credit": "NONE",
+      "roles": [
+        {
+          "class": "assertion",
+          "status": "FAILURE",
+          "description": "S2_NEG_SORT13_WEAK",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs",
+          "line": 149,
+          "source_line": "    kani::assert(post::<u8,KeyLess<u8>>(snapshot::<u8,KeyLess<u8>>(&before),&v), \"S2_NEG_SORT13_WEAK\");",
+          "source_sha256": "456de2ac2e30f40d2af89f21c1cb234ce51ae9d66f05523f8f4b231f411f80e3",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        }
+      ]
+    }
+  ],
+  "source_bindings": {
+    "checker_order_corrupt": {
+      "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs",
+      "sha256": "456de2ac2e30f40d2af89f21c1cb234ce51ae9d66f05523f8f4b231f411f80e3",
+      "selector": "slice::sort::shared::smallsort::verify::sorting_s2_batch::checker_order_corrupt",
+      "mode": "Original",
+      "target": null,
+      "crate": "core",
+      "locations": [
+        {
+          "line": 136,
+          "source": "#[kani::proof]"
+        },
+        {
+          "line": 138,
+          "source": "fn checker_order_corrupt() {"
+        }
+      ]
+    },
+    "checker_count_corrupt": {
+      "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs",
+      "sha256": "456de2ac2e30f40d2af89f21c1cb234ce51ae9d66f05523f8f4b231f411f80e3",
+      "selector": "slice::sort::shared::smallsort::verify::sorting_s2_batch::checker_count_corrupt",
+      "mode": "Original",
+      "target": null,
+      "crate": "core",
+      "locations": [
+        {
+          "line": 130,
+          "source": "#[kani::proof]"
+        },
+        {
+          "line": 132,
+          "source": "fn checker_count_corrupt() {"
+        }
+      ]
+    },
+    "s3_swap_u8_geometry": {
+      "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+      "sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+      "selector": "slice::sort::shared::smallsort::verify::sorting_s3_leaf::s3_swap_u8_geometry",
+      "mode": "PFC",
+      "target": "swap_if_less",
+      "crate": "core",
+      "locations": [
+        {
+          "line": 22,
+          "source": "#[kani::proof_for_contract(swap_if_less)]"
+        },
+        {
+          "line": 24,
+          "source": "fn s3_swap_u8_geometry() {"
+        }
+      ]
+    },
+    "s3_sort4_u8_separate": {
+      "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+      "sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+      "selector": "slice::sort::shared::smallsort::verify::sorting_s3_leaf::s3_sort4_u8_separate",
+      "mode": "PFC",
+      "target": "sort4_stable",
+      "crate": "core",
+      "locations": [
+        {
+          "line": 48,
+          "source": "#[kani::proof_for_contract(sort4_stable)]"
+        },
+        {
+          "line": 50,
+          "source": "fn s3_sort4_u8_separate() {"
+        }
+      ]
+    },
+    "s3_sort4_u8_same_alloc": {
+      "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+      "sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+      "selector": "slice::sort::shared::smallsort::verify::sorting_s3_leaf::s3_sort4_u8_same_alloc",
+      "mode": "PFC",
+      "target": "sort4_stable",
+      "crate": "core",
+      "locations": [
+        {
+          "line": 68,
+          "source": "#[kani::proof_for_contract(sort4_stable)]"
+        },
+        {
+          "line": 70,
+          "source": "fn s3_sort4_u8_same_alloc() {"
+        }
+      ]
+    },
+    "s3_insert_tail_u8_rel16": {
+      "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+      "sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+      "selector": "slice::sort::shared::smallsort::verify::sorting_s3_leaf::s3_insert_tail_u8_rel16",
+      "mode": "PFC",
+      "target": "insert_tail",
+      "crate": "core",
+      "locations": [
+        {
+          "line": 103,
+          "source": "#[kani::proof_for_contract(insert_tail)]"
+        },
+        {
+          "line": 105,
+          "source": "fn s3_insert_tail_u8_rel16() {"
+        }
+      ]
+    },
+    "s3_merge8_u8_separate": {
+      "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+      "sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+      "selector": "slice::sort::shared::smallsort::verify::sorting_s3_leaf::s3_merge8_u8_separate",
+      "mode": "PFC",
+      "target": "bidirectional_merge",
+      "crate": "core",
+      "locations": [
+        {
+          "line": 130,
+          "source": "#[kani::proof_for_contract(bidirectional_merge)]"
+        },
+        {
+          "line": 132,
+          "source": "fn s3_merge8_u8_separate() {"
+        }
+      ]
+    },
+    "s3_merge8_u8_same_alloc": {
+      "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs",
+      "sha256": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+      "selector": "slice::sort::shared::smallsort::verify::sorting_s3_leaf::s3_merge8_u8_same_alloc",
+      "mode": "PFC",
+      "target": "bidirectional_merge",
+      "crate": "core",
+      "locations": [
+        {
+          "line": 153,
+          "source": "#[kani::proof_for_contract(bidirectional_merge)]"
+        },
+        {
+          "line": 155,
+          "source": "fn s3_merge8_u8_same_alloc() {"
+        }
+      ]
+    },
+    "sort13_weak": {
+      "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs",
+      "sha256": "456de2ac2e30f40d2af89f21c1cb234ce51ae9d66f05523f8f4b231f411f80e3",
+      "selector": "slice::sort::shared::smallsort::verify::sorting_s2_batch::sort13_weak",
+      "mode": "Original",
+      "target": null,
+      "crate": "core",
+      "locations": [
+        {
+          "line": 143,
+          "source": "#[kani::proof]"
+        },
+        {
+          "line": 146,
+          "source": "fn sort13_weak() {"
+        }
+      ]
+    }
+  },
+  "s3": {
+    "selected": [
+      "checker_order_corrupt",
+      "checker_count_corrupt",
+      "s3_swap_u8_geometry",
+      "s3_sort4_u8_separate",
+      "s3_sort4_u8_same_alloc",
+      "s3_insert_tail_u8_rel16",
+      "s3_merge8_u8_separate",
+      "s3_merge8_u8_same_alloc",
+      "sort13_weak"
+    ],
+    "deferred": [
+      "swap_pfc",
+      "summary_witness",
+      "merge32_real",
+      "sort13_assumed",
+      "general32_assumed",
+      "merge_order_corrupt",
+      "merge_count_corrupt",
+      "general32_weak"
+    ],
+    "caps": {
+      "child_seconds": 600,
+      "compile_seconds": 180,
+      "slot_seconds": 720,
+      "controller_seconds": 180,
+      "cleanup_seconds": 240,
+      "campaign_seconds": 6900,
+      "outer_seconds": 7500,
+      "phase_seconds": 8100,
+      "step_seconds": 7560,
+      "local_rss_kib": 6291456,
+      "outer_rss_kib": 12582912,
+      "headroom_kib": 2097152,
+      "stdout_bytes": 16777216,
+      "stderr_bytes": 1048576,
+      "export_bytes": 8388608,
+      "artifact_bytes": 268435456
+    },
+    "plan_commit": "da89127150a550ccb3861a7bfc5b6205c6409e61",
+    "intake_commit": "ebd77a955b2b8d1b4e8079cfbf569386bcf0b130",
+    "u_policy": "ZERO_U_FAIL_CLOSED; site-specific proposal PENDING_REVIEW_NOT_ENABLED",
+    "unselected_full_obligations": "EXPLICIT_NOT_SELECTED_NO_PROMOTION"
+  },
+  "unreachable_admission": {
+    "mode": "REJECT_ALL",
+    "proposal": "S3-U-SITE-REVIEW-v1",
+    "enabled": false,
+    "unknown": "REJECT",
+    "role_unreachable": "REJECT"
+  },
+  "ci_payload_sha256": {
+    "ch8-s1-control/ORACLE-SOURCES.json": "69bf8d8494094a079a6ac3422ab90f30b7b5093b53e91ee6ce393a043538eaa2",
+    "ch8-s1-control/ROLE-MAP.json": "bad63e0616c0061bf40d7e8d5c72324c8089574624a20f07a1f98a2806e5043d",
+    "ch8-s1-control/S2-SOURCE.json": "950631f2d0594b7b14dc0c203d12379d48e3aeeba612f1651f029691b376daa6",
+    "ch8-s1-control/S3-SOURCE.json": "5fad714d49825c6900d4dac47c7d8005e88d544a524485536eb2afe91015e00d",
+    "ch8-s1-control/activation-default.patch": "cee9e21c4b5015d6daf53c286f781602d0890e4ed23239f968d228088335dcc3",
+    "ch8-s1-control/activation-override.patch": "6dcb40cc4118035de700f0988a6766c96aad8f4def76513f0f10f275d091c356",
+    "ch8-s1-control/binding_metadata.py": "8af48498fe256283dcbe7a1f7bd766e213c2ab83e28008e23bd6bb9811c57030",
+    "ch8-s1-control/cfg_pfc.py": "e72ba0cff247613a3db7f4a5bd237cfeab64cb49d2410c61e85b3f80e91ecb11",
+    "ch8-s1-control/check_package.py": "df5f7c4401d38033891e4a48da6548d290bde4f8a399950bef19da3d0b6d53d5",
+    "ch8-s1-control/collect.py": "cf1c7fe199c78b30d98b12aabeff0d113f65381f39390d595d66cdf3a87f02ec",
+    "ch8-s1-control/contract_stacks.py": "c4b0f92fe2ede42399f2743071e58380806e61339bfbc0d1beccbf6b2a11ea0d",
+    "ch8-s1-control/fixtures/r5-request.json": "d87434d250a1a430c565d8e0612e5a3987f7a811b6cfd9091c268865ff3498b1",
+    "ch8-s1-control/fixtures/r5-workflow.yml": "80d1273b9564a16eb4619089db5604ccccdfaa1cb7a155e9703d169c14b58c90",
+    "ch8-s1-control/fixtures/s104-rich-fragment.json": "08958a31eb173ce59173a588ffd9e785ed9cef0086a733b7fc998af843c054cc",
+    "ch8-s1-control/fixtures/s108r1-smallsort.rs.txt": "45ae77ad0bb2a74cfab1aa53d5e1c48311f0b483c94eb52d96d97f680bd39651",
+    "ch8-s1-control/fixtures/s108r1-sorting_model_controls.rs.txt": "dd4e8eca1761be66ea07508c7678175d54e4b2baf48469ae4866c9cb68e12e0d",
+    "ch8-s1-control/fixtures/s2-old97ac-batch.rs.txt": "37125e0d65bbce0b70fc6626960cbf0c17dab3d2d07675c183cf15407a37c850",
+    "ch8-s1-control/fixtures/s2-r1-batch.rs.txt": "207f05964330722a66a98212fa8801b6baf9d2c55ba7cd608ae73d80d69fd5e2",
+    "ch8-s1-control/fixtures/s2-r2-smallsort.rs.txt": "603762bb0cabb64e82114501b8da686f6e7d941f8e2227eebb956bc7062e7fe0",
+    "ch8-s1-control/fixtures/s2-r3-batch.rs.txt": "00abe964a5e2eac63f1f864455d6f9be1903422a0c5b28398360cf2039cc08d5",
+    "ch8-s1-control/fixtures/s2-r4-batch.rs.txt": "794fb18e5f6aa5a79f79b6e200b9cf5a4074442ddf51bdba9df4ea5f32567ef7",
+    "ch8-s1-control/fixtures/s3-parent-bd62-batch.rs.txt": "e0f47062d71f256fed49b8ad8144c2a83c9a96ecd85646605b1c2fe9b707d0dc",
+    "ch8-s1-control/fixtures/s3-parent-bd62-smallsort.rs.txt": "eb8867b764dd410109787124dc1a249d5c42e947255a1ef90242ba39295e2fdc",
+    "ch8-s1-control/fixtures/s3-parent-bd62-verify.rs.txt": "e11d2f0c5b58e71f16594192a6dbb8598f6781185f5a0cd623996da3c6a7885d",
+    "ch8-s1-control/lexical_bindings.py": "31abcb93bdb52bb1205e59ce6f4c8fe2206c2c63c9b2f82142492c8752f3e484",
+    "ch8-s1-control/negative_oracle.py": "fabd41fb31e37ea79239e4798f38aa81cd068abad0d00281d1d93d936f59681c",
+    "ch8-s1-control/oracle_source.py": "75a9a665b7a9fc1c64cd51c1c8d281fd323f22411aee83c017d08f37a27f20ce",
+    "ch8-s1-control/ordinary_contracts.py": "bdbdbe13fa2da6dae8d6dfb7a57a66caed1e52b6d93c1586e8effecaa16cb78e",
+    "ch8-s1-control/pack_evidence.py": "8782f1abd29342cec1202d851c94222c50fed0e6c358549971048135ab24d206",
+    "ch8-s1-control/r5_campaign.py": "9590e50ad38d8f0009584eddb17a648bf06779e2b6ad3a746cf3cc6deb2ab9fa",
+    "ch8-s1-control/r5_profile.py": "e237b05f7bbc26b2820173254c92035572b22280c4a0b7ee66481bfb41f64f4d",
+    "ch8-s1-control/r5_runtime.py": "e796129e9da910879026cbe9a2037cf4834793f97032b2ff21bdf128268c697f",
+    "ch8-s1-control/rich_evidence.py": "1c778852fd6c7d4542634424af7801e49e2f7074574b411f6c34a9fb86ab5139",
+    "ch8-s1-control/runner.py": "4cbd68b17213748e3fed5a307764e1b217f91be13523d5e03271b9ae8d1ab847",
+    "ch8-s1-control/rustc_diagnostics.py": "0c94acd85a9f2f7a241958a2c5b9dffce09517bd8d08ddf30bfbdd81ef839b32",
+    "ch8-s1-control/s108_package.py": "8f1443262d41b6ba755b89d089ffa7515692734f0986a80789a2bf89c7900237",
+    "ch8-s1-control/s2_correspondence.py": "46f2cd69373b4ebd3a3395d455338aadff3d473df5df2734e1bd5d4d2432dd4f",
+    "ch8-s1-control/s2_policy.py": "d87ce00811570c0ad7ea999fec3062166af542e576b188682308301519cb319c",
+    "ch8-s1-control/s3_campaign.py": "ea5890eb02b0b5e0f4837a4c22dd77efd7abd5a4f39e6053f2a99c81d81c5e10",
+    "ch8-s1-control/s3_cfg_pfc.py": "a757a156456c36c33bc09b0e7a3a8a4457601e599a320f6f74dbcb91fb823ed3",
+    "ch8-s1-control/s3_contract_stacks.py": "ad7cea13149e6d684ee8e380ce62ab4aeab68887a0786c43055f829ee97f2f5e",
+    "ch8-s1-control/s3_evidence.py": "ba97ad3a307223127dfa41f9e7ddaff235ab97402a1be1b1c609d525190ebf69",
+    "ch8-s1-control/s3_lexical_bindings.py": "fbe3ca43fc800bded1e4da79ace4989233d7e8019c4a823979379921f74e4c5d",
+    "ch8-s1-control/s3_ordinary_contracts.py": "deb591972314484bcd95df5f7ce5415abc3bb85dbbfc24e9ac372b47c40b4de7",
+    "ch8-s1-control/s3_package.py": "d5c3b715912c8e1f206f44a240608309bf2329ef569817c4983ec50fb618b484",
+    "ch8-s1-control/s3_pins.py": "d78e660157d9f8b869f5c5217e077a400b3cdb3a1f5023905ee7cb69106a5b7a",
+    "ch8-s1-control/s3_policy.py": "03946c36ce18a2874ce5864ad1e5c0cf8b093c8e6f13034bb68b9e3deed6e2b3",
+    "ch8-s1-control/s3_profile.py": "27cd765264b95ee7e7505870b7aa5a6269c0586820e1a1624e9b8a3df7db3216",
+    "ch8-s1-control/s3_runtime.py": "2de7a74b746efcde1dd47ad6f5a5686889665481274ae6555ea53f274ef9ef70",
+    "ch8-s1-control/s3_snapshots.py": "c5a1776d927660061f2f853fdf6a5413a2a7b5ea6ffa54e4d748bfb5fff2fb33",
+    "ch8-s1-control/s3_validate.py": "f35ce20e10dc94e58d545944630de692829d295805ec16fa5a40f398c8557814",
+    "ch8-s1-control/test_cfg_pfc.py": "96c7e07fd3d78cb6c6769a5c018d49b1f1e1d28eee39db6322cba63ea31a91ea",
+    "ch8-s1-control/test_contract_stacks.py": "28175e593a49600fc3478a61a7488b4066b0d9d06ef33b082418f19db1eba75d",
+    "ch8-s1-control/test_package.py": "70f00d0726b7011db8a02339c1b031bda49b4af3c2f7e881b68d06b7663b5ca7",
+    "ch8-s1-control/test_r1403_lexical.py": "5518422d03b2db340a09f7dbc9d074651ca607ef028e592e8dd7c4ac938b9c61",
+    "ch8-s1-control/test_r5.py": "59a2a741f07f28fba85f79435d70f06dcfa0a0aa2ee3bb8a6ff8fecde72c5b1d",
+    "ch8-s1-control/test_runner.py": "42ab9ff6ce08ba17331b62d6e10f26656719850d44968a5497751886a0f91630",
+    "ch8-s1-control/test_rustc_diagnostics.py": "fadad233e902b6fdaaea2a308e2a6321a3c594e8d0ba3492531459cbef0ac88d",
+    "ch8-s1-control/test_s104.py": "cf729fca7df6db47628bb2c17dda1eececf80ddaaa2dc07de57e0731ba16e59d",
+    "ch8-s1-control/test_s105.py": "588a346818b33e00fb02b510d616b7b787f184b00ac5a5b10cfad8b8cf46455e",
+    "ch8-s1-control/test_s107.py": "bb33d7a1088572107a243ea364207a67081fb91fd6db90f4de00e627983aa420",
+    "ch8-s1-control/test_s108.py": "c8f694e0f35abfffa5aa8adc51598cf69e2d66dcdf996f8e33750ae006d6e854",
+    "ch8-s1-control/test_s108r1.py": "cd23ab865dd05bf7beef1b312e747512bebc5ae61e9ce382d284da2014b06f03",
+    "ch8-s1-control/test_s2.py": "1c57b2de286916bdc0a5ce78a4aa111fdb1bbc66a8357a32214fc56df42cbfd2",
+    "ch8-s1-control/test_s3.py": "314e5f08ee929de9b92e33e929e3af2362799e436f6c43ebb29d62d1511c1542",
+    "ch8-s1-control/test_s3_repair.py": "3480cf7e888b6969ba3a863bf4a17e462c26297357b974214feadd7d4f8891f1",
+    ".github/workflows/ch8-s2.yml": "8d5fd03476d3d7666692cc7267d3fe598a0007c54ec6576de3538cef434ac709",
+    "ch8-s1-control/test_s3_paths.py": "6fd0e44d6215a56867fc5d8404be24e7e380f1411b4a52f3e84f6cdb9da7ea90"
+  },
+  "ci_changed_paths": [
+    ".github/workflows/bench-compiler.yml",
+    ".github/workflows/bench-e2e.yml",
+    ".github/workflows/bench-pr.yml",
+    ".github/workflows/cargo-update.yml",
+    ".github/workflows/cbmc-latest.yml",
+    ".github/workflows/cbmc-update.yml",
+    ".github/workflows/ch8-s2.yml",
+    ".github/workflows/charon-update.yml",
+    ".github/workflows/deny.yml",
+    ".github/workflows/extra_jobs.yml",
+    ".github/workflows/format-check.yml",
+    ".github/workflows/kani.yml",
+    ".github/workflows/release.yml",
+    ".github/workflows/slow-tests.yml",
+    ".github/workflows/toolchain-upgrade.yml",
+    ".github/workflows/verify-std-check.yml",
+    ".github/workflows/z3-update.yml",
+    "ch8-s1-control/CI-REQUEST.json",
+    "ch8-s1-control/ORACLE-SOURCES.json",
+    "ch8-s1-control/ROLE-MAP.json",
+    "ch8-s1-control/S2-SOURCE.json",
+    "ch8-s1-control/S3-SOURCE.json",
+    "ch8-s1-control/activation-default.patch",
+    "ch8-s1-control/activation-override.patch",
+    "ch8-s1-control/binding_metadata.py",
+    "ch8-s1-control/cfg_pfc.py",
+    "ch8-s1-control/check_package.py",
+    "ch8-s1-control/collect.py",
+    "ch8-s1-control/contract_stacks.py",
+    "ch8-s1-control/fixtures/r5-request.json",
+    "ch8-s1-control/fixtures/r5-workflow.yml",
+    "ch8-s1-control/fixtures/s104-rich-fragment.json",
+    "ch8-s1-control/fixtures/s108r1-smallsort.rs.txt",
+    "ch8-s1-control/fixtures/s108r1-sorting_model_controls.rs.txt",
+    "ch8-s1-control/fixtures/s2-old97ac-batch.rs.txt",
+    "ch8-s1-control/fixtures/s2-r1-batch.rs.txt",
+    "ch8-s1-control/fixtures/s2-r2-smallsort.rs.txt",
+    "ch8-s1-control/fixtures/s2-r3-batch.rs.txt",
+    "ch8-s1-control/fixtures/s2-r4-batch.rs.txt",
+    "ch8-s1-control/fixtures/s3-parent-bd62-batch.rs.txt",
+    "ch8-s1-control/fixtures/s3-parent-bd62-smallsort.rs.txt",
+    "ch8-s1-control/fixtures/s3-parent-bd62-verify.rs.txt",
+    "ch8-s1-control/lexical_bindings.py",
+    "ch8-s1-control/negative_oracle.py",
+    "ch8-s1-control/oracle_source.py",
+    "ch8-s1-control/ordinary_contracts.py",
+    "ch8-s1-control/pack_evidence.py",
+    "ch8-s1-control/r5_campaign.py",
+    "ch8-s1-control/r5_profile.py",
+    "ch8-s1-control/r5_runtime.py",
+    "ch8-s1-control/rich_evidence.py",
+    "ch8-s1-control/runner.py",
+    "ch8-s1-control/rustc_diagnostics.py",
+    "ch8-s1-control/s108_package.py",
+    "ch8-s1-control/s2_correspondence.py",
+    "ch8-s1-control/s2_policy.py",
+    "ch8-s1-control/s3_campaign.py",
+    "ch8-s1-control/s3_cfg_pfc.py",
+    "ch8-s1-control/s3_contract_stacks.py",
+    "ch8-s1-control/s3_evidence.py",
+    "ch8-s1-control/s3_lexical_bindings.py",
+    "ch8-s1-control/s3_ordinary_contracts.py",
+    "ch8-s1-control/s3_package.py",
+    "ch8-s1-control/s3_pins.py",
+    "ch8-s1-control/s3_policy.py",
+    "ch8-s1-control/s3_profile.py",
+    "ch8-s1-control/s3_runtime.py",
+    "ch8-s1-control/s3_snapshots.py",
+    "ch8-s1-control/s3_validate.py",
+    "ch8-s1-control/test_cfg_pfc.py",
+    "ch8-s1-control/test_contract_stacks.py",
+    "ch8-s1-control/test_package.py",
+    "ch8-s1-control/test_r1403_lexical.py",
+    "ch8-s1-control/test_r5.py",
+    "ch8-s1-control/test_runner.py",
+    "ch8-s1-control/test_rustc_diagnostics.py",
+    "ch8-s1-control/test_s104.py",
+    "ch8-s1-control/test_s105.py",
+    "ch8-s1-control/test_s107.py",
+    "ch8-s1-control/test_s108.py",
+    "ch8-s1-control/test_s108r1.py",
+    "ch8-s1-control/test_s2.py",
+    "ch8-s1-control/test_s3.py",
+    "ch8-s1-control/test_s3_paths.py",
+    "ch8-s1-control/test_s3_repair.py"
+  ],
+  "cfg_pfc_source_sha256": {
+    "library/core/src/lib.rs": "cab6061d100493bec1b820356a54e64c5d923c63fb830bb86250d12124f91504",
+    "library/core/src/slice/mod.rs": "1c94e306a979f2c59a4e3687a32a3e4efbeef967b7bf5eeb8d1977371c2c17dd",
+    "library/core/src/slice/sort/mod.rs": "f67551bff44a854a3f03901db10a099bdab3b67b47d8724bef43858d97134f3c",
+    "library/core/src/slice/sort/shared/mod.rs": "fa9eec2901bafba25c9c1e1684df76dbb1f86e0bbd04f18f3e67cee54dcdfcc8",
+    "library/core/src/slice/sort/shared/smallsort.rs": "590a1703f3939bda126a7acc2bcd7559d8a19d7227dcca1f2ea60b401ec70ead",
+    "library/core/src/slice/sort/shared/smallsort/verify.rs": "16c4cd102e8597e146ce62c98ac57464658f99bbc09b1ac99a8408ab6ee6c83a",
+    "library/core/src/slice/sort/shared/smallsort/verify/helper_contracts.rs": "86bac48e888365eab2187756dfd8ffbce059d6cc2ce35b1d8ab7b39d788118ac",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs": "456de2ac2e30f40d2af89f21c1cb234ce51ae9d66f05523f8f4b231f411f80e3",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096"
+  },
+  "contract_stack_source_sha256": {
+    "library/core/src/slice/sort/shared/smallsort.rs": "590a1703f3939bda126a7acc2bcd7559d8a19d7227dcca1f2ea60b401ec70ead",
+    "library/core/src/slice/sort/shared/smallsort/verify.rs": "16c4cd102e8597e146ce62c98ac57464658f99bbc09b1ac99a8408ab6ee6c83a",
+    "library/core/src/slice/sort/shared/smallsort/verify/comparators.rs": "7095d7272d929b4e495896ff957a69120a7b86b3f0b99655ede4c989e0543b47",
+    "library/core/src/slice/sort/shared/smallsort/verify/fixed_inputs.rs": "5b648cbdedd89ef92f0a794580d0c682fc3fe3035cf63142f1b6bec6baccb7c7",
+    "library/core/src/slice/sort/shared/smallsort/verify/forwarding_contracts.rs": "575aa575ffb977d945adb2fc40496c805fe6f8cdb1fc6fe471dbe277f5b2630f",
+    "library/core/src/slice/sort/shared/smallsort/verify/helper_contracts.rs": "86bac48e888365eab2187756dfd8ffbce059d6cc2ce35b1d8ab7b39d788118ac",
+    "library/core/src/slice/sort/shared/smallsort/verify/helper_contracts_wide.rs": "85bdd131f3a7e62106e69e98e4b1b85d2f68c91a4bfff4df629955539493748c",
+    "library/core/src/slice/sort/shared/smallsort/verify/insert_tail_contracts.rs": "6f1a2540156a3c603639ee96245aca16ad9da3dbce401630c1b8866d343aa406",
+    "library/core/src/slice/sort/shared/smallsort/verify/merge.rs": "e37e6971e6458a17d858de9a6a6ea38265d7584934ef71c8243c97a487505e54",
+    "library/core/src/slice/sort/shared/smallsort/verify/merge/profiles.rs": "3a220d9fcd8269b253efaa8d7c18c13aa7a6e6f8cf59504ac2ec4c004b9abffe",
+    "library/core/src/slice/sort/shared/smallsort/verify/mutations.rs": "e008037d4c5a32e31dc25490437bcd2bc520915bfda4af3c2fc84df6e331450e",
+    "library/core/src/slice/sort/shared/smallsort/verify/network.rs": "d59ceb99741990afcfe3f312119053a520f16c071f200953fc517a33729527bf",
+    "library/core/src/slice/sort/shared/smallsort/verify/scratch_geometry.rs": "905045ba504b5391af44a575dd7e616b0bebb124623490d24343f759eb7f7d16",
+    "library/core/src/slice/sort/shared/smallsort/verify/smoke.rs": "f576bfa8185c3ded0a27374dd4904db52f9711102a62c37f10406b2ccbd87f23",
+    "library/core/src/slice/sort/shared/smallsort/verify/tag_permutation.rs": "dafe3017a7dbf946c045756d8c0f122555bd1372868554563d1cb373eeea7837",
+    "library/core/src/slice/sort/shared/smallsort/verify/types.rs": "c5b4b5007cda1764af15639fba0fd23bfab9e489d052b0ead6872a440bed1f4f",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_model.rs": "a04f72d0a4f8c42fadc6639ead77e215dc46264096e8e998903bfe1be9ca0a18",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_entry_smoke.rs": "7e74bd9695cdb2b98b8298ce7daf7f107e0ac2e6e2a0cfc2203ab1639590130f",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_model_controls.rs": "dd4e8eca1761be66ea07508c7678175d54e4b2baf48469ae4866c9cb68e12e0d",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_entry_controls.rs": "7cb487628b9e93a086c09fc59cfc54aaeb12e12a3f917f67009f378e722d29ff",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_swap.rs": "18ffcca0f828239c686484a72e58ff391c0e8a511f94fe357ae3e635d430fc61",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_span.rs": "c25a476d596ecd2b58d6053307f446e1392171f19b0f48398989373f336db1d6",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs": "456de2ac2e30f40d2af89f21c1cb234ce51ae9d66f05523f8f4b231f411f80e3",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096"
+  },
+  "ordinary_contract_source_sha256": {
+    "library/core/src/slice/sort/shared/smallsort.rs": "590a1703f3939bda126a7acc2bcd7559d8a19d7227dcca1f2ea60b401ec70ead",
+    "library/core/src/slice/sort/shared/smallsort/verify.rs": "16c4cd102e8597e146ce62c98ac57464658f99bbc09b1ac99a8408ab6ee6c83a",
+    "library/core/src/slice/sort/shared/smallsort/verify/comparators.rs": "7095d7272d929b4e495896ff957a69120a7b86b3f0b99655ede4c989e0543b47",
+    "library/core/src/slice/sort/shared/smallsort/verify/fixed_inputs.rs": "5b648cbdedd89ef92f0a794580d0c682fc3fe3035cf63142f1b6bec6baccb7c7",
+    "library/core/src/slice/sort/shared/smallsort/verify/forwarding_contracts.rs": "575aa575ffb977d945adb2fc40496c805fe6f8cdb1fc6fe471dbe277f5b2630f",
+    "library/core/src/slice/sort/shared/smallsort/verify/helper_contracts.rs": "86bac48e888365eab2187756dfd8ffbce059d6cc2ce35b1d8ab7b39d788118ac",
+    "library/core/src/slice/sort/shared/smallsort/verify/helper_contracts_wide.rs": "85bdd131f3a7e62106e69e98e4b1b85d2f68c91a4bfff4df629955539493748c",
+    "library/core/src/slice/sort/shared/smallsort/verify/insert_tail_contracts.rs": "6f1a2540156a3c603639ee96245aca16ad9da3dbce401630c1b8866d343aa406",
+    "library/core/src/slice/sort/shared/smallsort/verify/merge.rs": "e37e6971e6458a17d858de9a6a6ea38265d7584934ef71c8243c97a487505e54",
+    "library/core/src/slice/sort/shared/smallsort/verify/merge/profiles.rs": "3a220d9fcd8269b253efaa8d7c18c13aa7a6e6f8cf59504ac2ec4c004b9abffe",
+    "library/core/src/slice/sort/shared/smallsort/verify/mutations.rs": "e008037d4c5a32e31dc25490437bcd2bc520915bfda4af3c2fc84df6e331450e",
+    "library/core/src/slice/sort/shared/smallsort/verify/network.rs": "d59ceb99741990afcfe3f312119053a520f16c071f200953fc517a33729527bf",
+    "library/core/src/slice/sort/shared/smallsort/verify/scratch_geometry.rs": "905045ba504b5391af44a575dd7e616b0bebb124623490d24343f759eb7f7d16",
+    "library/core/src/slice/sort/shared/smallsort/verify/smoke.rs": "f576bfa8185c3ded0a27374dd4904db52f9711102a62c37f10406b2ccbd87f23",
+    "library/core/src/slice/sort/shared/smallsort/verify/tag_permutation.rs": "dafe3017a7dbf946c045756d8c0f122555bd1372868554563d1cb373eeea7837",
+    "library/core/src/slice/sort/shared/smallsort/verify/types.rs": "c5b4b5007cda1764af15639fba0fd23bfab9e489d052b0ead6872a440bed1f4f",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_model.rs": "a04f72d0a4f8c42fadc6639ead77e215dc46264096e8e998903bfe1be9ca0a18",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_entry_smoke.rs": "7e74bd9695cdb2b98b8298ce7daf7f107e0ac2e6e2a0cfc2203ab1639590130f",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_model_controls.rs": "dd4e8eca1761be66ea07508c7678175d54e4b2baf48469ae4866c9cb68e12e0d",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_entry_controls.rs": "7cb487628b9e93a086c09fc59cfc54aaeb12e12a3f917f67009f378e722d29ff",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_swap.rs": "18ffcca0f828239c686484a72e58ff391c0e8a511f94fe357ae3e635d430fc61",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_span.rs": "c25a476d596ecd2b58d6053307f446e1392171f19b0f48398989373f336db1d6",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs": "456de2ac2e30f40d2af89f21c1cb234ce51ae9d66f05523f8f4b231f411f80e3",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096"
+  },
+  "lexical_source_sha256": {
+    "library/core/src/lib.rs": "cab6061d100493bec1b820356a54e64c5d923c63fb830bb86250d12124f91504",
+    "library/core/src/slice/mod.rs": "1c94e306a979f2c59a4e3687a32a3e4efbeef967b7bf5eeb8d1977371c2c17dd",
+    "library/core/src/slice/sort/mod.rs": "f67551bff44a854a3f03901db10a099bdab3b67b47d8724bef43858d97134f3c",
+    "library/core/src/slice/sort/shared/mod.rs": "fa9eec2901bafba25c9c1e1684df76dbb1f86e0bbd04f18f3e67cee54dcdfcc8",
+    "library/core/src/slice/sort/shared/smallsort.rs": "590a1703f3939bda126a7acc2bcd7559d8a19d7227dcca1f2ea60b401ec70ead",
+    "library/core/src/slice/sort/shared/smallsort/verify.rs": "16c4cd102e8597e146ce62c98ac57464658f99bbc09b1ac99a8408ab6ee6c83a",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs": "456de2ac2e30f40d2af89f21c1cb234ce51ae9d66f05523f8f4b231f411f80e3",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_model.rs": "a04f72d0a4f8c42fadc6639ead77e215dc46264096e8e998903bfe1be9ca0a18",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_span.rs": "c25a476d596ecd2b58d6053307f446e1392171f19b0f48398989373f336db1d6",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_swap.rs": "18ffcca0f828239c686484a72e58ff391c0e8a511f94fe357ae3e635d430fc61",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+    "library/core/src/mem/mod.rs": "7504ca7c3188077e142917d8c8b7fc7976f08f417439bb68399d1c0352eb8738",
+    "library/core/src/mem/maybe_uninit.rs": "1230d267542337ee2842c29d8227cf8a58fe75c53a2a70efaee3922c4e8e25c0",
+    "library/core/src/ptr/mod.rs": "cc17237f8e88211f0d082f8c8d88b6fd55f905c7baaa3c32cd75632269c03ff2",
+    "library/core/src/slice/raw.rs": "3190285ba163dacd220b6c827d49e580eeb85256cd1fffafdacb345a87a08bb7",
+    "library/core/src/intrinsics/mod.rs": "95bad83ea99a46bcbdbd4163e42112866fdfadc4660ca1d1c4298fed57b1c5fc",
+    "library/core/src/prelude/v1.rs": "b57d120c6762622bd33114f46267dab8ba6c88be38f1433adb62d4ba36cd3a68"
+  },
+  "s3_control_precursor": "1dfc267b66abd83d536eb41a17052a4f3d767d2b",
+  "repair_review": "610dcd6858415792050a9aba7e0d7859afd7d727",
+  "s3_path_control_precursor": "fc29b93b1e333b73e55e2872701c80d9927f3b02"
+}

@@ -1,0 +1,1611 @@
+{
+  "schema": "ch8-s3s4-bridge1-v1",
+  "status": "READY",
+  "authorization": "OFFLINE_ONLY; independent14 then root/coordinator GO, no dispatch",
+  "entry_g0": "e060dab687785f64560a5a563b0689c04d68a215",
+  "std_sha": "f1bdf11902252ad1178f42403c253ae710fecbaf",
+  "std_tree": "f7856aae7ad610f0e89e7c54cff8062fa3c3b3f0",
+  "tool_sha": "0aac16ef62da9e9d5645782d458593e5d78143ba",
+  "tool_tree": "9d8bc9312bf955ef126d32b819b3cd0ed105ed2b",
+  "base_std_sha": "99e8456d200fff1299ee5756279cddb23921dc65",
+  "control_parent": "9e14e033f9ee31522b571c127609dcdff76d230b",
+  "variants": {},
+  "changed_file_sha256": {
+    "library/core/Cargo.toml": "01ceacdf72a9622d78af2fe5bba09eda4d838d4798d1da2ab03ecb08364f0db6",
+    "library/core/src/lib.rs": "cab6061d100493bec1b820356a54e64c5d923c63fb830bb86250d12124f91504",
+    "library/core/src/slice/sort/shared/smallsort.rs": "590a1703f3939bda126a7acc2bcd7559d8a19d7227dcca1f2ea60b401ec70ead",
+    "library/core/src/slice/sort/shared/smallsort/verify.rs": "2820084e0c93e8369bddd28b3241052a7bc2a1e63af17be9d95f011e347a35da",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs": "456de2ac2e30f40d2af89f21c1cb234ce51ae9d66f05523f8f4b231f411f80e3",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_span.rs": "c25a476d596ecd2b58d6053307f446e1392171f19b0f48398989373f336db1d6",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_swap.rs": "18ffcca0f828239c686484a72e58ff391c0e8a511f94fe357ae3e635d430fc61",
+    "tool_config/kani-version.toml": "16415c6185a21d873f6e4d6d1dc3058f71380e5537a5a9bb77efae857bf66717",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_2_leaf.rs": "b459d52c8b96120c2bda76b91f42cd57d107af4e8b18bdc91c739724d5a6d195",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724"
+  },
+  "budgets": {
+    "jobs": 1,
+    "max_parallel": 1,
+    "workflow_minutes": 180,
+    "setup_seconds": 1800,
+    "phase_seconds": 8100,
+    "row_seconds": 600,
+    "rss_kib": 6291456,
+    "stdout_bytes": 16777216,
+    "stderr_bytes": 1048576,
+    "export_bytes": 8388608,
+    "artifact_bytes": 268435456,
+    "planned_rows_seconds": null,
+    "rss_cap_kib": 6291456,
+    "compile_seconds": 900,
+    "group_rss_max_kib": 12582912,
+    "memory_reserve_kib": 2097152,
+    "projected_group_count": 7,
+    "child_compile_subcap_seconds": 180,
+    "whole_child_including_compile_seconds": 600,
+    "shared_campaign_seconds": 6900
+  },
+  "execution_groups": [
+    {
+      "id": "s3-checker_order_corrupt",
+      "variant": "production",
+      "unwind": 34,
+      "row_ids": [
+        "checker_order_corrupt"
+      ]
+    },
+    {
+      "id": "s3-checker_count_corrupt",
+      "variant": "production",
+      "unwind": 34,
+      "row_ids": [
+        "checker_count_corrupt"
+      ]
+    },
+    {
+      "id": "s3-sort13_weak",
+      "variant": "production",
+      "unwind": 34,
+      "row_ids": [
+        "sort13_weak"
+      ]
+    },
+    {
+      "id": "s3-i_p01_b01_fullu8",
+      "variant": "production",
+      "unwind": 36,
+      "row_ids": [
+        "i_p01_b01_fullu8"
+      ]
+    },
+    {
+      "id": "s3-sort9_v34_b01_len09_real",
+      "variant": "production",
+      "unwind": 36,
+      "row_ids": [
+        "sort9_v34_b01_len09_real"
+      ]
+    },
+    {
+      "id": "s3-fallback_cell_b01_n00_16",
+      "variant": "production",
+      "unwind": 36,
+      "row_ids": [
+        "fallback_cell_b01_n00_16"
+      ]
+    },
+    {
+      "id": "s3-network_u8_b01_n00_08",
+      "variant": "production",
+      "unwind": 36,
+      "row_ids": [
+        "network_u8_b01_n00_08"
+      ]
+    }
+  ],
+  "replacement_unions": [],
+  "formal_expected_inventory": [],
+  "diagnostic_assumed_inventory": [],
+  "qualification_inventory": [
+    "i_p01_b01_fullu8",
+    "sort9_v34_b01_len09_real",
+    "fallback_cell_b01_n00_16",
+    "network_u8_b01_n00_08"
+  ],
+  "flags": {
+    "unstable": [
+      "function-contracts",
+      "mem-predicates",
+      "float-lib",
+      "c-ffi",
+      "loop-contracts",
+      "quantifiers",
+      "stubbing",
+      "export-json"
+    ],
+    "assert_contracts": false,
+    "jobs": 1,
+    "harness_timeout": "600s",
+    "exact": true,
+    "default_unwind": 50,
+    "cbmc_args": [
+      "--object-bits",
+      "12"
+    ],
+    "RUSTFLAGS": "--cfg=kani_smallsort_sorting --cfg=kani_smallsort_controls --cfg=kani_smallsort_s2_assumed --cfg=kani_smallsort_s3_leaf"
+  },
+  "accounting_reference": {
+    "ledger_g0": "df305d47173284dfd54ad55d6b7567c892790c87",
+    "item1_used": 31,
+    "item1_cap": 31,
+    "item2_used": 13,
+    "item2_cap": 17,
+    "total_used": 44,
+    "total_cap": 48,
+    "future_accounting": "COORDINATOR_ONLY; hypothetical counted attempt14/17,total45/48; no reservation or grant",
+    "latest_admission_only": "ff193cc35690a5daabaa849d412c58d9f286d893",
+    "reservation": false,
+    "changed": false
+  },
+  "future_runs": 1,
+  "proof_credit": "NONE",
+  "runtime_smallsort_base_sha256": "45ae77ad0bb2a74cfab1aa53d5e1c48311f0b483c94eb52d96d97f680bd39651",
+  "ci_request_hash_policy": "Request excluded from its own payload map; exact request SHA in g0 package and every invocation receipt.",
+  "control_reference": "775574eb2f361ef90eade30330ff0d608530287f",
+  "profile": "ch8-s3s4-bridge1-fullbyte-v1",
+  "native_status": "NOT_RUN",
+  "source_parent": "97ac4d39d7f959ea70b1f57785ffd1fd66ecd22a",
+  "rows": [
+    {
+      "id": "checker_order_corrupt",
+      "selector": "slice::sort::shared::smallsort::verify::sorting_s2_batch::checker_order_corrupt",
+      "source_qualified_selector": "core::slice::sort::shared::smallsort::verify::sorting_s2_batch::checker_order_corrupt",
+      "mode": "Original",
+      "variant": "production",
+      "unwind": 34,
+      "expected": "DETECTED",
+      "failure_description": "S2_NEG_CHECKER_ORDER",
+      "required_cover_count": 0,
+      "required_cover_messages": [],
+      "required_success_messages": [],
+      "timeout_seconds": 600,
+      "planned_seconds": null,
+      "state": "NOT_RUN",
+      "assurance": "NEGATIVE_CONTROL",
+      "proof_credit": "NONE",
+      "roles": [
+        {
+          "class": "assertion",
+          "status": "FAILURE",
+          "description": "S2_NEG_CHECKER_ORDER",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs",
+          "line": 140,
+          "source_line": "    kani::assert(post::<u8,KeyLess<u8>>(snapshot::<u8,KeyLess<u8>>(&input),&out), \"S2_NEG_CHECKER_ORDER\");",
+          "source_sha256": "456de2ac2e30f40d2af89f21c1cb234ce51ae9d66f05523f8f4b231f411f80e3",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        }
+      ],
+      "target": null,
+      "scope_classification": {
+        "category": "FIXED_NEGATIVE_CONTROL",
+        "qualification_eligible": false,
+        "eligible_as_init_leaf_or_provider_summary": false,
+        "actual_initialization_mask_and_dstinit": "NO_INDEPENDENT_INIT_THEOREM",
+        "proof_credit": "NONE"
+      }
+    },
+    {
+      "id": "checker_count_corrupt",
+      "selector": "slice::sort::shared::smallsort::verify::sorting_s2_batch::checker_count_corrupt",
+      "source_qualified_selector": "core::slice::sort::shared::smallsort::verify::sorting_s2_batch::checker_count_corrupt",
+      "mode": "Original",
+      "variant": "production",
+      "unwind": 34,
+      "expected": "DETECTED",
+      "failure_description": "S2_NEG_CHECKER_COUNT",
+      "required_cover_count": 0,
+      "required_cover_messages": [],
+      "required_success_messages": [],
+      "timeout_seconds": 600,
+      "planned_seconds": null,
+      "state": "NOT_RUN",
+      "assurance": "NEGATIVE_CONTROL",
+      "proof_credit": "NONE",
+      "roles": [
+        {
+          "class": "assertion",
+          "status": "FAILURE",
+          "description": "S2_NEG_CHECKER_COUNT",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs",
+          "line": 134,
+          "source_line": "    kani::assert(post::<u8,KeyLess<u8>>(snapshot::<u8,KeyLess<u8>>(&input),&out), \"S2_NEG_CHECKER_COUNT\");",
+          "source_sha256": "456de2ac2e30f40d2af89f21c1cb234ce51ae9d66f05523f8f4b231f411f80e3",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        }
+      ],
+      "target": null,
+      "scope_classification": {
+        "category": "FIXED_NEGATIVE_CONTROL",
+        "qualification_eligible": false,
+        "eligible_as_init_leaf_or_provider_summary": false,
+        "actual_initialization_mask_and_dstinit": "NO_INDEPENDENT_INIT_THEOREM",
+        "proof_credit": "NONE"
+      }
+    },
+    {
+      "id": "sort13_weak",
+      "selector": "slice::sort::shared::smallsort::verify::sorting_s2_batch::sort13_weak",
+      "source_qualified_selector": "core::slice::sort::shared::smallsort::verify::sorting_s2_batch::sort13_weak",
+      "mode": "Original",
+      "variant": "production",
+      "unwind": 34,
+      "expected": "DETECTED",
+      "failure_description": "S2_NEG_SORT13_WEAK",
+      "required_cover_count": 0,
+      "required_cover_messages": [],
+      "required_success_messages": [],
+      "timeout_seconds": 600,
+      "planned_seconds": null,
+      "state": "NOT_RUN",
+      "assurance": "NEGATIVE_CONTROL",
+      "proof_credit": "NONE",
+      "roles": [
+        {
+          "class": "assertion",
+          "status": "FAILURE",
+          "description": "S2_NEG_SORT13_WEAK",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs",
+          "line": 149,
+          "source_line": "    kani::assert(post::<u8,KeyLess<u8>>(snapshot::<u8,KeyLess<u8>>(&before),&v), \"S2_NEG_SORT13_WEAK\");",
+          "source_sha256": "456de2ac2e30f40d2af89f21c1cb234ce51ae9d66f05523f8f4b231f411f80e3",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        }
+      ],
+      "target": null,
+      "scope_classification": {
+        "category": "FIXED_NEGATIVE_CONTROL",
+        "qualification_eligible": false,
+        "eligible_as_init_leaf_or_provider_summary": false,
+        "actual_initialization_mask_and_dstinit": "NO_INDEPENDENT_INIT_THEOREM",
+        "proof_credit": "NONE"
+      }
+    },
+    {
+      "id": "i_p01_b01_fullu8",
+      "selector": "slice::sort::shared::smallsort::verify::sorting_bridge1::i_p01_b01_fullu8",
+      "source_qualified_selector": "core::slice::sort::shared::smallsort::verify::sorting_bridge1::i_p01_b01_fullu8",
+      "mode": "PFC",
+      "variant": "production",
+      "unwind": 36,
+      "expected": "SUCCESS",
+      "failure_description": null,
+      "required_cover_count": 5,
+      "required_cover_messages": [
+        "B1_I_EARLY_RETURN",
+        "B1_I_FULL_SIFT",
+        "B1_I_DUPLICATE",
+        "B1_I_NONCONSTANT",
+        "B1_I_USEFUL_RETURN"
+      ],
+      "required_success_messages": [
+        "B1_I_ACTIVE",
+        "B1_I_SORTED_FULL_COUNT",
+        "B1_I_OUTSIDE_FRAME",
+        "B1_I_CANARY"
+      ],
+      "timeout_seconds": 600,
+      "planned_seconds": null,
+      "state": "NOT_RUN",
+      "assurance": "ACTUAL_BODY_PFC_CANDIDATE",
+      "proof_credit": "NONE",
+      "roles": [
+        {
+          "class": "assertion",
+          "status": "SUCCESS",
+          "description": "B1_I_ACTIVE",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+          "line": 24,
+          "source_line": "    kani::assert(active_u8(), \"B1_I_ACTIVE\");",
+          "source_sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "assertion",
+          "status": "SUCCESS",
+          "description": "B1_I_SORTED_FULL_COUNT",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+          "line": 31,
+          "source_line": "    kani::assert(post::<u8, KeyLess<u8>>(snapshot::<u8, KeyLess<u8>>(&before[1..3]), &v[1..3]), \"B1_I_SORTED_FULL_COUNT\");",
+          "source_sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "assertion",
+          "status": "SUCCESS",
+          "description": "B1_I_OUTSIDE_FRAME",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+          "line": 33,
+          "source_line": "        kani::assert((1 <= i && i < 3) || v[i] == before[i], \"B1_I_OUTSIDE_FRAME\");",
+          "source_sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "assertion",
+          "status": "SUCCESS",
+          "description": "B1_I_CANARY",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+          "line": 37,
+          "source_line": "    kani::assert(v[canary] == before[canary], \"B1_I_CANARY\");",
+          "source_sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "B1_I_EARLY_RETURN",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+          "line": 38,
+          "source_line": "    kani::cover(before[2] >= before[1], \"B1_I_EARLY_RETURN\");",
+          "source_sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "B1_I_FULL_SIFT",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+          "line": 39,
+          "source_line": "    kani::cover(before[2] < before[1], \"B1_I_FULL_SIFT\");",
+          "source_sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "B1_I_DUPLICATE",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+          "line": 40,
+          "source_line": "    kani::cover(before[2] == before[1], \"B1_I_DUPLICATE\");",
+          "source_sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "B1_I_NONCONSTANT",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+          "line": 41,
+          "source_line": "    kani::cover(v[1] < v[2], \"B1_I_NONCONSTANT\");",
+          "source_sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "B1_I_USEFUL_RETURN",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+          "line": 42,
+          "source_line": "    kani::cover(true, \"B1_I_USEFUL_RETURN\");",
+          "source_sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        }
+      ],
+      "target": "insert_tail",
+      "scope_classification": {
+        "category": "BOUNDED_S3_ACTUAL_BODY_PFC_CANDIDATE",
+        "qualification_eligible": true,
+        "eligible_as_init_leaf_or_provider_summary": false,
+        "actual_initialization_mask_and_dstinit": "NO_INDEPENDENT_INIT_THEOREM",
+        "proof_credit": "NONE"
+      }
+    },
+    {
+      "id": "sort9_v34_b01_len09_real",
+      "selector": "slice::sort::shared::smallsort::verify::sorting_bridge1::sort9_v34_b01_len09_real",
+      "source_qualified_selector": "core::slice::sort::shared::smallsort::verify::sorting_bridge1::sort9_v34_b01_len09_real",
+      "mode": "Original",
+      "variant": "production",
+      "unwind": 36,
+      "expected": "SUCCESS",
+      "failure_description": null,
+      "required_cover_count": 5,
+      "required_cover_messages": [
+        "B1_S9_UNSORTED",
+        "B1_S9_DUPLICATE",
+        "B1_S9_NONCONSTANT",
+        "B1_S9_DESCENDING",
+        "B1_S9_USEFUL_RETURN"
+      ],
+      "required_success_messages": [
+        "B1_S9_ACTIVE",
+        "B1_S9_SORTED_FULL_COUNT",
+        "B1_S9_OUTSIDE_FRAME",
+        "B1_S9_CANARY"
+      ],
+      "timeout_seconds": 600,
+      "planned_seconds": null,
+      "state": "NOT_RUN",
+      "assurance": "ACTUAL_BODY_ORIGINAL_CANDIDATE",
+      "proof_credit": "NONE",
+      "roles": [
+        {
+          "class": "assertion",
+          "status": "SUCCESS",
+          "description": "B1_S9_ACTIVE",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+          "line": 48,
+          "source_line": "    kani::assert(active_u8(), \"B1_S9_ACTIVE\");",
+          "source_sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "assertion",
+          "status": "SUCCESS",
+          "description": "B1_S9_SORTED_FULL_COUNT",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+          "line": 52,
+          "source_line": "    kani::assert(post::<u8, KeyLess<u8>>(snapshot::<u8, KeyLess<u8>>(&before[1..10]), &v[1..10]), \"B1_S9_SORTED_FULL_COUNT\");",
+          "source_sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "assertion",
+          "status": "SUCCESS",
+          "description": "B1_S9_OUTSIDE_FRAME",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+          "line": 54,
+          "source_line": "        kani::assert((1 <= i && i < 10) || v[i] == before[i], \"B1_S9_OUTSIDE_FRAME\");",
+          "source_sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "assertion",
+          "status": "SUCCESS",
+          "description": "B1_S9_CANARY",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+          "line": 58,
+          "source_line": "    kani::assert(v[canary] == before[canary], \"B1_S9_CANARY\");",
+          "source_sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "B1_S9_UNSORTED",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+          "line": 59,
+          "source_line": "    kani::cover(before[1] > before[9], \"B1_S9_UNSORTED\");",
+          "source_sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "B1_S9_DUPLICATE",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+          "line": 60,
+          "source_line": "    kani::cover(before[1] == before[9], \"B1_S9_DUPLICATE\");",
+          "source_sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "B1_S9_NONCONSTANT",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+          "line": 61,
+          "source_line": "    kani::cover(v[1] < v[9], \"B1_S9_NONCONSTANT\");",
+          "source_sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "B1_S9_DESCENDING",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+          "line": 62,
+          "source_line": "    kani::cover(descending(&before[1..10]), \"B1_S9_DESCENDING\");",
+          "source_sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "B1_S9_USEFUL_RETURN",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+          "line": 63,
+          "source_line": "    kani::cover(true, \"B1_S9_USEFUL_RETURN\");",
+          "source_sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        }
+      ],
+      "target": null,
+      "scope_classification": {
+        "category": "BOUNDED_S3_ACTUAL_BODY_ORIGINAL_CANDIDATE",
+        "qualification_eligible": true,
+        "eligible_as_init_leaf_or_provider_summary": false,
+        "actual_initialization_mask_and_dstinit": "NO_INDEPENDENT_INIT_THEOREM",
+        "proof_credit": "NONE"
+      }
+    },
+    {
+      "id": "fallback_cell_b01_n00_16",
+      "selector": "slice::sort::shared::smallsort::verify::sorting_bridge1::fallback_cell_b01_n00_16",
+      "source_qualified_selector": "core::slice::sort::shared::smallsort::verify::sorting_bridge1::fallback_cell_b01_n00_16",
+      "mode": "Original",
+      "variant": "production",
+      "unwind": 36,
+      "expected": "SUCCESS",
+      "failure_description": null,
+      "required_cover_count": 22,
+      "required_cover_messages": [
+        "B1_F_N00",
+        "B1_F_N01",
+        "B1_F_N02",
+        "B1_F_N03",
+        "B1_F_N04",
+        "B1_F_N05",
+        "B1_F_N06",
+        "B1_F_N07",
+        "B1_F_N08",
+        "B1_F_N09",
+        "B1_F_N10",
+        "B1_F_N11",
+        "B1_F_N12",
+        "B1_F_N13",
+        "B1_F_N14",
+        "B1_F_N15",
+        "B1_F_N16",
+        "B1_F_UNSORTED",
+        "B1_F_DUPLICATE",
+        "B1_F_NONCONSTANT",
+        "B1_F_MAX_DESCENDING",
+        "B1_F_USEFUL_RETURN"
+      ],
+      "required_success_messages": [
+        "B1_F_ACTIVE",
+        "B1_F_SORTED_FULL_COUNT",
+        "B1_F_OUTSIDE_FRAME",
+        "B1_F_CANARY"
+      ],
+      "timeout_seconds": 600,
+      "planned_seconds": null,
+      "state": "NOT_RUN",
+      "assurance": "ACTUAL_BODY_ORIGINAL_CANDIDATE",
+      "proof_credit": "NONE",
+      "roles": [
+        {
+          "class": "assertion",
+          "status": "SUCCESS",
+          "description": "B1_F_ACTIVE",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+          "line": 69,
+          "source_line": "    kani::assert(enabled::<Cell<u8>, KeyLess<Cell<u8>>>(), \"B1_F_ACTIVE\");",
+          "source_sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "assertion",
+          "status": "SUCCESS",
+          "description": "B1_F_SORTED_FULL_COUNT",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+          "line": 77,
+          "source_line": "    kani::assert(post::<Cell<u8>, KeyLess<Cell<u8>>>(before, &v[1..1 + n]), \"B1_F_SORTED_FULL_COUNT\");",
+          "source_sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "assertion",
+          "status": "SUCCESS",
+          "description": "B1_F_OUTSIDE_FRAME",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+          "line": 79,
+          "source_line": "        kani::assert((1 <= i && i < 1 + n) || v[i].get() == bytes[i], \"B1_F_OUTSIDE_FRAME\");",
+          "source_sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "assertion",
+          "status": "SUCCESS",
+          "description": "B1_F_CANARY",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+          "line": 83,
+          "source_line": "    kani::assert(v[canary].get() == bytes[canary], \"B1_F_CANARY\");",
+          "source_sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "B1_F_N00",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+          "line": 84,
+          "source_line": "    kani::cover(n == 0, \"B1_F_N00\");",
+          "source_sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "B1_F_N01",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+          "line": 85,
+          "source_line": "    kani::cover(n == 1, \"B1_F_N01\");",
+          "source_sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "B1_F_N02",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+          "line": 86,
+          "source_line": "    kani::cover(n == 2, \"B1_F_N02\");",
+          "source_sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "B1_F_N03",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+          "line": 87,
+          "source_line": "    kani::cover(n == 3, \"B1_F_N03\");",
+          "source_sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "B1_F_N04",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+          "line": 88,
+          "source_line": "    kani::cover(n == 4, \"B1_F_N04\");",
+          "source_sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "B1_F_N05",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+          "line": 89,
+          "source_line": "    kani::cover(n == 5, \"B1_F_N05\");",
+          "source_sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "B1_F_N06",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+          "line": 90,
+          "source_line": "    kani::cover(n == 6, \"B1_F_N06\");",
+          "source_sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "B1_F_N07",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+          "line": 91,
+          "source_line": "    kani::cover(n == 7, \"B1_F_N07\");",
+          "source_sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "B1_F_N08",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+          "line": 92,
+          "source_line": "    kani::cover(n == 8, \"B1_F_N08\");",
+          "source_sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "B1_F_N09",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+          "line": 93,
+          "source_line": "    kani::cover(n == 9, \"B1_F_N09\");",
+          "source_sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "B1_F_N10",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+          "line": 94,
+          "source_line": "    kani::cover(n == 10, \"B1_F_N10\");",
+          "source_sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "B1_F_N11",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+          "line": 95,
+          "source_line": "    kani::cover(n == 11, \"B1_F_N11\");",
+          "source_sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "B1_F_N12",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+          "line": 96,
+          "source_line": "    kani::cover(n == 12, \"B1_F_N12\");",
+          "source_sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "B1_F_N13",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+          "line": 97,
+          "source_line": "    kani::cover(n == 13, \"B1_F_N13\");",
+          "source_sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "B1_F_N14",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+          "line": 98,
+          "source_line": "    kani::cover(n == 14, \"B1_F_N14\");",
+          "source_sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "B1_F_N15",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+          "line": 99,
+          "source_line": "    kani::cover(n == 15, \"B1_F_N15\");",
+          "source_sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "B1_F_N16",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+          "line": 100,
+          "source_line": "    kani::cover(n == 16, \"B1_F_N16\");",
+          "source_sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "B1_F_UNSORTED",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+          "line": 101,
+          "source_line": "    kani::cover(n >= 2 && bytes[1] > bytes[n], \"B1_F_UNSORTED\");",
+          "source_sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "B1_F_DUPLICATE",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+          "line": 102,
+          "source_line": "    kani::cover(n >= 2 && bytes[1] == bytes[n], \"B1_F_DUPLICATE\");",
+          "source_sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "B1_F_NONCONSTANT",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+          "line": 103,
+          "source_line": "    kani::cover(n >= 2 && v[1].get() < v[n].get(), \"B1_F_NONCONSTANT\");",
+          "source_sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "B1_F_MAX_DESCENDING",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+          "line": 104,
+          "source_line": "    kani::cover(n == 16 && descending(&bytes[1..17]), \"B1_F_MAX_DESCENDING\");",
+          "source_sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "B1_F_USEFUL_RETURN",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+          "line": 105,
+          "source_line": "    kani::cover(true, \"B1_F_USEFUL_RETURN\");",
+          "source_sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        }
+      ],
+      "target": null,
+      "scope_classification": {
+        "category": "S4_SYMBOLIC_LENGTH_DIRECT_HELPER_CANDIDATE",
+        "qualification_eligible": true,
+        "eligible_as_init_leaf_or_provider_summary": false,
+        "actual_initialization_mask_and_dstinit": "NO_INDEPENDENT_INIT_THEOREM",
+        "proof_credit": "NONE"
+      }
+    },
+    {
+      "id": "network_u8_b01_n00_08",
+      "selector": "slice::sort::shared::smallsort::verify::sorting_bridge1::network_u8_b01_n00_08",
+      "source_qualified_selector": "core::slice::sort::shared::smallsort::verify::sorting_bridge1::network_u8_b01_n00_08",
+      "mode": "Original",
+      "variant": "production",
+      "unwind": 36,
+      "expected": "SUCCESS",
+      "failure_description": null,
+      "required_cover_count": 14,
+      "required_cover_messages": [
+        "B1_N_N00",
+        "B1_N_N01",
+        "B1_N_N02",
+        "B1_N_N03",
+        "B1_N_N04",
+        "B1_N_N05",
+        "B1_N_N06",
+        "B1_N_N07",
+        "B1_N_N08",
+        "B1_N_UNSORTED",
+        "B1_N_DUPLICATE",
+        "B1_N_NONCONSTANT",
+        "B1_N_MAX_DESCENDING",
+        "B1_N_USEFUL_RETURN"
+      ],
+      "required_success_messages": [
+        "B1_N_ACTIVE",
+        "B1_N_SORTED_FULL_COUNT",
+        "B1_N_OUTSIDE_FRAME",
+        "B1_N_CANARY"
+      ],
+      "timeout_seconds": 600,
+      "planned_seconds": null,
+      "state": "NOT_RUN",
+      "assurance": "ACTUAL_BODY_ORIGINAL_CANDIDATE",
+      "proof_credit": "NONE",
+      "roles": [
+        {
+          "class": "assertion",
+          "status": "SUCCESS",
+          "description": "B1_N_ACTIVE",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+          "line": 111,
+          "source_line": "    kani::assert(active_u8(), \"B1_N_ACTIVE\");",
+          "source_sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "assertion",
+          "status": "SUCCESS",
+          "description": "B1_N_SORTED_FULL_COUNT",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+          "line": 117,
+          "source_line": "    kani::assert(post::<u8, KeyLess<u8>>(snapshot::<u8, KeyLess<u8>>(&before[1..1 + n]), &v[1..1 + n]), \"B1_N_SORTED_FULL_COUNT\");",
+          "source_sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "assertion",
+          "status": "SUCCESS",
+          "description": "B1_N_OUTSIDE_FRAME",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+          "line": 119,
+          "source_line": "        kani::assert((1 <= i && i < 1 + n) || v[i] == before[i], \"B1_N_OUTSIDE_FRAME\");",
+          "source_sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "assertion",
+          "status": "SUCCESS",
+          "description": "B1_N_CANARY",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+          "line": 123,
+          "source_line": "    kani::assert(v[canary] == before[canary], \"B1_N_CANARY\");",
+          "source_sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "B1_N_N00",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+          "line": 124,
+          "source_line": "    kani::cover(n == 0, \"B1_N_N00\");",
+          "source_sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "B1_N_N01",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+          "line": 125,
+          "source_line": "    kani::cover(n == 1, \"B1_N_N01\");",
+          "source_sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "B1_N_N02",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+          "line": 126,
+          "source_line": "    kani::cover(n == 2, \"B1_N_N02\");",
+          "source_sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "B1_N_N03",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+          "line": 127,
+          "source_line": "    kani::cover(n == 3, \"B1_N_N03\");",
+          "source_sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "B1_N_N04",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+          "line": 128,
+          "source_line": "    kani::cover(n == 4, \"B1_N_N04\");",
+          "source_sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "B1_N_N05",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+          "line": 129,
+          "source_line": "    kani::cover(n == 5, \"B1_N_N05\");",
+          "source_sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "B1_N_N06",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+          "line": 130,
+          "source_line": "    kani::cover(n == 6, \"B1_N_N06\");",
+          "source_sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "B1_N_N07",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+          "line": 131,
+          "source_line": "    kani::cover(n == 7, \"B1_N_N07\");",
+          "source_sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "B1_N_N08",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+          "line": 132,
+          "source_line": "    kani::cover(n == 8, \"B1_N_N08\");",
+          "source_sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "B1_N_UNSORTED",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+          "line": 133,
+          "source_line": "    kani::cover(n >= 2 && before[1] > before[n], \"B1_N_UNSORTED\");",
+          "source_sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "B1_N_DUPLICATE",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+          "line": 134,
+          "source_line": "    kani::cover(n >= 2 && before[1] == before[n], \"B1_N_DUPLICATE\");",
+          "source_sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "B1_N_NONCONSTANT",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+          "line": 135,
+          "source_line": "    kani::cover(n >= 2 && v[1] < v[n], \"B1_N_NONCONSTANT\");",
+          "source_sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "B1_N_MAX_DESCENDING",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+          "line": 136,
+          "source_line": "    kani::cover(n == 8 && descending(&before[1..9]), \"B1_N_MAX_DESCENDING\");",
+          "source_sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "cover",
+          "status": "SATISFIED",
+          "description": "B1_N_USEFUL_RETURN",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+          "line": 137,
+          "source_line": "    kani::cover(true, \"B1_N_USEFUL_RETURN\");",
+          "source_sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        }
+      ],
+      "target": null,
+      "scope_classification": {
+        "category": "S4_SYMBOLIC_LENGTH_DIRECT_HELPER_PREFIX_CANDIDATE",
+        "qualification_eligible": true,
+        "eligible_as_init_leaf_or_provider_summary": false,
+        "actual_initialization_mask_and_dstinit": "NO_INDEPENDENT_INIT_THEOREM",
+        "proof_credit": "NONE"
+      }
+    }
+  ],
+  "source_bindings": {
+    "checker_order_corrupt": {
+      "selector": "slice::sort::shared::smallsort::verify::sorting_s2_batch::checker_order_corrupt",
+      "mode": "Original",
+      "target": null,
+      "crate": "core",
+      "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs",
+      "sha256": "456de2ac2e30f40d2af89f21c1cb234ce51ae9d66f05523f8f4b231f411f80e3",
+      "locations": [
+        {
+          "line": 136,
+          "source": "#[kani::proof]"
+        },
+        {
+          "line": 138,
+          "source": "fn checker_order_corrupt() {"
+        }
+      ]
+    },
+    "checker_count_corrupt": {
+      "selector": "slice::sort::shared::smallsort::verify::sorting_s2_batch::checker_count_corrupt",
+      "mode": "Original",
+      "target": null,
+      "crate": "core",
+      "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs",
+      "sha256": "456de2ac2e30f40d2af89f21c1cb234ce51ae9d66f05523f8f4b231f411f80e3",
+      "locations": [
+        {
+          "line": 130,
+          "source": "#[kani::proof]"
+        },
+        {
+          "line": 132,
+          "source": "fn checker_count_corrupt() {"
+        }
+      ]
+    },
+    "sort13_weak": {
+      "selector": "slice::sort::shared::smallsort::verify::sorting_s2_batch::sort13_weak",
+      "mode": "Original",
+      "target": null,
+      "crate": "core",
+      "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs",
+      "sha256": "456de2ac2e30f40d2af89f21c1cb234ce51ae9d66f05523f8f4b231f411f80e3",
+      "locations": [
+        {
+          "line": 143,
+          "source": "#[kani::proof]"
+        },
+        {
+          "line": 146,
+          "source": "fn sort13_weak() {"
+        }
+      ]
+    },
+    "i_p01_b01_fullu8": {
+      "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+      "sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+      "selector": "slice::sort::shared::smallsort::verify::sorting_bridge1::i_p01_b01_fullu8",
+      "mode": "PFC",
+      "target": "insert_tail",
+      "locations": [
+        {
+          "line": 21,
+          "source": "#[kani::proof_for_contract(insert_tail)]"
+        },
+        {
+          "line": 23,
+          "source": "fn i_p01_b01_fullu8() {"
+        }
+      ],
+      "crate": "core"
+    },
+    "sort9_v34_b01_len09_real": {
+      "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+      "sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+      "selector": "slice::sort::shared::smallsort::verify::sorting_bridge1::sort9_v34_b01_len09_real",
+      "mode": "Original",
+      "target": null,
+      "locations": [
+        {
+          "line": 45,
+          "source": "#[kani::proof]"
+        },
+        {
+          "line": 47,
+          "source": "fn sort9_v34_b01_len09_real() {"
+        }
+      ],
+      "crate": "core"
+    },
+    "fallback_cell_b01_n00_16": {
+      "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+      "sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+      "selector": "slice::sort::shared::smallsort::verify::sorting_bridge1::fallback_cell_b01_n00_16",
+      "mode": "Original",
+      "target": null,
+      "locations": [
+        {
+          "line": 66,
+          "source": "#[kani::proof]"
+        },
+        {
+          "line": 68,
+          "source": "fn fallback_cell_b01_n00_16() {"
+        }
+      ],
+      "crate": "core"
+    },
+    "network_u8_b01_n00_08": {
+      "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs",
+      "sha256": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+      "selector": "slice::sort::shared::smallsort::verify::sorting_bridge1::network_u8_b01_n00_08",
+      "mode": "Original",
+      "target": null,
+      "locations": [
+        {
+          "line": 108,
+          "source": "#[kani::proof]"
+        },
+        {
+          "line": 110,
+          "source": "fn network_u8_b01_n00_08() {"
+        }
+      ],
+      "crate": "core"
+    }
+  },
+  "s3": {
+    "selected": [
+      "checker_order_corrupt",
+      "checker_count_corrupt",
+      "sort13_weak",
+      "i_p01_b01_fullu8",
+      "sort9_v34_b01_len09_real",
+      "fallback_cell_b01_n00_16",
+      "network_u8_b01_n00_08"
+    ],
+    "deferred": [
+      "insert_full_rel16_allbases",
+      "insert_rel16_p15_active16",
+      "insert_rel16_p16_active17",
+      "merge8_universal_init_provider",
+      "sort8_init_caller_34contexts",
+      "positive_sort13",
+      "network_N09_32",
+      "generic_trait_dispatch",
+      "mutating_comparator",
+      "fullN16N32_mission"
+    ],
+    "caps": {
+      "child_seconds": 600,
+      "compile_seconds": 180,
+      "slot_seconds": 720,
+      "controller_seconds": 180,
+      "cleanup_seconds": 240,
+      "campaign_seconds": 6900,
+      "outer_seconds": 7500,
+      "phase_seconds": 8100,
+      "step_seconds": 7560,
+      "local_rss_kib": 6291456,
+      "outer_rss_kib": 12582912,
+      "headroom_kib": 2097152,
+      "stdout_bytes": 16777216,
+      "stderr_bytes": 1048576,
+      "export_bytes": 8388608,
+      "artifact_bytes": 268435456
+    },
+    "plan_commit": "7749b8517ba42b400c41f0b4f7a7212a4fdcab8a",
+    "intake_commit": "5d9439a7641c929838bf075c6aa6533a353ee92d",
+    "boundary_commit": "ff193cc35690a5daabaa849d412c58d9f286d893",
+    "u_policy": "ZERO_U_FAIL_CLOSED; site-specific proposal PENDING_REVIEW_NOT_ENABLED",
+    "unselected_full_obligations": "EXPLICIT_NOT_SELECTED_NO_PROMOTION"
+  },
+  "unreachable_admission": {
+    "mode": "REJECT_ALL",
+    "proposal": "S3-U-SITE-REVIEW-v1",
+    "enabled": false,
+    "unknown": "REJECT",
+    "role_unreachable": "REJECT"
+  },
+  "ci_payload_sha256": {
+    ".github/workflows/ch8-s2.yml": "317f92181bee9470ddf65471def7154fcacbf1e6fb7913220ca1f154ca915a55",
+    "ch8-s1-control/ORACLE-SOURCES.json": "69bf8d8494094a079a6ac3422ab90f30b7b5093b53e91ee6ce393a043538eaa2",
+    "ch8-s1-control/ROLE-MAP.json": "bad63e0616c0061bf40d7e8d5c72324c8089574624a20f07a1f98a2806e5043d",
+    "ch8-s1-control/S2-SOURCE.json": "950631f2d0594b7b14dc0c203d12379d48e3aeeba612f1651f029691b376daa6",
+    "ch8-s1-control/S3-SOURCE.json": "5fad714d49825c6900d4dac47c7d8005e88d544a524485536eb2afe91015e00d",
+    "ch8-s1-control/S32-SOURCE.json": "513f3541d5c0c1bd832e07ae7cc4664f39bb07ff8026b389776c54872b1295e6",
+    "ch8-s1-control/S34-SOURCE.json": "caad73613aa13c08b2e3814efebbab37a2204e80a4a6ede8945691c8bb9e10a0",
+    "ch8-s1-control/activation-default.patch": "cee9e21c4b5015d6daf53c286f781602d0890e4ed23239f968d228088335dcc3",
+    "ch8-s1-control/activation-override.patch": "6dcb40cc4118035de700f0988a6766c96aad8f4def76513f0f10f275d091c356",
+    "ch8-s1-control/binding_metadata.py": "8af48498fe256283dcbe7a1f7bd766e213c2ab83e28008e23bd6bb9811c57030",
+    "ch8-s1-control/cfg_pfc.py": "e72ba0cff247613a3db7f4a5bd237cfeab64cb49d2410c61e85b3f80e91ecb11",
+    "ch8-s1-control/check_package.py": "0e79041e158387972a649229576891df9207826eef0edd2820c20db3e7c9e6ff",
+    "ch8-s1-control/collect.py": "c5fd3e4334076dc163f47b97c7a51d21fc238294b18ab2cdefad09849c89dc17",
+    "ch8-s1-control/contract_stacks.py": "c4b0f92fe2ede42399f2743071e58380806e61339bfbc0d1beccbf6b2a11ea0d",
+    "ch8-s1-control/fixtures/r5-request.json": "d87434d250a1a430c565d8e0612e5a3987f7a811b6cfd9091c268865ff3498b1",
+    "ch8-s1-control/fixtures/r5-workflow.yml": "80d1273b9564a16eb4619089db5604ccccdfaa1cb7a155e9703d169c14b58c90",
+    "ch8-s1-control/fixtures/s104-rich-fragment.json": "08958a31eb173ce59173a588ffd9e785ed9cef0086a733b7fc998af843c054cc",
+    "ch8-s1-control/fixtures/s108r1-smallsort.rs.txt": "45ae77ad0bb2a74cfab1aa53d5e1c48311f0b483c94eb52d96d97f680bd39651",
+    "ch8-s1-control/fixtures/s108r1-sorting_model_controls.rs.txt": "dd4e8eca1761be66ea07508c7678175d54e4b2baf48469ae4866c9cb68e12e0d",
+    "ch8-s1-control/fixtures/s2-old97ac-batch.rs.txt": "37125e0d65bbce0b70fc6626960cbf0c17dab3d2d07675c183cf15407a37c850",
+    "ch8-s1-control/fixtures/s2-r1-batch.rs.txt": "207f05964330722a66a98212fa8801b6baf9d2c55ba7cd608ae73d80d69fd5e2",
+    "ch8-s1-control/fixtures/s2-r2-smallsort.rs.txt": "603762bb0cabb64e82114501b8da686f6e7d941f8e2227eebb956bc7062e7fe0",
+    "ch8-s1-control/fixtures/s2-r3-batch.rs.txt": "00abe964a5e2eac63f1f864455d6f9be1903422a0c5b28398360cf2039cc08d5",
+    "ch8-s1-control/fixtures/s2-r4-batch.rs.txt": "794fb18e5f6aa5a79f79b6e200b9cf5a4074442ddf51bdba9df4ea5f32567ef7",
+    "ch8-s1-control/fixtures/s3-1-request.json": "efbc150280f5f9641c9e8b48fb4486122ae8c3cfa318f78a42486394e1de7656",
+    "ch8-s1-control/fixtures/s3-1-workflow.yml": "8d5fd03476d3d7666692cc7267d3fe598a0007c54ec6576de3538cef434ac709",
+    "ch8-s1-control/fixtures/s3-2-request.json": "75603378a45639991f837ea1ea259f9a56cc452426c6f306cda6d53f5e51e47c",
+    "ch8-s1-control/fixtures/s3-2-workflow.yml": "0fde14cf5513f81565bc2eea37864013e7d30f82dc3062788ba2fb34b575939f",
+    "ch8-s1-control/fixtures/s3-parent-bd62-batch.rs.txt": "e0f47062d71f256fed49b8ad8144c2a83c9a96ecd85646605b1c2fe9b707d0dc",
+    "ch8-s1-control/fixtures/s3-parent-bd62-smallsort.rs.txt": "eb8867b764dd410109787124dc1a249d5c42e947255a1ef90242ba39295e2fdc",
+    "ch8-s1-control/fixtures/s3-parent-bd62-verify.rs.txt": "e11d2f0c5b58e71f16594192a6dbb8598f6781185f5a0cd623996da3c6a7885d",
+    "ch8-s1-control/lexical_bindings.py": "31abcb93bdb52bb1205e59ce6f4c8fe2206c2c63c9b2f82142492c8752f3e484",
+    "ch8-s1-control/negative_oracle.py": "fabd41fb31e37ea79239e4798f38aa81cd068abad0d00281d1d93d936f59681c",
+    "ch8-s1-control/oracle_source.py": "75a9a665b7a9fc1c64cd51c1c8d281fd323f22411aee83c017d08f37a27f20ce",
+    "ch8-s1-control/ordinary_contracts.py": "bdbdbe13fa2da6dae8d6dfb7a57a66caed1e52b6d93c1586e8effecaa16cb78e",
+    "ch8-s1-control/pack_evidence.py": "8782f1abd29342cec1202d851c94222c50fed0e6c358549971048135ab24d206",
+    "ch8-s1-control/r5_campaign.py": "9590e50ad38d8f0009584eddb17a648bf06779e2b6ad3a746cf3cc6deb2ab9fa",
+    "ch8-s1-control/r5_profile.py": "e237b05f7bbc26b2820173254c92035572b22280c4a0b7ee66481bfb41f64f4d",
+    "ch8-s1-control/r5_runtime.py": "e796129e9da910879026cbe9a2037cf4834793f97032b2ff21bdf128268c697f",
+    "ch8-s1-control/rich_evidence.py": "1c778852fd6c7d4542634424af7801e49e2f7074574b411f6c34a9fb86ab5139",
+    "ch8-s1-control/runner.py": "444bee432be575b3dc633ccbe4c3259f7e09371119f5bb3f139331a53afd90c9",
+    "ch8-s1-control/rustc_diagnostics.py": "0c94acd85a9f2f7a241958a2c5b9dffce09517bd8d08ddf30bfbdd81ef839b32",
+    "ch8-s1-control/s108_package.py": "8f1443262d41b6ba755b89d089ffa7515692734f0986a80789a2bf89c7900237",
+    "ch8-s1-control/s2_correspondence.py": "46f2cd69373b4ebd3a3395d455338aadff3d473df5df2734e1bd5d4d2432dd4f",
+    "ch8-s1-control/s2_policy.py": "d87ce00811570c0ad7ea999fec3062166af542e576b188682308301519cb319c",
+    "ch8-s1-control/s32_campaign.py": "074f72b655959f2d59d4e6d720bda86d4502a35925333043a3284cb698883890",
+    "ch8-s1-control/s32_cfg_pfc.py": "ad7b92c370a099b7f121c4748f3be45b0545add320317e2da4037258de92b266",
+    "ch8-s1-control/s32_contract_stacks.py": "7e34bac48a5431aa206cf57440a8001f58b83efeebdb8a830e47b8e308ac4f23",
+    "ch8-s1-control/s32_lexical_bindings.py": "b5e0e8f8751a321a9670002cb300f9b68a092067964f06eb985831aae939b7bf",
+    "ch8-s1-control/s32_ordinary_contracts.py": "425b7446519a2f53babb38ee07b848d3336d32fb395dc3e6b1c4d2bc5034f652",
+    "ch8-s1-control/s32_package.py": "259a63b48fd4422a8ebcee8e6b1edceec045d24f400615935cf1113d25383ffa",
+    "ch8-s1-control/s32_pins.py": "6f5c85e0c407c0cc16faee779593833d30b53a9e113c8d3a3a5597e3e8901cb0",
+    "ch8-s1-control/s32_policy.py": "42e167de7eab1e59e68e8a4bcabb34ab52bf1c34dfd166cb1a56ec08ebab2f84",
+    "ch8-s1-control/s32_profile.py": "e0d0af635ac3fee467022ad2a95da7e936d212025dd97bcf6b11684f45988a3e",
+    "ch8-s1-control/s32_validate.py": "9e4bef1b89b82fec4a9edafa6eb6f8655bc9bd6f47860678ba81efbd8a7efea6",
+    "ch8-s1-control/s34_campaign.py": "c0dab94621918543944d5d4fa94f627839ffc658c6486ef6d597a7b0956b62e0",
+    "ch8-s1-control/s34_cfg_pfc.py": "70ba0268d34493a9379e44233931271684ef58beb3cc6a7c886b0b2ba2a5125b",
+    "ch8-s1-control/s34_contract_stacks.py": "dde13c0da0991a06d80596d7e82fc549cd9231f7d5774bd8c1abe905279c68e0",
+    "ch8-s1-control/s34_lexical_bindings.py": "39197751685fd36a705b62944e634da99221b5cbf8726d4990ee9d9689dadad0",
+    "ch8-s1-control/s34_ordinary_contracts.py": "1ba0972f02efdd55468061043ae1116a645d6b3bf2031775b7f01b4d874eda06",
+    "ch8-s1-control/s34_package.py": "0f4078343cb0672684383a15832fce7ab447a891587aa67b146f2fd62adafb63",
+    "ch8-s1-control/s34_pins.py": "81a42dfb2660f5ac1c4c3b198abd02096c1aeeac728a0c96d980c42db36e60c3",
+    "ch8-s1-control/s34_policy.py": "fa281119197e80f8ecff6c62e33c716c68961408cdd42621bde3240577a79db3",
+    "ch8-s1-control/s34_profile.py": "e01d09f59e06d7983af472a6e8e341027bf2007ac826acf31b97bdf2a8db6d9d",
+    "ch8-s1-control/s34_validate.py": "32435888b7d6440b9a4959691e54d34c663059f3cabb7701d304a44094035b4e",
+    "ch8-s1-control/s3_campaign.py": "ea5890eb02b0b5e0f4837a4c22dd77efd7abd5a4f39e6053f2a99c81d81c5e10",
+    "ch8-s1-control/s3_cfg_pfc.py": "a757a156456c36c33bc09b0e7a3a8a4457601e599a320f6f74dbcb91fb823ed3",
+    "ch8-s1-control/s3_contract_stacks.py": "ad7cea13149e6d684ee8e380ce62ab4aeab68887a0786c43055f829ee97f2f5e",
+    "ch8-s1-control/s3_evidence.py": "ba97ad3a307223127dfa41f9e7ddaff235ab97402a1be1b1c609d525190ebf69",
+    "ch8-s1-control/s3_lexical_bindings.py": "fbe3ca43fc800bded1e4da79ace4989233d7e8019c4a823979379921f74e4c5d",
+    "ch8-s1-control/s3_ordinary_contracts.py": "deb591972314484bcd95df5f7ce5415abc3bb85dbbfc24e9ac372b47c40b4de7",
+    "ch8-s1-control/s3_package.py": "d5c3b715912c8e1f206f44a240608309bf2329ef569817c4983ec50fb618b484",
+    "ch8-s1-control/s3_pins.py": "d78e660157d9f8b869f5c5217e077a400b3cdb3a1f5023905ee7cb69106a5b7a",
+    "ch8-s1-control/s3_policy.py": "03946c36ce18a2874ce5864ad1e5c0cf8b093c8e6f13034bb68b9e3deed6e2b3",
+    "ch8-s1-control/s3_profile.py": "27cd765264b95ee7e7505870b7aa5a6269c0586820e1a1624e9b8a3df7db3216",
+    "ch8-s1-control/s3_runtime.py": "2de7a74b746efcde1dd47ad6f5a5686889665481274ae6555ea53f274ef9ef70",
+    "ch8-s1-control/s3_snapshots.py": "c5a1776d927660061f2f853fdf6a5413a2a7b5ea6ffa54e4d748bfb5fff2fb33",
+    "ch8-s1-control/s3_validate.py": "f35ce20e10dc94e58d545944630de692829d295805ec16fa5a40f398c8557814",
+    "ch8-s1-control/test_cfg_pfc.py": "96c7e07fd3d78cb6c6769a5c018d49b1f1e1d28eee39db6322cba63ea31a91ea",
+    "ch8-s1-control/test_contract_stacks.py": "28175e593a49600fc3478a61a7488b4066b0d9d06ef33b082418f19db1eba75d",
+    "ch8-s1-control/test_package.py": "70f00d0726b7011db8a02339c1b031bda49b4af3c2f7e881b68d06b7663b5ca7",
+    "ch8-s1-control/test_r1403_lexical.py": "5518422d03b2db340a09f7dbc9d074651ca607ef028e592e8dd7c4ac938b9c61",
+    "ch8-s1-control/test_r5.py": "59a2a741f07f28fba85f79435d70f06dcfa0a0aa2ee3bb8a6ff8fecde72c5b1d",
+    "ch8-s1-control/test_runner.py": "42ab9ff6ce08ba17331b62d6e10f26656719850d44968a5497751886a0f91630",
+    "ch8-s1-control/test_rustc_diagnostics.py": "fadad233e902b6fdaaea2a308e2a6321a3c594e8d0ba3492531459cbef0ac88d",
+    "ch8-s1-control/test_s104.py": "cf729fca7df6db47628bb2c17dda1eececf80ddaaa2dc07de57e0731ba16e59d",
+    "ch8-s1-control/test_s105.py": "588a346818b33e00fb02b510d616b7b787f184b00ac5a5b10cfad8b8cf46455e",
+    "ch8-s1-control/test_s107.py": "bb33d7a1088572107a243ea364207a67081fb91fd6db90f4de00e627983aa420",
+    "ch8-s1-control/test_s108.py": "c8f694e0f35abfffa5aa8adc51598cf69e2d66dcdf996f8e33750ae006d6e854",
+    "ch8-s1-control/test_s108r1.py": "cd23ab865dd05bf7beef1b312e747512bebc5ae61e9ce382d284da2014b06f03",
+    "ch8-s1-control/test_s2.py": "1c57b2de286916bdc0a5ce78a4aa111fdb1bbc66a8357a32214fc56df42cbfd2",
+    "ch8-s1-control/test_s3.py": "314e5f08ee929de9b92e33e929e3af2362799e436f6c43ebb29d62d1511c1542",
+    "ch8-s1-control/test_s32.py": "cfdc9de4d11e33f33166b514cb466e93137fd35b34e418b0189775471b02031e",
+    "ch8-s1-control/test_s32_boundary.py": "92c2117f00f7442da1a3d42163726e7534cb892837ca41e373fa5bee54e171de",
+    "ch8-s1-control/test_s32_paths.py": "17451366423abfadfbf96256e6dc55b157c54d3a40dea64e7925fe1e2d51dc45",
+    "ch8-s1-control/test_s34.py": "01b78124c21d0a37c67857d3b94357f8f7a4a0dcf421e1cfa8ea22cd63cdae14",
+    "ch8-s1-control/test_s34_boundary.py": "3d38bff25179297b1b07a9fd980de413dbdd327095aa8e5670e073e65126bd48",
+    "ch8-s1-control/test_s34_paths.py": "1549226a791ed1bff0f4d94815cda8eea7c78a523ab5279478ec5c18980039c6",
+    "ch8-s1-control/test_s3_paths.py": "6fd0e44d6215a56867fc5d8404be24e7e380f1411b4a52f3e84f6cdb9da7ea90",
+    "ch8-s1-control/test_s3_repair.py": "3480cf7e888b6969ba3a863bf4a17e462c26297357b974214feadd7d4f8891f1"
+  },
+  "ci_changed_paths": [
+    ".github/workflows/bench-compiler.yml",
+    ".github/workflows/bench-e2e.yml",
+    ".github/workflows/bench-pr.yml",
+    ".github/workflows/cargo-update.yml",
+    ".github/workflows/cbmc-latest.yml",
+    ".github/workflows/cbmc-update.yml",
+    ".github/workflows/ch8-s2.yml",
+    ".github/workflows/charon-update.yml",
+    ".github/workflows/deny.yml",
+    ".github/workflows/extra_jobs.yml",
+    ".github/workflows/format-check.yml",
+    ".github/workflows/kani.yml",
+    ".github/workflows/release.yml",
+    ".github/workflows/slow-tests.yml",
+    ".github/workflows/toolchain-upgrade.yml",
+    ".github/workflows/verify-std-check.yml",
+    ".github/workflows/z3-update.yml",
+    "ch8-s1-control/CI-REQUEST.json",
+    "ch8-s1-control/ORACLE-SOURCES.json",
+    "ch8-s1-control/ROLE-MAP.json",
+    "ch8-s1-control/S2-SOURCE.json",
+    "ch8-s1-control/S3-SOURCE.json",
+    "ch8-s1-control/S32-SOURCE.json",
+    "ch8-s1-control/S34-SOURCE.json",
+    "ch8-s1-control/activation-default.patch",
+    "ch8-s1-control/activation-override.patch",
+    "ch8-s1-control/binding_metadata.py",
+    "ch8-s1-control/cfg_pfc.py",
+    "ch8-s1-control/check_package.py",
+    "ch8-s1-control/collect.py",
+    "ch8-s1-control/contract_stacks.py",
+    "ch8-s1-control/fixtures/r5-request.json",
+    "ch8-s1-control/fixtures/r5-workflow.yml",
+    "ch8-s1-control/fixtures/s104-rich-fragment.json",
+    "ch8-s1-control/fixtures/s108r1-smallsort.rs.txt",
+    "ch8-s1-control/fixtures/s108r1-sorting_model_controls.rs.txt",
+    "ch8-s1-control/fixtures/s2-old97ac-batch.rs.txt",
+    "ch8-s1-control/fixtures/s2-r1-batch.rs.txt",
+    "ch8-s1-control/fixtures/s2-r2-smallsort.rs.txt",
+    "ch8-s1-control/fixtures/s2-r3-batch.rs.txt",
+    "ch8-s1-control/fixtures/s2-r4-batch.rs.txt",
+    "ch8-s1-control/fixtures/s3-1-request.json",
+    "ch8-s1-control/fixtures/s3-1-workflow.yml",
+    "ch8-s1-control/fixtures/s3-2-request.json",
+    "ch8-s1-control/fixtures/s3-2-workflow.yml",
+    "ch8-s1-control/fixtures/s3-parent-bd62-batch.rs.txt",
+    "ch8-s1-control/fixtures/s3-parent-bd62-smallsort.rs.txt",
+    "ch8-s1-control/fixtures/s3-parent-bd62-verify.rs.txt",
+    "ch8-s1-control/lexical_bindings.py",
+    "ch8-s1-control/negative_oracle.py",
+    "ch8-s1-control/oracle_source.py",
+    "ch8-s1-control/ordinary_contracts.py",
+    "ch8-s1-control/pack_evidence.py",
+    "ch8-s1-control/r5_campaign.py",
+    "ch8-s1-control/r5_profile.py",
+    "ch8-s1-control/r5_runtime.py",
+    "ch8-s1-control/rich_evidence.py",
+    "ch8-s1-control/runner.py",
+    "ch8-s1-control/rustc_diagnostics.py",
+    "ch8-s1-control/s108_package.py",
+    "ch8-s1-control/s2_correspondence.py",
+    "ch8-s1-control/s2_policy.py",
+    "ch8-s1-control/s32_campaign.py",
+    "ch8-s1-control/s32_cfg_pfc.py",
+    "ch8-s1-control/s32_contract_stacks.py",
+    "ch8-s1-control/s32_lexical_bindings.py",
+    "ch8-s1-control/s32_ordinary_contracts.py",
+    "ch8-s1-control/s32_package.py",
+    "ch8-s1-control/s32_pins.py",
+    "ch8-s1-control/s32_policy.py",
+    "ch8-s1-control/s32_profile.py",
+    "ch8-s1-control/s32_validate.py",
+    "ch8-s1-control/s34_campaign.py",
+    "ch8-s1-control/s34_cfg_pfc.py",
+    "ch8-s1-control/s34_contract_stacks.py",
+    "ch8-s1-control/s34_lexical_bindings.py",
+    "ch8-s1-control/s34_ordinary_contracts.py",
+    "ch8-s1-control/s34_package.py",
+    "ch8-s1-control/s34_pins.py",
+    "ch8-s1-control/s34_policy.py",
+    "ch8-s1-control/s34_profile.py",
+    "ch8-s1-control/s34_validate.py",
+    "ch8-s1-control/s3_campaign.py",
+    "ch8-s1-control/s3_cfg_pfc.py",
+    "ch8-s1-control/s3_contract_stacks.py",
+    "ch8-s1-control/s3_evidence.py",
+    "ch8-s1-control/s3_lexical_bindings.py",
+    "ch8-s1-control/s3_ordinary_contracts.py",
+    "ch8-s1-control/s3_package.py",
+    "ch8-s1-control/s3_pins.py",
+    "ch8-s1-control/s3_policy.py",
+    "ch8-s1-control/s3_profile.py",
+    "ch8-s1-control/s3_runtime.py",
+    "ch8-s1-control/s3_snapshots.py",
+    "ch8-s1-control/s3_validate.py",
+    "ch8-s1-control/test_cfg_pfc.py",
+    "ch8-s1-control/test_contract_stacks.py",
+    "ch8-s1-control/test_package.py",
+    "ch8-s1-control/test_r1403_lexical.py",
+    "ch8-s1-control/test_r5.py",
+    "ch8-s1-control/test_runner.py",
+    "ch8-s1-control/test_rustc_diagnostics.py",
+    "ch8-s1-control/test_s104.py",
+    "ch8-s1-control/test_s105.py",
+    "ch8-s1-control/test_s107.py",
+    "ch8-s1-control/test_s108.py",
+    "ch8-s1-control/test_s108r1.py",
+    "ch8-s1-control/test_s2.py",
+    "ch8-s1-control/test_s3.py",
+    "ch8-s1-control/test_s32.py",
+    "ch8-s1-control/test_s32_boundary.py",
+    "ch8-s1-control/test_s32_paths.py",
+    "ch8-s1-control/test_s34.py",
+    "ch8-s1-control/test_s34_boundary.py",
+    "ch8-s1-control/test_s34_paths.py",
+    "ch8-s1-control/test_s3_paths.py",
+    "ch8-s1-control/test_s3_repair.py"
+  ],
+  "diagnostic_only_inventory": [],
+  "native_unsupported_construct_arrays": "UNKNOWN_UNTIL_EXPORT; preserve SUCCESS guard records separately from FAILED/UNKNOWN checks; strict reader policy unchanged",
+  "ci_deleted_paths": [
+    ".github/workflows/bench-compiler.yml",
+    ".github/workflows/bench-e2e.yml",
+    ".github/workflows/bench-pr.yml",
+    ".github/workflows/cargo-update.yml",
+    ".github/workflows/cbmc-latest.yml",
+    ".github/workflows/cbmc-update.yml",
+    ".github/workflows/charon-update.yml",
+    ".github/workflows/deny.yml",
+    ".github/workflows/extra_jobs.yml",
+    ".github/workflows/format-check.yml",
+    ".github/workflows/kani.yml",
+    ".github/workflows/release.yml",
+    ".github/workflows/slow-tests.yml",
+    ".github/workflows/toolchain-upgrade.yml",
+    ".github/workflows/verify-std-check.yml",
+    ".github/workflows/z3-update.yml"
+  ],
+  "bridge1_inputs": {
+    "plan": "7749b8517ba42b400c41f0b4f7a7212a4fdcab8a",
+    "intake": "5d9439a7641c929838bf075c6aa6533a353ee92d",
+    "intake_review": "028531727fc48ef9f26f16dfb95c2b2666c96dd7",
+    "exact_admission": "ff193cc35690a5daabaa849d412c58d9f286d893",
+    "S4_inventory": "9e013a2683afbf64de762e570a052c11917e52f7",
+    "source_reference": "1b4a904f8144172f0a3682f84f1bd4afd80eaf5d",
+    "control_reference": "775574eb2f361ef90eade30330ff0d608530287f"
+  },
+  "historical_provenance": {
+    "s32_authority": {
+      "implementation_task": "be42098995b302cade928d8caf6135adf7a1cc0d",
+      "continuation_task": "9d8d40db277f61e46a3b7890cc9bf6941df72e13",
+      "boundary_commit": "20eb52b5efe45a89491dced2aab34d40dbe371f7",
+      "prior_admission": "b4879b203e42e265f38ce1b44fe767aa78bb43fc",
+      "prior_location_exception_not_reused": true
+    },
+    "limit": "Retained earlier profile ancestry only; never source/control/accounting/dispatch grants",
+    "s3_control_precursor": "1dfc267b66abd83d536eb41a17052a4f3d767d2b",
+    "repair_review": "610dcd6858415792050a9aba7e0d7859afd7d727",
+    "s3_path_control_precursor": "fc29b93b1e333b73e55e2872701c80d9927f3b02"
+  },
+  "cfg_pfc_source_sha256": {
+    "library/core/src/lib.rs": "cab6061d100493bec1b820356a54e64c5d923c63fb830bb86250d12124f91504",
+    "library/core/src/slice/mod.rs": "1c94e306a979f2c59a4e3687a32a3e4efbeef967b7bf5eeb8d1977371c2c17dd",
+    "library/core/src/slice/sort/mod.rs": "f67551bff44a854a3f03901db10a099bdab3b67b47d8724bef43858d97134f3c",
+    "library/core/src/slice/sort/shared/mod.rs": "fa9eec2901bafba25c9c1e1684df76dbb1f86e0bbd04f18f3e67cee54dcdfcc8",
+    "library/core/src/slice/sort/shared/smallsort.rs": "590a1703f3939bda126a7acc2bcd7559d8a19d7227dcca1f2ea60b401ec70ead",
+    "library/core/src/slice/sort/shared/smallsort/verify.rs": "2820084e0c93e8369bddd28b3241052a7bc2a1e63af17be9d95f011e347a35da",
+    "library/core/src/slice/sort/shared/smallsort/verify/helper_contracts.rs": "86bac48e888365eab2187756dfd8ffbce059d6cc2ce35b1d8ab7b39d788118ac",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs": "456de2ac2e30f40d2af89f21c1cb234ce51ae9d66f05523f8f4b231f411f80e3",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_2_leaf.rs": "b459d52c8b96120c2bda76b91f42cd57d107af4e8b18bdc91c739724d5a6d195",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724"
+  },
+  "ordinary_contract_source_sha256": {
+    "library/core/src/slice/sort/shared/smallsort.rs": "590a1703f3939bda126a7acc2bcd7559d8a19d7227dcca1f2ea60b401ec70ead",
+    "library/core/src/slice/sort/shared/smallsort/verify.rs": "2820084e0c93e8369bddd28b3241052a7bc2a1e63af17be9d95f011e347a35da",
+    "library/core/src/slice/sort/shared/smallsort/verify/comparators.rs": "7095d7272d929b4e495896ff957a69120a7b86b3f0b99655ede4c989e0543b47",
+    "library/core/src/slice/sort/shared/smallsort/verify/fixed_inputs.rs": "5b648cbdedd89ef92f0a794580d0c682fc3fe3035cf63142f1b6bec6baccb7c7",
+    "library/core/src/slice/sort/shared/smallsort/verify/forwarding_contracts.rs": "575aa575ffb977d945adb2fc40496c805fe6f8cdb1fc6fe471dbe277f5b2630f",
+    "library/core/src/slice/sort/shared/smallsort/verify/helper_contracts.rs": "86bac48e888365eab2187756dfd8ffbce059d6cc2ce35b1d8ab7b39d788118ac",
+    "library/core/src/slice/sort/shared/smallsort/verify/helper_contracts_wide.rs": "85bdd131f3a7e62106e69e98e4b1b85d2f68c91a4bfff4df629955539493748c",
+    "library/core/src/slice/sort/shared/smallsort/verify/insert_tail_contracts.rs": "6f1a2540156a3c603639ee96245aca16ad9da3dbce401630c1b8866d343aa406",
+    "library/core/src/slice/sort/shared/smallsort/verify/merge.rs": "e37e6971e6458a17d858de9a6a6ea38265d7584934ef71c8243c97a487505e54",
+    "library/core/src/slice/sort/shared/smallsort/verify/merge/profiles.rs": "3a220d9fcd8269b253efaa8d7c18c13aa7a6e6f8cf59504ac2ec4c004b9abffe",
+    "library/core/src/slice/sort/shared/smallsort/verify/mutations.rs": "e008037d4c5a32e31dc25490437bcd2bc520915bfda4af3c2fc84df6e331450e",
+    "library/core/src/slice/sort/shared/smallsort/verify/network.rs": "d59ceb99741990afcfe3f312119053a520f16c071f200953fc517a33729527bf",
+    "library/core/src/slice/sort/shared/smallsort/verify/scratch_geometry.rs": "905045ba504b5391af44a575dd7e616b0bebb124623490d24343f759eb7f7d16",
+    "library/core/src/slice/sort/shared/smallsort/verify/smoke.rs": "f576bfa8185c3ded0a27374dd4904db52f9711102a62c37f10406b2ccbd87f23",
+    "library/core/src/slice/sort/shared/smallsort/verify/tag_permutation.rs": "dafe3017a7dbf946c045756d8c0f122555bd1372868554563d1cb373eeea7837",
+    "library/core/src/slice/sort/shared/smallsort/verify/types.rs": "c5b4b5007cda1764af15639fba0fd23bfab9e489d052b0ead6872a440bed1f4f",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_model.rs": "a04f72d0a4f8c42fadc6639ead77e215dc46264096e8e998903bfe1be9ca0a18",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_entry_smoke.rs": "7e74bd9695cdb2b98b8298ce7daf7f107e0ac2e6e2a0cfc2203ab1639590130f",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_model_controls.rs": "dd4e8eca1761be66ea07508c7678175d54e4b2baf48469ae4866c9cb68e12e0d",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_entry_controls.rs": "7cb487628b9e93a086c09fc59cfc54aaeb12e12a3f917f67009f378e722d29ff",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_swap.rs": "18ffcca0f828239c686484a72e58ff391c0e8a511f94fe357ae3e635d430fc61",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_span.rs": "c25a476d596ecd2b58d6053307f446e1392171f19b0f48398989373f336db1d6",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs": "456de2ac2e30f40d2af89f21c1cb234ce51ae9d66f05523f8f4b231f411f80e3",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_2_leaf.rs": "b459d52c8b96120c2bda76b91f42cd57d107af4e8b18bdc91c739724d5a6d195",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724"
+  },
+  "contract_stack_source_sha256": {
+    "library/core/src/slice/sort/shared/smallsort.rs": "590a1703f3939bda126a7acc2bcd7559d8a19d7227dcca1f2ea60b401ec70ead",
+    "library/core/src/slice/sort/shared/smallsort/verify.rs": "2820084e0c93e8369bddd28b3241052a7bc2a1e63af17be9d95f011e347a35da",
+    "library/core/src/slice/sort/shared/smallsort/verify/comparators.rs": "7095d7272d929b4e495896ff957a69120a7b86b3f0b99655ede4c989e0543b47",
+    "library/core/src/slice/sort/shared/smallsort/verify/fixed_inputs.rs": "5b648cbdedd89ef92f0a794580d0c682fc3fe3035cf63142f1b6bec6baccb7c7",
+    "library/core/src/slice/sort/shared/smallsort/verify/forwarding_contracts.rs": "575aa575ffb977d945adb2fc40496c805fe6f8cdb1fc6fe471dbe277f5b2630f",
+    "library/core/src/slice/sort/shared/smallsort/verify/helper_contracts.rs": "86bac48e888365eab2187756dfd8ffbce059d6cc2ce35b1d8ab7b39d788118ac",
+    "library/core/src/slice/sort/shared/smallsort/verify/helper_contracts_wide.rs": "85bdd131f3a7e62106e69e98e4b1b85d2f68c91a4bfff4df629955539493748c",
+    "library/core/src/slice/sort/shared/smallsort/verify/insert_tail_contracts.rs": "6f1a2540156a3c603639ee96245aca16ad9da3dbce401630c1b8866d343aa406",
+    "library/core/src/slice/sort/shared/smallsort/verify/merge.rs": "e37e6971e6458a17d858de9a6a6ea38265d7584934ef71c8243c97a487505e54",
+    "library/core/src/slice/sort/shared/smallsort/verify/merge/profiles.rs": "3a220d9fcd8269b253efaa8d7c18c13aa7a6e6f8cf59504ac2ec4c004b9abffe",
+    "library/core/src/slice/sort/shared/smallsort/verify/mutations.rs": "e008037d4c5a32e31dc25490437bcd2bc520915bfda4af3c2fc84df6e331450e",
+    "library/core/src/slice/sort/shared/smallsort/verify/network.rs": "d59ceb99741990afcfe3f312119053a520f16c071f200953fc517a33729527bf",
+    "library/core/src/slice/sort/shared/smallsort/verify/scratch_geometry.rs": "905045ba504b5391af44a575dd7e616b0bebb124623490d24343f759eb7f7d16",
+    "library/core/src/slice/sort/shared/smallsort/verify/smoke.rs": "f576bfa8185c3ded0a27374dd4904db52f9711102a62c37f10406b2ccbd87f23",
+    "library/core/src/slice/sort/shared/smallsort/verify/tag_permutation.rs": "dafe3017a7dbf946c045756d8c0f122555bd1372868554563d1cb373eeea7837",
+    "library/core/src/slice/sort/shared/smallsort/verify/types.rs": "c5b4b5007cda1764af15639fba0fd23bfab9e489d052b0ead6872a440bed1f4f",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_model.rs": "a04f72d0a4f8c42fadc6639ead77e215dc46264096e8e998903bfe1be9ca0a18",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_entry_smoke.rs": "7e74bd9695cdb2b98b8298ce7daf7f107e0ac2e6e2a0cfc2203ab1639590130f",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_model_controls.rs": "dd4e8eca1761be66ea07508c7678175d54e4b2baf48469ae4866c9cb68e12e0d",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_entry_controls.rs": "7cb487628b9e93a086c09fc59cfc54aaeb12e12a3f917f67009f378e722d29ff",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_swap.rs": "18ffcca0f828239c686484a72e58ff391c0e8a511f94fe357ae3e635d430fc61",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_span.rs": "c25a476d596ecd2b58d6053307f446e1392171f19b0f48398989373f336db1d6",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs": "456de2ac2e30f40d2af89f21c1cb234ce51ae9d66f05523f8f4b231f411f80e3",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_2_leaf.rs": "b459d52c8b96120c2bda76b91f42cd57d107af4e8b18bdc91c739724d5a6d195",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724"
+  },
+  "lexical_source_sha256": {
+    "library/core/src/lib.rs": "cab6061d100493bec1b820356a54e64c5d923c63fb830bb86250d12124f91504",
+    "library/core/src/slice/mod.rs": "1c94e306a979f2c59a4e3687a32a3e4efbeef967b7bf5eeb8d1977371c2c17dd",
+    "library/core/src/slice/sort/mod.rs": "f67551bff44a854a3f03901db10a099bdab3b67b47d8724bef43858d97134f3c",
+    "library/core/src/slice/sort/shared/mod.rs": "fa9eec2901bafba25c9c1e1684df76dbb1f86e0bbd04f18f3e67cee54dcdfcc8",
+    "library/core/src/slice/sort/shared/smallsort.rs": "590a1703f3939bda126a7acc2bcd7559d8a19d7227dcca1f2ea60b401ec70ead",
+    "library/core/src/slice/sort/shared/smallsort/verify.rs": "2820084e0c93e8369bddd28b3241052a7bc2a1e63af17be9d95f011e347a35da",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs": "456de2ac2e30f40d2af89f21c1cb234ce51ae9d66f05523f8f4b231f411f80e3",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_model.rs": "a04f72d0a4f8c42fadc6639ead77e215dc46264096e8e998903bfe1be9ca0a18",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_span.rs": "c25a476d596ecd2b58d6053307f446e1392171f19b0f48398989373f336db1d6",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_swap.rs": "18ffcca0f828239c686484a72e58ff391c0e8a511f94fe357ae3e635d430fc61",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_2_leaf.rs": "b459d52c8b96120c2bda76b91f42cd57d107af4e8b18bdc91c739724d5a6d195",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+    "library/core/src/cell.rs": "2bc5acbab3ff2fac122bb2cb1bb343631d9ea9d99d192869376ec16189272fb3",
+    "library/core/src/mem/mod.rs": "7504ca7c3188077e142917d8c8b7fc7976f08f417439bb68399d1c0352eb8738",
+    "library/core/src/mem/maybe_uninit.rs": "1230d267542337ee2842c29d8227cf8a58fe75c53a2a70efaee3922c4e8e25c0",
+    "library/core/src/ptr/mod.rs": "cc17237f8e88211f0d082f8c8d88b6fd55f905c7baaa3c32cd75632269c03ff2",
+    "library/core/src/slice/raw.rs": "3190285ba163dacd220b6c827d49e580eeb85256cd1fffafdacb345a87a08bb7",
+    "library/core/src/intrinsics/mod.rs": "95bad83ea99a46bcbdbd4163e42112866fdfadc4660ca1d1c4298fed57b1c5fc",
+    "library/core/src/prelude/v1.rs": "b57d120c6762622bd33114f46267dab8ba6c88be38f1433adb62d4ba36cd3a68"
+  }
+}

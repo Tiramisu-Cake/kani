@@ -10,9 +10,9 @@ import subprocess
 import time
 
 HERE = Path(__file__).resolve().parent
-# Actual control: S2 -> 7c413 -> 9208 -> b25 -> 40b -> stock0aac (depth6).
-# Actual source: S2-active -> S2-witness -> S2-attrs -> accepted99e (depth4); stock tool depth2.
-CHECKOUT_DEPTHS = {'control': 6, 'export': 4, 'tool': 2}
+# Actual control: r1 sibling -> 9e14 -> 7c413 -> 9208 -> b25 -> 40b -> stock0aac (depth7).
+# Actual source: r1 -> S2-active -> S2-witness -> S2-attrs -> accepted99e (depth5).
+CHECKOUT_DEPTHS = {'control': 7, 'export': 5, 'tool': 2}
 
 
 def load_yaml(text):
@@ -77,6 +77,22 @@ def git(repo, *args):
 
 def check_yaml(path):
     doc=load_yaml(path.read_text()); check_scalar_types(doc)
+    if 'S3_PROFILE' in doc.get('jobs',{}).get('s3_leaf',{}).get('env',{}):
+        import s3_package
+        if doc["jobs"]["s3_leaf"]["env"]["S3_PROFILE"]=="ch8-s3-2-capped-fullbyte-v1":import s32_package as s3_package
+        if doc["jobs"]["s3_leaf"]["env"]["S3_PROFILE"]=="ch8-s3s4-bridge1-fullbyte-v1":import s34_package as s3_package
+        if doc["jobs"]["s3_leaf"]["env"]["S3_PROFILE"]=="ch8-s4p-2-network-fullbyte-singletons-v1":import s4p2_package as s3_package
+        if doc["jobs"]["s3_leaf"]["env"]["S3_PROFILE"]=="ch8-s4p-1-fullbyte-length-blocks-v1":import s4p_package as s3_package
+        return s3_package.check_yaml(doc)
+    import r5_profile
+    if 'S2_PROFILE' in doc.get('jobs',{}).get('s2_batch',{}).get('env',{}):
+        doc=r5_profile.validate_yaml(doc)
+        result=check_legacy_yaml(doc)
+        return {**result,'step_timeout_sum_minutes':188}
+    return check_legacy_yaml(doc)
+
+
+def check_legacy_yaml(doc):
     assert doc['on']=={'push':{'branches':['uninit-ci/ch8-s2-batch3probes-*']}}
     assert doc['permissions']=={'contents':'read'}
     assert doc['concurrency']=={'group':'ch8-s2-fork','cancel-in-progress':False}
@@ -86,7 +102,7 @@ def check_yaml(path):
     assert 'strategy' not in job and 'needs' not in job
     assert job['if']=="${{ github.repository == 'Tiramisu-Cake/kani' && github.event_name == 'push' }}"
     steps=job['steps']
-    assert sum(s['timeout-minutes'] for s in steps)==177
+    assert sum(s['timeout-minutes'] for s in steps)==186
     checkouts={s['with']['path']:s['with'] for s in steps if s.get('uses','').startswith('actions/checkout@')}
     assert {k:v['fetch-depth'] for k,v in checkouts.items()}==CHECKOUT_DEPTHS
     assert all(v['persist-credentials'] is False for v in checkouts.values())
@@ -102,15 +118,29 @@ def check_yaml(path):
     assert steps[-1]['with']['if-no-files-found']=='error'
     assert steps[-1]['with']['path']=='${{ env.RECEIPT_ROOT }}/group-evidence.json.gz'
     byname={s['name']:s for s in steps}
+    # Exact approved setup caps; aggregate setup clock remains independent.
+    assert [(s['name'],s['timeout-minutes']) for s in steps] == [
+        ('Begin setup budget',1),('Checkout CI control',2),
+        ('Validate control and synthetic wrapper',10),('Read immutable export pins',1),
+        ('Checkout production model export',5),('Checkout immutable upstream tool',2),
+        ('Check all source identities',1),('Setup exact stock tool',15),
+        ('Build exact stock tool once',15),('Run S2 batch3probes with bounded observations',126),
+        ('Materialize bounded fallback',2),('Upload bounded evidence',6)]
     assert byname['Checkout immutable upstream tool']['with']['repository']=='model-checking/kani'
     assert byname['Checkout production model export']['with']['repository']=='Tiramisu-Cake/verify-rust-std'
     assert byname['Setup exact stock tool']['uses']=='./tool/.github/actions/setup'
     assert byname['Build exact stock tool once']['timeout-minutes']==15
     assert byname['Setup exact stock tool']['timeout-minutes']==15
     assert byname['Check all source identities']['run']=='python3 control/ch8-s1-control/runner.py check-source --std export --tool tool'
-    assert 'test_runner.py test_s107.FinalizationTests test_s2.py' in byname['Validate control and synthetic wrapper']['run']
+    names=[s['name'] for s in steps]
+    assert names.index('Checkout production model export') < names.index('Check all source identities') < names.index('Setup exact stock tool') < names.index('Build exact stock tool once') < names.index('Run S2 batch3probes with bounded observations')
+    assert not any(byname['Check all source identities'].get(k) for k in ('if','continue-on-error'))
+    assert 'test_runner.py test_s107.FinalizationTests test_s2.py test_cfg_pfc.py' in byname['Validate control and synthetic wrapper']['run']
+    assert byname['Validate control and synthetic wrapper']['run'].splitlines() == [
+        'python3 check_package.py control --repo ..',
+        'python3 -m unittest -v test_runner.py test_s107.FinalizationTests test_s2.py test_cfg_pfc.py test_rustc_diagnostics.py test_contract_stacks.py test_r1403_lexical.py']
     assert steps[-2]['if']=='always()' and 'fallback' in steps[-2]['run'] and 'pack_evidence.py' in steps[-2]['run']
-    return {'jobs':1,'serial':True,'max_runner_minutes':180,'step_timeout_sum_minutes':177,'checkout_depths':CHECKOUT_DEPTHS}
+    return {'jobs':1,'serial':True,'max_runner_minutes':180,'step_timeout_sum_minutes':186,'checkout_depths':CHECKOUT_DEPTHS}
 
 
 def control(repo):
@@ -118,7 +148,7 @@ def control(repo):
     r=load_request()
     assert os.environ['GITHUB_REPOSITORY']=='Tiramisu-Cake/kani'
     assert os.environ['GITHUB_EVENT_NAME']=='push'
-    assert os.environ['GITHUB_REF'].startswith('refs/heads/uninit-ci/ch8-s2-batch3probes-')
+    assert os.environ['GITHUB_REF'].startswith('refs/heads/'+('uninit-ci/ch8-s4p-' if r.get('schema') in ('ch8-s4p-1-v1','ch8-s4p-2-v1') else 'uninit-ci/ch8-s3s4-' if r.get('schema')=='ch8-s3s4-bridge1-v1' else 'uninit-ci/ch8-s3-2-' if r.get('schema')=='ch8-s3-2-v1' else 'uninit-ci/ch8-s3-1-' if r.get('schema')=='ch8-s3-1-v1' else 'uninit-ci/ch8-s2-batch3probes-'))
     assert os.environ['GITHUB_RUN_ATTEMPT']=='1', 'Rerun requires separate coordinator GO'
     assert git(repo,'rev-parse','HEAD')==os.environ['GITHUB_SHA']
     assert git(repo,'rev-list','--parents','-n','1','HEAD').split()==[os.environ['GITHUB_SHA'],r['control_parent']]
@@ -127,6 +157,9 @@ def control(repo):
     changed=git(repo,'diff','--name-only',r['tool_sha'],'HEAD').splitlines()
     assert sorted(changed)==r['ci_changed_paths']
     assert all(p.startswith(('ch8-s1-control/','.github/workflows/')) for p in changed)
+    if r.get('schema') in ('ch8-s3-2-v1','ch8-s3s4-bridge1-v1','ch8-s4p-1-v1','ch8-s4p-2-v1'):
+        assert git(repo,'diff','--diff-filter=D','--name-only',r['tool_sha'],'HEAD').splitlines()==r['ci_deleted_paths']
+        assert set(r['ci_payload_sha256'])==set(changed)-set(r['ci_deleted_paths'])-{'ch8-s1-control/CI-REQUEST.json'}
     for rel,digest in r['ci_payload_sha256'].items():
         assert hashlib.sha256((repo/rel).read_bytes()).hexdigest()==digest,rel
     check_yaml(repo/'.github/workflows/ch8-s2.yml')
@@ -152,11 +185,43 @@ def build(tool, epoch, out):
 
 
 def fallback(out, group_ids=None):
+    import r5_profile
+    request=json.loads((HERE/'CI-REQUEST.json').read_text())
+    if request.get('schema')=='ch8-s4p-2-v1':
+        import s4p2_campaign
+        return s4p2_campaign.fallback(out,request)
+    if request.get('schema')=='ch8-s4p-1-v1':
+        import s4p_campaign
+        return s4p_campaign.fallback(out,request)
+    if request.get('schema')=='ch8-s3s4-bridge1-v1':
+        import s34_campaign
+        return s34_campaign.fallback(out,request)
+    if request.get('schema')=='ch8-s3-2-v1':
+        import s32_campaign
+        return s32_campaign.fallback(out,request)
+    if request.get('schema')=='ch8-s3-1-v1':
+        import s3_campaign
+        return s3_campaign.fallback(out,request)
+    if r5_profile.enabled(request):
+        active=(out/'campaign-start.json').exists() or (out/'completed').exists()
+        terminal=out/'receipt.json'
+        if terminal.exists():
+            try:active=active or json.loads(terminal.read_text()).get('schema')=='ch8-s2-r5-campaign-v1'
+            except (ValueError,AttributeError):active=True # ambiguous storage must not overwrite a prefix
+        if group_ids is None or active:
+            import r5_campaign
+            return r5_campaign.fallback(out,request)
+        # Explicit legacy group API remains strict before any r5 campaign state.
+    return legacy_fallback(out,group_ids)
+
+
+def legacy_fallback(out, group_ids=None):
     out.mkdir(parents=True,exist_ok=True)
     r=json.loads((HERE/'CI-REQUEST.json').read_text())
     # SIGKILL cannot run finally: retain observations and mark incomplete work UNKNOWN.
     from runner import _write_json, _bounded_log
     from runner import group_rows
+    import rustc_diagnostics
     groups=group_rows(r['rows'],r.get('execution_groups'))
     if group_ids is not None:
         selected=set(group_ids)
@@ -172,9 +237,13 @@ def fallback(out, group_ids=None):
                     value.update(state='INTERRUPTED',outcome='UNKNOWN')
                     for stream in ('stdout','stderr'):
                         value[stream]=_bounded_log(dest/(stream+'.log'),None)
+                    value['rustc_diagnostics']=rustc_diagnostics.summary(dest)
+                    value['rustc_diagnostics'].update(complete=False,
+                        incomplete_reasons=['FALLBACK_INTERRUPTED_EXECUTION']+value['rustc_diagnostics']['incomplete_reasons'])
                     _write_json(path,value)
             else:
-                _write_json(path,{'state':'NOT_RUN_OR_INTERRUPTED','outcome':'UNKNOWN','proof_credit':'NONE'})
+                _write_json(path,{'state':'NOT_RUN_OR_INTERRUPTED','outcome':'UNKNOWN','proof_credit':'NONE',
+                                  'rustc_diagnostics':rustc_diagnostics.summary(dest)})
     # Materialize every absent row, preserving any execution receipt already captured.
     for row in r['rows']:
         if row['id'] not in selected_rows: continue
