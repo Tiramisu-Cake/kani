@@ -24,18 +24,18 @@ fn delayed_harness() {
         let padded = (&mut value as *mut u64).cast::<Padded>();
         *padded = Padded { byte: 1, word: 2 };
     }
-    #[cfg(feature = "delayed-first")]
+    #[cfg(feature = "delayed-indirect")]
     let _value = read_indirect(&value);
-    #[cfg(not(feature = "delayed-first"))]
+    #[cfg(not(feature = "delayed-indirect"))]
     let _value = read_value(&value);
 }
 
 #[kani::proof]
 fn initialized_control_harness() {
     let value = 7u64;
-    #[cfg(feature = "delayed-first")]
+    #[cfg(feature = "delayed-indirect")]
     let result = read_value(&value);
-    #[cfg(not(feature = "delayed-first"))]
+    #[cfg(not(feature = "delayed-indirect"))]
     let result = read_indirect(&value);
     assert_eq!(result, 7);
 }

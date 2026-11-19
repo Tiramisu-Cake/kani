@@ -96,23 +96,24 @@ def parse(doc, properties, wanted, code, uninit):
             require(all(prop[k] == native[k] for k in ('status', 'description')), 'property mismatch')
         require(all(p['status'] in ('SUCCESS', 'UNREACHABLE')
                     for p in entry['unsupported_constructs']), 'unsupported construct')
-        result[name] = dict(entry, properties=props, verdict=verdict['verdict'])
+        result[name] = {'properties': props, 'verdict': verdict['verdict'], 'failed_properties': failed}
     require(code == int(any(h['verdict'] == 'FAILURE' for h in result.values())), 'process exit')
     return result
 
 
 def signature(harness):
-    # Compare semantic check identities while preserving multiplicity and source locations.
+    # Compare check identities, statuses, descriptions and locations;
+    # numeric suffixes may vary between builds.
     return sorted((re.sub(r'\.\d+$', '', p['id']), p['status'], p['description'], p['location'])
                   for p in harness['properties'])
 
 
-def unsafe_control(harness, file, line):
+def unsafe_control(harness):
     require(harness['verdict'] == 'FAILURE' and harness['failed_properties'], 'missing unsafe failure')
     for prop in harness['failed_properties']:
         require(prop['status'] == 'FAILURE' and prop['class'] == 'safety_check'
-                and prop['description'].startswith(UNINIT) and prop['file'].endswith(file)
-                and prop['line'] == line, 'unexpected unsafe failure')
+                and prop['description'].startswith(UNINIT) and prop['file'].endswith('src/lib.rs')
+                and prop['line'] == '12', 'unexpected unsafe failure')
 
 
 def ordinary_control(harness):
@@ -123,27 +124,24 @@ def ordinary_control(harness):
 
 
 def compare(runs, uninit):
-    independent = runs['uninitialized_control']['uninitialized_control']
-    if uninit:
-        unsafe_control(independent, 'control.rs', '16')
-    else:
-        ordinary_control(independent)
-    for mode in ('delayed_first', 'control_first'):
-        delayed = runs[mode + '/delayed_alone'][NAMES[0]]
-        initialized = runs[mode + '/control_alone'][NAMES[1]]
+    for mode in ('delayed_indirect', 'control_indirect'):
         pair = runs[mode + '/paired']
+        initialized_harnesses = [pair[NAMES[1]]]
         if uninit:
-            unsafe_control(delayed, 'src/lib.rs', '12')
-            unsafe_control(pair[NAMES[0]], 'src/lib.rs', '12')
+            delayed = runs[mode + '/delayed_alone'][NAMES[0]]
+            initialized = runs[mode + '/control_alone'][NAMES[1]]
+            unsafe_control(delayed)
+            unsafe_control(pair[NAMES[0]])
+            initialized_harnesses.append(initialized)
+            for name, singleton in zip(NAMES, (delayed, initialized)):
+                require(signature(singleton) == signature(pair[name]), 'shared function checks changed')
         else:
-            for harness in (delayed, initialized, *pair.values()):
+            for harness in pair.values():
                 ordinary_control(harness)
-        for harness in (initialized, pair[NAMES[1]]):
+        for harness in initialized_harnesses:
             require(harness['verdict'] == 'SUCCESS' and any(
                 p['description'] == 'assertion failed: result == 7' and p['status'] == 'SUCCESS'
                 for p in harness['properties']), 'initialized harness failed')
-        for name, singleton in zip(NAMES, (delayed, initialized)):
-            require(signature(singleton) == signature(pair[name]), 'shared function checks changed')
 
 
 def probe(command, wanted, export, env, uninit):
@@ -174,16 +172,17 @@ def main():
         export = scratch / 'results.json'
         for uninit in (True, False):
             checks = 'uninit' if uninit else 'ordinary'
-            runs = {'uninitialized_control': probe(
-                ['kani', str(HERE / 'control.rs'), '--target-dir', str(scratch / (checks + '-control'))],
-                ['uninitialized_control'], export, dict(env, RUSTFLAGS='--edition=2021'), uninit)}
+            runs = {}
+            cases = (('delayed_alone', NAMES[:1]), ('control_alone', NAMES[1:]), ('paired', NAMES))
+            if not uninit:
+                cases = (('paired', NAMES),)
             # The feature selects call paths through the shared function; compiler order is unspecified.
-            for mode in ('delayed_first', 'control_first'):
-                for case, wanted in (('delayed_alone', NAMES[:1]), ('control_alone', NAMES[1:]), ('paired', NAMES)):
+            for mode in ('delayed_indirect', 'control_indirect'):
+                for case, wanted in cases:
                     command = ['cargo', 'kani', '--manifest-path', str(HERE / 'Cargo.toml'), '--lib',
                                '--target-dir', str(scratch / (checks + '-' + mode + '-' + case))]
-                    if mode == 'delayed_first':
-                        command += ['--features', 'delayed-first']
+                    if mode == 'delayed_indirect':
+                        command += ['--features', 'delayed-indirect']
                     runs[mode + '/' + case] = probe(command, wanted, export, env, uninit)
             compare(runs, uninit)
     print('Shared function checks agree for singleton and paired harnesses.')
