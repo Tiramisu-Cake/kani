@@ -76,6 +76,8 @@ def load_request(path: Path = REQUEST_PATH) -> dict[str, Any]:
         import s32_profile as s3_profile, s32_pins as s3_pins
     if request.get('profile')=='ch8-s3s4-bridge1-fullbyte-v1':
         import s34_profile as s3_profile, s34_pins as s3_pins
+    if request.get('profile')=='ch8-s4p-3-network-fullbyte-concrete-calls-v1':
+        import s4p3_profile as s3_profile, s4p3_pins as s3_pins
     if request.get('profile')=='ch8-s4p-2r2-network-fullbyte-concrete-calls-v1':
         import s4p2r2_profile as s3_profile, s4p2r2_pins as s3_pins
     if request.get('profile')=='ch8-s4p-2-network-fullbyte-singletons-v1':
@@ -248,10 +250,11 @@ def verify_source(std: Path, tool: Path, request: dict[str, Any], *, prebuild=Fa
             raise RunnerError(f"negative oracle assertion anchor drift: {rid}")
     if request.get("schema") == "ch8-s2-batch3probes-v1":
         s2_policy.validate_source(std,request)
-    if request.get("schema") in ("ch8-s3-1-v1", "ch8-s3-2-v1", "ch8-s3s4-bridge1-v1", "ch8-s4p-1-v1", "ch8-s4p-2-v1", "ch8-s4p-2r2-v1"):
+    if request.get("schema") in ("ch8-s3-1-v1", "ch8-s3-2-v1", "ch8-s3s4-bridge1-v1", "ch8-s4p-1-v1", "ch8-s4p-2-v1", "ch8-s4p-2r2-v1", "ch8-s4p-3-v1"):
         import s3_policy
         if request.get("schema")=="ch8-s3-2-v1":import s32_policy as s3_policy
         if request.get("schema")=="ch8-s3s4-bridge1-v1":import s34_policy as s3_policy
+        if request.get("schema")=="ch8-s4p-3-v1":import s4p3_policy as s3_policy
         if request.get("schema")=="ch8-s4p-2r2-v1":import s4p2r2_policy as s3_policy
         if request.get("schema")=="ch8-s4p-2-v1":import s4p2_policy as s3_policy
         if request.get("schema")=="ch8-s4p-1-v1":import s4p_policy as s3_policy
@@ -368,9 +371,12 @@ def build_argv(std: Path, tool: Path, selectors: list[str], unwind: int, export:
 def ci_env(std: Path | None = None, request=None) -> dict[str, str]:
     env = os.environ.copy()
     fixed = "--cfg=kani_smallsort_sorting --cfg=kani_smallsort_controls --cfg=kani_smallsort_s2_assumed"
-    if request and request.get("schema") in ("ch8-s3-1-v1", "ch8-s3-2-v1", "ch8-s3s4-bridge1-v1", "ch8-s4p-1-v1", "ch8-s4p-2-v1", "ch8-s4p-2r2-v1"):
+    if request and request.get("schema") in ("ch8-s3-1-v1", "ch8-s3-2-v1", "ch8-s3s4-bridge1-v1", "ch8-s4p-1-v1", "ch8-s4p-2-v1", "ch8-s4p-2r2-v1", "ch8-s4p-3-v1"):
         import s3_profile
         fixed=s3_profile.CFG
+        if request.get("schema")=="ch8-s4p-3-v1":
+            import s4p3_profile
+            fixed=s4p3_profile.CFG
         if request.get("schema")=="ch8-s4p-2r2-v1":
             import s4p2r2_profile
             fixed=s4p2r2_profile.CFG
@@ -1066,7 +1072,7 @@ def source_under_test_record(request,variant,variant_files,patch):
     value={'base_std_sha':STD_SHA,'variant':variant,
            'file_sha256':{**request['changed_file_sha256'],**variant_files},
            'patch_sha256':sha256(patch) if patch is not None else None}
-    if request.get('schema') in ("ch8-s3-1-v1", "ch8-s3-2-v1", "ch8-s3s4-bridge1-v1", "ch8-s4p-1-v1", "ch8-s4p-2-v1", "ch8-s4p-2r2-v1"):
+    if request.get('schema') in ("ch8-s3-1-v1", "ch8-s3-2-v1", "ch8-s3s4-bridge1-v1", "ch8-s4p-1-v1", "ch8-s4p-2-v1", "ch8-s4p-2r2-v1", "ch8-s4p-3-v1"):
         from s3_evidence import identity
         value.update(identity(request),base_std_sha=request['std_sha'],
                      historical_patch_base_std_sha=request['base_std_sha'])
@@ -1076,10 +1082,11 @@ def source_under_test_record(request,variant,variant_files,patch):
 def _run_group(std: Path, tool: Path, out: Path, request: dict[str, Any],
                group: dict[str, Any], phase_deadline: float, isolated_limits=None) -> tuple[list[dict[str, Any]], str | None]:
     if isolated_limits is not None:
-        if request.get('schema') in ("ch8-s3-1-v1", "ch8-s3-2-v1", "ch8-s3s4-bridge1-v1", "ch8-s4p-1-v1", "ch8-s4p-2-v1", "ch8-s4p-2r2-v1"):
+        if request.get('schema') in ("ch8-s3-1-v1", "ch8-s3-2-v1", "ch8-s3s4-bridge1-v1", "ch8-s4p-1-v1", "ch8-s4p-2-v1", "ch8-s4p-2r2-v1", "ch8-s4p-3-v1"):
             import s3_profile as profile
             if request.get("schema")=="ch8-s3-2-v1":import s32_profile as profile
             if request.get("schema")=="ch8-s3s4-bridge1-v1":import s34_profile as profile
+            if request.get("schema")=="ch8-s4p-3-v1":import s4p3_profile as profile
             if request.get("schema")=="ch8-s4p-2r2-v1":import s4p2r2_profile as profile
             if request.get("schema")=="ch8-s4p-2-v1":import s4p2_profile as profile
             if request.get("schema")=="ch8-s4p-1-v1":import s4p_profile as profile
@@ -1099,6 +1106,8 @@ def _run_group(std: Path, tool: Path, out: Path, request: dict[str, Any],
     results = [{**_row_base(row, "IN_PROGRESS"), "group": group["id"],
                 "per_root_rss_kib": None, "cost_phases": {k: "UNKNOWN_NOT_EXPORTED_BY_STOCK" for k in ("body_wall_s", "model_wall_s", "checker_wall_s", "summary_wall_s", "driver_root_rss_kib", "backend_root_rss_kib", "aggregate_root_rss_kib")}, "per_root_rss_status": "UNKNOWN_NO_EXACT_HARNESS_ATTRIBUTION",
                 "proof_credit": "NONE"} for row in group["rows"]]
+    if request.get("schema")=="ch8-s4p-3-v1":
+        for result in results:result["target"]=None
     if request.get("schema")=="ch8-s4p-2r2-v1":
         for result in results:result["target"]=None
     if request.get("schema")=="ch8-s4p-2-v1":
@@ -1109,8 +1118,8 @@ def _run_group(std: Path, tool: Path, out: Path, request: dict[str, Any],
                "unwind": group["unwind"], "proof_credit": "NONE",
                "compile_limit_seconds": compile_limit,
                "group_budget_seconds": 600 if isolated_limits is not None else compile_limit + sum(r["timeout_seconds"] for r in group["rows"]),
-               "std_sha": request["std_sha"] if request.get("schema") in ("ch8-s3-1-v1", "ch8-s3-2-v1", "ch8-s3s4-bridge1-v1", "ch8-s4p-1-v1", "ch8-s4p-2-v1", "ch8-s4p-2r2-v1") else STD_SHA,
-               "tool_sha": request["tool_sha"] if request.get("schema") in ("ch8-s3-1-v1", "ch8-s3-2-v1", "ch8-s3s4-bridge1-v1", "ch8-s4p-1-v1", "ch8-s4p-2-v1", "ch8-s4p-2r2-v1") else TOOL_SHA,
+               "std_sha": request["std_sha"] if request.get("schema") in ("ch8-s3-1-v1", "ch8-s3-2-v1", "ch8-s3s4-bridge1-v1", "ch8-s4p-1-v1", "ch8-s4p-2-v1", "ch8-s4p-2r2-v1", "ch8-s4p-3-v1") else STD_SHA,
+               "tool_sha": request["tool_sha"] if request.get("schema") in ("ch8-s3-1-v1", "ch8-s3-2-v1", "ch8-s3s4-bridge1-v1", "ch8-s4p-1-v1", "ch8-s4p-2-v1", "ch8-s4p-2r2-v1", "ch8-s4p-3-v1") else TOOL_SHA,
                "request_sha256": sha256(REQUEST_PATH)}
     patch = None
     metadata_target = None
@@ -1120,7 +1129,7 @@ def _run_group(std: Path, tool: Path, out: Path, request: dict[str, Any],
         rich=NativeStarts(selectors,std.resolve())
     else:
         rich = rich_evidence.RegularEvidence(selectors, std.resolve())
-    s3=request.get("schema") in ("ch8-s3-1-v1", "ch8-s3-2-v1", "ch8-s3s4-bridge1-v1", "ch8-s4p-1-v1", "ch8-s4p-2-v1", "ch8-s4p-2r2-v1")
+    s3=request.get("schema") in ("ch8-s3-1-v1", "ch8-s3-2-v1", "ch8-s3s4-bridge1-v1", "ch8-s4p-1-v1", "ch8-s4p-2-v1", "ch8-s4p-2r2-v1", "ch8-s4p-3-v1")
     if s3:
         from s3_evidence import identity
         receipt.update(identity(request))
@@ -1142,7 +1151,7 @@ def _run_group(std: Path, tool: Path, out: Path, request: dict[str, Any],
         patch, variant_files = _run_variant(std, group["variant"], request)
         receipt.update(source_before=source_before, tool_fingerprints_before=before,
                        memory=memory, source_under_test=source_under_test_record(request,group["variant"],variant_files,patch))
-        child_env = ci_env(std,request) if request.get("schema") in ("ch8-s3-1-v1", "ch8-s3-2-v1", "ch8-s3s4-bridge1-v1", "ch8-s4p-1-v1", "ch8-s4p-2-v1", "ch8-s4p-2r2-v1") else ci_env(std)
+        child_env = ci_env(std,request) if request.get("schema") in ("ch8-s3-1-v1", "ch8-s3-2-v1", "ch8-s3s4-bridge1-v1", "ch8-s4p-1-v1", "ch8-s4p-2-v1", "ch8-s4p-2r2-v1", "ch8-s4p-3-v1") else ci_env(std)
         # Fresh namespace prevents old/native-cache metadata from being labelled
         # as this invocation. This is a runner key, not a compiler instance ID.
         metadata_target = Path(child_env["CARGO_TARGET_DIR"]) / receipt["invocation_id"]
@@ -1217,7 +1226,7 @@ def _run_group(std: Path, tool: Path, out: Path, request: dict[str, Any],
         for row, result in zip(group["rows"], results):
             parsed = parse_export(export, row, source_binding=request["source_bindings"][row["id"]],
                                   std=std.resolve(), group_selectors=selectors)
-            if request.get('schema') in ("ch8-s3-1-v1", "ch8-s3-2-v1", "ch8-s3s4-bridge1-v1", "ch8-s4p-1-v1", "ch8-s4p-2-v1", "ch8-s4p-2r2-v1") and parsed.get('outcome')!='RECORDED':
+            if request.get('schema') in ("ch8-s3-1-v1", "ch8-s3-2-v1", "ch8-s3s4-bridge1-v1", "ch8-s4p-1-v1", "ch8-s4p-2-v1", "ch8-s4p-2r2-v1", "ch8-s4p-3-v1") and parsed.get('outcome')!='RECORDED':
                 receipt['source_stage_target_binding_error']=parsed
                 raise RunnerError('S3 export source/stage/target binding rejected')
             result.update(status="OBSERVED", outcome=parsed["outcome"], export=parsed,
@@ -1313,7 +1322,7 @@ def run_rows(std: Path, tool: Path, out: Path, request: dict[str, Any],
              group_ids: list[str] | None = None) -> int:
     out.mkdir(parents=True, exist_ok=True)
     import r5_profile
-    if request.get('schema') in ("ch8-s3-1-v1", "ch8-s3-2-v1", "ch8-s3s4-bridge1-v1", "ch8-s4p-1-v1", "ch8-s4p-2-v1", "ch8-s4p-2r2-v1"):raise RunnerError('S3 multi-root path refused; use S3 singleton campaign')
+    if request.get('schema') in ("ch8-s3-1-v1", "ch8-s3-2-v1", "ch8-s3s4-bridge1-v1", "ch8-s4p-1-v1", "ch8-s4p-2-v1", "ch8-s4p-2r2-v1", "ch8-s4p-3-v1"):raise RunnerError('S3 multi-root path refused; use S3 singleton campaign')
     if r5_profile.enabled(request):raise RunnerError('r5 multi-root legacy run refused; use isolated campaign')
     phase_started = time.monotonic()
     deadline = phase_started+PHASE_SECONDS
@@ -1378,7 +1387,7 @@ def main(argv: list[str] | None = None) -> int:
             print(json.dumps(verify_source(args.std, args.tool, request, prebuild=True), sort_keys=True))
         else:
             import r5_profile
-            if request.get('schema') in ("ch8-s3-1-v1", "ch8-s3-2-v1", "ch8-s3s4-bridge1-v1", "ch8-s4p-1-v1", "ch8-s4p-2-v1", "ch8-s4p-2r2-v1"):raise RunnerError('S3 multi-root path refused; use S3 singleton campaign')
+            if request.get('schema') in ("ch8-s3-1-v1", "ch8-s3-2-v1", "ch8-s3s4-bridge1-v1", "ch8-s4p-1-v1", "ch8-s4p-2-v1", "ch8-s4p-2r2-v1", "ch8-s4p-3-v1"):raise RunnerError('S3 multi-root path refused; use S3 singleton campaign')
             if r5_profile.enabled(request):raise RunnerError('r5 requires isolated r5_campaign.py run; legacy multi-root run refused')
             group_ids = args.groups.split(",") if args.groups is not None else None
             code = run_rows(args.std, args.tool, args.out, request, group_ids)
