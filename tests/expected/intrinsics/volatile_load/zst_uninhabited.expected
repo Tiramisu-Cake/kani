@@ -1,4 +1,6 @@
+Checking harness uninhabited_zst...
 FAILURE\
 volatile load of an uninhabited type has undefined behavior
 Failed Checks: volatile load of an uninhabited type has undefined behavior
 VERIFICATION:- FAILED
+Complete - 0 successfully verified harnesses, 1 failures, 1 total.

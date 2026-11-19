@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 // compile-flags: --edition 2021
-// Regression for #5072: volatile ZST reads must not access memory.
+// Volatile loads of inhabited ZSTs accept aligned reference, dangling and null pointers (#5072).
 #![feature(core_intrinsics)]
 
 use std::ptr::{self, NonNull};

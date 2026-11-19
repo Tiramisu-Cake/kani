@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 // compile-flags: --edition 2021
-// Preserve the diagnostic for a load that cannot return an inhabited value.
+// Loading an uninhabited ZST requires a safety diagnostic.
 #![feature(core_intrinsics)]
 
 enum Empty {}
