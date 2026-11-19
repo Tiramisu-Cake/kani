@@ -1,18 +1,21 @@
-name: CH8 S2 batch3probes diagnostic cost
+name: CH8 S4P2 exact network N0..4 partitions at unchanged caps
 'on':
   push:
     branches:
-    - uninit-ci/ch8-s2-batch3probes-*
+    - uninit-ci/ch8-s4p-*
 permissions:
   contents: read
 concurrency:
   group: ch8-s2-fork
   cancel-in-progress: false
 jobs:
-  s2_batch:
-    if: ${{ github.repository == 'Tiramisu-Cake/kani' && github.event_name == 'push' }}
+  s3_leaf:
+    if: ${{ github.repository == 'Tiramisu-Cake/kani' && github.event_name == 'push'
+      }}
     runs-on: ubuntu-24.04
     timeout-minutes: 180
+    env:
+      S3_PROFILE: ch8-s4p-2-network-fullbyte-singletons-v1
     steps:
     - name: Begin setup budget
       timeout-minutes: 1
@@ -25,22 +28,25 @@ jobs:
       with:
         ref: ${{ github.sha }}
         path: control
-        fetch-depth: 6
+        fetch-depth: 7
         persist-credentials: false
     - name: Validate control and synthetic wrapper
-      timeout-minutes: 1
+      timeout-minutes: 18
       working-directory: control/ch8-s1-control
       env:
         PYTHONDONTWRITEBYTECODE: '1'
       run: 'python3 check_package.py control --repo ..
 
-        python3 -m unittest -v test_runner.py test_s107.FinalizationTests test_s2.py
+        python3 s4p2_validate.py
 
         '
     - name: Read immutable export pins
       timeout-minutes: 1
       id: pins
-      run: "python3 - <<'PYCODE'\nimport json, os\nr = json.load(open('control/ch8-s1-control/CI-REQUEST.json'))\nassert r['status'] == 'READY'\nwith open(os.environ['GITHUB_OUTPUT'], 'a') as f:\n    f.write('std=' + r['std_sha'] + '\\n')\n    f.write('tool=' + r['tool_sha'] + '\\n')\nPYCODE\n"
+      run: "python3 - <<'PYCODE'\nimport json, os\nr = json.load(open('control/ch8-s1-control/CI-REQUEST.json'))\n\
+        assert r['status'] == 'READY'\nwith open(os.environ['GITHUB_OUTPUT'], 'a')\
+        \ as f:\n    f.write('std=' + r['std_sha'] + '\\n')\n    f.write('tool=' +\
+        \ r['tool_sha'] + '\\n')\nPYCODE\n"
     - name: Checkout production model export
       timeout-minutes: 5
       uses: actions/checkout@v6
@@ -48,7 +54,7 @@ jobs:
         repository: Tiramisu-Cake/verify-rust-std
         ref: ${{ steps.pins.outputs.std }}
         path: export
-        fetch-depth: 4
+        fetch-depth: 5
         persist-credentials: false
         submodules: true
     - name: Checkout immutable upstream tool
@@ -61,8 +67,9 @@ jobs:
         fetch-depth: 2
         persist-credentials: false
     - name: Check all source identities
-      timeout-minutes: 1
-      run: python3 control/ch8-s1-control/runner.py check-source --std export --tool tool
+      timeout-minutes: 3
+      run: python3 control/ch8-s1-control/runner.py check-source --std export --tool
+        tool
     - name: Setup exact stock tool
       timeout-minutes: 15
       uses: ./tool/.github/actions/setup
@@ -76,14 +83,15 @@ jobs:
         CARGO_BUILD_JOBS: '1'
         SETUP_EPOCH: ${{ runner.temp }}/ch8-s1-setup-epoch
         RECEIPT_ROOT: ${{ runner.temp }}/ch8-s1-receipts
-      run: python3 ../control/ch8-s1-control/check_package.py build --tool . --epoch "$SETUP_EPOCH" --out "$RECEIPT_ROOT/setup"
-    - name: Run S2 batch3probes with bounded observations
+      run: python3 ../control/ch8-s1-control/check_package.py build --tool . --epoch
+        "$SETUP_EPOCH" --out "$RECEIPT_ROOT/setup"
+    - name: Run S3 actual leaves with bounded observations
       timeout-minutes: 126
       env:
         RECEIPT_ROOT: ${{ runner.temp }}/ch8-s1-receipts
         PYTHONDONTWRITEBYTECODE: '1'
-        S1_GROUP: s2-batch3probes-u34
-      run: 'python3 control/ch8-s1-control/runner.py run --std export --tool tool --out "$RECEIPT_ROOT" --groups "$S1_GROUP"
+      run: 'python3 control/ch8-s1-control/s4p2_campaign.py run --std export --tool
+        tool --out "$RECEIPT_ROOT"
 
         '
     - name: Materialize bounded fallback
@@ -92,10 +100,7 @@ jobs:
       env:
         RECEIPT_ROOT: ${{ runner.temp }}/ch8-s1-receipts
         JOB_STATUS: ${{ job.status }}
-        S1_GROUP: s2-batch3probes-u34
-      run: 'python3 control/ch8-s1-control/check_package.py fallback --out "$RECEIPT_ROOT" --groups "$S1_GROUP"
-
-        python3 control/ch8-s1-control/pack_evidence.py --root "$RECEIPT_ROOT"
+      run: 'python3 control/ch8-s1-control/s4p2_campaign.py finish --out "$RECEIPT_ROOT"
 
         '
     - name: Upload bounded evidence
@@ -105,7 +110,7 @@ jobs:
       env:
         RECEIPT_ROOT: ${{ runner.temp }}/ch8-s1-receipts
       with:
-        name: ch8-s2-batch3probes-${{ github.run_id }}-${{ github.run_attempt }}
+        name: ch8-s3-2-${{ github.run_id }}-${{ github.run_attempt }}
         path: ${{ env.RECEIPT_ROOT }}/group-evidence.json.gz
         if-no-files-found: error
         retention-days: 7

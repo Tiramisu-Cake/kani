@@ -14,6 +14,14 @@ from unittest import mock
 import runner
 
 
+def legacy_request():
+    """Exercise the unchanged legacy grouped contract separately from r5 service tests."""
+    request=runner.load_request()
+    request.pop('profile',None);request.pop('r5',None)
+    runner.s2_policy.validate_legacy_request(request)
+    return request
+
+
 def row(**updates):
     value = {"id": "synthetic", "selector": "slice::sort::root", "mode": "PFC",
              "variant": "production", "unwind": 4, "expected": "SUCCESS",
@@ -292,7 +300,7 @@ class NoListBindingTests(unittest.TestCase):
 
     def test_source_anchor_and_request_binding_mutations(self):
         import copy
-        original=runner.load_request()
+        original=legacy_request()
         mutations=[
             lambda r:r['source_bindings'].pop(r['rows'][0]['id']),
             lambda r:r['source_bindings'][r['rows'][0]['id']].update(selector='other'),
@@ -362,7 +370,7 @@ def feed_regular(parser, stock):
 
 class GroupTests(unittest.TestCase):
     def test_groups_keep_rows_flags_variants_and_every_selector(self):
-        request=runner.load_request();groups=runner.group_rows(request['rows'],request['execution_groups'])
+        request=legacy_request();groups=runner.group_rows(request['rows'],request['execution_groups'])
         self.assertEqual(len(groups),1)
         self.assertEqual([g['id'] for g in groups],[g['id'] for g in request['execution_groups']])
         self.assertEqual(sorted(r['id'] for g in groups for r in g['rows']),sorted(r['id'] for r in request['rows']))
@@ -476,7 +484,7 @@ class GroupTests(unittest.TestCase):
         return code,json.loads((out/'receipt.json').read_text()),calls,out
 
     def test_all_s2_rows_one_invocation_record_only(self):
-        request=runner.load_request()
+        request=legacy_request()
         with tempfile.TemporaryDirectory() as d:
             code,summary,calls,out=self.run_mock_batch(Path(d),request)
             self.assertEqual(code,0,json.dumps(summary))
@@ -519,7 +527,7 @@ class GroupTests(unittest.TestCase):
             self.assertEqual(json.loads((out/'a/receipt.json').read_text())['status'],'NOT_RUN')
 
     def test_phase_limit_is_separate_from_kani_harness_limit(self):
-        request=runner.load_request()
+        request=legacy_request()
         with tempfile.TemporaryDirectory() as d,mock.patch.object(runner,'PHASE_SECONDS',50):
             code,summary,calls,out=self.run_mock_batch(Path(d),request)
             self.assertEqual(code,0)  # Complete evidence is independent of offline oracles
