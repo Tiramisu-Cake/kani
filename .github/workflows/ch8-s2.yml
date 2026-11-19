@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 180
     env:
-      S3_PROFILE: ch8-s4p-2-network-fullbyte-singletons-v1
+      S3_PROFILE: ch8-s4p-2r2-network-fullbyte-concrete-calls-v1
     steps:
     - name: Begin setup budget
       timeout-minutes: 1
@@ -28,7 +28,7 @@ jobs:
       with:
         ref: ${{ github.sha }}
         path: control
-        fetch-depth: 7
+        fetch-depth: 8
         persist-credentials: false
     - name: Validate control and synthetic wrapper
       timeout-minutes: 18
@@ -37,7 +37,7 @@ jobs:
         PYTHONDONTWRITEBYTECODE: '1'
       run: 'python3 check_package.py control --repo ..
 
-        python3 s4p2_validate.py
+        python3 s4p2r2_validate.py
 
         '
     - name: Read immutable export pins
@@ -54,7 +54,7 @@ jobs:
         repository: Tiramisu-Cake/verify-rust-std
         ref: ${{ steps.pins.outputs.std }}
         path: export
-        fetch-depth: 5
+        fetch-depth: 6
         persist-credentials: false
         submodules: true
     - name: Checkout immutable upstream tool
@@ -90,7 +90,7 @@ jobs:
       env:
         RECEIPT_ROOT: ${{ runner.temp }}/ch8-s1-receipts
         PYTHONDONTWRITEBYTECODE: '1'
-      run: 'python3 control/ch8-s1-control/s4p2_campaign.py run --std export --tool
+      run: 'python3 control/ch8-s1-control/s4p2r2_campaign.py run --std export --tool
         tool --out "$RECEIPT_ROOT"
 
         '
@@ -100,7 +100,7 @@ jobs:
       env:
         RECEIPT_ROOT: ${{ runner.temp }}/ch8-s1-receipts
         JOB_STATUS: ${{ job.status }}
-      run: 'python3 control/ch8-s1-control/s4p2_campaign.py finish --out "$RECEIPT_ROOT"
+      run: 'python3 control/ch8-s1-control/s4p2r2_campaign.py finish --out "$RECEIPT_ROOT"
 
         '
     - name: Upload bounded evidence
