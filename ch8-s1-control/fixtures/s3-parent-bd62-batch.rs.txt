@@ -1,0 +1,339 @@
+//! Three cost probes. Assumed consumers are DIAGNOSTIC_ASSUMED, never proof credit.
+use super::super::{bidirectional_merge, sort13_optimal, small_sort_general,
+    swap_if_less, sort8_stable, sort4_stable, insert_tail, CopyOnDrop, SMALL_SORT_GENERAL_SCRATCH_LEN};
+use super::sorting_model::{KeyLess, snapshot, post, enabled};
+use super::{sorting_s2_span as span, sorting_s2_swap as pair};
+use crate::{kani, mem::{self, MaybeUninit, size_of}, ptr, slice, intrinsics};
+use crate::slice::sort::shared::FreezeMarker;
+
+fn ordered(v: &[u8]) -> bool {
+    let mut i = 1;
+    while i < v.len() { if v[i] < v[i-1] { return false; } i += 1; }
+    true
+}
+fn merge() -> ([u8;32],[u8;32]) {
+    let src: [u8;32] = kani::any();
+    kani::assume(ordered(&src[..16]) && ordered(&src[16..]));
+    let original = src;
+    let mut dst = [MaybeUninit::<u8>::uninit();34];
+    dst[0].write(0xa5); dst[33].write(0x5a);
+    unsafe { bidirectional_merge(&src,dst.as_mut_ptr().add(1).cast(),&mut KeyLess::<u8>::new()) };
+    let mut out = [0u8;32];
+    for i in 0..32 { out[i] = unsafe { dst[i+1].assume_init() }; }
+    assert!(src == original, "S2_MERGE_SOURCE_FRAME");
+    assert!(unsafe { dst[0].assume_init() == 0xa5 && dst[33].assume_init() == 0x5a }, "S2_MERGE_CANARIES");
+    (src,out)
+}
+#[kani::proof]
+#[kani::unwind(34)]
+fn merge32_real() {
+    assert!(enabled::<u8,KeyLess<u8>>() && span::active::<u8,KeyLess<u8>>() && pair::enabled::<u8,KeyLess<u8>>(), "S2_ACTIVE_MERGE32_REAL");
+    let (src,out) = merge();
+    assert!(post::<u8,KeyLess<u8>>(snapshot::<u8,KeyLess<u8>>(&src),&out), "S2_MERGE32_SORTED_FULL_COUNT");
+    kani::cover(src[0] > src[16], "S2_MERGE_RIGHT_FIRST");
+    kani::cover(src[0] < src[16], "S2_MERGE_LEFT_FIRST");
+    kani::cover(src[15] == src[16], "S2_MERGE_TIE");
+    kani::cover(out[0] < out[31], "S2_MERGE_NONCONSTANT");
+    kani::cover(true, "S2_MERGE_USEFUL_RETURN");
+}
+#[kani::proof]
+#[kani::stub_verified(swap_if_less)]
+#[kani::unwind(34)]
+fn sort13_assumed() {
+    assert!(enabled::<u8,KeyLess<u8>>() && span::active::<u8,KeyLess<u8>>() && pair::enabled::<u8,KeyLess<u8>>(), "S2_ACTIVE_SORT13_ASSUMED");
+    let mut v: [u8;15] = kani::any();
+    let before = v;
+    sort13_optimal(&mut v[1..14],&mut KeyLess::<u8>::new());
+    assert!(post::<u8,KeyLess<u8>>(snapshot::<u8,KeyLess<u8>>(&before[1..14]),&v[1..14]), "S2_SORT13_SORTED_FULL_COUNT");
+    assert!(v[0] == before[0] && v[14] == before[14], "S2_SORT13_CANARIES");
+    kani::cover(before[1] > before[13], "S2_SORT13_UNSORTED");
+    kani::cover(before[1] == before[13], "S2_SORT13_DUPLICATE");
+    kani::cover(v[1] < v[13], "S2_SORT13_NONCONSTANT");
+    kani::cover(true, "S2_SORT13_USEFUL_RETURN");
+}
+#[kani::proof]
+#[kani::stub_verified(sort8_stable)]
+#[kani::stub_verified(insert_tail)]
+#[kani::stub_verified(bidirectional_merge)]
+#[kani::unwind(34)]
+fn general32_assumed() {
+    assert!(enabled::<u8,KeyLess<u8>>() && span::active::<u8,KeyLess<u8>>() && pair::enabled::<u8,KeyLess<u8>>(), "S2_ACTIVE_GENERAL32_ASSUMED");
+    let mut v: [u8;34] = kani::any();
+    let before = v;
+    small_sort_general(&mut v[1..33],&mut KeyLess::<u8>::new());
+    assert!(post::<u8,KeyLess<u8>>(snapshot::<u8,KeyLess<u8>>(&before[1..33]),&v[1..33]), "S2_GENERAL32_SORTED_FULL_COUNT");
+    assert!(v[0] == before[0] && v[33] == before[33], "S2_GENERAL32_CANARIES");
+    kani::cover(before[1] > before[32], "S2_GENERAL32_UNSORTED");
+    kani::cover(before[1] == before[32], "S2_GENERAL32_DUPLICATE");
+    kani::cover(v[1] < v[32], "S2_GENERAL32_NONCONSTANT");
+    kani::cover(true, "S2_GENERAL32_USEFUL_RETURN");
+}
+// Same candidate, actual swap; qualification remains NOT_RUN until exact evidence.
+#[kani::proof_for_contract(swap_if_less)]
+#[kani::unwind(34)]
+fn swap_pfc() {
+    assert!(enabled::<u8,KeyLess<u8>>() && span::active::<u8,KeyLess<u8>>() && pair::enabled::<u8,KeyLess<u8>>(), "S2_ACTIVE_SWAP_PFC");
+    let mut v: [u8;15] = kani::any();
+    let before = v;
+    let a: usize = kani::any(); let b: usize = kani::any();
+    kani::assume(a < 13 && b < 13);
+    let pre = pair::capture::<u8,KeyLess<u8>>(v[1..].as_ptr(),a,b);
+    unsafe { swap_if_less(v.as_mut_ptr().add(1),a,b,&mut KeyLess::<u8>::new()) };
+    assert!(pair::post::<u8,KeyLess<u8>>(pre,v[1..].as_ptr(),a,b), "S2_SWAP_EXACT_TRANSFER");
+    for i in 0..15 { assert!(i == a+1 || i == b+1 || v[i] == before[i], "S2_SWAP_FULL_FRAME"); }
+    kani::cover(a == b, "S2_SWAP_EQUAL");
+    kani::cover(a == 0 && b == 12 && before[13] < before[1], "S2_SWAP_TAKEN");
+    kani::cover(a == 12 && b == 0 && before[13] <= before[1], "S2_SWAP_REVERSE");
+    kani::cover(true, "S2_SWAP_USEFUL_RETURN");
+}
+// Constructive witness over each summary length, with no assumed sorting oracle.
+// This sorts only a ghost fixture; all actual runtime bodies remain unchanged.
+fn witness(input: &[u8]) {
+    let mut output = [0u8;32];
+    output[..input.len()].copy_from_slice(input);
+    for i in 1..input.len() {
+        let mut j = i;
+        while j > 0 && output[j] < output[j-1] { output.swap(j,j-1); j -= 1; }
+    }
+    assert!(span::post::<u8,KeyLess<u8>>(span::capture::<u8,KeyLess<u8>>(input.as_ptr(),input.len()),output.as_ptr(),input.len()), "S2_SUMMARY_WITNESS_FULL_COUNT");
+}
+#[kani::proof]
+#[kani::unwind(34)]
+fn summary_witness() {
+    assert!(enabled::<u8,KeyLess<u8>>() && span::active::<u8,KeyLess<u8>>() && pair::enabled::<u8,KeyLess<u8>>(), "S2_ACTIVE_SUMMARY_WITNESS");
+    let input: [u8;32] = kani::any();
+    // sort8; each insert-tail p8..15; final merge32. This witness is stronger
+    // than the corresponding sorted-prefix/halves premises and shares full values.
+    for n in 8..17 { witness(&input[..n]); }
+    witness(&input);
+    let pairpre = pair::capture::<u8,KeyLess<u8>>(input.as_ptr(),0,1);
+    let outpair = if input[1] < input[0] { [input[1],input[0]] } else { [input[0],input[1]] };
+    assert!(pair::post::<u8,KeyLess<u8>>(pairpre,outpair.as_ptr(),0,1), "S2_PAIR_WITNESS");
+    kani::cover(input[0] > input[31], "S2_WITNESS_UNSORTED");
+    kani::cover(input[0] != input[31], "S2_WITNESS_NONCONSTANT");
+    kani::cover(true, "S2_WITNESS_USEFUL_RETURN");
+}
+#[kani::proof]
+#[kani::unwind(34)]
+fn merge_order_corrupt() {
+    let (src,mut out) = merge();
+    kani::assume(out[0] < out[31]); out.swap(0,31);
+    assert!(post::<u8,KeyLess<u8>>(snapshot::<u8,KeyLess<u8>>(&src),&out), "S2_NEG_MERGE_ORDER");
+}
+#[kani::proof]
+#[kani::unwind(34)]
+fn merge_count_corrupt() {
+    let (src,mut out) = merge();
+    kani::assume(src == [1u8;32]); out[31] = 2;
+    assert!(post::<u8,KeyLess<u8>>(snapshot::<u8,KeyLess<u8>>(&src),&out), "S2_NEG_MERGE_COUNT");
+}
+#[kani::proof]
+#[kani::unwind(34)]
+fn checker_count_corrupt() {
+    let input = [1u8;32]; let mut out = input; out[31] = 2;
+    assert!(post::<u8,KeyLess<u8>>(snapshot::<u8,KeyLess<u8>>(&input),&out), "S2_NEG_CHECKER_COUNT");
+}
+#[kani::proof]
+#[kani::unwind(34)]
+fn checker_order_corrupt() {
+    let input = [1u8,2]; let out = [2u8,1];
+    assert!(post::<u8,KeyLess<u8>>(snapshot::<u8,KeyLess<u8>>(&input),&out), "S2_NEG_CHECKER_ORDER");
+}
+unsafe fn weak_swap<T,F:FnMut(&T,&T)->bool>(_v:*mut T,_a:usize,_b:usize,_f:&mut F) {}
+#[kani::proof]
+#[kani::stub(s2_swap_seam,weak_swap)]
+#[kani::unwind(34)]
+fn sort13_weak() {
+    let mut v = [12u8,11,10,9,8,7,6,5,4,3,2,1,0]; let before = v;
+    sort13_fault_network(&mut v,&mut KeyLess::<u8>::new());
+    assert!(post::<u8,KeyLess<u8>>(snapshot::<u8,KeyLess<u8>>(&before),&v), "S2_NEG_SORT13_WEAK");
+}
+// Copy is safety/frame-compatible, but contains no sorting guarantee.
+unsafe fn weak_merge<T:crate::slice::sort::shared::FreezeMarker,F:FnMut(&T,&T)->bool>(v:&[T],dst:*mut T,_f:&mut F) {
+    unsafe { ptr::copy_nonoverlapping(v.as_ptr(),dst,v.len()) };
+}
+#[kani::proof]
+#[kani::stub_verified(sort8_stable)]
+#[kani::stub_verified(insert_tail)]
+#[kani::stub(s2_merge_seam,weak_merge)]
+#[kani::unwind(34)]
+fn general32_weak() {
+    let mut v = [2u8;32]; for i in 16..32 { v[i] = 1; } let before = v;
+    general_fault_copy(&mut v,&mut KeyLess::<u8>::new());
+    assert!(post::<u8,KeyLess<u8>>(snapshot::<u8,KeyLess<u8>>(&before),&v), "S2_NEG_GENERAL32_WEAK");
+}
+
+// Registration for Kani's stub_verified lookup in this same opt-in crate/cfg.
+// NOT EXECUTED by the 11-root request; registration is NOT qualification.
+// All S2 assumed consumers remain DIAGNOSTIC_ASSUMED with proof credit NONE.
+#[kani::proof_for_contract(sort8_stable)]
+#[kani::unwind(34)]
+fn sort8_registration_only() {
+    let mut src: [u8;8] = kani::any();
+    let mut dst = [MaybeUninit::<u8>::uninit();8];
+    let mut scratch = [MaybeUninit::<u8>::uninit();8];
+    unsafe { sort8_stable(src.as_mut_ptr(),dst.as_mut_ptr().cast(),
+        scratch.as_mut_ptr().cast(),&mut KeyLess::<u8>::new()) };
+}
+
+// S2-local fault seams are deliberately uncontracted. Ordinary stubs target only
+// these functions. The positive probes still call the original production code.
+unsafe fn s2_swap_seam<T,F:FnMut(&T,&T)->bool>(v:*mut T,a:usize,b:usize,f:&mut F) {
+    unsafe { swap_if_less(v,a,b,f) };
+}
+unsafe fn s2_merge_seam<T:crate::slice::sort::shared::FreezeMarker,F:FnMut(&T,&T)->bool>(v:&[T],dst:*mut T,f:&mut F) {
+    unsafe { bidirectional_merge(v,dst,f) };
+}
+// Faithful source copies: only function names and the fault seam call differ.
+fn sort13_fault_network<T, F>(v: &mut [T], is_less: &mut F)
+where
+    F: FnMut(&T, &T) -> bool,
+{
+    if v.len() < 13 {
+        intrinsics::abort_immediate();
+    }
+
+    let v_base = v.as_mut_ptr();
+
+    // Optimal sorting network see:
+    // https://bertdobbelaere.github.io/sorting_networks.html.
+
+    // SAFETY: We checked the len.
+    unsafe {
+        s2_swap_seam(v_base, 0, 12, is_less);
+        s2_swap_seam(v_base, 1, 10, is_less);
+        s2_swap_seam(v_base, 2, 9, is_less);
+        s2_swap_seam(v_base, 3, 7, is_less);
+        s2_swap_seam(v_base, 5, 11, is_less);
+        s2_swap_seam(v_base, 6, 8, is_less);
+        s2_swap_seam(v_base, 1, 6, is_less);
+        s2_swap_seam(v_base, 2, 3, is_less);
+        s2_swap_seam(v_base, 4, 11, is_less);
+        s2_swap_seam(v_base, 7, 9, is_less);
+        s2_swap_seam(v_base, 8, 10, is_less);
+        s2_swap_seam(v_base, 0, 4, is_less);
+        s2_swap_seam(v_base, 1, 2, is_less);
+        s2_swap_seam(v_base, 3, 6, is_less);
+        s2_swap_seam(v_base, 7, 8, is_less);
+        s2_swap_seam(v_base, 9, 10, is_less);
+        s2_swap_seam(v_base, 11, 12, is_less);
+        s2_swap_seam(v_base, 4, 6, is_less);
+        s2_swap_seam(v_base, 5, 9, is_less);
+        s2_swap_seam(v_base, 8, 11, is_less);
+        s2_swap_seam(v_base, 10, 12, is_less);
+        s2_swap_seam(v_base, 0, 5, is_less);
+        s2_swap_seam(v_base, 3, 8, is_less);
+        s2_swap_seam(v_base, 4, 7, is_less);
+        s2_swap_seam(v_base, 6, 11, is_less);
+        s2_swap_seam(v_base, 9, 10, is_less);
+        s2_swap_seam(v_base, 0, 1, is_less);
+        s2_swap_seam(v_base, 2, 5, is_less);
+        s2_swap_seam(v_base, 6, 9, is_less);
+        s2_swap_seam(v_base, 7, 8, is_less);
+        s2_swap_seam(v_base, 10, 11, is_less);
+        s2_swap_seam(v_base, 1, 3, is_less);
+        s2_swap_seam(v_base, 2, 4, is_less);
+        s2_swap_seam(v_base, 5, 6, is_less);
+        s2_swap_seam(v_base, 9, 10, is_less);
+        s2_swap_seam(v_base, 1, 2, is_less);
+        s2_swap_seam(v_base, 3, 4, is_less);
+        s2_swap_seam(v_base, 5, 7, is_less);
+        s2_swap_seam(v_base, 6, 8, is_less);
+        s2_swap_seam(v_base, 2, 3, is_less);
+        s2_swap_seam(v_base, 4, 5, is_less);
+        s2_swap_seam(v_base, 6, 7, is_less);
+        s2_swap_seam(v_base, 8, 9, is_less);
+        s2_swap_seam(v_base, 3, 4, is_less);
+        s2_swap_seam(v_base, 5, 6, is_less);
+    }
+}
+
+fn general_fault_copy<T: FreezeMarker, F: FnMut(&T, &T) -> bool>(v: &mut [T], is_less: &mut F) {
+    let mut stack_array = MaybeUninit::<[T; SMALL_SORT_GENERAL_SCRATCH_LEN]>::uninit();
+
+    // SAFETY: The memory is backed by `stack_array`, and the operation is safe as long as the len
+    // is the same.
+    let scratch = unsafe {
+        slice::from_raw_parts_mut(
+            stack_array.as_mut_ptr() as *mut MaybeUninit<T>,
+            SMALL_SORT_GENERAL_SCRATCH_LEN,
+        )
+    };
+
+    general_fault_scratch(v, scratch, is_less);
+}
+
+fn general_fault_scratch<T: FreezeMarker, F: FnMut(&T, &T) -> bool>(
+    v: &mut [T],
+    scratch: &mut [MaybeUninit<T>],
+    is_less: &mut F,
+) {
+    let len = v.len();
+    if len < 2 {
+        return;
+    }
+
+    if scratch.len() < len + 16 {
+        intrinsics::abort_immediate();
+    }
+
+    let v_base = v.as_mut_ptr();
+    let len_div_2 = len / 2;
+
+    // SAFETY: See individual comments.
+    unsafe {
+        let scratch_base = scratch.as_mut_ptr() as *mut T;
+
+        let presorted_len = if const { size_of::<T>() <= 16 } && len >= 16 {
+            // SAFETY: scratch_base is valid and has enough space.
+            sort8_stable(v_base, scratch_base, scratch_base.add(len), is_less);
+            sort8_stable(
+                v_base.add(len_div_2),
+                scratch_base.add(len_div_2),
+                scratch_base.add(len + 8),
+                is_less,
+            );
+
+            8
+        } else if len >= 8 {
+            // SAFETY: scratch_base is valid and has enough space.
+            sort4_stable(v_base, scratch_base, is_less);
+            sort4_stable(v_base.add(len_div_2), scratch_base.add(len_div_2), is_less);
+
+            4
+        } else {
+            ptr::copy_nonoverlapping(v_base, scratch_base, 1);
+            ptr::copy_nonoverlapping(v_base.add(len_div_2), scratch_base.add(len_div_2), 1);
+
+            1
+        };
+
+        for offset in [0, len_div_2] {
+            // SAFETY: at this point dst is initialized with presorted_len elements.
+            // We extend this to desired_len, src is valid for desired_len elements.
+            let src = v_base.add(offset);
+            let dst = scratch_base.add(offset);
+            let desired_len = if offset == 0 { len_div_2 } else { len - len_div_2 };
+
+            for i in presorted_len..desired_len {
+                ptr::copy_nonoverlapping(src.add(i), dst.add(i), 1);
+                insert_tail(dst, dst.add(i), is_less);
+            }
+        }
+
+        // SAFETY: see comment in `CopyOnDrop::drop`.
+        let drop_guard = CopyOnDrop { src: scratch_base, dst: v_base, len };
+
+        // SAFETY: at this point scratch_base is fully initialized, allowing us
+        // to use it as the source of our merge back into the original array.
+        // If a panic occurs we ensure the original array is restored to a valid
+        // permutation of the input through drop_guard. This technique is similar
+        // to ping-pong merging.
+        s2_merge_seam(
+            slice::from_raw_parts(drop_guard.src, drop_guard.len),
+            drop_guard.dst,
+            is_less,
+        );
+        mem::forget(drop_guard);
+    }
+}
