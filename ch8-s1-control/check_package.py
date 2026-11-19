@@ -81,6 +81,7 @@ def check_yaml(path):
         import s3_package
         if doc["jobs"]["s3_leaf"]["env"]["S3_PROFILE"]=="ch8-s3-2-capped-fullbyte-v1":import s32_package as s3_package
         if doc["jobs"]["s3_leaf"]["env"]["S3_PROFILE"]=="ch8-s3s4-bridge1-fullbyte-v1":import s34_package as s3_package
+        if doc["jobs"]["s3_leaf"]["env"]["S3_PROFILE"]=="ch8-s4p-2r2-network-fullbyte-concrete-calls-v1":import s4p2r2_package as s3_package
         if doc["jobs"]["s3_leaf"]["env"]["S3_PROFILE"]=="ch8-s4p-2-network-fullbyte-singletons-v1":import s4p2_package as s3_package
         if doc["jobs"]["s3_leaf"]["env"]["S3_PROFILE"]=="ch8-s4p-1-fullbyte-length-blocks-v1":import s4p_package as s3_package
         return s3_package.check_yaml(doc)
@@ -148,7 +149,7 @@ def control(repo):
     r=load_request()
     assert os.environ['GITHUB_REPOSITORY']=='Tiramisu-Cake/kani'
     assert os.environ['GITHUB_EVENT_NAME']=='push'
-    assert os.environ['GITHUB_REF'].startswith('refs/heads/'+('uninit-ci/ch8-s4p-' if r.get('schema') in ('ch8-s4p-1-v1','ch8-s4p-2-v1') else 'uninit-ci/ch8-s3s4-' if r.get('schema')=='ch8-s3s4-bridge1-v1' else 'uninit-ci/ch8-s3-2-' if r.get('schema')=='ch8-s3-2-v1' else 'uninit-ci/ch8-s3-1-' if r.get('schema')=='ch8-s3-1-v1' else 'uninit-ci/ch8-s2-batch3probes-'))
+    assert os.environ['GITHUB_REF'].startswith('refs/heads/'+('uninit-ci/ch8-s4p-' if r.get('schema') in ('ch8-s4p-1-v1','ch8-s4p-2-v1','ch8-s4p-2r2-v1') else 'uninit-ci/ch8-s3s4-' if r.get('schema')=='ch8-s3s4-bridge1-v1' else 'uninit-ci/ch8-s3-2-' if r.get('schema')=='ch8-s3-2-v1' else 'uninit-ci/ch8-s3-1-' if r.get('schema')=='ch8-s3-1-v1' else 'uninit-ci/ch8-s2-batch3probes-'))
     assert os.environ['GITHUB_RUN_ATTEMPT']=='1', 'Rerun requires separate coordinator GO'
     assert git(repo,'rev-parse','HEAD')==os.environ['GITHUB_SHA']
     assert git(repo,'rev-list','--parents','-n','1','HEAD').split()==[os.environ['GITHUB_SHA'],r['control_parent']]
@@ -157,7 +158,7 @@ def control(repo):
     changed=git(repo,'diff','--name-only',r['tool_sha'],'HEAD').splitlines()
     assert sorted(changed)==r['ci_changed_paths']
     assert all(p.startswith(('ch8-s1-control/','.github/workflows/')) for p in changed)
-    if r.get('schema') in ('ch8-s3-2-v1','ch8-s3s4-bridge1-v1','ch8-s4p-1-v1','ch8-s4p-2-v1'):
+    if r.get('schema') in ('ch8-s3-2-v1','ch8-s3s4-bridge1-v1','ch8-s4p-1-v1','ch8-s4p-2-v1','ch8-s4p-2r2-v1'):
         assert git(repo,'diff','--diff-filter=D','--name-only',r['tool_sha'],'HEAD').splitlines()==r['ci_deleted_paths']
         assert set(r['ci_payload_sha256'])==set(changed)-set(r['ci_deleted_paths'])-{'ch8-s1-control/CI-REQUEST.json'}
     for rel,digest in r['ci_payload_sha256'].items():
@@ -187,6 +188,9 @@ def build(tool, epoch, out):
 def fallback(out, group_ids=None):
     import r5_profile
     request=json.loads((HERE/'CI-REQUEST.json').read_text())
+    if request.get('schema')=='ch8-s4p-2r2-v1':
+        import s4p2r2_campaign
+        return s4p2r2_campaign.fallback(out,request)
     if request.get('schema')=='ch8-s4p-2-v1':
         import s4p2_campaign
         return s4p2_campaign.fallback(out,request)

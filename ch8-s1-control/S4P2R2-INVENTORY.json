@@ -1,0 +1,1363 @@
+{
+  "schema": "ch8-s4p-2r2-v1",
+  "status": "READY",
+  "authorization": "OFFLINE_IMPLEMENTATION_ONLY; exact-package review, publication and coordinator GO separately; no launch",
+  "entry_g0": "c56c56bbabcd2772443a854dca3eca9d04cb3089",
+  "std_sha": "8faf8e62af8f82b5c46af020086f8df591b6757e",
+  "std_tree": "91f097cdb4085d30c4b94afbb843aeb34f1d3287",
+  "tool_sha": "0aac16ef62da9e9d5645782d458593e5d78143ba",
+  "tool_tree": "9d8bc9312bf955ef126d32b819b3cd0ed105ed2b",
+  "base_std_sha": "99e8456d200fff1299ee5756279cddb23921dc65",
+  "control_parent": "4059c900e50ba179d824a1e6f6bd7798cf343e36",
+  "variants": {},
+  "changed_file_sha256": {
+    "library/core/Cargo.toml": "01ceacdf72a9622d78af2fe5bba09eda4d838d4798d1da2ab03ecb08364f0db6",
+    "library/core/src/lib.rs": "cab6061d100493bec1b820356a54e64c5d923c63fb830bb86250d12124f91504",
+    "library/core/src/slice/sort/shared/smallsort.rs": "590a1703f3939bda126a7acc2bcd7559d8a19d7227dcca1f2ea60b401ec70ead",
+    "library/core/src/slice/sort/shared/smallsort/verify.rs": "1610f857a84ef165340a12efae275227bedc53318a66e906c9ef43132ee5b7bd",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs": "456de2ac2e30f40d2af89f21c1cb234ce51ae9d66f05523f8f4b231f411f80e3",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_span.rs": "c25a476d596ecd2b58d6053307f446e1392171f19b0f48398989373f336db1d6",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_swap.rs": "18ffcca0f828239c686484a72e58ff391c0e8a511f94fe357ae3e635d430fc61",
+    "tool_config/kani-version.toml": "16415c6185a21d873f6e4d6d1dc3058f71380e5537a5a9bb77efae857bf66717",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_2_leaf.rs": "b459d52c8b96120c2bda76b91f42cd57d107af4e8b18bdc91c739724d5a6d195",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_partition.rs": "6a7333f07ec11f78fd2d622a188385d9873cb223b8c482043033b0d39d46b871",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_partition.rs": "051e869d52f78f43ee8c1faaf5bad0a91c4e8d9ea21a1e8c1d83991a89e0f574",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c"
+  },
+  "budgets": {
+    "jobs": 1,
+    "max_parallel": 1,
+    "workflow_minutes": 180,
+    "setup_seconds": 1800,
+    "phase_seconds": 8100,
+    "row_seconds": 600,
+    "rss_kib": 6291456,
+    "stdout_bytes": 16777216,
+    "stderr_bytes": 1048576,
+    "export_bytes": 8388608,
+    "artifact_bytes": 268435456,
+    "planned_rows_seconds": null,
+    "rss_cap_kib": 6291456,
+    "compile_seconds": 900,
+    "group_rss_max_kib": 12582912,
+    "memory_reserve_kib": 2097152,
+    "projected_group_count": 8,
+    "child_compile_subcap_seconds": 180,
+    "whole_child_including_compile_seconds": 600,
+    "shared_campaign_seconds": 6900
+  },
+  "execution_groups": [
+    {
+      "id": "s3-checker_order_corrupt",
+      "variant": "production",
+      "unwind": 34,
+      "row_ids": [
+        "checker_order_corrupt"
+      ]
+    },
+    {
+      "id": "s3-checker_count_corrupt",
+      "variant": "production",
+      "unwind": 34,
+      "row_ids": [
+        "checker_count_corrupt"
+      ]
+    },
+    {
+      "id": "s3-sort13_weak",
+      "variant": "production",
+      "unwind": 34,
+      "row_ids": [
+        "sort13_weak"
+      ]
+    },
+    {
+      "id": "s3-s4p_cell_count_corrupt",
+      "variant": "production",
+      "unwind": 36,
+      "row_ids": [
+        "s4p_cell_count_corrupt"
+      ]
+    },
+    {
+      "id": "s3-s4p2r2_network_b01_n02_fullbyte",
+      "variant": "production",
+      "unwind": 36,
+      "row_ids": [
+        "s4p2r2_network_b01_n02_fullbyte"
+      ]
+    },
+    {
+      "id": "s3-s4p2r2_network_b01_n03_fullbyte",
+      "variant": "production",
+      "unwind": 36,
+      "row_ids": [
+        "s4p2r2_network_b01_n03_fullbyte"
+      ]
+    },
+    {
+      "id": "s3-s4p2r2_network_b01_n04_fullbyte",
+      "variant": "production",
+      "unwind": 36,
+      "row_ids": [
+        "s4p2r2_network_b01_n04_fullbyte"
+      ]
+    },
+    {
+      "id": "s3-s4p2r2_network_b01_n00_01_fullbyte",
+      "variant": "production",
+      "unwind": 36,
+      "row_ids": [
+        "s4p2r2_network_b01_n00_01_fullbyte"
+      ]
+    }
+  ],
+  "replacement_unions": [],
+  "formal_expected_inventory": [],
+  "diagnostic_assumed_inventory": [],
+  "qualification_inventory": [
+    "s4p2r2_network_b01_n02_fullbyte",
+    "s4p2r2_network_b01_n03_fullbyte",
+    "s4p2r2_network_b01_n04_fullbyte",
+    "s4p2r2_network_b01_n00_01_fullbyte"
+  ],
+  "flags": {
+    "unstable": [
+      "function-contracts",
+      "mem-predicates",
+      "float-lib",
+      "c-ffi",
+      "loop-contracts",
+      "quantifiers",
+      "stubbing",
+      "export-json"
+    ],
+    "assert_contracts": false,
+    "jobs": 1,
+    "harness_timeout": "600s",
+    "exact": true,
+    "default_unwind": 50,
+    "cbmc_args": [
+      "--object-bits",
+      "12"
+    ],
+    "RUSTFLAGS": "--cfg=kani_smallsort_sorting --cfg=kani_smallsort_controls --cfg=kani_smallsort_s2_assumed --cfg=kani_smallsort_s3_leaf --cfg=kani_smallsort_s4_partition"
+  },
+  "accounting_reference": {
+    "mode": "TRACKING_ONLY",
+    "reservation": false,
+    "changed": false,
+    "future_accounting": "USERCOORDINATOR_ONLY_AFTER_EXACT_REVIEW_AND_GO",
+    "latest_admission_only": "9bb6e2b7a18e338f532ec817f8acfd7515fc2fc9"
+  },
+  "future_runs": 1,
+  "proof_credit": "NONE",
+  "runtime_smallsort_base_sha256": "45ae77ad0bb2a74cfab1aa53d5e1c48311f0b483c94eb52d96d97f680bd39651",
+  "ci_request_hash_policy": "Request excluded from its own payload map; exact request SHA in g0 package and every invocation receipt.",
+  "control_reference": "4059c900e50ba179d824a1e6f6bd7798cf343e36",
+  "profile": "ch8-s4p-2r2-network-fullbyte-concrete-calls-v1",
+  "native_status": "NOT_RUN",
+  "source_parent": "c12867b1e651a3927cbd9f169fe2c3d3728a44c3",
+  "rows": [
+    {
+      "id": "checker_order_corrupt",
+      "selector": "slice::sort::shared::smallsort::verify::sorting_s2_batch::checker_order_corrupt",
+      "source_qualified_selector": "core::slice::sort::shared::smallsort::verify::sorting_s2_batch::checker_order_corrupt",
+      "mode": "Original",
+      "variant": "production",
+      "unwind": 34,
+      "expected": "DETECTED",
+      "failure_description": "S2_NEG_CHECKER_ORDER",
+      "required_cover_count": 0,
+      "required_cover_messages": [],
+      "required_success_messages": [],
+      "timeout_seconds": 600,
+      "planned_seconds": null,
+      "state": "NOT_RUN",
+      "assurance": "NEGATIVE_CONTROL",
+      "proof_credit": "NONE",
+      "roles": [
+        {
+          "class": "assertion",
+          "status": "FAILURE",
+          "description": "S2_NEG_CHECKER_ORDER",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs",
+          "line": 140,
+          "source_line": "    kani::assert(post::<u8,KeyLess<u8>>(snapshot::<u8,KeyLess<u8>>(&input),&out), \"S2_NEG_CHECKER_ORDER\");",
+          "source_sha256": "456de2ac2e30f40d2af89f21c1cb234ce51ae9d66f05523f8f4b231f411f80e3",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        }
+      ],
+      "target": null,
+      "scope_classification": {
+        "category": "FIXED_NEGATIVE_CONTROL",
+        "qualification_eligible": false,
+        "eligible_as_init_leaf_or_provider_summary": false,
+        "actual_initialization_mask_and_dstinit": "NO_INDEPENDENT_INIT_THEOREM",
+        "proof_credit": "NONE"
+      }
+    },
+    {
+      "id": "checker_count_corrupt",
+      "selector": "slice::sort::shared::smallsort::verify::sorting_s2_batch::checker_count_corrupt",
+      "source_qualified_selector": "core::slice::sort::shared::smallsort::verify::sorting_s2_batch::checker_count_corrupt",
+      "mode": "Original",
+      "variant": "production",
+      "unwind": 34,
+      "expected": "DETECTED",
+      "failure_description": "S2_NEG_CHECKER_COUNT",
+      "required_cover_count": 0,
+      "required_cover_messages": [],
+      "required_success_messages": [],
+      "timeout_seconds": 600,
+      "planned_seconds": null,
+      "state": "NOT_RUN",
+      "assurance": "NEGATIVE_CONTROL",
+      "proof_credit": "NONE",
+      "roles": [
+        {
+          "class": "assertion",
+          "status": "FAILURE",
+          "description": "S2_NEG_CHECKER_COUNT",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs",
+          "line": 134,
+          "source_line": "    kani::assert(post::<u8,KeyLess<u8>>(snapshot::<u8,KeyLess<u8>>(&input),&out), \"S2_NEG_CHECKER_COUNT\");",
+          "source_sha256": "456de2ac2e30f40d2af89f21c1cb234ce51ae9d66f05523f8f4b231f411f80e3",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        }
+      ],
+      "target": null,
+      "scope_classification": {
+        "category": "FIXED_NEGATIVE_CONTROL",
+        "qualification_eligible": false,
+        "eligible_as_init_leaf_or_provider_summary": false,
+        "actual_initialization_mask_and_dstinit": "NO_INDEPENDENT_INIT_THEOREM",
+        "proof_credit": "NONE"
+      }
+    },
+    {
+      "id": "sort13_weak",
+      "selector": "slice::sort::shared::smallsort::verify::sorting_s2_batch::sort13_weak",
+      "source_qualified_selector": "core::slice::sort::shared::smallsort::verify::sorting_s2_batch::sort13_weak",
+      "mode": "Original",
+      "variant": "production",
+      "unwind": 34,
+      "expected": "DETECTED",
+      "failure_description": "S2_NEG_SORT13_WEAK",
+      "required_cover_count": 0,
+      "required_cover_messages": [],
+      "required_success_messages": [],
+      "timeout_seconds": 600,
+      "planned_seconds": null,
+      "state": "NOT_RUN",
+      "assurance": "NEGATIVE_CONTROL",
+      "proof_credit": "NONE",
+      "roles": [
+        {
+          "class": "assertion",
+          "status": "FAILURE",
+          "description": "S2_NEG_SORT13_WEAK",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs",
+          "line": 149,
+          "source_line": "    kani::assert(post::<u8,KeyLess<u8>>(snapshot::<u8,KeyLess<u8>>(&before),&v), \"S2_NEG_SORT13_WEAK\");",
+          "source_sha256": "456de2ac2e30f40d2af89f21c1cb234ce51ae9d66f05523f8f4b231f411f80e3",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        }
+      ],
+      "target": null,
+      "scope_classification": {
+        "category": "FIXED_NEGATIVE_CONTROL",
+        "qualification_eligible": false,
+        "eligible_as_init_leaf_or_provider_summary": false,
+        "actual_initialization_mask_and_dstinit": "NO_INDEPENDENT_INIT_THEOREM",
+        "proof_credit": "NONE"
+      }
+    },
+    {
+      "id": "s4p_cell_count_corrupt",
+      "selector": "slice::sort::shared::smallsort::verify::sorting_s4_partition::s4p_cell_count_corrupt",
+      "source_qualified_selector": "core::slice::sort::shared::smallsort::verify::sorting_s4_partition::s4p_cell_count_corrupt",
+      "mode": "Original",
+      "variant": "production",
+      "unwind": 36,
+      "expected": "DETECTED",
+      "failure_description": "S4_NEG_CELL_COUNT",
+      "required_cover_count": 0,
+      "required_cover_messages": [],
+      "required_success_messages": [
+        "S4_NEG_CELL_ACTIVE"
+      ],
+      "timeout_seconds": 600,
+      "planned_seconds": null,
+      "state": "NOT_RUN",
+      "assurance": "CHECKER_ONLY_NEGATIVE_CONTROL",
+      "proof_credit": "NONE",
+      "roles": [
+        {
+          "class": "assertion",
+          "status": "SUCCESS",
+          "description": "S4_NEG_CELL_ACTIVE",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_partition.rs",
+          "line": 25,
+          "source_line": "    kani::assert(enabled::<Cell<u8>, KeyLess<Cell<u8>>>(), \"S4_NEG_CELL_ACTIVE\");",
+          "source_sha256": "6a7333f07ec11f78fd2d622a188385d9873cb223b8c482043033b0d39d46b871",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        },
+        {
+          "class": "assertion",
+          "status": "FAILURE",
+          "description": "S4_NEG_CELL_COUNT",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_partition.rs",
+          "line": 30,
+          "source_line": "    kani::assert(post::<Cell<u8>, KeyLess<Cell<u8>>>(before, &v[1..3]), \"S4_NEG_CELL_COUNT\");",
+          "source_sha256": "6a7333f07ec11f78fd2d622a188385d9873cb223b8c482043033b0d39d46b871",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY"
+        }
+      ],
+      "target": null,
+      "scope_classification": {
+        "category": "CELL_CHECKER_ONLY_NEGATIVE",
+        "qualification_eligible": false,
+        "eligible_as_init_leaf_or_provider_summary": false,
+        "actual_initialization_mask_and_dstinit": "NO_INDEPENDENT_INIT_THEOREM",
+        "proof_credit": "NONE"
+      }
+    },
+    {
+      "id": "s4p2r2_network_b01_n02_fullbyte",
+      "selector": "slice::sort::shared::smallsort::verify::sorting_s4_network_r2::s4p2r2_network_b01_n02_fullbyte",
+      "source_qualified_selector": "core::slice::sort::shared::smallsort::verify::sorting_s4_network_r2::s4p2r2_network_b01_n02_fullbyte",
+      "mode": "Original",
+      "variant": "production",
+      "unwind": 36,
+      "expected": "SUCCESS",
+      "failure_description": null,
+      "required_cover_count": 6,
+      "required_cover_messages": [
+        "S4P2R2_N_02_N02",
+        "S4P2R2_N_02_UNSORTED",
+        "S4P2R2_N_02_DUPLICATE",
+        "S4P2R2_N_02_NONCONSTANT",
+        "S4P2R2_N_02_MAX_DESCENDING",
+        "S4P2R2_N_02_USEFUL_RETURN"
+      ],
+      "required_success_messages": [
+        "S4P2R2_N_02_ACTIVE_CONCRETE_MODEL",
+        "S4P2R2_N_02_SORTED_FULL_VALUE_COUNT",
+        "S4P2R2_N_02_FULL_OUTSIDE_FRAME",
+        "S4P2R2_N_02_ARBITRARY_OUTSIDE_CANARY"
+      ],
+      "timeout_seconds": 600,
+      "planned_seconds": null,
+      "state": "NOT_RUN",
+      "assurance": "PARTIAL_BOUNDED_ACTUAL_BODY_ORIGINAL_CANDIDATE",
+      "proof_credit": "NONE",
+      "roles": [
+        {
+          "description": "S4P2R2_N_02_ACTIVE_CONCRETE_MODEL",
+          "class": "assertion",
+          "status": "SUCCESS",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 24,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::assert(active_u8(), \"S4P2R2_N_02_ACTIVE_CONCRETE_MODEL\");",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
+          "semantic_role": "ACTIVE_CONCRETE_MODEL",
+          "predicate_tokens": "active_u8()"
+        },
+        {
+          "description": "S4P2R2_N_02_SORTED_FULL_VALUE_COUNT",
+          "class": "assertion",
+          "status": "SUCCESS",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 30,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::assert(post::<u8, KeyLess<u8>>(before, &v[1..3]), \"S4P2R2_N_02_SORTED_FULL_VALUE_COUNT\");",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
+          "semantic_role": "SORTED_FULL_VALUE_COUNT",
+          "predicate_tokens": "post::<u8,KeyLess<u8>>(before,&v[1..3])"
+        },
+        {
+          "description": "S4P2R2_N_02_FULL_OUTSIDE_FRAME",
+          "class": "assertion",
+          "status": "SUCCESS",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 32,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "        kani::assert((1 <= i && i < 1 + n) || v[i] == bytes[i], \"S4P2R2_N_02_FULL_OUTSIDE_FRAME\");",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
+          "semantic_role": "FULL_OUTSIDE_FRAME",
+          "predicate_tokens": "(1<=i&&i<1+n)||v[i]==bytes[i]"
+        },
+        {
+          "description": "S4P2R2_N_02_ARBITRARY_OUTSIDE_CANARY",
+          "class": "assertion",
+          "status": "SUCCESS",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 36,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::assert(v[canary] == bytes[canary], \"S4P2R2_N_02_ARBITRARY_OUTSIDE_CANARY\");",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
+          "semantic_role": "ARBITRARY_OUTSIDE_CANARY",
+          "predicate_tokens": "v[canary]==bytes[canary]"
+        },
+        {
+          "description": "S4P2R2_N_02_N02",
+          "class": "cover",
+          "status": "SATISFIED",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 37,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::cover(n == 2, \"S4P2R2_N_02_N02\");",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
+          "semantic_role": "N02",
+          "predicate_tokens": "n==2"
+        },
+        {
+          "description": "S4P2R2_N_02_UNSORTED",
+          "class": "cover",
+          "status": "SATISFIED",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 38,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::cover(n >= 2 && bytes[1] > bytes[n], \"S4P2R2_N_02_UNSORTED\");",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
+          "semantic_role": "UNSORTED",
+          "predicate_tokens": "n>=2&&bytes[1]>bytes[n]"
+        },
+        {
+          "description": "S4P2R2_N_02_DUPLICATE",
+          "class": "cover",
+          "status": "SATISFIED",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 39,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::cover(n >= 2 && bytes[1] == bytes[n], \"S4P2R2_N_02_DUPLICATE\");",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
+          "semantic_role": "DUPLICATE",
+          "predicate_tokens": "n>=2&&bytes[1]==bytes[n]"
+        },
+        {
+          "description": "S4P2R2_N_02_NONCONSTANT",
+          "class": "cover",
+          "status": "SATISFIED",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 40,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::cover(n >= 2 && v[1] < v[n], \"S4P2R2_N_02_NONCONSTANT\");",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
+          "semantic_role": "NONCONSTANT",
+          "predicate_tokens": "n>=2&&v[1]<v[n]"
+        },
+        {
+          "description": "S4P2R2_N_02_MAX_DESCENDING",
+          "class": "cover",
+          "status": "SATISFIED",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 41,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::cover(n == 2 && descending(&bytes[1..3]), \"S4P2R2_N_02_MAX_DESCENDING\");",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
+          "semantic_role": "MAX_DESCENDING",
+          "predicate_tokens": "n==2&&descending(&bytes[1..3])"
+        },
+        {
+          "description": "S4P2R2_N_02_USEFUL_RETURN",
+          "class": "cover",
+          "status": "SATISFIED",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 42,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::cover(true, \"S4P2R2_N_02_USEFUL_RETURN\");",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
+          "semantic_role": "USEFUL_RETURN",
+          "predicate_tokens": "true"
+        }
+      ],
+      "target": null,
+      "scope_classification": {
+        "category": "S4P2_FULLBYTE_NETWORK_EXACT_PARTITION_ACTUAL_BODY_CANDIDATE",
+        "qualification_eligible": true,
+        "eligible_as_init_leaf_or_provider_summary": false,
+        "actual_initialization_mask_and_dstinit": "NO_INDEPENDENT_INIT_THEOREM",
+        "proof_credit": "NONE"
+      },
+      "design_id": "PLAN_N02_V34_B01_FULLU8",
+      "structurally_not_applicable_roles": [],
+      "structural_na_binding": null
+    },
+    {
+      "id": "s4p2r2_network_b01_n03_fullbyte",
+      "selector": "slice::sort::shared::smallsort::verify::sorting_s4_network_r2::s4p2r2_network_b01_n03_fullbyte",
+      "source_qualified_selector": "core::slice::sort::shared::smallsort::verify::sorting_s4_network_r2::s4p2r2_network_b01_n03_fullbyte",
+      "mode": "Original",
+      "variant": "production",
+      "unwind": 36,
+      "expected": "SUCCESS",
+      "failure_description": null,
+      "required_cover_count": 6,
+      "required_cover_messages": [
+        "S4P2R2_N_03_N03",
+        "S4P2R2_N_03_UNSORTED",
+        "S4P2R2_N_03_DUPLICATE",
+        "S4P2R2_N_03_NONCONSTANT",
+        "S4P2R2_N_03_MAX_DESCENDING",
+        "S4P2R2_N_03_USEFUL_RETURN"
+      ],
+      "required_success_messages": [
+        "S4P2R2_N_03_ACTIVE_CONCRETE_MODEL",
+        "S4P2R2_N_03_SORTED_FULL_VALUE_COUNT",
+        "S4P2R2_N_03_FULL_OUTSIDE_FRAME",
+        "S4P2R2_N_03_ARBITRARY_OUTSIDE_CANARY"
+      ],
+      "timeout_seconds": 600,
+      "planned_seconds": null,
+      "state": "NOT_RUN",
+      "assurance": "PARTIAL_BOUNDED_ACTUAL_BODY_ORIGINAL_CANDIDATE",
+      "proof_credit": "NONE",
+      "roles": [
+        {
+          "description": "S4P2R2_N_03_ACTIVE_CONCRETE_MODEL",
+          "class": "assertion",
+          "status": "SUCCESS",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 48,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::assert(active_u8(), \"S4P2R2_N_03_ACTIVE_CONCRETE_MODEL\");",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
+          "semantic_role": "ACTIVE_CONCRETE_MODEL",
+          "predicate_tokens": "active_u8()"
+        },
+        {
+          "description": "S4P2R2_N_03_SORTED_FULL_VALUE_COUNT",
+          "class": "assertion",
+          "status": "SUCCESS",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 54,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::assert(post::<u8, KeyLess<u8>>(before, &v[1..4]), \"S4P2R2_N_03_SORTED_FULL_VALUE_COUNT\");",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
+          "semantic_role": "SORTED_FULL_VALUE_COUNT",
+          "predicate_tokens": "post::<u8,KeyLess<u8>>(before,&v[1..4])"
+        },
+        {
+          "description": "S4P2R2_N_03_FULL_OUTSIDE_FRAME",
+          "class": "assertion",
+          "status": "SUCCESS",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 56,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "        kani::assert((1 <= i && i < 1 + n) || v[i] == bytes[i], \"S4P2R2_N_03_FULL_OUTSIDE_FRAME\");",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
+          "semantic_role": "FULL_OUTSIDE_FRAME",
+          "predicate_tokens": "(1<=i&&i<1+n)||v[i]==bytes[i]"
+        },
+        {
+          "description": "S4P2R2_N_03_ARBITRARY_OUTSIDE_CANARY",
+          "class": "assertion",
+          "status": "SUCCESS",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 60,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::assert(v[canary] == bytes[canary], \"S4P2R2_N_03_ARBITRARY_OUTSIDE_CANARY\");",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
+          "semantic_role": "ARBITRARY_OUTSIDE_CANARY",
+          "predicate_tokens": "v[canary]==bytes[canary]"
+        },
+        {
+          "description": "S4P2R2_N_03_N03",
+          "class": "cover",
+          "status": "SATISFIED",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 61,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::cover(n == 3, \"S4P2R2_N_03_N03\");",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
+          "semantic_role": "N03",
+          "predicate_tokens": "n==3"
+        },
+        {
+          "description": "S4P2R2_N_03_UNSORTED",
+          "class": "cover",
+          "status": "SATISFIED",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 62,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::cover(n >= 2 && bytes[1] > bytes[n], \"S4P2R2_N_03_UNSORTED\");",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
+          "semantic_role": "UNSORTED",
+          "predicate_tokens": "n>=2&&bytes[1]>bytes[n]"
+        },
+        {
+          "description": "S4P2R2_N_03_DUPLICATE",
+          "class": "cover",
+          "status": "SATISFIED",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 63,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::cover(n >= 2 && bytes[1] == bytes[n], \"S4P2R2_N_03_DUPLICATE\");",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
+          "semantic_role": "DUPLICATE",
+          "predicate_tokens": "n>=2&&bytes[1]==bytes[n]"
+        },
+        {
+          "description": "S4P2R2_N_03_NONCONSTANT",
+          "class": "cover",
+          "status": "SATISFIED",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 64,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::cover(n >= 2 && v[1] < v[n], \"S4P2R2_N_03_NONCONSTANT\");",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
+          "semantic_role": "NONCONSTANT",
+          "predicate_tokens": "n>=2&&v[1]<v[n]"
+        },
+        {
+          "description": "S4P2R2_N_03_MAX_DESCENDING",
+          "class": "cover",
+          "status": "SATISFIED",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 65,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::cover(n == 3 && descending(&bytes[1..4]), \"S4P2R2_N_03_MAX_DESCENDING\");",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
+          "semantic_role": "MAX_DESCENDING",
+          "predicate_tokens": "n==3&&descending(&bytes[1..4])"
+        },
+        {
+          "description": "S4P2R2_N_03_USEFUL_RETURN",
+          "class": "cover",
+          "status": "SATISFIED",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 66,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::cover(true, \"S4P2R2_N_03_USEFUL_RETURN\");",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
+          "semantic_role": "USEFUL_RETURN",
+          "predicate_tokens": "true"
+        }
+      ],
+      "target": null,
+      "scope_classification": {
+        "category": "S4P2_FULLBYTE_NETWORK_EXACT_PARTITION_ACTUAL_BODY_CANDIDATE",
+        "qualification_eligible": true,
+        "eligible_as_init_leaf_or_provider_summary": false,
+        "actual_initialization_mask_and_dstinit": "NO_INDEPENDENT_INIT_THEOREM",
+        "proof_credit": "NONE"
+      },
+      "design_id": "PLAN_N03_V34_B01_FULLU8",
+      "structurally_not_applicable_roles": [],
+      "structural_na_binding": null
+    },
+    {
+      "id": "s4p2r2_network_b01_n04_fullbyte",
+      "selector": "slice::sort::shared::smallsort::verify::sorting_s4_network_r2::s4p2r2_network_b01_n04_fullbyte",
+      "source_qualified_selector": "core::slice::sort::shared::smallsort::verify::sorting_s4_network_r2::s4p2r2_network_b01_n04_fullbyte",
+      "mode": "Original",
+      "variant": "production",
+      "unwind": 36,
+      "expected": "SUCCESS",
+      "failure_description": null,
+      "required_cover_count": 6,
+      "required_cover_messages": [
+        "S4P2R2_N_04_N04",
+        "S4P2R2_N_04_UNSORTED",
+        "S4P2R2_N_04_DUPLICATE",
+        "S4P2R2_N_04_NONCONSTANT",
+        "S4P2R2_N_04_MAX_DESCENDING",
+        "S4P2R2_N_04_USEFUL_RETURN"
+      ],
+      "required_success_messages": [
+        "S4P2R2_N_04_ACTIVE_CONCRETE_MODEL",
+        "S4P2R2_N_04_SORTED_FULL_VALUE_COUNT",
+        "S4P2R2_N_04_FULL_OUTSIDE_FRAME",
+        "S4P2R2_N_04_ARBITRARY_OUTSIDE_CANARY"
+      ],
+      "timeout_seconds": 600,
+      "planned_seconds": null,
+      "state": "NOT_RUN",
+      "assurance": "PARTIAL_BOUNDED_ACTUAL_BODY_ORIGINAL_CANDIDATE",
+      "proof_credit": "NONE",
+      "roles": [
+        {
+          "description": "S4P2R2_N_04_ACTIVE_CONCRETE_MODEL",
+          "class": "assertion",
+          "status": "SUCCESS",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 72,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::assert(active_u8(), \"S4P2R2_N_04_ACTIVE_CONCRETE_MODEL\");",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
+          "semantic_role": "ACTIVE_CONCRETE_MODEL",
+          "predicate_tokens": "active_u8()"
+        },
+        {
+          "description": "S4P2R2_N_04_SORTED_FULL_VALUE_COUNT",
+          "class": "assertion",
+          "status": "SUCCESS",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 78,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::assert(post::<u8, KeyLess<u8>>(before, &v[1..5]), \"S4P2R2_N_04_SORTED_FULL_VALUE_COUNT\");",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
+          "semantic_role": "SORTED_FULL_VALUE_COUNT",
+          "predicate_tokens": "post::<u8,KeyLess<u8>>(before,&v[1..5])"
+        },
+        {
+          "description": "S4P2R2_N_04_FULL_OUTSIDE_FRAME",
+          "class": "assertion",
+          "status": "SUCCESS",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 80,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "        kani::assert((1 <= i && i < 1 + n) || v[i] == bytes[i], \"S4P2R2_N_04_FULL_OUTSIDE_FRAME\");",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
+          "semantic_role": "FULL_OUTSIDE_FRAME",
+          "predicate_tokens": "(1<=i&&i<1+n)||v[i]==bytes[i]"
+        },
+        {
+          "description": "S4P2R2_N_04_ARBITRARY_OUTSIDE_CANARY",
+          "class": "assertion",
+          "status": "SUCCESS",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 84,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::assert(v[canary] == bytes[canary], \"S4P2R2_N_04_ARBITRARY_OUTSIDE_CANARY\");",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
+          "semantic_role": "ARBITRARY_OUTSIDE_CANARY",
+          "predicate_tokens": "v[canary]==bytes[canary]"
+        },
+        {
+          "description": "S4P2R2_N_04_N04",
+          "class": "cover",
+          "status": "SATISFIED",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 85,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::cover(n == 4, \"S4P2R2_N_04_N04\");",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
+          "semantic_role": "N04",
+          "predicate_tokens": "n==4"
+        },
+        {
+          "description": "S4P2R2_N_04_UNSORTED",
+          "class": "cover",
+          "status": "SATISFIED",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 86,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::cover(n >= 2 && bytes[1] > bytes[n], \"S4P2R2_N_04_UNSORTED\");",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
+          "semantic_role": "UNSORTED",
+          "predicate_tokens": "n>=2&&bytes[1]>bytes[n]"
+        },
+        {
+          "description": "S4P2R2_N_04_DUPLICATE",
+          "class": "cover",
+          "status": "SATISFIED",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 87,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::cover(n >= 2 && bytes[1] == bytes[n], \"S4P2R2_N_04_DUPLICATE\");",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
+          "semantic_role": "DUPLICATE",
+          "predicate_tokens": "n>=2&&bytes[1]==bytes[n]"
+        },
+        {
+          "description": "S4P2R2_N_04_NONCONSTANT",
+          "class": "cover",
+          "status": "SATISFIED",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 88,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::cover(n >= 2 && v[1] < v[n], \"S4P2R2_N_04_NONCONSTANT\");",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
+          "semantic_role": "NONCONSTANT",
+          "predicate_tokens": "n>=2&&v[1]<v[n]"
+        },
+        {
+          "description": "S4P2R2_N_04_MAX_DESCENDING",
+          "class": "cover",
+          "status": "SATISFIED",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 89,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::cover(n == 4 && descending(&bytes[1..5]), \"S4P2R2_N_04_MAX_DESCENDING\");",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
+          "semantic_role": "MAX_DESCENDING",
+          "predicate_tokens": "n==4&&descending(&bytes[1..5])"
+        },
+        {
+          "description": "S4P2R2_N_04_USEFUL_RETURN",
+          "class": "cover",
+          "status": "SATISFIED",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 90,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::cover(true, \"S4P2R2_N_04_USEFUL_RETURN\");",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
+          "semantic_role": "USEFUL_RETURN",
+          "predicate_tokens": "true"
+        }
+      ],
+      "target": null,
+      "scope_classification": {
+        "category": "S4P2_FULLBYTE_NETWORK_EXACT_PARTITION_ACTUAL_BODY_CANDIDATE",
+        "qualification_eligible": true,
+        "eligible_as_init_leaf_or_provider_summary": false,
+        "actual_initialization_mask_and_dstinit": "NO_INDEPENDENT_INIT_THEOREM",
+        "proof_credit": "NONE"
+      },
+      "design_id": "PLAN_N04_V34_B01_FULLU8",
+      "structurally_not_applicable_roles": [],
+      "structural_na_binding": null
+    },
+    {
+      "id": "s4p2r2_network_b01_n00_01_fullbyte",
+      "selector": "slice::sort::shared::smallsort::verify::sorting_s4_network_r2::s4p2r2_network_b01_n00_01_fullbyte",
+      "source_qualified_selector": "core::slice::sort::shared::smallsort::verify::sorting_s4_network_r2::s4p2r2_network_b01_n00_01_fullbyte",
+      "mode": "Original",
+      "variant": "production",
+      "unwind": 36,
+      "expected": "SUCCESS",
+      "failure_description": null,
+      "required_cover_count": 3,
+      "required_cover_messages": [
+        "S4P2R2_N_00_01_N00",
+        "S4P2R2_N_00_01_N01",
+        "S4P2R2_N_00_01_USEFUL_RETURN"
+      ],
+      "required_success_messages": [
+        "S4P2R2_N_00_01_ACTIVE_CONCRETE_MODEL",
+        "S4P2R2_N_00_01_SORTED_FULL_VALUE_COUNT",
+        "S4P2R2_N_00_01_FULL_OUTSIDE_FRAME",
+        "S4P2R2_N_00_01_ARBITRARY_OUTSIDE_CANARY"
+      ],
+      "timeout_seconds": 600,
+      "planned_seconds": null,
+      "state": "NOT_RUN",
+      "assurance": "PARTIAL_BOUNDED_ACTUAL_BODY_ORIGINAL_CANDIDATE",
+      "proof_credit": "NONE",
+      "roles": [
+        {
+          "description": "S4P2R2_N_00_01_ACTIVE_CONCRETE_MODEL",
+          "class": "assertion",
+          "status": "SUCCESS",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 96,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::assert(active_u8(), \"S4P2R2_N_00_01_ACTIVE_CONCRETE_MODEL\");",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
+          "semantic_role": "ACTIVE_CONCRETE_MODEL",
+          "predicate_tokens": "active_u8()"
+        },
+        {
+          "description": "S4P2R2_N_00_01_SORTED_FULL_VALUE_COUNT",
+          "class": "assertion",
+          "status": "SUCCESS",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 107,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::assert(post::<u8, KeyLess<u8>>(before, &v[1..1 + n]), \"S4P2R2_N_00_01_SORTED_FULL_VALUE_COUNT\");",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
+          "semantic_role": "SORTED_FULL_VALUE_COUNT",
+          "predicate_tokens": "post::<u8,KeyLess<u8>>(before,&v[1..1+n])"
+        },
+        {
+          "description": "S4P2R2_N_00_01_FULL_OUTSIDE_FRAME",
+          "class": "assertion",
+          "status": "SUCCESS",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 109,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "        kani::assert((1 <= i && i < 1 + n) || v[i] == bytes[i], \"S4P2R2_N_00_01_FULL_OUTSIDE_FRAME\");",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
+          "semantic_role": "FULL_OUTSIDE_FRAME",
+          "predicate_tokens": "(1<=i&&i<1+n)||v[i]==bytes[i]"
+        },
+        {
+          "description": "S4P2R2_N_00_01_ARBITRARY_OUTSIDE_CANARY",
+          "class": "assertion",
+          "status": "SUCCESS",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 113,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::assert(v[canary] == bytes[canary], \"S4P2R2_N_00_01_ARBITRARY_OUTSIDE_CANARY\");",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
+          "semantic_role": "ARBITRARY_OUTSIDE_CANARY",
+          "predicate_tokens": "v[canary]==bytes[canary]"
+        },
+        {
+          "description": "S4P2R2_N_00_01_N00",
+          "class": "cover",
+          "status": "SATISFIED",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 114,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::cover(n == 0, \"S4P2R2_N_00_01_N00\");",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
+          "semantic_role": "N00",
+          "predicate_tokens": "n==0"
+        },
+        {
+          "description": "S4P2R2_N_00_01_N01",
+          "class": "cover",
+          "status": "SATISFIED",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 115,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::cover(n == 1, \"S4P2R2_N_00_01_N01\");",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
+          "semantic_role": "N01",
+          "predicate_tokens": "n==1"
+        },
+        {
+          "description": "S4P2R2_N_00_01_USEFUL_RETURN",
+          "class": "cover",
+          "status": "SATISFIED",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 116,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::cover(true, \"S4P2R2_N_00_01_USEFUL_RETURN\");",
+          "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
+          "semantic_role": "USEFUL_RETURN",
+          "predicate_tokens": "true"
+        }
+      ],
+      "target": null,
+      "scope_classification": {
+        "category": "S4P2_FULLBYTE_NETWORK_EXACT_PARTITION_ACTUAL_BODY_CANDIDATE",
+        "qualification_eligible": true,
+        "eligible_as_init_leaf_or_provider_summary": false,
+        "actual_initialization_mask_and_dstinit": "NO_INDEPENDENT_INIT_THEOREM",
+        "proof_credit": "NONE"
+      },
+      "design_id": "PLAN_N01_V34_B01_FULLU8",
+      "structurally_not_applicable_roles": [
+        "UNSORTED",
+        "DUPLICATE",
+        "NONCONSTANT",
+        "MAX_DESCENDING_AT_OLD_HI_2_OR_4"
+      ],
+      "structural_na_binding": {
+        "profile": "ch8-s4p-2r2-network-fullbyte-concrete-calls-v1",
+        "design_id": "PLAN_N01_V34_B01_FULLU8",
+        "std_sha": "8faf8e62af8f82b5c46af020086f8df591b6757e",
+        "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+        "domain": {
+          "length_interval": [
+            0,
+            1
+          ],
+          "allocation": 34,
+          "base": 1,
+          "logical_values": "ALL_34_INDEPENDENT_U8_0_255",
+          "initialized": true,
+          "type": "u8",
+          "comparator": "KeyLess<u8>",
+          "summary_edges": []
+        }
+      }
+    }
+  ],
+  "source_bindings": {
+    "checker_order_corrupt": {
+      "selector": "slice::sort::shared::smallsort::verify::sorting_s2_batch::checker_order_corrupt",
+      "mode": "Original",
+      "target": null,
+      "crate": "core",
+      "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs",
+      "sha256": "456de2ac2e30f40d2af89f21c1cb234ce51ae9d66f05523f8f4b231f411f80e3",
+      "locations": [
+        {
+          "line": 136,
+          "source": "#[kani::proof]"
+        },
+        {
+          "line": 138,
+          "source": "fn checker_order_corrupt() {"
+        }
+      ]
+    },
+    "checker_count_corrupt": {
+      "selector": "slice::sort::shared::smallsort::verify::sorting_s2_batch::checker_count_corrupt",
+      "mode": "Original",
+      "target": null,
+      "crate": "core",
+      "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs",
+      "sha256": "456de2ac2e30f40d2af89f21c1cb234ce51ae9d66f05523f8f4b231f411f80e3",
+      "locations": [
+        {
+          "line": 130,
+          "source": "#[kani::proof]"
+        },
+        {
+          "line": 132,
+          "source": "fn checker_count_corrupt() {"
+        }
+      ]
+    },
+    "sort13_weak": {
+      "selector": "slice::sort::shared::smallsort::verify::sorting_s2_batch::sort13_weak",
+      "mode": "Original",
+      "target": null,
+      "crate": "core",
+      "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs",
+      "sha256": "456de2ac2e30f40d2af89f21c1cb234ce51ae9d66f05523f8f4b231f411f80e3",
+      "locations": [
+        {
+          "line": 143,
+          "source": "#[kani::proof]"
+        },
+        {
+          "line": 146,
+          "source": "fn sort13_weak() {"
+        }
+      ]
+    },
+    "s4p_cell_count_corrupt": {
+      "selector": "slice::sort::shared::smallsort::verify::sorting_s4_partition::s4p_cell_count_corrupt",
+      "mode": "Original",
+      "target": null,
+      "crate": "core",
+      "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_partition.rs",
+      "sha256": "6a7333f07ec11f78fd2d622a188385d9873cb223b8c482043033b0d39d46b871",
+      "locations": [
+        {
+          "line": 22,
+          "source": "#[kani::proof]"
+        },
+        {
+          "line": 24,
+          "source": "fn s4p_cell_count_corrupt() {"
+        }
+      ]
+    },
+    "s4p2r2_network_b01_n02_fullbyte": {
+      "selector": "slice::sort::shared::smallsort::verify::sorting_s4_network_r2::s4p2r2_network_b01_n02_fullbyte",
+      "mode": "Original",
+      "target": null,
+      "crate": "core",
+      "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+      "sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+      "locations": [
+        {
+          "line": 21,
+          "source": "#[kani::proof]"
+        },
+        {
+          "line": 23,
+          "source": "fn s4p2r2_network_b01_n02_fullbyte() {"
+        }
+      ]
+    },
+    "s4p2r2_network_b01_n03_fullbyte": {
+      "selector": "slice::sort::shared::smallsort::verify::sorting_s4_network_r2::s4p2r2_network_b01_n03_fullbyte",
+      "mode": "Original",
+      "target": null,
+      "crate": "core",
+      "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+      "sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+      "locations": [
+        {
+          "line": 45,
+          "source": "#[kani::proof]"
+        },
+        {
+          "line": 47,
+          "source": "fn s4p2r2_network_b01_n03_fullbyte() {"
+        }
+      ]
+    },
+    "s4p2r2_network_b01_n04_fullbyte": {
+      "selector": "slice::sort::shared::smallsort::verify::sorting_s4_network_r2::s4p2r2_network_b01_n04_fullbyte",
+      "mode": "Original",
+      "target": null,
+      "crate": "core",
+      "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+      "sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+      "locations": [
+        {
+          "line": 69,
+          "source": "#[kani::proof]"
+        },
+        {
+          "line": 71,
+          "source": "fn s4p2r2_network_b01_n04_fullbyte() {"
+        }
+      ]
+    },
+    "s4p2r2_network_b01_n00_01_fullbyte": {
+      "selector": "slice::sort::shared::smallsort::verify::sorting_s4_network_r2::s4p2r2_network_b01_n00_01_fullbyte",
+      "mode": "Original",
+      "target": null,
+      "crate": "core",
+      "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+      "sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+      "locations": [
+        {
+          "line": 93,
+          "source": "#[kani::proof]"
+        },
+        {
+          "line": 95,
+          "source": "fn s4p2r2_network_b01_n00_01_fullbyte() {"
+        }
+      ]
+    }
+  },
+  "s3": {
+    "selected": [
+      "checker_order_corrupt",
+      "checker_count_corrupt",
+      "sort13_weak",
+      "s4p_cell_count_corrupt",
+      "s4p2r2_network_b01_n02_fullbyte",
+      "s4p2r2_network_b01_n03_fullbyte",
+      "s4p2r2_network_b01_n04_fullbyte",
+      "s4p2r2_network_b01_n00_01_fullbyte"
+    ],
+    "deferred": [
+      "fallback_N05_16",
+      "network_N05_32",
+      "general_N00_32",
+      "Cell_semantic_provider",
+      "generic_trait_dispatch",
+      "mutating_comparator",
+      "initialization_and_ownership",
+      "compiler_MIR_B1_B2"
+    ],
+    "caps": {
+      "child_seconds": 600,
+      "compile_seconds": 180,
+      "slot_seconds": 720,
+      "controller_seconds": 180,
+      "cleanup_seconds": 240,
+      "campaign_seconds": 6900,
+      "outer_seconds": 7500,
+      "phase_seconds": 8100,
+      "step_seconds": 7560,
+      "local_rss_kib": 6291456,
+      "outer_rss_kib": 12582912,
+      "headroom_kib": 2097152,
+      "stdout_bytes": 16777216,
+      "stderr_bytes": 1048576,
+      "export_bytes": 8388608,
+      "artifact_bytes": 268435456
+    },
+    "plan_commit": "cdedf547df37aec4c442727a902a784f4d1b5155",
+    "intake_commit": "00efb1f5440627362af5c470ad434b89c5e27cca",
+    "boundary_commit": "9bb6e2b7a18e338f532ec817f8acfd7515fc2fc9",
+    "u_policy": "ZERO_U_FAIL_CLOSED; site-specific proposal PENDING_REVIEW_NOT_ENABLED",
+    "unselected_full_obligations": "EXPLICIT_NOT_SELECTED_NO_PROMOTION"
+  },
+  "unreachable_admission": {
+    "mode": "REJECT_ALL",
+    "proposal": "S3-U-SITE-REVIEW-v1",
+    "enabled": false,
+    "unknown": "REJECT",
+    "role_unreachable": "REJECT"
+  },
+  "diagnostic_only_inventory": [],
+  "native_unsupported_construct_arrays": "UNKNOWN_UNTIL_EXPORT; preserve SUCCESS guard records separately from FAILED/UNKNOWN checks; strict reader policy unchanged",
+  "historical_provenance": {
+    "s32_authority": {
+      "implementation_task": "be42098995b302cade928d8caf6135adf7a1cc0d",
+      "continuation_task": "9d8d40db277f61e46a3b7890cc9bf6941df72e13",
+      "boundary_commit": "20eb52b5efe45a89491dced2aab34d40dbe371f7",
+      "prior_admission": "b4879b203e42e265f38ce1b44fe767aa78bb43fc",
+      "prior_location_exception_not_reused": true
+    },
+    "limit": "Retained earlier profile ancestry only; never source/control/accounting/dispatch grants",
+    "s3_control_precursor": "1dfc267b66abd83d536eb41a17052a4f3d767d2b",
+    "repair_review": "610dcd6858415792050a9aba7e0d7859afd7d727",
+    "s3_path_control_precursor": "fc29b93b1e333b73e55e2872701c80d9927f3b02",
+    "prior_bridge1_request_sha256": "23c137a331acb92610b3f0cf2192a0e16081dbf0815a35fc3c8d88742c0a1fa3"
+  },
+  "domains": {
+    "s4p2r2_network_b01_n02_fullbyte": {
+      "length_interval": [
+        2,
+        2
+      ],
+      "allocation": 34,
+      "base": 1,
+      "logical_values": "ALL_34_INDEPENDENT_U8_0_255",
+      "initialized": true,
+      "type": "u8",
+      "comparator": "KeyLess<u8>",
+      "summary_edges": []
+    },
+    "s4p2r2_network_b01_n03_fullbyte": {
+      "length_interval": [
+        3,
+        3
+      ],
+      "allocation": 34,
+      "base": 1,
+      "logical_values": "ALL_34_INDEPENDENT_U8_0_255",
+      "initialized": true,
+      "type": "u8",
+      "comparator": "KeyLess<u8>",
+      "summary_edges": []
+    },
+    "s4p2r2_network_b01_n04_fullbyte": {
+      "length_interval": [
+        4,
+        4
+      ],
+      "allocation": 34,
+      "base": 1,
+      "logical_values": "ALL_34_INDEPENDENT_U8_0_255",
+      "initialized": true,
+      "type": "u8",
+      "comparator": "KeyLess<u8>",
+      "summary_edges": []
+    },
+    "s4p2r2_network_b01_n00_01_fullbyte": {
+      "length_interval": [
+        0,
+        1
+      ],
+      "allocation": 34,
+      "base": 1,
+      "logical_values": "ALL_34_INDEPENDENT_U8_0_255",
+      "initialized": true,
+      "type": "u8",
+      "comparator": "KeyLess<u8>",
+      "summary_edges": []
+    }
+  },
+  "enabled_summary_edges": [],
+  "negative_checker": {
+    "id": "s4p_cell_count_corrupt",
+    "model": "Cell<u8>/KeyLess<Cell<u8>>",
+    "active": [
+      1,
+      3
+    ],
+    "before": [
+      0,
+      1
+    ],
+    "after": [
+      0,
+      0
+    ],
+    "actual_callee_called": false
+  },
+  "s4p2r2_inputs": {
+    "plan": "cdedf547df37aec4c442727a902a784f4d1b5155",
+    "plan_review": "2b7872e84c8cf723f72ea33ee441a7b02be9b2e4",
+    "source_reference": "c12867b1e651a3927cbd9f169fe2c3d3728a44c3",
+    "control_reference": "4059c900e50ba179d824a1e6f6bd7798cf343e36",
+    "authority": "c56c56bbabcd2772443a854dca3eca9d04cb3089",
+    "intake": "00efb1f5440627362af5c470ad434b89c5e27cca",
+    "role_contract_sha256": "c90950843f17903b0271a0cf349e4afd5e9189924119aacb252904f0a0b7ef1d"
+  },
+  "ordinary_contract_source_sha256": {
+    "library/core/src/slice/sort/shared/smallsort.rs": "590a1703f3939bda126a7acc2bcd7559d8a19d7227dcca1f2ea60b401ec70ead",
+    "library/core/src/slice/sort/shared/smallsort/verify.rs": "1610f857a84ef165340a12efae275227bedc53318a66e906c9ef43132ee5b7bd",
+    "library/core/src/slice/sort/shared/smallsort/verify/comparators.rs": "7095d7272d929b4e495896ff957a69120a7b86b3f0b99655ede4c989e0543b47",
+    "library/core/src/slice/sort/shared/smallsort/verify/fixed_inputs.rs": "5b648cbdedd89ef92f0a794580d0c682fc3fe3035cf63142f1b6bec6baccb7c7",
+    "library/core/src/slice/sort/shared/smallsort/verify/forwarding_contracts.rs": "575aa575ffb977d945adb2fc40496c805fe6f8cdb1fc6fe471dbe277f5b2630f",
+    "library/core/src/slice/sort/shared/smallsort/verify/helper_contracts.rs": "86bac48e888365eab2187756dfd8ffbce059d6cc2ce35b1d8ab7b39d788118ac",
+    "library/core/src/slice/sort/shared/smallsort/verify/helper_contracts_wide.rs": "85bdd131f3a7e62106e69e98e4b1b85d2f68c91a4bfff4df629955539493748c",
+    "library/core/src/slice/sort/shared/smallsort/verify/insert_tail_contracts.rs": "6f1a2540156a3c603639ee96245aca16ad9da3dbce401630c1b8866d343aa406",
+    "library/core/src/slice/sort/shared/smallsort/verify/merge.rs": "e37e6971e6458a17d858de9a6a6ea38265d7584934ef71c8243c97a487505e54",
+    "library/core/src/slice/sort/shared/smallsort/verify/merge/profiles.rs": "3a220d9fcd8269b253efaa8d7c18c13aa7a6e6f8cf59504ac2ec4c004b9abffe",
+    "library/core/src/slice/sort/shared/smallsort/verify/mutations.rs": "e008037d4c5a32e31dc25490437bcd2bc520915bfda4af3c2fc84df6e331450e",
+    "library/core/src/slice/sort/shared/smallsort/verify/network.rs": "d59ceb99741990afcfe3f312119053a520f16c071f200953fc517a33729527bf",
+    "library/core/src/slice/sort/shared/smallsort/verify/scratch_geometry.rs": "905045ba504b5391af44a575dd7e616b0bebb124623490d24343f759eb7f7d16",
+    "library/core/src/slice/sort/shared/smallsort/verify/smoke.rs": "f576bfa8185c3ded0a27374dd4904db52f9711102a62c37f10406b2ccbd87f23",
+    "library/core/src/slice/sort/shared/smallsort/verify/tag_permutation.rs": "dafe3017a7dbf946c045756d8c0f122555bd1372868554563d1cb373eeea7837",
+    "library/core/src/slice/sort/shared/smallsort/verify/types.rs": "c5b4b5007cda1764af15639fba0fd23bfab9e489d052b0ead6872a440bed1f4f",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_model.rs": "a04f72d0a4f8c42fadc6639ead77e215dc46264096e8e998903bfe1be9ca0a18",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_entry_smoke.rs": "7e74bd9695cdb2b98b8298ce7daf7f107e0ac2e6e2a0cfc2203ab1639590130f",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_model_controls.rs": "dd4e8eca1761be66ea07508c7678175d54e4b2baf48469ae4866c9cb68e12e0d",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_entry_controls.rs": "7cb487628b9e93a086c09fc59cfc54aaeb12e12a3f917f67009f378e722d29ff",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_swap.rs": "18ffcca0f828239c686484a72e58ff391c0e8a511f94fe357ae3e635d430fc61",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_span.rs": "c25a476d596ecd2b58d6053307f446e1392171f19b0f48398989373f336db1d6",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs": "456de2ac2e30f40d2af89f21c1cb234ce51ae9d66f05523f8f4b231f411f80e3",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_2_leaf.rs": "b459d52c8b96120c2bda76b91f42cd57d107af4e8b18bdc91c739724d5a6d195",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_partition.rs": "6a7333f07ec11f78fd2d622a188385d9873cb223b8c482043033b0d39d46b871",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_partition.rs": "051e869d52f78f43ee8c1faaf5bad0a91c4e8d9ea21a1e8c1d83991a89e0f574",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c"
+  },
+  "cfg_pfc_source_sha256": {
+    "library/core/src/lib.rs": "cab6061d100493bec1b820356a54e64c5d923c63fb830bb86250d12124f91504",
+    "library/core/src/slice/mod.rs": "1c94e306a979f2c59a4e3687a32a3e4efbeef967b7bf5eeb8d1977371c2c17dd",
+    "library/core/src/slice/sort/mod.rs": "f67551bff44a854a3f03901db10a099bdab3b67b47d8724bef43858d97134f3c",
+    "library/core/src/slice/sort/shared/mod.rs": "fa9eec2901bafba25c9c1e1684df76dbb1f86e0bbd04f18f3e67cee54dcdfcc8",
+    "library/core/src/slice/sort/shared/smallsort.rs": "590a1703f3939bda126a7acc2bcd7559d8a19d7227dcca1f2ea60b401ec70ead",
+    "library/core/src/slice/sort/shared/smallsort/verify.rs": "1610f857a84ef165340a12efae275227bedc53318a66e906c9ef43132ee5b7bd",
+    "library/core/src/slice/sort/shared/smallsort/verify/helper_contracts.rs": "86bac48e888365eab2187756dfd8ffbce059d6cc2ce35b1d8ab7b39d788118ac",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs": "456de2ac2e30f40d2af89f21c1cb234ce51ae9d66f05523f8f4b231f411f80e3",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_2_leaf.rs": "b459d52c8b96120c2bda76b91f42cd57d107af4e8b18bdc91c739724d5a6d195",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_partition.rs": "6a7333f07ec11f78fd2d622a188385d9873cb223b8c482043033b0d39d46b871",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_partition.rs": "051e869d52f78f43ee8c1faaf5bad0a91c4e8d9ea21a1e8c1d83991a89e0f574",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c"
+  },
+  "contract_stack_source_sha256": {
+    "library/core/src/slice/sort/shared/smallsort.rs": "590a1703f3939bda126a7acc2bcd7559d8a19d7227dcca1f2ea60b401ec70ead",
+    "library/core/src/slice/sort/shared/smallsort/verify.rs": "1610f857a84ef165340a12efae275227bedc53318a66e906c9ef43132ee5b7bd",
+    "library/core/src/slice/sort/shared/smallsort/verify/comparators.rs": "7095d7272d929b4e495896ff957a69120a7b86b3f0b99655ede4c989e0543b47",
+    "library/core/src/slice/sort/shared/smallsort/verify/fixed_inputs.rs": "5b648cbdedd89ef92f0a794580d0c682fc3fe3035cf63142f1b6bec6baccb7c7",
+    "library/core/src/slice/sort/shared/smallsort/verify/forwarding_contracts.rs": "575aa575ffb977d945adb2fc40496c805fe6f8cdb1fc6fe471dbe277f5b2630f",
+    "library/core/src/slice/sort/shared/smallsort/verify/helper_contracts.rs": "86bac48e888365eab2187756dfd8ffbce059d6cc2ce35b1d8ab7b39d788118ac",
+    "library/core/src/slice/sort/shared/smallsort/verify/helper_contracts_wide.rs": "85bdd131f3a7e62106e69e98e4b1b85d2f68c91a4bfff4df629955539493748c",
+    "library/core/src/slice/sort/shared/smallsort/verify/insert_tail_contracts.rs": "6f1a2540156a3c603639ee96245aca16ad9da3dbce401630c1b8866d343aa406",
+    "library/core/src/slice/sort/shared/smallsort/verify/merge.rs": "e37e6971e6458a17d858de9a6a6ea38265d7584934ef71c8243c97a487505e54",
+    "library/core/src/slice/sort/shared/smallsort/verify/merge/profiles.rs": "3a220d9fcd8269b253efaa8d7c18c13aa7a6e6f8cf59504ac2ec4c004b9abffe",
+    "library/core/src/slice/sort/shared/smallsort/verify/mutations.rs": "e008037d4c5a32e31dc25490437bcd2bc520915bfda4af3c2fc84df6e331450e",
+    "library/core/src/slice/sort/shared/smallsort/verify/network.rs": "d59ceb99741990afcfe3f312119053a520f16c071f200953fc517a33729527bf",
+    "library/core/src/slice/sort/shared/smallsort/verify/scratch_geometry.rs": "905045ba504b5391af44a575dd7e616b0bebb124623490d24343f759eb7f7d16",
+    "library/core/src/slice/sort/shared/smallsort/verify/smoke.rs": "f576bfa8185c3ded0a27374dd4904db52f9711102a62c37f10406b2ccbd87f23",
+    "library/core/src/slice/sort/shared/smallsort/verify/tag_permutation.rs": "dafe3017a7dbf946c045756d8c0f122555bd1372868554563d1cb373eeea7837",
+    "library/core/src/slice/sort/shared/smallsort/verify/types.rs": "c5b4b5007cda1764af15639fba0fd23bfab9e489d052b0ead6872a440bed1f4f",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_model.rs": "a04f72d0a4f8c42fadc6639ead77e215dc46264096e8e998903bfe1be9ca0a18",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_entry_smoke.rs": "7e74bd9695cdb2b98b8298ce7daf7f107e0ac2e6e2a0cfc2203ab1639590130f",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_model_controls.rs": "dd4e8eca1761be66ea07508c7678175d54e4b2baf48469ae4866c9cb68e12e0d",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_entry_controls.rs": "7cb487628b9e93a086c09fc59cfc54aaeb12e12a3f917f67009f378e722d29ff",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_swap.rs": "18ffcca0f828239c686484a72e58ff391c0e8a511f94fe357ae3e635d430fc61",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_span.rs": "c25a476d596ecd2b58d6053307f446e1392171f19b0f48398989373f336db1d6",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs": "456de2ac2e30f40d2af89f21c1cb234ce51ae9d66f05523f8f4b231f411f80e3",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_2_leaf.rs": "b459d52c8b96120c2bda76b91f42cd57d107af4e8b18bdc91c739724d5a6d195",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_partition.rs": "6a7333f07ec11f78fd2d622a188385d9873cb223b8c482043033b0d39d46b871",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_partition.rs": "051e869d52f78f43ee8c1faaf5bad0a91c4e8d9ea21a1e8c1d83991a89e0f574",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c"
+  },
+  "lexical_source_sha256": {
+    "library/core/src/lib.rs": "cab6061d100493bec1b820356a54e64c5d923c63fb830bb86250d12124f91504",
+    "library/core/src/slice/mod.rs": "1c94e306a979f2c59a4e3687a32a3e4efbeef967b7bf5eeb8d1977371c2c17dd",
+    "library/core/src/slice/sort/mod.rs": "f67551bff44a854a3f03901db10a099bdab3b67b47d8724bef43858d97134f3c",
+    "library/core/src/slice/sort/shared/mod.rs": "fa9eec2901bafba25c9c1e1684df76dbb1f86e0bbd04f18f3e67cee54dcdfcc8",
+    "library/core/src/slice/sort/shared/smallsort.rs": "590a1703f3939bda126a7acc2bcd7559d8a19d7227dcca1f2ea60b401ec70ead",
+    "library/core/src/slice/sort/shared/smallsort/verify.rs": "1610f857a84ef165340a12efae275227bedc53318a66e906c9ef43132ee5b7bd",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs": "456de2ac2e30f40d2af89f21c1cb234ce51ae9d66f05523f8f4b231f411f80e3",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_model.rs": "a04f72d0a4f8c42fadc6639ead77e215dc46264096e8e998903bfe1be9ca0a18",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_span.rs": "c25a476d596ecd2b58d6053307f446e1392171f19b0f48398989373f336db1d6",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_swap.rs": "18ffcca0f828239c686484a72e58ff391c0e8a511f94fe357ae3e635d430fc61",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_2_leaf.rs": "b459d52c8b96120c2bda76b91f42cd57d107af4e8b18bdc91c739724d5a6d195",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_partition.rs": "6a7333f07ec11f78fd2d622a188385d9873cb223b8c482043033b0d39d46b871",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_partition.rs": "051e869d52f78f43ee8c1faaf5bad0a91c4e8d9ea21a1e8c1d83991a89e0f574",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+    "library/core/src/cell.rs": "2bc5acbab3ff2fac122bb2cb1bb343631d9ea9d99d192869376ec16189272fb3",
+    "library/core/src/mem/mod.rs": "7504ca7c3188077e142917d8c8b7fc7976f08f417439bb68399d1c0352eb8738",
+    "library/core/src/mem/maybe_uninit.rs": "1230d267542337ee2842c29d8227cf8a58fe75c53a2a70efaee3922c4e8e25c0",
+    "library/core/src/ptr/mod.rs": "cc17237f8e88211f0d082f8c8d88b6fd55f905c7baaa3c32cd75632269c03ff2",
+    "library/core/src/slice/raw.rs": "3190285ba163dacd220b6c827d49e580eeb85256cd1fffafdacb345a87a08bb7",
+    "library/core/src/intrinsics/mod.rs": "95bad83ea99a46bcbdbd4163e42112866fdfadc4660ca1d1c4298fed57b1c5fc",
+    "library/core/src/prelude/v1.rs": "b57d120c6762622bd33114f46267dab8ba6c88be38f1433adb62d4ba36cd3a68"
+  }
+}

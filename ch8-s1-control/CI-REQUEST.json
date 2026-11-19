@@ -1,20 +1,20 @@
 {
-  "schema": "ch8-s4p-2-v1",
+  "schema": "ch8-s4p-2r2-v1",
   "status": "READY",
-  "authorization": "OFFLINE_CANDIDATE_ONLY; exact independent14 then rootGO; usercoordinator publication/dispatch/accounting separately",
-  "entry_g0": "bf3aba53618b759a11d3ff277e88ba66530ec708",
-  "std_sha": "c12867b1e651a3927cbd9f169fe2c3d3728a44c3",
-  "std_tree": "47cca4ee5946b9ab543ea08cba7979cb1d21c4af",
+  "authorization": "OFFLINE_IMPLEMENTATION_ONLY; exact-package review, publication and coordinator GO separately; no launch",
+  "entry_g0": "c56c56bbabcd2772443a854dca3eca9d04cb3089",
+  "std_sha": "8faf8e62af8f82b5c46af020086f8df591b6757e",
+  "std_tree": "91f097cdb4085d30c4b94afbb843aeb34f1d3287",
   "tool_sha": "0aac16ef62da9e9d5645782d458593e5d78143ba",
   "tool_tree": "9d8bc9312bf955ef126d32b819b3cd0ed105ed2b",
   "base_std_sha": "99e8456d200fff1299ee5756279cddb23921dc65",
-  "control_parent": "9e14e033f9ee31522b571c127609dcdff76d230b",
+  "control_parent": "4059c900e50ba179d824a1e6f6bd7798cf343e36",
   "variants": {},
   "changed_file_sha256": {
     "library/core/Cargo.toml": "01ceacdf72a9622d78af2fe5bba09eda4d838d4798d1da2ab03ecb08364f0db6",
     "library/core/src/lib.rs": "cab6061d100493bec1b820356a54e64c5d923c63fb830bb86250d12124f91504",
     "library/core/src/slice/sort/shared/smallsort.rs": "590a1703f3939bda126a7acc2bcd7559d8a19d7227dcca1f2ea60b401ec70ead",
-    "library/core/src/slice/sort/shared/smallsort/verify.rs": "f577537fc6ea701083b8fa9c0b74bd6ad1a7147e4db208f680d869424954eaa4",
+    "library/core/src/slice/sort/shared/smallsort/verify.rs": "1610f857a84ef165340a12efae275227bedc53318a66e906c9ef43132ee5b7bd",
     "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs": "456de2ac2e30f40d2af89f21c1cb234ce51ae9d66f05523f8f4b231f411f80e3",
     "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_span.rs": "c25a476d596ecd2b58d6053307f446e1392171f19b0f48398989373f336db1d6",
     "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_swap.rs": "18ffcca0f828239c686484a72e58ff391c0e8a511f94fe357ae3e635d430fc61",
@@ -23,7 +23,8 @@
     "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_2_leaf.rs": "b459d52c8b96120c2bda76b91f42cd57d107af4e8b18bdc91c739724d5a6d195",
     "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
     "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_partition.rs": "6a7333f07ec11f78fd2d622a188385d9873cb223b8c482043033b0d39d46b871",
-    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_partition.rs": "051e869d52f78f43ee8c1faaf5bad0a91c4e8d9ea21a1e8c1d83991a89e0f574"
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_partition.rs": "051e869d52f78f43ee8c1faaf5bad0a91c4e8d9ea21a1e8c1d83991a89e0f574",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c"
   },
   "budgets": {
     "jobs": 1,
@@ -81,35 +82,35 @@
       ]
     },
     {
-      "id": "s3-s4p2_network_b01_n02_fullbyte",
+      "id": "s3-s4p2r2_network_b01_n02_fullbyte",
       "variant": "production",
       "unwind": 36,
       "row_ids": [
-        "s4p2_network_b01_n02_fullbyte"
+        "s4p2r2_network_b01_n02_fullbyte"
       ]
     },
     {
-      "id": "s3-s4p2_network_b01_n03_fullbyte",
+      "id": "s3-s4p2r2_network_b01_n03_fullbyte",
       "variant": "production",
       "unwind": 36,
       "row_ids": [
-        "s4p2_network_b01_n03_fullbyte"
+        "s4p2r2_network_b01_n03_fullbyte"
       ]
     },
     {
-      "id": "s3-s4p2_network_b01_n04_fullbyte",
+      "id": "s3-s4p2r2_network_b01_n04_fullbyte",
       "variant": "production",
       "unwind": 36,
       "row_ids": [
-        "s4p2_network_b01_n04_fullbyte"
+        "s4p2r2_network_b01_n04_fullbyte"
       ]
     },
     {
-      "id": "s3-s4p2_network_b01_n00_01_fullbyte",
+      "id": "s3-s4p2r2_network_b01_n00_01_fullbyte",
       "variant": "production",
       "unwind": 36,
       "row_ids": [
-        "s4p2_network_b01_n00_01_fullbyte"
+        "s4p2r2_network_b01_n00_01_fullbyte"
       ]
     }
   ],
@@ -117,10 +118,10 @@
   "formal_expected_inventory": [],
   "diagnostic_assumed_inventory": [],
   "qualification_inventory": [
-    "s4p2_network_b01_n02_fullbyte",
-    "s4p2_network_b01_n03_fullbyte",
-    "s4p2_network_b01_n04_fullbyte",
-    "s4p2_network_b01_n00_01_fullbyte"
+    "s4p2r2_network_b01_n02_fullbyte",
+    "s4p2r2_network_b01_n03_fullbyte",
+    "s4p2r2_network_b01_n04_fullbyte",
+    "s4p2r2_network_b01_n00_01_fullbyte"
   ],
   "flags": {
     "unstable": [
@@ -155,10 +156,10 @@
   "proof_credit": "NONE",
   "runtime_smallsort_base_sha256": "45ae77ad0bb2a74cfab1aa53d5e1c48311f0b483c94eb52d96d97f680bd39651",
   "ci_request_hash_policy": "Request excluded from its own payload map; exact request SHA in g0 package and every invocation receipt.",
-  "control_reference": "d675ef70dc1ada13330efc0990c2e1d6b0d21a5a",
-  "profile": "ch8-s4p-2-network-fullbyte-singletons-v1",
+  "control_reference": "4059c900e50ba179d824a1e6f6bd7798cf343e36",
+  "profile": "ch8-s4p-2r2-network-fullbyte-concrete-calls-v1",
   "native_status": "NOT_RUN",
-  "source_parent": "97ac4d39d7f959ea70b1f57785ffd1fd66ecd22a",
+  "source_parent": "c12867b1e651a3927cbd9f169fe2c3d3728a44c3",
   "rows": [
     {
       "id": "checker_order_corrupt",
@@ -325,9 +326,9 @@
       }
     },
     {
-      "id": "s4p2_network_b01_n02_fullbyte",
-      "selector": "slice::sort::shared::smallsort::verify::sorting_s4_network_partition::s4p2_network_b01_n02_fullbyte",
-      "source_qualified_selector": "core::slice::sort::shared::smallsort::verify::sorting_s4_network_partition::s4p2_network_b01_n02_fullbyte",
+      "id": "s4p2r2_network_b01_n02_fullbyte",
+      "selector": "slice::sort::shared::smallsort::verify::sorting_s4_network_r2::s4p2r2_network_b01_n02_fullbyte",
+      "source_qualified_selector": "core::slice::sort::shared::smallsort::verify::sorting_s4_network_r2::s4p2r2_network_b01_n02_fullbyte",
       "mode": "Original",
       "variant": "production",
       "unwind": 36,
@@ -335,18 +336,18 @@
       "failure_description": null,
       "required_cover_count": 6,
       "required_cover_messages": [
-        "S4P2_N_02_N02",
-        "S4P2_N_02_UNSORTED",
-        "S4P2_N_02_DUPLICATE",
-        "S4P2_N_02_NONCONSTANT",
-        "S4P2_N_02_MAX_DESCENDING",
-        "S4P2_N_02_USEFUL_RETURN"
+        "S4P2R2_N_02_N02",
+        "S4P2R2_N_02_UNSORTED",
+        "S4P2R2_N_02_DUPLICATE",
+        "S4P2R2_N_02_NONCONSTANT",
+        "S4P2R2_N_02_MAX_DESCENDING",
+        "S4P2R2_N_02_USEFUL_RETURN"
       ],
       "required_success_messages": [
-        "S4P2_N_02_ACTIVE_CONCRETE_MODEL",
-        "S4P2_N_02_SORTED_FULL_VALUE_COUNT",
-        "S4P2_N_02_FULL_OUTSIDE_FRAME",
-        "S4P2_N_02_ARBITRARY_OUTSIDE_CANARY"
+        "S4P2R2_N_02_ACTIVE_CONCRETE_MODEL",
+        "S4P2R2_N_02_SORTED_FULL_VALUE_COUNT",
+        "S4P2R2_N_02_FULL_OUTSIDE_FRAME",
+        "S4P2R2_N_02_ARBITRARY_OUTSIDE_CANARY"
       ],
       "timeout_seconds": 600,
       "planned_seconds": null,
@@ -355,121 +356,121 @@
       "proof_credit": "NONE",
       "roles": [
         {
-          "description": "S4P2_N_02_ACTIVE_CONCRETE_MODEL",
+          "description": "S4P2R2_N_02_ACTIVE_CONCRETE_MODEL",
           "class": "assertion",
           "status": "SUCCESS",
-          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_partition.rs",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
           "line": 24,
-          "source_sha256": "051e869d52f78f43ee8c1faaf5bad0a91c4e8d9ea21a1e8c1d83991a89e0f574",
-          "source_line": "    kani::assert(active_u8(), \"S4P2_N_02_ACTIVE_CONCRETE_MODEL\");",
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::assert(active_u8(), \"S4P2R2_N_02_ACTIVE_CONCRETE_MODEL\");",
           "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
           "semantic_role": "ACTIVE_CONCRETE_MODEL",
           "predicate_tokens": "active_u8()"
         },
         {
-          "description": "S4P2_N_02_SORTED_FULL_VALUE_COUNT",
+          "description": "S4P2R2_N_02_SORTED_FULL_VALUE_COUNT",
           "class": "assertion",
           "status": "SUCCESS",
-          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_partition.rs",
-          "line": 31,
-          "source_sha256": "051e869d52f78f43ee8c1faaf5bad0a91c4e8d9ea21a1e8c1d83991a89e0f574",
-          "source_line": "    kani::assert(post::<u8, KeyLess<u8>>(before, &v[1..1 + n]), \"S4P2_N_02_SORTED_FULL_VALUE_COUNT\");",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 30,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::assert(post::<u8, KeyLess<u8>>(before, &v[1..3]), \"S4P2R2_N_02_SORTED_FULL_VALUE_COUNT\");",
           "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
           "semantic_role": "SORTED_FULL_VALUE_COUNT",
-          "predicate_tokens": "post::<u8,KeyLess<u8>>(before,&v[1..1+n])"
+          "predicate_tokens": "post::<u8,KeyLess<u8>>(before,&v[1..3])"
         },
         {
-          "description": "S4P2_N_02_FULL_OUTSIDE_FRAME",
+          "description": "S4P2R2_N_02_FULL_OUTSIDE_FRAME",
           "class": "assertion",
           "status": "SUCCESS",
-          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_partition.rs",
-          "line": 33,
-          "source_sha256": "051e869d52f78f43ee8c1faaf5bad0a91c4e8d9ea21a1e8c1d83991a89e0f574",
-          "source_line": "        kani::assert((1 <= i && i < 1 + n) || v[i] == bytes[i], \"S4P2_N_02_FULL_OUTSIDE_FRAME\");",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 32,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "        kani::assert((1 <= i && i < 1 + n) || v[i] == bytes[i], \"S4P2R2_N_02_FULL_OUTSIDE_FRAME\");",
           "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
           "semantic_role": "FULL_OUTSIDE_FRAME",
           "predicate_tokens": "(1<=i&&i<1+n)||v[i]==bytes[i]"
         },
         {
-          "description": "S4P2_N_02_ARBITRARY_OUTSIDE_CANARY",
+          "description": "S4P2R2_N_02_ARBITRARY_OUTSIDE_CANARY",
           "class": "assertion",
           "status": "SUCCESS",
-          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_partition.rs",
-          "line": 37,
-          "source_sha256": "051e869d52f78f43ee8c1faaf5bad0a91c4e8d9ea21a1e8c1d83991a89e0f574",
-          "source_line": "    kani::assert(v[canary] == bytes[canary], \"S4P2_N_02_ARBITRARY_OUTSIDE_CANARY\");",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 36,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::assert(v[canary] == bytes[canary], \"S4P2R2_N_02_ARBITRARY_OUTSIDE_CANARY\");",
           "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
           "semantic_role": "ARBITRARY_OUTSIDE_CANARY",
           "predicate_tokens": "v[canary]==bytes[canary]"
         },
         {
-          "description": "S4P2_N_02_N02",
+          "description": "S4P2R2_N_02_N02",
           "class": "cover",
           "status": "SATISFIED",
-          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_partition.rs",
-          "line": 38,
-          "source_sha256": "051e869d52f78f43ee8c1faaf5bad0a91c4e8d9ea21a1e8c1d83991a89e0f574",
-          "source_line": "    kani::cover(n == 2, \"S4P2_N_02_N02\");",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 37,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::cover(n == 2, \"S4P2R2_N_02_N02\");",
           "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
           "semantic_role": "N02",
           "predicate_tokens": "n==2"
         },
         {
-          "description": "S4P2_N_02_UNSORTED",
+          "description": "S4P2R2_N_02_UNSORTED",
           "class": "cover",
           "status": "SATISFIED",
-          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_partition.rs",
-          "line": 39,
-          "source_sha256": "051e869d52f78f43ee8c1faaf5bad0a91c4e8d9ea21a1e8c1d83991a89e0f574",
-          "source_line": "    kani::cover(n >= 2 && bytes[1] > bytes[n], \"S4P2_N_02_UNSORTED\");",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 38,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::cover(n >= 2 && bytes[1] > bytes[n], \"S4P2R2_N_02_UNSORTED\");",
           "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
           "semantic_role": "UNSORTED",
           "predicate_tokens": "n>=2&&bytes[1]>bytes[n]"
         },
         {
-          "description": "S4P2_N_02_DUPLICATE",
+          "description": "S4P2R2_N_02_DUPLICATE",
           "class": "cover",
           "status": "SATISFIED",
-          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_partition.rs",
-          "line": 40,
-          "source_sha256": "051e869d52f78f43ee8c1faaf5bad0a91c4e8d9ea21a1e8c1d83991a89e0f574",
-          "source_line": "    kani::cover(n >= 2 && bytes[1] == bytes[n], \"S4P2_N_02_DUPLICATE\");",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 39,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::cover(n >= 2 && bytes[1] == bytes[n], \"S4P2R2_N_02_DUPLICATE\");",
           "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
           "semantic_role": "DUPLICATE",
           "predicate_tokens": "n>=2&&bytes[1]==bytes[n]"
         },
         {
-          "description": "S4P2_N_02_NONCONSTANT",
+          "description": "S4P2R2_N_02_NONCONSTANT",
           "class": "cover",
           "status": "SATISFIED",
-          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_partition.rs",
-          "line": 41,
-          "source_sha256": "051e869d52f78f43ee8c1faaf5bad0a91c4e8d9ea21a1e8c1d83991a89e0f574",
-          "source_line": "    kani::cover(n >= 2 && v[1] < v[n], \"S4P2_N_02_NONCONSTANT\");",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 40,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::cover(n >= 2 && v[1] < v[n], \"S4P2R2_N_02_NONCONSTANT\");",
           "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
           "semantic_role": "NONCONSTANT",
           "predicate_tokens": "n>=2&&v[1]<v[n]"
         },
         {
-          "description": "S4P2_N_02_MAX_DESCENDING",
+          "description": "S4P2R2_N_02_MAX_DESCENDING",
           "class": "cover",
           "status": "SATISFIED",
-          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_partition.rs",
-          "line": 42,
-          "source_sha256": "051e869d52f78f43ee8c1faaf5bad0a91c4e8d9ea21a1e8c1d83991a89e0f574",
-          "source_line": "    kani::cover(n == 2 && descending(&bytes[1..3]), \"S4P2_N_02_MAX_DESCENDING\");",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 41,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::cover(n == 2 && descending(&bytes[1..3]), \"S4P2R2_N_02_MAX_DESCENDING\");",
           "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
           "semantic_role": "MAX_DESCENDING",
           "predicate_tokens": "n==2&&descending(&bytes[1..3])"
         },
         {
-          "description": "S4P2_N_02_USEFUL_RETURN",
+          "description": "S4P2R2_N_02_USEFUL_RETURN",
           "class": "cover",
           "status": "SATISFIED",
-          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_partition.rs",
-          "line": 43,
-          "source_sha256": "051e869d52f78f43ee8c1faaf5bad0a91c4e8d9ea21a1e8c1d83991a89e0f574",
-          "source_line": "    kani::cover(true, \"S4P2_N_02_USEFUL_RETURN\");",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 42,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::cover(true, \"S4P2R2_N_02_USEFUL_RETURN\");",
           "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
           "semantic_role": "USEFUL_RETURN",
           "predicate_tokens": "true"
@@ -488,9 +489,9 @@
       "structural_na_binding": null
     },
     {
-      "id": "s4p2_network_b01_n03_fullbyte",
-      "selector": "slice::sort::shared::smallsort::verify::sorting_s4_network_partition::s4p2_network_b01_n03_fullbyte",
-      "source_qualified_selector": "core::slice::sort::shared::smallsort::verify::sorting_s4_network_partition::s4p2_network_b01_n03_fullbyte",
+      "id": "s4p2r2_network_b01_n03_fullbyte",
+      "selector": "slice::sort::shared::smallsort::verify::sorting_s4_network_r2::s4p2r2_network_b01_n03_fullbyte",
+      "source_qualified_selector": "core::slice::sort::shared::smallsort::verify::sorting_s4_network_r2::s4p2r2_network_b01_n03_fullbyte",
       "mode": "Original",
       "variant": "production",
       "unwind": 36,
@@ -498,18 +499,18 @@
       "failure_description": null,
       "required_cover_count": 6,
       "required_cover_messages": [
-        "S4P2_N_03_N03",
-        "S4P2_N_03_UNSORTED",
-        "S4P2_N_03_DUPLICATE",
-        "S4P2_N_03_NONCONSTANT",
-        "S4P2_N_03_MAX_DESCENDING",
-        "S4P2_N_03_USEFUL_RETURN"
+        "S4P2R2_N_03_N03",
+        "S4P2R2_N_03_UNSORTED",
+        "S4P2R2_N_03_DUPLICATE",
+        "S4P2R2_N_03_NONCONSTANT",
+        "S4P2R2_N_03_MAX_DESCENDING",
+        "S4P2R2_N_03_USEFUL_RETURN"
       ],
       "required_success_messages": [
-        "S4P2_N_03_ACTIVE_CONCRETE_MODEL",
-        "S4P2_N_03_SORTED_FULL_VALUE_COUNT",
-        "S4P2_N_03_FULL_OUTSIDE_FRAME",
-        "S4P2_N_03_ARBITRARY_OUTSIDE_CANARY"
+        "S4P2R2_N_03_ACTIVE_CONCRETE_MODEL",
+        "S4P2R2_N_03_SORTED_FULL_VALUE_COUNT",
+        "S4P2R2_N_03_FULL_OUTSIDE_FRAME",
+        "S4P2R2_N_03_ARBITRARY_OUTSIDE_CANARY"
       ],
       "timeout_seconds": 600,
       "planned_seconds": null,
@@ -518,121 +519,121 @@
       "proof_credit": "NONE",
       "roles": [
         {
-          "description": "S4P2_N_03_ACTIVE_CONCRETE_MODEL",
+          "description": "S4P2R2_N_03_ACTIVE_CONCRETE_MODEL",
           "class": "assertion",
           "status": "SUCCESS",
-          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_partition.rs",
-          "line": 49,
-          "source_sha256": "051e869d52f78f43ee8c1faaf5bad0a91c4e8d9ea21a1e8c1d83991a89e0f574",
-          "source_line": "    kani::assert(active_u8(), \"S4P2_N_03_ACTIVE_CONCRETE_MODEL\");",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 48,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::assert(active_u8(), \"S4P2R2_N_03_ACTIVE_CONCRETE_MODEL\");",
           "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
           "semantic_role": "ACTIVE_CONCRETE_MODEL",
           "predicate_tokens": "active_u8()"
         },
         {
-          "description": "S4P2_N_03_SORTED_FULL_VALUE_COUNT",
+          "description": "S4P2R2_N_03_SORTED_FULL_VALUE_COUNT",
           "class": "assertion",
           "status": "SUCCESS",
-          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_partition.rs",
-          "line": 56,
-          "source_sha256": "051e869d52f78f43ee8c1faaf5bad0a91c4e8d9ea21a1e8c1d83991a89e0f574",
-          "source_line": "    kani::assert(post::<u8, KeyLess<u8>>(before, &v[1..1 + n]), \"S4P2_N_03_SORTED_FULL_VALUE_COUNT\");",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 54,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::assert(post::<u8, KeyLess<u8>>(before, &v[1..4]), \"S4P2R2_N_03_SORTED_FULL_VALUE_COUNT\");",
           "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
           "semantic_role": "SORTED_FULL_VALUE_COUNT",
-          "predicate_tokens": "post::<u8,KeyLess<u8>>(before,&v[1..1+n])"
+          "predicate_tokens": "post::<u8,KeyLess<u8>>(before,&v[1..4])"
         },
         {
-          "description": "S4P2_N_03_FULL_OUTSIDE_FRAME",
+          "description": "S4P2R2_N_03_FULL_OUTSIDE_FRAME",
           "class": "assertion",
           "status": "SUCCESS",
-          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_partition.rs",
-          "line": 58,
-          "source_sha256": "051e869d52f78f43ee8c1faaf5bad0a91c4e8d9ea21a1e8c1d83991a89e0f574",
-          "source_line": "        kani::assert((1 <= i && i < 1 + n) || v[i] == bytes[i], \"S4P2_N_03_FULL_OUTSIDE_FRAME\");",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 56,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "        kani::assert((1 <= i && i < 1 + n) || v[i] == bytes[i], \"S4P2R2_N_03_FULL_OUTSIDE_FRAME\");",
           "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
           "semantic_role": "FULL_OUTSIDE_FRAME",
           "predicate_tokens": "(1<=i&&i<1+n)||v[i]==bytes[i]"
         },
         {
-          "description": "S4P2_N_03_ARBITRARY_OUTSIDE_CANARY",
+          "description": "S4P2R2_N_03_ARBITRARY_OUTSIDE_CANARY",
           "class": "assertion",
           "status": "SUCCESS",
-          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_partition.rs",
-          "line": 62,
-          "source_sha256": "051e869d52f78f43ee8c1faaf5bad0a91c4e8d9ea21a1e8c1d83991a89e0f574",
-          "source_line": "    kani::assert(v[canary] == bytes[canary], \"S4P2_N_03_ARBITRARY_OUTSIDE_CANARY\");",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 60,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::assert(v[canary] == bytes[canary], \"S4P2R2_N_03_ARBITRARY_OUTSIDE_CANARY\");",
           "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
           "semantic_role": "ARBITRARY_OUTSIDE_CANARY",
           "predicate_tokens": "v[canary]==bytes[canary]"
         },
         {
-          "description": "S4P2_N_03_N03",
+          "description": "S4P2R2_N_03_N03",
           "class": "cover",
           "status": "SATISFIED",
-          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_partition.rs",
-          "line": 63,
-          "source_sha256": "051e869d52f78f43ee8c1faaf5bad0a91c4e8d9ea21a1e8c1d83991a89e0f574",
-          "source_line": "    kani::cover(n == 3, \"S4P2_N_03_N03\");",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 61,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::cover(n == 3, \"S4P2R2_N_03_N03\");",
           "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
           "semantic_role": "N03",
           "predicate_tokens": "n==3"
         },
         {
-          "description": "S4P2_N_03_UNSORTED",
+          "description": "S4P2R2_N_03_UNSORTED",
           "class": "cover",
           "status": "SATISFIED",
-          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_partition.rs",
-          "line": 64,
-          "source_sha256": "051e869d52f78f43ee8c1faaf5bad0a91c4e8d9ea21a1e8c1d83991a89e0f574",
-          "source_line": "    kani::cover(n >= 2 && bytes[1] > bytes[n], \"S4P2_N_03_UNSORTED\");",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 62,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::cover(n >= 2 && bytes[1] > bytes[n], \"S4P2R2_N_03_UNSORTED\");",
           "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
           "semantic_role": "UNSORTED",
           "predicate_tokens": "n>=2&&bytes[1]>bytes[n]"
         },
         {
-          "description": "S4P2_N_03_DUPLICATE",
+          "description": "S4P2R2_N_03_DUPLICATE",
           "class": "cover",
           "status": "SATISFIED",
-          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_partition.rs",
-          "line": 65,
-          "source_sha256": "051e869d52f78f43ee8c1faaf5bad0a91c4e8d9ea21a1e8c1d83991a89e0f574",
-          "source_line": "    kani::cover(n >= 2 && bytes[1] == bytes[n], \"S4P2_N_03_DUPLICATE\");",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 63,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::cover(n >= 2 && bytes[1] == bytes[n], \"S4P2R2_N_03_DUPLICATE\");",
           "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
           "semantic_role": "DUPLICATE",
           "predicate_tokens": "n>=2&&bytes[1]==bytes[n]"
         },
         {
-          "description": "S4P2_N_03_NONCONSTANT",
+          "description": "S4P2R2_N_03_NONCONSTANT",
           "class": "cover",
           "status": "SATISFIED",
-          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_partition.rs",
-          "line": 66,
-          "source_sha256": "051e869d52f78f43ee8c1faaf5bad0a91c4e8d9ea21a1e8c1d83991a89e0f574",
-          "source_line": "    kani::cover(n >= 2 && v[1] < v[n], \"S4P2_N_03_NONCONSTANT\");",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 64,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::cover(n >= 2 && v[1] < v[n], \"S4P2R2_N_03_NONCONSTANT\");",
           "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
           "semantic_role": "NONCONSTANT",
           "predicate_tokens": "n>=2&&v[1]<v[n]"
         },
         {
-          "description": "S4P2_N_03_MAX_DESCENDING",
+          "description": "S4P2R2_N_03_MAX_DESCENDING",
           "class": "cover",
           "status": "SATISFIED",
-          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_partition.rs",
-          "line": 67,
-          "source_sha256": "051e869d52f78f43ee8c1faaf5bad0a91c4e8d9ea21a1e8c1d83991a89e0f574",
-          "source_line": "    kani::cover(n == 3 && descending(&bytes[1..4]), \"S4P2_N_03_MAX_DESCENDING\");",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 65,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::cover(n == 3 && descending(&bytes[1..4]), \"S4P2R2_N_03_MAX_DESCENDING\");",
           "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
           "semantic_role": "MAX_DESCENDING",
           "predicate_tokens": "n==3&&descending(&bytes[1..4])"
         },
         {
-          "description": "S4P2_N_03_USEFUL_RETURN",
+          "description": "S4P2R2_N_03_USEFUL_RETURN",
           "class": "cover",
           "status": "SATISFIED",
-          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_partition.rs",
-          "line": 68,
-          "source_sha256": "051e869d52f78f43ee8c1faaf5bad0a91c4e8d9ea21a1e8c1d83991a89e0f574",
-          "source_line": "    kani::cover(true, \"S4P2_N_03_USEFUL_RETURN\");",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 66,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::cover(true, \"S4P2R2_N_03_USEFUL_RETURN\");",
           "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
           "semantic_role": "USEFUL_RETURN",
           "predicate_tokens": "true"
@@ -651,9 +652,9 @@
       "structural_na_binding": null
     },
     {
-      "id": "s4p2_network_b01_n04_fullbyte",
-      "selector": "slice::sort::shared::smallsort::verify::sorting_s4_network_partition::s4p2_network_b01_n04_fullbyte",
-      "source_qualified_selector": "core::slice::sort::shared::smallsort::verify::sorting_s4_network_partition::s4p2_network_b01_n04_fullbyte",
+      "id": "s4p2r2_network_b01_n04_fullbyte",
+      "selector": "slice::sort::shared::smallsort::verify::sorting_s4_network_r2::s4p2r2_network_b01_n04_fullbyte",
+      "source_qualified_selector": "core::slice::sort::shared::smallsort::verify::sorting_s4_network_r2::s4p2r2_network_b01_n04_fullbyte",
       "mode": "Original",
       "variant": "production",
       "unwind": 36,
@@ -661,18 +662,18 @@
       "failure_description": null,
       "required_cover_count": 6,
       "required_cover_messages": [
-        "S4P2_N_04_N04",
-        "S4P2_N_04_UNSORTED",
-        "S4P2_N_04_DUPLICATE",
-        "S4P2_N_04_NONCONSTANT",
-        "S4P2_N_04_MAX_DESCENDING",
-        "S4P2_N_04_USEFUL_RETURN"
+        "S4P2R2_N_04_N04",
+        "S4P2R2_N_04_UNSORTED",
+        "S4P2R2_N_04_DUPLICATE",
+        "S4P2R2_N_04_NONCONSTANT",
+        "S4P2R2_N_04_MAX_DESCENDING",
+        "S4P2R2_N_04_USEFUL_RETURN"
       ],
       "required_success_messages": [
-        "S4P2_N_04_ACTIVE_CONCRETE_MODEL",
-        "S4P2_N_04_SORTED_FULL_VALUE_COUNT",
-        "S4P2_N_04_FULL_OUTSIDE_FRAME",
-        "S4P2_N_04_ARBITRARY_OUTSIDE_CANARY"
+        "S4P2R2_N_04_ACTIVE_CONCRETE_MODEL",
+        "S4P2R2_N_04_SORTED_FULL_VALUE_COUNT",
+        "S4P2R2_N_04_FULL_OUTSIDE_FRAME",
+        "S4P2R2_N_04_ARBITRARY_OUTSIDE_CANARY"
       ],
       "timeout_seconds": 600,
       "planned_seconds": null,
@@ -681,121 +682,121 @@
       "proof_credit": "NONE",
       "roles": [
         {
-          "description": "S4P2_N_04_ACTIVE_CONCRETE_MODEL",
+          "description": "S4P2R2_N_04_ACTIVE_CONCRETE_MODEL",
           "class": "assertion",
           "status": "SUCCESS",
-          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_partition.rs",
-          "line": 74,
-          "source_sha256": "051e869d52f78f43ee8c1faaf5bad0a91c4e8d9ea21a1e8c1d83991a89e0f574",
-          "source_line": "    kani::assert(active_u8(), \"S4P2_N_04_ACTIVE_CONCRETE_MODEL\");",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 72,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::assert(active_u8(), \"S4P2R2_N_04_ACTIVE_CONCRETE_MODEL\");",
           "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
           "semantic_role": "ACTIVE_CONCRETE_MODEL",
           "predicate_tokens": "active_u8()"
         },
         {
-          "description": "S4P2_N_04_SORTED_FULL_VALUE_COUNT",
+          "description": "S4P2R2_N_04_SORTED_FULL_VALUE_COUNT",
           "class": "assertion",
           "status": "SUCCESS",
-          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_partition.rs",
-          "line": 81,
-          "source_sha256": "051e869d52f78f43ee8c1faaf5bad0a91c4e8d9ea21a1e8c1d83991a89e0f574",
-          "source_line": "    kani::assert(post::<u8, KeyLess<u8>>(before, &v[1..1 + n]), \"S4P2_N_04_SORTED_FULL_VALUE_COUNT\");",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 78,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::assert(post::<u8, KeyLess<u8>>(before, &v[1..5]), \"S4P2R2_N_04_SORTED_FULL_VALUE_COUNT\");",
           "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
           "semantic_role": "SORTED_FULL_VALUE_COUNT",
-          "predicate_tokens": "post::<u8,KeyLess<u8>>(before,&v[1..1+n])"
+          "predicate_tokens": "post::<u8,KeyLess<u8>>(before,&v[1..5])"
         },
         {
-          "description": "S4P2_N_04_FULL_OUTSIDE_FRAME",
+          "description": "S4P2R2_N_04_FULL_OUTSIDE_FRAME",
           "class": "assertion",
           "status": "SUCCESS",
-          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_partition.rs",
-          "line": 83,
-          "source_sha256": "051e869d52f78f43ee8c1faaf5bad0a91c4e8d9ea21a1e8c1d83991a89e0f574",
-          "source_line": "        kani::assert((1 <= i && i < 1 + n) || v[i] == bytes[i], \"S4P2_N_04_FULL_OUTSIDE_FRAME\");",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 80,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "        kani::assert((1 <= i && i < 1 + n) || v[i] == bytes[i], \"S4P2R2_N_04_FULL_OUTSIDE_FRAME\");",
           "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
           "semantic_role": "FULL_OUTSIDE_FRAME",
           "predicate_tokens": "(1<=i&&i<1+n)||v[i]==bytes[i]"
         },
         {
-          "description": "S4P2_N_04_ARBITRARY_OUTSIDE_CANARY",
+          "description": "S4P2R2_N_04_ARBITRARY_OUTSIDE_CANARY",
           "class": "assertion",
           "status": "SUCCESS",
-          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_partition.rs",
-          "line": 87,
-          "source_sha256": "051e869d52f78f43ee8c1faaf5bad0a91c4e8d9ea21a1e8c1d83991a89e0f574",
-          "source_line": "    kani::assert(v[canary] == bytes[canary], \"S4P2_N_04_ARBITRARY_OUTSIDE_CANARY\");",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 84,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::assert(v[canary] == bytes[canary], \"S4P2R2_N_04_ARBITRARY_OUTSIDE_CANARY\");",
           "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
           "semantic_role": "ARBITRARY_OUTSIDE_CANARY",
           "predicate_tokens": "v[canary]==bytes[canary]"
         },
         {
-          "description": "S4P2_N_04_N04",
+          "description": "S4P2R2_N_04_N04",
           "class": "cover",
           "status": "SATISFIED",
-          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_partition.rs",
-          "line": 88,
-          "source_sha256": "051e869d52f78f43ee8c1faaf5bad0a91c4e8d9ea21a1e8c1d83991a89e0f574",
-          "source_line": "    kani::cover(n == 4, \"S4P2_N_04_N04\");",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 85,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::cover(n == 4, \"S4P2R2_N_04_N04\");",
           "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
           "semantic_role": "N04",
           "predicate_tokens": "n==4"
         },
         {
-          "description": "S4P2_N_04_UNSORTED",
+          "description": "S4P2R2_N_04_UNSORTED",
           "class": "cover",
           "status": "SATISFIED",
-          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_partition.rs",
-          "line": 89,
-          "source_sha256": "051e869d52f78f43ee8c1faaf5bad0a91c4e8d9ea21a1e8c1d83991a89e0f574",
-          "source_line": "    kani::cover(n >= 2 && bytes[1] > bytes[n], \"S4P2_N_04_UNSORTED\");",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 86,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::cover(n >= 2 && bytes[1] > bytes[n], \"S4P2R2_N_04_UNSORTED\");",
           "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
           "semantic_role": "UNSORTED",
           "predicate_tokens": "n>=2&&bytes[1]>bytes[n]"
         },
         {
-          "description": "S4P2_N_04_DUPLICATE",
+          "description": "S4P2R2_N_04_DUPLICATE",
           "class": "cover",
           "status": "SATISFIED",
-          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_partition.rs",
-          "line": 90,
-          "source_sha256": "051e869d52f78f43ee8c1faaf5bad0a91c4e8d9ea21a1e8c1d83991a89e0f574",
-          "source_line": "    kani::cover(n >= 2 && bytes[1] == bytes[n], \"S4P2_N_04_DUPLICATE\");",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 87,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::cover(n >= 2 && bytes[1] == bytes[n], \"S4P2R2_N_04_DUPLICATE\");",
           "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
           "semantic_role": "DUPLICATE",
           "predicate_tokens": "n>=2&&bytes[1]==bytes[n]"
         },
         {
-          "description": "S4P2_N_04_NONCONSTANT",
+          "description": "S4P2R2_N_04_NONCONSTANT",
           "class": "cover",
           "status": "SATISFIED",
-          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_partition.rs",
-          "line": 91,
-          "source_sha256": "051e869d52f78f43ee8c1faaf5bad0a91c4e8d9ea21a1e8c1d83991a89e0f574",
-          "source_line": "    kani::cover(n >= 2 && v[1] < v[n], \"S4P2_N_04_NONCONSTANT\");",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 88,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::cover(n >= 2 && v[1] < v[n], \"S4P2R2_N_04_NONCONSTANT\");",
           "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
           "semantic_role": "NONCONSTANT",
           "predicate_tokens": "n>=2&&v[1]<v[n]"
         },
         {
-          "description": "S4P2_N_04_MAX_DESCENDING",
+          "description": "S4P2R2_N_04_MAX_DESCENDING",
           "class": "cover",
           "status": "SATISFIED",
-          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_partition.rs",
-          "line": 92,
-          "source_sha256": "051e869d52f78f43ee8c1faaf5bad0a91c4e8d9ea21a1e8c1d83991a89e0f574",
-          "source_line": "    kani::cover(n == 4 && descending(&bytes[1..5]), \"S4P2_N_04_MAX_DESCENDING\");",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 89,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::cover(n == 4 && descending(&bytes[1..5]), \"S4P2R2_N_04_MAX_DESCENDING\");",
           "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
           "semantic_role": "MAX_DESCENDING",
           "predicate_tokens": "n==4&&descending(&bytes[1..5])"
         },
         {
-          "description": "S4P2_N_04_USEFUL_RETURN",
+          "description": "S4P2R2_N_04_USEFUL_RETURN",
           "class": "cover",
           "status": "SATISFIED",
-          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_partition.rs",
-          "line": 93,
-          "source_sha256": "051e869d52f78f43ee8c1faaf5bad0a91c4e8d9ea21a1e8c1d83991a89e0f574",
-          "source_line": "    kani::cover(true, \"S4P2_N_04_USEFUL_RETURN\");",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 90,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::cover(true, \"S4P2R2_N_04_USEFUL_RETURN\");",
           "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
           "semantic_role": "USEFUL_RETURN",
           "predicate_tokens": "true"
@@ -814,9 +815,9 @@
       "structural_na_binding": null
     },
     {
-      "id": "s4p2_network_b01_n00_01_fullbyte",
-      "selector": "slice::sort::shared::smallsort::verify::sorting_s4_network_partition::s4p2_network_b01_n00_01_fullbyte",
-      "source_qualified_selector": "core::slice::sort::shared::smallsort::verify::sorting_s4_network_partition::s4p2_network_b01_n00_01_fullbyte",
+      "id": "s4p2r2_network_b01_n00_01_fullbyte",
+      "selector": "slice::sort::shared::smallsort::verify::sorting_s4_network_r2::s4p2r2_network_b01_n00_01_fullbyte",
+      "source_qualified_selector": "core::slice::sort::shared::smallsort::verify::sorting_s4_network_r2::s4p2r2_network_b01_n00_01_fullbyte",
       "mode": "Original",
       "variant": "production",
       "unwind": 36,
@@ -824,15 +825,15 @@
       "failure_description": null,
       "required_cover_count": 3,
       "required_cover_messages": [
-        "S4P2_N_00_01_N00",
-        "S4P2_N_00_01_N01",
-        "S4P2_N_00_01_USEFUL_RETURN"
+        "S4P2R2_N_00_01_N00",
+        "S4P2R2_N_00_01_N01",
+        "S4P2R2_N_00_01_USEFUL_RETURN"
       ],
       "required_success_messages": [
-        "S4P2_N_00_01_ACTIVE_CONCRETE_MODEL",
-        "S4P2_N_00_01_SORTED_FULL_VALUE_COUNT",
-        "S4P2_N_00_01_FULL_OUTSIDE_FRAME",
-        "S4P2_N_00_01_ARBITRARY_OUTSIDE_CANARY"
+        "S4P2R2_N_00_01_ACTIVE_CONCRETE_MODEL",
+        "S4P2R2_N_00_01_SORTED_FULL_VALUE_COUNT",
+        "S4P2R2_N_00_01_FULL_OUTSIDE_FRAME",
+        "S4P2R2_N_00_01_ARBITRARY_OUTSIDE_CANARY"
       ],
       "timeout_seconds": 600,
       "planned_seconds": null,
@@ -841,85 +842,85 @@
       "proof_credit": "NONE",
       "roles": [
         {
-          "description": "S4P2_N_00_01_ACTIVE_CONCRETE_MODEL",
+          "description": "S4P2R2_N_00_01_ACTIVE_CONCRETE_MODEL",
           "class": "assertion",
           "status": "SUCCESS",
-          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_partition.rs",
-          "line": 99,
-          "source_sha256": "051e869d52f78f43ee8c1faaf5bad0a91c4e8d9ea21a1e8c1d83991a89e0f574",
-          "source_line": "    kani::assert(active_u8(), \"S4P2_N_00_01_ACTIVE_CONCRETE_MODEL\");",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 96,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::assert(active_u8(), \"S4P2R2_N_00_01_ACTIVE_CONCRETE_MODEL\");",
           "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
           "semantic_role": "ACTIVE_CONCRETE_MODEL",
           "predicate_tokens": "active_u8()"
         },
         {
-          "description": "S4P2_N_00_01_SORTED_FULL_VALUE_COUNT",
+          "description": "S4P2R2_N_00_01_SORTED_FULL_VALUE_COUNT",
           "class": "assertion",
           "status": "SUCCESS",
-          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_partition.rs",
-          "line": 106,
-          "source_sha256": "051e869d52f78f43ee8c1faaf5bad0a91c4e8d9ea21a1e8c1d83991a89e0f574",
-          "source_line": "    kani::assert(post::<u8, KeyLess<u8>>(before, &v[1..1 + n]), \"S4P2_N_00_01_SORTED_FULL_VALUE_COUNT\");",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 107,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::assert(post::<u8, KeyLess<u8>>(before, &v[1..1 + n]), \"S4P2R2_N_00_01_SORTED_FULL_VALUE_COUNT\");",
           "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
           "semantic_role": "SORTED_FULL_VALUE_COUNT",
           "predicate_tokens": "post::<u8,KeyLess<u8>>(before,&v[1..1+n])"
         },
         {
-          "description": "S4P2_N_00_01_FULL_OUTSIDE_FRAME",
+          "description": "S4P2R2_N_00_01_FULL_OUTSIDE_FRAME",
           "class": "assertion",
           "status": "SUCCESS",
-          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_partition.rs",
-          "line": 108,
-          "source_sha256": "051e869d52f78f43ee8c1faaf5bad0a91c4e8d9ea21a1e8c1d83991a89e0f574",
-          "source_line": "        kani::assert((1 <= i && i < 1 + n) || v[i] == bytes[i], \"S4P2_N_00_01_FULL_OUTSIDE_FRAME\");",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 109,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "        kani::assert((1 <= i && i < 1 + n) || v[i] == bytes[i], \"S4P2R2_N_00_01_FULL_OUTSIDE_FRAME\");",
           "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
           "semantic_role": "FULL_OUTSIDE_FRAME",
           "predicate_tokens": "(1<=i&&i<1+n)||v[i]==bytes[i]"
         },
         {
-          "description": "S4P2_N_00_01_ARBITRARY_OUTSIDE_CANARY",
+          "description": "S4P2R2_N_00_01_ARBITRARY_OUTSIDE_CANARY",
           "class": "assertion",
           "status": "SUCCESS",
-          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_partition.rs",
-          "line": 112,
-          "source_sha256": "051e869d52f78f43ee8c1faaf5bad0a91c4e8d9ea21a1e8c1d83991a89e0f574",
-          "source_line": "    kani::assert(v[canary] == bytes[canary], \"S4P2_N_00_01_ARBITRARY_OUTSIDE_CANARY\");",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 113,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::assert(v[canary] == bytes[canary], \"S4P2R2_N_00_01_ARBITRARY_OUTSIDE_CANARY\");",
           "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
           "semantic_role": "ARBITRARY_OUTSIDE_CANARY",
           "predicate_tokens": "v[canary]==bytes[canary]"
         },
         {
-          "description": "S4P2_N_00_01_N00",
+          "description": "S4P2R2_N_00_01_N00",
           "class": "cover",
           "status": "SATISFIED",
-          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_partition.rs",
-          "line": 113,
-          "source_sha256": "051e869d52f78f43ee8c1faaf5bad0a91c4e8d9ea21a1e8c1d83991a89e0f574",
-          "source_line": "    kani::cover(n == 0, \"S4P2_N_00_01_N00\");",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 114,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::cover(n == 0, \"S4P2R2_N_00_01_N00\");",
           "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
           "semantic_role": "N00",
           "predicate_tokens": "n==0"
         },
         {
-          "description": "S4P2_N_00_01_N01",
+          "description": "S4P2R2_N_00_01_N01",
           "class": "cover",
           "status": "SATISFIED",
-          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_partition.rs",
-          "line": 114,
-          "source_sha256": "051e869d52f78f43ee8c1faaf5bad0a91c4e8d9ea21a1e8c1d83991a89e0f574",
-          "source_line": "    kani::cover(n == 1, \"S4P2_N_00_01_N01\");",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 115,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::cover(n == 1, \"S4P2R2_N_00_01_N01\");",
           "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
           "semantic_role": "N01",
           "predicate_tokens": "n==1"
         },
         {
-          "description": "S4P2_N_00_01_USEFUL_RETURN",
+          "description": "S4P2R2_N_00_01_USEFUL_RETURN",
           "class": "cover",
           "status": "SATISFIED",
-          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_partition.rs",
-          "line": 115,
-          "source_sha256": "051e869d52f78f43ee8c1faaf5bad0a91c4e8d9ea21a1e8c1d83991a89e0f574",
-          "source_line": "    kani::cover(true, \"S4P2_N_00_01_USEFUL_RETURN\");",
+          "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+          "line": 116,
+          "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
+          "source_line": "    kani::cover(true, \"S4P2R2_N_00_01_USEFUL_RETURN\");",
           "producer_id": "UNKNOWN_UNTIL_SAME_INVOCATION_INVENTORY",
           "semantic_role": "USEFUL_RETURN",
           "predicate_tokens": "true"
@@ -941,10 +942,10 @@
         "MAX_DESCENDING_AT_OLD_HI_2_OR_4"
       ],
       "structural_na_binding": {
-        "profile": "ch8-s4p-2-network-fullbyte-singletons-v1",
+        "profile": "ch8-s4p-2r2-network-fullbyte-concrete-calls-v1",
         "design_id": "PLAN_N01_V34_B01_FULLU8",
-        "std_sha": "c12867b1e651a3927cbd9f169fe2c3d3728a44c3",
-        "source_sha256": "051e869d52f78f43ee8c1faaf5bad0a91c4e8d9ea21a1e8c1d83991a89e0f574",
+        "std_sha": "8faf8e62af8f82b5c46af020086f8df591b6757e",
+        "source_sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
         "domain": {
           "length_interval": [
             0,
@@ -1034,13 +1035,13 @@
         }
       ]
     },
-    "s4p2_network_b01_n02_fullbyte": {
-      "selector": "slice::sort::shared::smallsort::verify::sorting_s4_network_partition::s4p2_network_b01_n02_fullbyte",
+    "s4p2r2_network_b01_n02_fullbyte": {
+      "selector": "slice::sort::shared::smallsort::verify::sorting_s4_network_r2::s4p2r2_network_b01_n02_fullbyte",
       "mode": "Original",
       "target": null,
       "crate": "core",
-      "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_partition.rs",
-      "sha256": "051e869d52f78f43ee8c1faaf5bad0a91c4e8d9ea21a1e8c1d83991a89e0f574",
+      "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+      "sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
       "locations": [
         {
           "line": 21,
@@ -1048,61 +1049,61 @@
         },
         {
           "line": 23,
-          "source": "fn s4p2_network_b01_n02_fullbyte() {"
+          "source": "fn s4p2r2_network_b01_n02_fullbyte() {"
         }
       ]
     },
-    "s4p2_network_b01_n03_fullbyte": {
-      "selector": "slice::sort::shared::smallsort::verify::sorting_s4_network_partition::s4p2_network_b01_n03_fullbyte",
+    "s4p2r2_network_b01_n03_fullbyte": {
+      "selector": "slice::sort::shared::smallsort::verify::sorting_s4_network_r2::s4p2r2_network_b01_n03_fullbyte",
       "mode": "Original",
       "target": null,
       "crate": "core",
-      "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_partition.rs",
-      "sha256": "051e869d52f78f43ee8c1faaf5bad0a91c4e8d9ea21a1e8c1d83991a89e0f574",
+      "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+      "sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
       "locations": [
         {
-          "line": 46,
+          "line": 45,
           "source": "#[kani::proof]"
         },
         {
-          "line": 48,
-          "source": "fn s4p2_network_b01_n03_fullbyte() {"
+          "line": 47,
+          "source": "fn s4p2r2_network_b01_n03_fullbyte() {"
         }
       ]
     },
-    "s4p2_network_b01_n04_fullbyte": {
-      "selector": "slice::sort::shared::smallsort::verify::sorting_s4_network_partition::s4p2_network_b01_n04_fullbyte",
+    "s4p2r2_network_b01_n04_fullbyte": {
+      "selector": "slice::sort::shared::smallsort::verify::sorting_s4_network_r2::s4p2r2_network_b01_n04_fullbyte",
       "mode": "Original",
       "target": null,
       "crate": "core",
-      "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_partition.rs",
-      "sha256": "051e869d52f78f43ee8c1faaf5bad0a91c4e8d9ea21a1e8c1d83991a89e0f574",
+      "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+      "sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
       "locations": [
+        {
+          "line": 69,
+          "source": "#[kani::proof]"
+        },
         {
           "line": 71,
-          "source": "#[kani::proof]"
-        },
-        {
-          "line": 73,
-          "source": "fn s4p2_network_b01_n04_fullbyte() {"
+          "source": "fn s4p2r2_network_b01_n04_fullbyte() {"
         }
       ]
     },
-    "s4p2_network_b01_n00_01_fullbyte": {
-      "selector": "slice::sort::shared::smallsort::verify::sorting_s4_network_partition::s4p2_network_b01_n00_01_fullbyte",
+    "s4p2r2_network_b01_n00_01_fullbyte": {
+      "selector": "slice::sort::shared::smallsort::verify::sorting_s4_network_r2::s4p2r2_network_b01_n00_01_fullbyte",
       "mode": "Original",
       "target": null,
       "crate": "core",
-      "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_partition.rs",
-      "sha256": "051e869d52f78f43ee8c1faaf5bad0a91c4e8d9ea21a1e8c1d83991a89e0f574",
+      "file": "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs",
+      "sha256": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
       "locations": [
         {
-          "line": 96,
+          "line": 93,
           "source": "#[kani::proof]"
         },
         {
-          "line": 98,
-          "source": "fn s4p2_network_b01_n00_01_fullbyte() {"
+          "line": 95,
+          "source": "fn s4p2r2_network_b01_n00_01_fullbyte() {"
         }
       ]
     }
@@ -1113,10 +1114,10 @@
       "checker_count_corrupt",
       "sort13_weak",
       "s4p_cell_count_corrupt",
-      "s4p2_network_b01_n02_fullbyte",
-      "s4p2_network_b01_n03_fullbyte",
-      "s4p2_network_b01_n04_fullbyte",
-      "s4p2_network_b01_n00_01_fullbyte"
+      "s4p2r2_network_b01_n02_fullbyte",
+      "s4p2r2_network_b01_n03_fullbyte",
+      "s4p2r2_network_b01_n04_fullbyte",
+      "s4p2r2_network_b01_n00_01_fullbyte"
     ],
     "deferred": [
       "fallback_N05_16",
@@ -1146,8 +1147,8 @@
       "export_bytes": 8388608,
       "artifact_bytes": 268435456
     },
-    "plan_commit": "7253272c427eb9b564c79350ef73b231fa124298",
-    "intake_commit": "842984040e87b8b8594653634b72df7d800ca198",
+    "plan_commit": "cdedf547df37aec4c442727a902a784f4d1b5155",
+    "intake_commit": "00efb1f5440627362af5c470ad434b89c5e27cca",
     "boundary_commit": "9bb6e2b7a18e338f532ec817f8acfd7515fc2fc9",
     "u_policy": "ZERO_U_FAIL_CLOSED; site-specific proposal PENDING_REVIEW_NOT_ENABLED",
     "unselected_full_obligations": "EXPLICIT_NOT_SELECTED_NO_PROMOTION"
@@ -1160,7 +1161,7 @@
     "role_unreachable": "REJECT"
   },
   "ci_payload_sha256": {
-    ".github/workflows/ch8-s2.yml": "4500edba80fbb48258c5b0a29c4d73a97fbb37fb26017da9f8251c147f30bd7f",
+    ".github/workflows/ch8-s2.yml": "d5dd5942297df013e625b85890fcc3884ec6b60d1f08c8e1dc51c019ce15fdfc",
     "ch8-s1-control/ORACLE-SOURCES.json": "69bf8d8494094a079a6ac3422ab90f30b7b5093b53e91ee6ce393a043538eaa2",
     "ch8-s1-control/ROLE-MAP.json": "bad63e0616c0061bf40d7e8d5c72324c8089574624a20f07a1f98a2806e5043d",
     "ch8-s1-control/S2-SOURCE.json": "950631f2d0594b7b14dc0c203d12379d48e3aeeba612f1651f029691b376daa6",
@@ -1171,12 +1172,15 @@
     "ch8-s1-control/S4P2-INVENTORY.json": "bd2e29e524a073f6a7235cdf17dc2c82a1fe4c83f7e9c275df021d3a65eda2be",
     "ch8-s1-control/S4P2-ROLE-CONTRACT.json": "c90950843f17903b0271a0cf349e4afd5e9189924119aacb252904f0a0b7ef1d",
     "ch8-s1-control/S4P2-SOURCE.json": "492a9633f7a431a9b1a4f3daf5707b9b6a0abf8eda781e1ab29e1935c0c6a3d8",
+    "ch8-s1-control/S4P2R2-INVENTORY.json": "7c57e37b2f0ad563e0710f0876f128bec52904bad639c5b757c4d80eada325d7",
+    "ch8-s1-control/S4P2R2-ROLE-CONTRACT.json": "c90950843f17903b0271a0cf349e4afd5e9189924119aacb252904f0a0b7ef1d",
+    "ch8-s1-control/S4P2R2-SOURCE.json": "dc3c5d3361071747bd55c8cd612e03ced6364f2edb410e069f2bba3b5d85c495",
     "ch8-s1-control/activation-default.patch": "cee9e21c4b5015d6daf53c286f781602d0890e4ed23239f968d228088335dcc3",
     "ch8-s1-control/activation-override.patch": "6dcb40cc4118035de700f0988a6766c96aad8f4def76513f0f10f275d091c356",
     "ch8-s1-control/binding_metadata.py": "8af48498fe256283dcbe7a1f7bd766e213c2ab83e28008e23bd6bb9811c57030",
     "ch8-s1-control/cfg_pfc.py": "e72ba0cff247613a3db7f4a5bd237cfeab64cb49d2410c61e85b3f80e91ecb11",
-    "ch8-s1-control/check_package.py": "ccabef586bb1e737989b26d9865167d4ff3b6f04cbd1938c4947a5eca1d39511",
-    "ch8-s1-control/collect.py": "f84bc8311b20542bee5c68d94b67a3a1e08ce064b95c32f5494da7c4da1b5ce6",
+    "ch8-s1-control/check_package.py": "fe2401be8778f34d39db253acbfd4be688e0a76a658cdc87bb43617d35a43cac",
+    "ch8-s1-control/collect.py": "7a54c18fb723157255be126fa13cbb3ad4c6906cda6302edcbc81f7b86e96740",
     "ch8-s1-control/contract_stacks.py": "c4b0f92fe2ede42399f2743071e58380806e61339bfbc0d1beccbf6b2a11ea0d",
     "ch8-s1-control/fixtures/r5-request.json": "d87434d250a1a430c565d8e0612e5a3987f7a811b6cfd9091c268865ff3498b1",
     "ch8-s1-control/fixtures/r5-workflow.yml": "80d1273b9564a16eb4619089db5604ccccdfaa1cb7a155e9703d169c14b58c90",
@@ -1199,6 +1203,8 @@
     "ch8-s1-control/fixtures/s34-workflow.yml": "317f92181bee9470ddf65471def7154fcacbf1e6fb7913220ca1f154ca915a55",
     "ch8-s1-control/fixtures/s4p-request.json": "3d135ebabd0793681a5b8a2fdb2414324c7021c5d8791e700fc713b633ddd149",
     "ch8-s1-control/fixtures/s4p-workflow.yml": "a56791ab37df944d65131c0a7a612a5245d3c8a0275ff8810fb44fa6a7af061a",
+    "ch8-s1-control/fixtures/s4p2-request.json": "c6abee25796842b0a1af44009921045c3da82b36e0fead42a342e7c5d8e74969",
+    "ch8-s1-control/fixtures/s4p2-workflow.yml": "4500edba80fbb48258c5b0a29c4d73a97fbb37fb26017da9f8251c147f30bd7f",
     "ch8-s1-control/lexical_bindings.py": "31abcb93bdb52bb1205e59ce6f4c8fe2206c2c63c9b2f82142492c8752f3e484",
     "ch8-s1-control/negative_oracle.py": "fabd41fb31e37ea79239e4798f38aa81cd068abad0d00281d1d93d936f59681c",
     "ch8-s1-control/oracle_source.py": "75a9a665b7a9fc1c64cd51c1c8d281fd323f22411aee83c017d08f37a27f20ce",
@@ -1208,7 +1214,7 @@
     "ch8-s1-control/r5_profile.py": "e237b05f7bbc26b2820173254c92035572b22280c4a0b7ee66481bfb41f64f4d",
     "ch8-s1-control/r5_runtime.py": "e796129e9da910879026cbe9a2037cf4834793f97032b2ff21bdf128268c697f",
     "ch8-s1-control/rich_evidence.py": "1c778852fd6c7d4542634424af7801e49e2f7074574b411f6c34a9fb86ab5139",
-    "ch8-s1-control/runner.py": "0870207ad6be4bfea26faaa9d26c57f07ac694b984ebb2501e8d1b0ef497de6a",
+    "ch8-s1-control/runner.py": "ca45d108e18d56d5554d237450e8668efdc8c5fd04f8d769e16ef32dc02c3ccc",
     "ch8-s1-control/rustc_diagnostics.py": "0c94acd85a9f2f7a241958a2c5b9dffce09517bd8d08ddf30bfbdd81ef839b32",
     "ch8-s1-control/s108_package.py": "8f1443262d41b6ba755b89d089ffa7515692734f0986a80789a2bf89c7900237",
     "ch8-s1-control/s2_correspondence.py": "46f2cd69373b4ebd3a3395d455338aadff3d473df5df2734e1bd5d4d2432dd4f",
@@ -1256,6 +1262,17 @@
     "ch8-s1-control/s4p2_policy.py": "36cb84b1854d61e3962c3934b334329661beab700cec496441938e5e59e2a535",
     "ch8-s1-control/s4p2_profile.py": "4a870175097b7865589c0c9f39c4b8acb8688fc80d9caff9313f5bf554782c2c",
     "ch8-s1-control/s4p2_validate.py": "0cea1370c0e31e2a1b04b5bbc2e9c558d1ce17473ae72278c3aa89732de753f3",
+    "ch8-s1-control/s4p2r2_campaign.py": "0b59c2a672f5bfdaa720b3ea2695df5b977187aede9d4dc572b19732a2502889",
+    "ch8-s1-control/s4p2r2_cfg_pfc.py": "1c139304a66eeef8f6cda3890caa1fc29ba78a6410116905187dbc6016b73726",
+    "ch8-s1-control/s4p2r2_contract_stacks.py": "8645e1f9c6651ab708b03d385f16cdaa686b92408ab6e8732337bdc7ec971f9f",
+    "ch8-s1-control/s4p2r2_domain.py": "e389ca67adbe5e3743f6985a37fa5a323e6be3cfb74b9f91d153be12e7a8f57f",
+    "ch8-s1-control/s4p2r2_lexical_bindings.py": "d35e72cfb2939b4ab90ad6251919d69e175f32f948ba5d2a6153d37b641c9378",
+    "ch8-s1-control/s4p2r2_ordinary_contracts.py": "513fcaca4e679f1d11628d6e2b67e0383b51c328a5db2c0b09a4b66d755c6690",
+    "ch8-s1-control/s4p2r2_package.py": "a24d1f61fe0e2521f1d0c9360cd3ecf96d86c40eab0267656a4c8b4671aa84cc",
+    "ch8-s1-control/s4p2r2_pins.py": "66c306f0c17601acaedf41be71a65cc4b63398c5f3962beee0fea5bb199c4dad",
+    "ch8-s1-control/s4p2r2_policy.py": "8d2c56d0cafc1b9c62f449a778049d8e6ab58e5dae1d0a5d1aecae17f60c3a54",
+    "ch8-s1-control/s4p2r2_profile.py": "53ec243e6ef2eca294578b12000909ff5904f6fcdba4318181e8bf77eb278fe3",
+    "ch8-s1-control/s4p2r2_validate.py": "a5a3b7b95256e23441217db46aea20b1dd8c50a08c62a5063dff97f8e1709795",
     "ch8-s1-control/s4p_campaign.py": "12db0a03f0f077197a1df7fbe04c556ca3ed40fb4e0fd426ccaad826d5240df3",
     "ch8-s1-control/s4p_cfg_pfc.py": "54be06f7ed715923f0de1bef39d4fb4c441972d68c8d2642788248cc19166b14",
     "ch8-s1-control/s4p_contract_stacks.py": "2b5ccfadf095dc5d7fc140f887822aad60645b384a995bbde234f215207a44b7",
@@ -1293,6 +1310,8 @@
     "ch8-s1-control/test_s4p2_boundary.py": "447d97440cf918ca25466fc0ceba1d99cda4eb1e5df1eb9fd94e09045077476e",
     "ch8-s1-control/test_s4p2_gate_repair.py": "5e5dd233c77c69ff6b14f55ea19ff79b30bf0321b7924044629189e675095555",
     "ch8-s1-control/test_s4p2_paths.py": "2bf7087cd769ecaf62bd60c011b45ef63d3d97843198a5e73519571ac5024ce1",
+    "ch8-s1-control/test_s4p2r2.py": "b54ae92e5ecdb566d9ae7545be95499966d8f548a3590700467a3b51d356637b",
+    "ch8-s1-control/test_s4p2r2_domain.py": "37891660d11d020795b59df5e6061d903dacd0d72428df4bff50e13a81717266",
     "ch8-s1-control/test_s4p_boundary.py": "b0519c00644fcdc222883f89d4e82d82a4212f0f324ce9e873ee39ad2fcdef30",
     "ch8-s1-control/test_s4p_gate_repair.py": "c6729c3647a5d74c34b61e18ce9a0f5f8a7edbe49605fa9918781355719ea0f1",
     "ch8-s1-control/test_s4p_paths.py": "bf99f709d238118b8125c411b987f7fda78ed202d6b6e5f49e096a941bda84af",
@@ -1327,6 +1346,9 @@
     "ch8-s1-control/S4P2-INVENTORY.json",
     "ch8-s1-control/S4P2-ROLE-CONTRACT.json",
     "ch8-s1-control/S4P2-SOURCE.json",
+    "ch8-s1-control/S4P2R2-INVENTORY.json",
+    "ch8-s1-control/S4P2R2-ROLE-CONTRACT.json",
+    "ch8-s1-control/S4P2R2-SOURCE.json",
     "ch8-s1-control/activation-default.patch",
     "ch8-s1-control/activation-override.patch",
     "ch8-s1-control/binding_metadata.py",
@@ -1355,6 +1377,8 @@
     "ch8-s1-control/fixtures/s34-workflow.yml",
     "ch8-s1-control/fixtures/s4p-request.json",
     "ch8-s1-control/fixtures/s4p-workflow.yml",
+    "ch8-s1-control/fixtures/s4p2-request.json",
+    "ch8-s1-control/fixtures/s4p2-workflow.yml",
     "ch8-s1-control/lexical_bindings.py",
     "ch8-s1-control/negative_oracle.py",
     "ch8-s1-control/oracle_source.py",
@@ -1412,6 +1436,17 @@
     "ch8-s1-control/s4p2_policy.py",
     "ch8-s1-control/s4p2_profile.py",
     "ch8-s1-control/s4p2_validate.py",
+    "ch8-s1-control/s4p2r2_campaign.py",
+    "ch8-s1-control/s4p2r2_cfg_pfc.py",
+    "ch8-s1-control/s4p2r2_contract_stacks.py",
+    "ch8-s1-control/s4p2r2_domain.py",
+    "ch8-s1-control/s4p2r2_lexical_bindings.py",
+    "ch8-s1-control/s4p2r2_ordinary_contracts.py",
+    "ch8-s1-control/s4p2r2_package.py",
+    "ch8-s1-control/s4p2r2_pins.py",
+    "ch8-s1-control/s4p2r2_policy.py",
+    "ch8-s1-control/s4p2r2_profile.py",
+    "ch8-s1-control/s4p2r2_validate.py",
     "ch8-s1-control/s4p_campaign.py",
     "ch8-s1-control/s4p_cfg_pfc.py",
     "ch8-s1-control/s4p_contract_stacks.py",
@@ -1449,6 +1484,8 @@
     "ch8-s1-control/test_s4p2_boundary.py",
     "ch8-s1-control/test_s4p2_gate_repair.py",
     "ch8-s1-control/test_s4p2_paths.py",
+    "ch8-s1-control/test_s4p2r2.py",
+    "ch8-s1-control/test_s4p2r2_domain.py",
     "ch8-s1-control/test_s4p_boundary.py",
     "ch8-s1-control/test_s4p_gate_repair.py",
     "ch8-s1-control/test_s4p_paths.py",
@@ -1489,7 +1526,7 @@
     "prior_bridge1_request_sha256": "23c137a331acb92610b3f0cf2192a0e16081dbf0815a35fc3c8d88742c0a1fa3"
   },
   "domains": {
-    "s4p2_network_b01_n02_fullbyte": {
+    "s4p2r2_network_b01_n02_fullbyte": {
       "length_interval": [
         2,
         2
@@ -1502,7 +1539,7 @@
       "comparator": "KeyLess<u8>",
       "summary_edges": []
     },
-    "s4p2_network_b01_n03_fullbyte": {
+    "s4p2r2_network_b01_n03_fullbyte": {
       "length_interval": [
         3,
         3
@@ -1515,7 +1552,7 @@
       "comparator": "KeyLess<u8>",
       "summary_edges": []
     },
-    "s4p2_network_b01_n04_fullbyte": {
+    "s4p2r2_network_b01_n04_fullbyte": {
       "length_interval": [
         4,
         4
@@ -1528,7 +1565,7 @@
       "comparator": "KeyLess<u8>",
       "summary_edges": []
     },
-    "s4p2_network_b01_n00_01_fullbyte": {
+    "s4p2r2_network_b01_n00_01_fullbyte": {
       "length_interval": [
         0,
         1
@@ -1560,20 +1597,18 @@
     ],
     "actual_callee_called": false
   },
-  "s4p2_inputs": {
-    "plan": "7253272c427eb9b564c79350ef73b231fa124298",
-    "plan_review": "e287943e116a102d5950295b2629d80a62d1f922",
-    "intake": "842984040e87b8b8594653634b72df7d800ca198",
-    "intake_review": "3c7bd65cf0bb758cb82dc56ef71a8b8e23efd5c0",
-    "exact_admission": "9bb6e2b7a18e338f532ec817f8acfd7515fc2fc9",
-    "source_reference": "985062ebad90cee1e2846b1648cd6a8624d146f6",
-    "control_reference": "2db5d2c08804036d283cb36450647cd584ee9e10",
-    "role_contract_sha256": "c90950843f17903b0271a0cf349e4afd5e9189924119aacb252904f0a0b7ef1d",
-    "implementation_gates_sha256": "b9d81c6dcff93f42828e604e147073317c882390af9fd4f18f2f66da747455af"
+  "s4p2r2_inputs": {
+    "plan": "cdedf547df37aec4c442727a902a784f4d1b5155",
+    "plan_review": "2b7872e84c8cf723f72ea33ee441a7b02be9b2e4",
+    "source_reference": "c12867b1e651a3927cbd9f169fe2c3d3728a44c3",
+    "control_reference": "4059c900e50ba179d824a1e6f6bd7798cf343e36",
+    "authority": "c56c56bbabcd2772443a854dca3eca9d04cb3089",
+    "intake": "00efb1f5440627362af5c470ad434b89c5e27cca",
+    "role_contract_sha256": "c90950843f17903b0271a0cf349e4afd5e9189924119aacb252904f0a0b7ef1d"
   },
   "ordinary_contract_source_sha256": {
     "library/core/src/slice/sort/shared/smallsort.rs": "590a1703f3939bda126a7acc2bcd7559d8a19d7227dcca1f2ea60b401ec70ead",
-    "library/core/src/slice/sort/shared/smallsort/verify.rs": "f577537fc6ea701083b8fa9c0b74bd6ad1a7147e4db208f680d869424954eaa4",
+    "library/core/src/slice/sort/shared/smallsort/verify.rs": "1610f857a84ef165340a12efae275227bedc53318a66e906c9ef43132ee5b7bd",
     "library/core/src/slice/sort/shared/smallsort/verify/comparators.rs": "7095d7272d929b4e495896ff957a69120a7b86b3f0b99655ede4c989e0543b47",
     "library/core/src/slice/sort/shared/smallsort/verify/fixed_inputs.rs": "5b648cbdedd89ef92f0a794580d0c682fc3fe3035cf63142f1b6bec6baccb7c7",
     "library/core/src/slice/sort/shared/smallsort/verify/forwarding_contracts.rs": "575aa575ffb977d945adb2fc40496c805fe6f8cdb1fc6fe471dbe277f5b2630f",
@@ -1599,7 +1634,8 @@
     "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_2_leaf.rs": "b459d52c8b96120c2bda76b91f42cd57d107af4e8b18bdc91c739724d5a6d195",
     "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
     "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_partition.rs": "6a7333f07ec11f78fd2d622a188385d9873cb223b8c482043033b0d39d46b871",
-    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_partition.rs": "051e869d52f78f43ee8c1faaf5bad0a91c4e8d9ea21a1e8c1d83991a89e0f574"
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_partition.rs": "051e869d52f78f43ee8c1faaf5bad0a91c4e8d9ea21a1e8c1d83991a89e0f574",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c"
   },
   "cfg_pfc_source_sha256": {
     "library/core/src/lib.rs": "cab6061d100493bec1b820356a54e64c5d923c63fb830bb86250d12124f91504",
@@ -1607,18 +1643,19 @@
     "library/core/src/slice/sort/mod.rs": "f67551bff44a854a3f03901db10a099bdab3b67b47d8724bef43858d97134f3c",
     "library/core/src/slice/sort/shared/mod.rs": "fa9eec2901bafba25c9c1e1684df76dbb1f86e0bbd04f18f3e67cee54dcdfcc8",
     "library/core/src/slice/sort/shared/smallsort.rs": "590a1703f3939bda126a7acc2bcd7559d8a19d7227dcca1f2ea60b401ec70ead",
-    "library/core/src/slice/sort/shared/smallsort/verify.rs": "f577537fc6ea701083b8fa9c0b74bd6ad1a7147e4db208f680d869424954eaa4",
+    "library/core/src/slice/sort/shared/smallsort/verify.rs": "1610f857a84ef165340a12efae275227bedc53318a66e906c9ef43132ee5b7bd",
     "library/core/src/slice/sort/shared/smallsort/verify/helper_contracts.rs": "86bac48e888365eab2187756dfd8ffbce059d6cc2ce35b1d8ab7b39d788118ac",
     "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs": "456de2ac2e30f40d2af89f21c1cb234ce51ae9d66f05523f8f4b231f411f80e3",
     "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_leaf.rs": "fb369dec7cfece8e247c6e5bb78f850a710999e73dbcd7f308c67f9f01479096",
     "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_2_leaf.rs": "b459d52c8b96120c2bda76b91f42cd57d107af4e8b18bdc91c739724d5a6d195",
     "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
     "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_partition.rs": "6a7333f07ec11f78fd2d622a188385d9873cb223b8c482043033b0d39d46b871",
-    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_partition.rs": "051e869d52f78f43ee8c1faaf5bad0a91c4e8d9ea21a1e8c1d83991a89e0f574"
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_partition.rs": "051e869d52f78f43ee8c1faaf5bad0a91c4e8d9ea21a1e8c1d83991a89e0f574",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c"
   },
   "contract_stack_source_sha256": {
     "library/core/src/slice/sort/shared/smallsort.rs": "590a1703f3939bda126a7acc2bcd7559d8a19d7227dcca1f2ea60b401ec70ead",
-    "library/core/src/slice/sort/shared/smallsort/verify.rs": "f577537fc6ea701083b8fa9c0b74bd6ad1a7147e4db208f680d869424954eaa4",
+    "library/core/src/slice/sort/shared/smallsort/verify.rs": "1610f857a84ef165340a12efae275227bedc53318a66e906c9ef43132ee5b7bd",
     "library/core/src/slice/sort/shared/smallsort/verify/comparators.rs": "7095d7272d929b4e495896ff957a69120a7b86b3f0b99655ede4c989e0543b47",
     "library/core/src/slice/sort/shared/smallsort/verify/fixed_inputs.rs": "5b648cbdedd89ef92f0a794580d0c682fc3fe3035cf63142f1b6bec6baccb7c7",
     "library/core/src/slice/sort/shared/smallsort/verify/forwarding_contracts.rs": "575aa575ffb977d945adb2fc40496c805fe6f8cdb1fc6fe471dbe277f5b2630f",
@@ -1644,7 +1681,8 @@
     "library/core/src/slice/sort/shared/smallsort/verify/sorting_s3_2_leaf.rs": "b459d52c8b96120c2bda76b91f42cd57d107af4e8b18bdc91c739724d5a6d195",
     "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
     "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_partition.rs": "6a7333f07ec11f78fd2d622a188385d9873cb223b8c482043033b0d39d46b871",
-    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_partition.rs": "051e869d52f78f43ee8c1faaf5bad0a91c4e8d9ea21a1e8c1d83991a89e0f574"
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_partition.rs": "051e869d52f78f43ee8c1faaf5bad0a91c4e8d9ea21a1e8c1d83991a89e0f574",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c"
   },
   "lexical_source_sha256": {
     "library/core/src/lib.rs": "cab6061d100493bec1b820356a54e64c5d923c63fb830bb86250d12124f91504",
@@ -1652,7 +1690,7 @@
     "library/core/src/slice/sort/mod.rs": "f67551bff44a854a3f03901db10a099bdab3b67b47d8724bef43858d97134f3c",
     "library/core/src/slice/sort/shared/mod.rs": "fa9eec2901bafba25c9c1e1684df76dbb1f86e0bbd04f18f3e67cee54dcdfcc8",
     "library/core/src/slice/sort/shared/smallsort.rs": "590a1703f3939bda126a7acc2bcd7559d8a19d7227dcca1f2ea60b401ec70ead",
-    "library/core/src/slice/sort/shared/smallsort/verify.rs": "f577537fc6ea701083b8fa9c0b74bd6ad1a7147e4db208f680d869424954eaa4",
+    "library/core/src/slice/sort/shared/smallsort/verify.rs": "1610f857a84ef165340a12efae275227bedc53318a66e906c9ef43132ee5b7bd",
     "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_batch.rs": "456de2ac2e30f40d2af89f21c1cb234ce51ae9d66f05523f8f4b231f411f80e3",
     "library/core/src/slice/sort/shared/smallsort/verify/sorting_model.rs": "a04f72d0a4f8c42fadc6639ead77e215dc46264096e8e998903bfe1be9ca0a18",
     "library/core/src/slice/sort/shared/smallsort/verify/sorting_s2_span.rs": "c25a476d596ecd2b58d6053307f446e1392171f19b0f48398989373f336db1d6",
@@ -1662,6 +1700,7 @@
     "library/core/src/slice/sort/shared/smallsort/verify/sorting_bridge1.rs": "9053032d91b29100bda8014cf61dd4efb67ff5a9ad8f46189f8580c9d836f724",
     "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_partition.rs": "6a7333f07ec11f78fd2d622a188385d9873cb223b8c482043033b0d39d46b871",
     "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_partition.rs": "051e869d52f78f43ee8c1faaf5bad0a91c4e8d9ea21a1e8c1d83991a89e0f574",
+    "library/core/src/slice/sort/shared/smallsort/verify/sorting_s4_network_r2.rs": "25fcbfa26052727a47c9628e0c41f33c80a57f06971fa61efcc36f4af77d838c",
     "library/core/src/cell.rs": "2bc5acbab3ff2fac122bb2cb1bb343631d9ea9d99d192869376ec16189272fb3",
     "library/core/src/mem/mod.rs": "7504ca7c3188077e142917d8c8b7fc7976f08f417439bb68399d1c0352eb8738",
     "library/core/src/mem/maybe_uninit.rs": "1230d267542337ee2842c29d8227cf8a58fe75c53a2a70efaee3922c4e8e25c0",
