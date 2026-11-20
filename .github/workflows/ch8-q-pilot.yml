@@ -1,0 +1,105 @@
+name: CH8 q-threshold research pilot
+'on':
+  push:
+    branches:
+    - uninit-ci/ch8-q-pilot-v1
+permissions:
+  contents: read
+concurrency:
+  group: ch8-s2-fork
+  cancel-in-progress: false
+jobs:
+  q_pilot:
+    if: ${{ github.repository == 'Tiramisu-Cake/kani' && github.event_name == 'push' && github.ref == 'refs/heads/uninit-ci/ch8-q-pilot-v1' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    env:
+      RECEIPT_ROOT: ${{ runner.temp }}/ch8-q-pilot
+      SETUP_EPOCH: ${{ runner.temp }}/ch8-q-pilot-setup-epoch
+      SETUP_RECEIPT: ${{ runner.temp }}/ch8-q-pilot-setup/receipt.json
+    steps:
+    - name: Begin setup budget
+      timeout-minutes: 1
+      run: python3 -c 'import os,time; open(os.environ["SETUP_EPOCH"],"w").write(str(time.time()))'
+    - name: Checkout control
+      timeout-minutes: 2
+      uses: actions/checkout@v6
+      with:
+        ref: ${{ github.sha }}
+        path: control
+        fetch-depth: 2
+        persist-credentials: false
+    - name: Validate frozen control and synthetic runner
+      timeout-minutes: 2
+      working-directory: control/ch8-q-pilot-control
+      env:
+        PYTHONDONTWRITEBYTECODE: '1'
+      run: |
+        python3 run.py validate --repo ..
+        python3 -m unittest -v test_run.py
+    - name: Read immutable pins
+      timeout-minutes: 1
+      id: pins
+      run: |
+        python3 - <<'PYCODE'
+        import json, os
+        r=json.load(open('control/ch8-q-pilot-control/CI-REQUEST.json'))
+        assert r['status']=='READY'
+        with open(os.environ['GITHUB_OUTPUT'],'a') as f:
+            f.write('std='+r['std_sha']+'\n')
+            f.write('tool='+r['tool_sha']+'\n')
+        PYCODE
+    - name: Checkout exact std source
+      timeout-minutes: 5
+      uses: actions/checkout@v6
+      with:
+        repository: Tiramisu-Cake/verify-rust-std
+        ref: ${{ steps.pins.outputs.std }}
+        path: export
+        fetch-depth: 2
+        persist-credentials: false
+        submodules: true
+    - name: Checkout exact Kani tool
+      timeout-minutes: 2
+      uses: actions/checkout@v6
+      with:
+        repository: model-checking/kani
+        ref: ${{ steps.pins.outputs.tool }}
+        path: tool
+        fetch-depth: 2
+        persist-credentials: false
+    - name: Check source and tool identities
+      timeout-minutes: 1
+      run: python3 control/ch8-q-pilot-control/run.py check-source --std export --tool tool
+    - name: Setup exact stock tool
+      timeout-minutes: 15
+      uses: ./tool/.github/actions/setup
+      with:
+        os: ubuntu-24.04
+        kani_dir: tool
+    - name: Build exact stock tool once
+      timeout-minutes: 15
+      working-directory: tool
+      env:
+        CARGO_BUILD_JOBS: '1'
+      run: python3 ../control/ch8-s1-control/check_package.py build --tool . --epoch "$SETUP_EPOCH" --out "$RUNNER_TEMP/ch8-q-pilot-setup"
+    - name: Run seven q-pilot roots
+      timeout-minutes: 126
+      env:
+        PYTHONDONTWRITEBYTECODE: '1'
+      run: python3 control/ch8-q-pilot-control/run.py run --std export --tool tool --out "$RECEIPT_ROOT" --setup-receipt "$SETUP_RECEIPT"
+    - name: Materialize bounded result fallback
+      if: always()
+      timeout-minutes: 2
+      env:
+        JOB_STATUS: ${{ job.status }}
+      run: python3 control/ch8-q-pilot-control/run.py finish --out "$RECEIPT_ROOT"
+    - name: Upload bounded structured evidence
+      if: always()
+      timeout-minutes: 6
+      uses: actions/upload-artifact@v4
+      with:
+        name: ch8-q-pilot-${{ github.run_id }}-${{ github.run_attempt }}
+        path: ${{ env.RECEIPT_ROOT }}/q-pilot-results.json
+        if-no-files-found: warn
+        retention-days: 7
