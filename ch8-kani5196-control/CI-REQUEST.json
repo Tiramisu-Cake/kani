@@ -19,14 +19,15 @@
     "cancel_in_progress": false,
     "group": "ch8-s2-fork"
   },
-  "control_parent": "6518a69cbe3cd70c03cea07ae64305aeba5104fb",
+  "control_base": "6518a69cbe3cd70c03cea07ae64305aeba5104fb",
+  "control_parent": "3c9b9e7590c80989c3f230fa766e9c9410a01f09",
   "control_payload_sha256": {
-    ".github/workflows/ch8-q-pilot.yml": "620d382bb6057114db07464e85912ea6bb25c5460e42715cf147c623a12f6c18",
-    "ch8-kani5196-control/campaign.py": "f099521fb74dc659f4845177adb5a115d4bbbc414a8b71b8d277de2f544d4594",
+    ".github/workflows/ch8-q-pilot.yml": "5f3e84230c80c70f54129277aee41d1334247e4f7b8532ad4a13a4a8ebd9b7e3",
+    "ch8-kani5196-control/campaign.py": "152a037c7ec62dd4c86a379a06ded4ee8a10239f621ef18ef1c589e5417626d3",
     "ch8-kani5196-control/evidence.py": "89bfb8f75aea62d041a3615bca9e11b6f2ce85247255069e24f0ed34ae2b483c",
     "ch8-kani5196-control/observations.py": "0429233b2f94451b2832799b86a740cae377b9d9746377c5a1d52e096da7ec54",
-    "ch8-kani5196-control/request.py": "49eb480463b1c59713d9484e5fc5a977ddd21e72d94141e9e35241ca04f8cbd6",
-    "ch8-kani5196-control/test_campaign.py": "a2f9a698025bb607d6d1a456eff95bb8c19b6a15c431e7f870dd10dc4fa2c80f",
+    "ch8-kani5196-control/request.py": "ce7e74e4f83e315bdf87365a53e73387d143e9eb791c17fce4be68937282ab13",
+    "ch8-kani5196-control/test_campaign.py": "973fb77a7a838628bc8905bb0cebcd71a201631d59a3779c232d837d0a77ca5b",
     "ch8-kani5196-control/test_evidence.py": "5767098cdb52aa34b43e9e466e9a25f02a82a080c9c9ceffe9327d9df9b8a4e6",
     "ch8-kani5196-control/test_tool_attestation.py": "2c9207e23ddd93ce4eccb63ec22e5f45f350cfd3cd7a845e975d3a949c6c5b7a",
     "ch8-kani5196-control/tool_attestation.py": "2897f2d808e12347c9dfbda5d518ff19c6675430359e3f0f638142a1f5d8aea2",
@@ -91,7 +92,8 @@
     "setup_receipt_bytes": 1048576,
     "stderr_bytes_per_root": 1048576,
     "stdout_bytes_per_root": 16777216,
-    "tool_build_seconds": 900
+    "tool_build_seconds": 900,
+    "worker_startup_seconds": 3
   },
   "pins": {
     "candidate": {

@@ -46,7 +46,7 @@ class CampaignTests(unittest.TestCase):
                                   for label in roster for mode in ("off", "on")])
         self.assertEqual(sum(x["wall_seconds"] for x in r.ROOTS), 7920)
         self.assertEqual(r.LIMITS["memory_reserve_kib"], c.pilot.stock_runner.MEMORY_RESERVE_KIB)
-        prepared = [c.prepare(self.out, root, self.checkouts, request(), time.monotonic() + 30) for root in r.ROOTS]
+        prepared = [c.prepare(self.out, root, self.checkouts, request()) for root in r.ROOTS]
         self.assertEqual(len({i["cwd"] for i in prepared}), 26)
         for item, case in zip(prepared, r.ROOTS):
             argv = item["argv"]
@@ -75,8 +75,9 @@ class CampaignTests(unittest.TestCase):
 
     def run_child(self, name, code, seconds=3, rss=8 * 1024 * 1024, capture_cap=1024):
         root = r.ROOTS[0] | {"id": name}
-        work = c.prepare(self.out, root, self.checkouts, request(), time.monotonic() + seconds + 8 + r.LIMITS["child_cleanup_seconds"])
-        work["argv"] = [sys.executable, "-c", code]
+        work = c.prepare(self.out, root, self.checkouts, request())
+        work.update(argv=[sys.executable, "-c", code], timeout_seconds=seconds,
+                    phase_deadline_monotonic=time.monotonic() + seconds + r.LIMITS["child_cleanup_seconds"] + 1)
         Path(work["cwd"]).mkdir(parents=True)
         journal = self.out / "state" / name
         limits = r.LIMITS | {"local_rss_kib": rss, "stdout_bytes_per_root": capture_cap}
@@ -207,8 +208,76 @@ class CampaignTests(unittest.TestCase):
         self.assertEqual(negative["worker_exit"], 0)
         self.assertEqual(list((self.out / "work").iterdir()), [])
 
+    def test_supervisor_budgets_full_child_watchdogs_and_refuses_short_launches(self):
+        manifest = request()
+        limits = manifest["limits"]
+        job_spare = (limits["job_minutes"] * 60 - limits["setup_and_build_seconds"]
+                     - limits["job_cleanup_upload_seconds"] - limits["child_wall_sum_seconds"])
+        self.assertEqual(job_spare, 540)
+        self.assertEqual(job_spare - 26 * (3 + 6 + 8) - 30, 68)
+
+        tool_receipt = {"binaries": {"kani_compiler": {"path": "/fake/compiler"}},
+                        "rustc_release": "fake", "rust_toolchain": {}}
+        roots = {root["wall_seconds"]: root for root in r.ROOTS}
+        cases = [
+            ("canary", 120, 90, .5, 2, None),
+            ("std", 300, 240, .5, 2, None),
+            ("n18", 420, 360, .5, 2, None),
+            ("early-refusal", 120, 90, -.5, 2, "no preparation"),
+            ("after-preparation", 300, 240, .25, 2, "JOB_LAUNCH_BUDGET_EXHAUSTED"),
+            ("late-worker", 420, 360, .5, 3, "ROOT_WINDOW_UNAVAILABLE_BEFORE_CHILD"),
+        ]
+        for name, wall, harness, preparation, startup, refusal in cases:
+            with self.subTest(case=name):
+                root = roots[wall] | {"id": name}
+                journal = self.out / "state" / name
+                start = 1000
+                boundary = {"verification_end_monotonic": start + preparation + wall + 3 + 6 + 8 + 30}
+
+                def memory_budget():
+                    clock.return_value += .5
+                    return {"group_cap_kib": 12 * 1024 * 1024}
+
+                def run_worker(argv, *_):
+                    clock.return_value += startup
+                    worker_journal = Path(argv[argv.index("--journal") + 1])
+                    worker_exit = c.worker(worker_journal, manifest, tool_receipt)
+                    return {"worker_exit": worker_exit, "containment": {"verified": True}}
+
+                with (patch.object(c.time, "monotonic", return_value=start) as clock,
+                      patch.object(c.pilot.stock_runner, "group_memory_budget", side_effect=memory_budget),
+                      patch.object(c.pilot.s3_runtime, "supervise", side_effect=run_worker) as outer,
+                      patch.object(c.pilot.stock_runner, "execute", return_value={"child_shutdown_verified": True}) as execute,
+                      patch.object(c, "project")):
+                    result = c.supervise_root(self.tmp / "repo", self.out, self.checkouts, manifest,
+                                              root, boundary, self.tmp / "setup", tool_receipt)
+                if refusal:
+                    execute.assert_not_called()
+                    if refusal == "ROOT_WINDOW_UNAVAILABLE_BEFORE_CHILD":
+                        self.assertIs(result, True)
+                        outer.assert_called_once()
+                    else:
+                        self.assertIsNone(result)
+                        outer.assert_not_called()
+                    if refusal == "no preparation":
+                        self.assertFalse(journal.exists())
+                    else:
+                        not_run = c.pilot.read_record(journal / "not_run.json")
+                        self.assertEqual((not_run["state"], not_run["reason"]), ("NOT_RUN", refusal))
+                    continue
+
+                self.assertIs(result, True)
+                execute.assert_called_once()
+                argv, _, _, seconds = execute.call_args.args
+                self.assertEqual(seconds, wall)
+                self.assertEqual(argv[argv.index("--harness-timeout") + 1], f"{harness}s")
+                self.assertEqual(outer.call_args.args[3], wall + 3 + 6)
+                prepared = c.pilot.read_record(journal / "prepared.json")
+                self.assertEqual(prepared["root_deadline_monotonic"], boundary["verification_end_monotonic"] - 30)
+                self.assertEqual(prepared["root_deadline_monotonic"] - prepared["phase_deadline_monotonic"], 8)
+
     def test_missing_and_truncated_capture_are_incomplete(self):
-        prepared = c.prepare(self.out, r.ROOTS[0], self.checkouts, request(), time.monotonic() + 30)
+        prepared = c.prepare(self.out, r.ROOTS[0], self.checkouts, request())
         journal = self.out / "state" / "positive"
         Path(prepared["paths"]["execution"]).mkdir(parents=True)
         child = {"child_shutdown_verified": True, "stdout_bytes": 0, "stdout_truncated": True}

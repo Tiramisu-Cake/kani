@@ -33,7 +33,7 @@ jobs:
       with:
         ref: ${{ github.sha }}
         path: control
-        fetch-depth: 2
+        fetch-depth: 3
         persist-credentials: false
     - name: Validate frozen control and run synthetic tests
       id: control

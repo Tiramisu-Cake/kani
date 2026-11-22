@@ -55,7 +55,7 @@ def validate_control(repo, request):
     if actual["sha"] != os.environ.get("GITHUB_SHA") or actual["parents"] != [request["control_parent"]]:
         raise BindingError(f"control commit or parent mismatch: {actual}")
     pilot.clean(repo, "control")
-    changed = pilot.git(repo, "diff", "--name-only", request["control_parent"], "HEAD").splitlines()
+    changed = pilot.git(repo, "diff", "--name-only", request["control_base"], "HEAD").splitlines()
     if set(changed) != CHANGED | {REQUEST}:
         raise BindingError(f"control changed paths mismatch: {changed}")
     pilot.check_hashes(repo, request["control_payload_sha256"])
@@ -208,7 +208,7 @@ def validate_isolation(paths, aux):
             raise BindingError(f"setup or clock path overlaps a checkout or receipt path: {path}")
 
 
-def prepare(out, root, checkouts, request, cutoff):
+def prepare(out, root, checkouts, request):
     # Use the v22 private path allocation. Render the two distinct stock invocations here.
     std = checkouts[root["pin"]]
     seed = {"argv": [], "source_root": "library", "cfg": {"off": None}}
@@ -230,9 +230,7 @@ def prepare(out, root, checkouts, request, cutoff):
         else:
             argv.append(arg.format_map(values))
     return {**prepared, "root": root, "argv": argv, "cwd": str(cwd),
-            "root_deadline_monotonic": cutoff,
-            "phase_deadline_monotonic": cutoff - request["limits"]["root_reap_reserve_seconds"],
-            "timeout_seconds": root["wall_seconds"], "expected_compiler": "TOOL_ATTESTATION",
+            "expected_compiler": "TOOL_ATTESTATION",
             "environment": {**dict.fromkeys(request["environment_unset"]),
                             "CARGO_TARGET_DIR": paths["cargo_target_dir"], "TMPDIR": paths["tmpdir"]},
             "fixture": request["tool_files"][FIXTURE] if standalone else None,
@@ -263,9 +261,9 @@ def execute_root(journal, prepared, limits):
     pilot.stock_runner.subprocess = SimpleNamespace(
         Popen=spawn, PIPE=subprocess.PIPE, TimeoutExpired=subprocess.TimeoutExpired)
     try:
-        seconds = prepared["phase_deadline_monotonic"] - limits["child_cleanup_seconds"] - time.monotonic()
-        if seconds <= 0:
-            pilot.atomic(journal / "not_run.json", gap("ROOT_WINDOW_ELAPSED_BEFORE_CHILD", "NOT_RUN"))
+        seconds = prepared["timeout_seconds"]
+        if time.monotonic() + seconds + limits["child_cleanup_seconds"] > prepared["phase_deadline_monotonic"]:
+            pilot.atomic(journal / "not_run.json", gap("ROOT_WINDOW_UNAVAILABLE_BEFORE_CHILD", "NOT_RUN"))
             return None
         execution = pilot.stock_runner.execute(
             prepared["argv"], Path(prepared["cwd"]), Path(paths["execution"]), seconds,
@@ -382,15 +380,16 @@ def worker(journal, request, attestation):
 
 def supervise_root(repo, out, checkouts, request, root, boundary, attestation, tool_receipt):
     limits = request["limits"]
-    now = time.monotonic()
-    latest = boundary["verification_end_monotonic"] - root["wall_seconds"] - limits["root_launch_headroom_seconds"]
-    if now > latest:
+    child_and_cleanup = root["wall_seconds"] + limits["child_cleanup_seconds"]
+    worker_slot = limits["worker_startup_seconds"] + child_and_cleanup
+    root_slot = worker_slot + limits["root_reap_reserve_seconds"]
+    latest = boundary["verification_end_monotonic"] - root_slot - limits["root_launch_headroom_seconds"]
+    if time.monotonic() > latest:
         return None
     journal = out / "state" / root["id"]
-    prepared = prepare(out, root, checkouts, request, now + root["wall_seconds"])
+    prepared = prepare(out, root, checkouts, request)
     prepared.update(expected_compiler=tool_receipt["binaries"]["kani_compiler"],
                     rustc_release=tool_receipt["rustc_release"], toolchain=tool_receipt["rust_toolchain"])
-    pilot.atomic(journal / "prepared.json", prepared)
     temp = Path(prepared["cwd"])
     try:
         temp.mkdir(parents=True)
@@ -402,22 +401,34 @@ def supervise_root(repo, out, checkouts, request, root, boundary, attestation, t
         memory = pilot.stock_runner.group_memory_budget()
         outer_cap = min(limits["outer_rss_kib"], memory["group_cap_kib"])
     except (OSError, pilot.stock_runner.RunnerError, ValueError, BindingError) as exc:
+        pilot.atomic(journal / "prepared.json", prepared)
         pilot.atomic(journal / "not_run.json", gap("ROOT_PREPARATION_ERROR", "NOT_RUN",
                      error=pilot.error(exc, "prepare worker")))
         pilot.remove_temp(out, journal, prepared, True)
         return True
 
-    now = time.monotonic()
-    if now > latest or now >= prepared["phase_deadline_monotonic"]:
+    # Give the child the full watchdog after parent preparation. The startup
+    # allowance covers journaling and worker bootstrap before the child runs.
+    launch = time.monotonic()
+    if launch > latest:
+        pilot.atomic(journal / "prepared.json", prepared)
         pilot.atomic(journal / "not_run.json", gap("JOB_LAUNCH_BUDGET_EXHAUSTED", "NOT_RUN"))
         pilot.remove_temp(out, journal, prepared, True)
         return None
+    phase_deadline = launch + worker_slot
+    prepared.update(root_deadline_monotonic=launch + root_slot, phase_deadline_monotonic=phase_deadline)
+    pilot.atomic(journal / "prepared.json", prepared)
     argv = [sys.executable, str(repo / ENTRYPOINT), "_root", "--journal", str(journal),
             "--attestation", str(attestation)]
+    now = time.monotonic()
+    if now + child_and_cleanup > phase_deadline:
+        pilot.atomic(journal / "not_run.json", gap("JOB_LAUNCH_BUDGET_EXHAUSTED", "NOT_RUN"))
+        pilot.remove_temp(out, journal, prepared, True)
+        return None
     try:
         supervisor = pilot.s3_runtime.supervise(
             argv, repo, pilot.safe_env() | {"PYTHONDONTWRITEBYTECODE": "1"},
-            prepared["phase_deadline_monotonic"] - now, outer_cap, Path(prepared["paths"]["worker_stderr"]))
+            phase_deadline - now, outer_cap, Path(prepared["paths"]["worker_stderr"]))
     except Exception as exc:
         supervisor = {"call_error": pilot.error(exc, "supervise worker"), "containment": None}
     supervisor.update(rss_cap_kib=outer_cap, nominal_rss_cap_kib=limits["outer_rss_kib"], memory_budget=memory)
