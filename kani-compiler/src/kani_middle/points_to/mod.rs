@@ -7,5 +7,6 @@
 mod points_to_analysis;
 mod points_to_graph;
 
-pub use points_to_analysis::{resolve_call, run_points_to_analysis};
+pub use points_to_analysis::run_points_to_analysis;
+pub(crate) use points_to_analysis::{resolve_call, unsupported_call_reason};
 pub use points_to_graph::{MemLoc, PointsToGraph};

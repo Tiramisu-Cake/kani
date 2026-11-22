@@ -201,12 +201,11 @@ impl<'tcx> Analysis<'tcx> for PointsToAnalysis<'_, 'tcx> {
     ) {
         if let TerminatorKind::Call { func, args, destination, .. } = &terminator.kind {
             // Instrumentation stops execution at unsupported calls before their effects occur.
-            let Ok((instance, body)) =
-                resolve_call(self.tcx, rustc_internal::stable(func.ty(self.body, self.tcx)))
+            let Ok(callee) = resolve_call(rustc_internal::stable(func.ty(self.body, self.tcx)))
             else {
                 return;
             };
-            let instance = rustc_internal::internal(self.tcx, instance);
+            let instance = rustc_internal::internal(self.tcx, callee);
             match instance.def {
                 // Intrinsics could introduce aliasing edges we care about, so need to handle them.
                 InstanceKind::Intrinsic(_) => {
@@ -335,6 +334,8 @@ impl<'tcx> Analysis<'tcx> for PointsToAnalysis<'_, 'tcx> {
                         }
                     } else {
                         // Otherwise, handle this as a regular function call.
+                        let body = crate::kani_middle::checked_body(self.tcx, callee)
+                            .expect("a resolved non-foreign item or shim must have a MIR body");
                         if self.active_calls.borrow().contains(&instance) {
                             self.tcx.dcx().span_err(
                                 terminator.source_info.span,
@@ -342,7 +343,6 @@ impl<'tcx> Analysis<'tcx> for PointsToAnalysis<'_, 'tcx> {
                             );
                             self.tcx.dcx().abort_if_errors();
                         }
-                        let Some(body) = body else { return };
                         self.apply_regular_call_effect(state, instance, body, args, destination);
                     }
                 }
@@ -360,12 +360,8 @@ impl<'tcx> Analysis<'tcx> for PointsToAnalysis<'_, 'tcx> {
     }
 }
 
-/// Resolve a supported direct callee and return its checked MIR body.
-/// Intrinsics and foreign items return no body.
-pub fn resolve_call(
-    tcx: TyCtxt,
-    func_ty: StableTy,
-) -> Result<(StableInstance, Option<StableBody>), String> {
+/// Resolve a supported direct callee without constructing its MIR body.
+pub(crate) fn resolve_call(func_ty: StableTy) -> Result<StableInstance, String> {
     let StableTyKind::RigidTy(StableRigidTy::FnDef(def, args)) = func_ty.kind() else {
         return Err(unsupported_call_reason("calls through function pointers"));
     };
@@ -373,23 +369,19 @@ pub fn resolve_call(
         format!("Kani could not resolve function item `{func_ty:?}` for memory initialization checks: {err:?}.")
     })?;
     let reason = match instance.kind {
-        StableInstanceKind::Intrinsic => return Ok((instance, None)),
-        StableInstanceKind::Item if instance.is_foreign_item() => return Ok((instance, None)),
-        StableInstanceKind::Item | StableInstanceKind::Shim => {
-            // Check MIR availability for the instance, including compiler-generated shims,
-            // and report explicit tail calls before converting user code to stable MIR.
-            if let Some(body) = crate::kani_middle::checked_body(tcx, instance) {
-                return Ok((instance, Some(body)));
-            }
-            format!("calls to bodyless {:?} instances", instance.kind)
+        // Compiler-generated shims have MIR even though `has_body` checks for an item body.
+        StableInstanceKind::Intrinsic | StableInstanceKind::Shim => return Ok(instance),
+        StableInstanceKind::Item if instance.is_foreign_item() || instance.has_body() => {
+            return Ok(instance);
         }
+        StableInstanceKind::Item => format!("calls to bodyless {:?} instances", instance.kind),
         StableInstanceKind::Virtual { .. } => "trait object method calls".to_string(),
         StableInstanceKind::LlvmIntrinsic => "calls to LlvmIntrinsic instances".to_string(),
     };
     Err(unsupported_call_reason(&reason))
 }
 
-fn unsupported_call_reason(kind: &str) -> String {
+pub(crate) fn unsupported_call_reason(kind: &str) -> String {
     format!(
         "Kani does not support memory initialization checks across {kind}. For more information about planned support, see https://github.com/model-checking/kani/issues/3300."
     )

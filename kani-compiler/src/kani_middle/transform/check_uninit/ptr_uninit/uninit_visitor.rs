@@ -13,7 +13,10 @@ use crate::{
             ty_layout::{LayoutComputationError, tys_layout_compatible_to_size},
         },
     },
-    kani_middle::{nonnull_pointee, points_to::resolve_call},
+    kani_middle::{
+        nonnull_pointee,
+        points_to::{resolve_call, unsupported_call_reason},
+    },
 };
 use rustc_middle::ty::TyCtxt;
 use rustc_public::{CrateDefType, rustc_internal};
@@ -304,7 +307,7 @@ impl MirVisitor for CheckUninitVisitor<'_> {
         match &term.kind {
             TerminatorKind::Call { func, args, destination, .. } => 'call: {
                 self.super_terminator(term, location);
-                let instance = match try_resolve_instance(self.tcx, &self.locals, func) {
+                let instance = match resolve_call(func.ty(&self.locals).unwrap()) {
                     Ok(instance) => instance,
                     Err(reason) => {
                         self.push_target(MemoryInitOp::Unsupported { reason });
@@ -866,15 +869,6 @@ fn try_remove_topmost_deref(place: &Place) -> Option<Place> {
     }
 }
 
-/// Resolve a call operand and discard the checked body.
-fn try_resolve_instance(
-    tcx: TyCtxt,
-    locals: &[LocalDecl],
-    func: &Operand,
-) -> Result<Instance, String> {
-    resolve_call(tcx, func.ty(locals).unwrap()).map(|(instance, _)| instance)
-}
-
 /// Check for unions or unclassified types in a shim's by-value storage.
 /// Follow aggregate fields and captures; stop at pointers and references.
 fn shim_type_may_carry_shadow(tcx: TyCtxt<'_>, ty: Ty) -> bool {
@@ -911,12 +905,6 @@ fn shim_type_may_carry_shadow(tcx: TyCtxt<'_>, ty: Ty) -> bool {
         }
     }
     inspect(tcx, rustc_internal::internal(tcx, ty), &mut HashSet::new())
-}
-
-fn unsupported_call_reason(kind: &str) -> String {
-    format!(
-        "Kani does not support memory initialization checks across {kind}. For more information about planned support, see https://github.com/model-checking/kani/issues/3300."
-    )
 }
 
 /// The pointer argument of an allocation shim, as a raw pointer.
