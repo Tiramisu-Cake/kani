@@ -1,0 +1,651 @@
+{
+  "attempt": "1",
+  "candidate_files": {
+    ".gitmodules": "93f8aef14130e19df0a76f15159e96aa033e7b80be9662a3c52a02a2d2307c66",
+    "library/Cargo.lock": "6a92e1d4e7e023b9b89401f3943c4eca69e889c8f778a63627d147e94f2abd1c",
+    "library/Cargo.toml": "b346ae33bd9648949894510a2bcc1d1f8b78c7301c3110e4a98b68bacd3b4584",
+    "library/core/src/slice/sort/shared/smallsort.rs": "6ca22a8e12daea3988d8a4a671fc65a234fcf6642cf91d125a89374559448259",
+    "library/core/src/slice/sort/shared/smallsort/verify.rs": "eeca54be355a485a96c098d3fcd93215a082dac1491bfb033fbbe33899901b5f",
+    "library/core/src/slice/sort/shared/smallsort/verify/helper_contracts_wide.rs": "85bdd131f3a7e62106e69e98e4b1b85d2f68c91a4bfff4df629955539493748c",
+    "library/core/src/slice/sort/shared/smallsort/verify/merge.rs": "e37e6971e6458a17d858de9a6a6ea38265d7584934ef71c8243c97a487505e54",
+    "library/core/src/slice/sort/shared/smallsort/verify/network.rs": "d59ceb99741990afcfe3f312119053a520f16c071f200953fc517a33729527bf",
+    "library/core/src/slice/sort/shared/smallsort/verify/scratch_geometry.rs": "905045ba504b5391af44a575dd7e616b0bebb124623490d24343f759eb7f7d16",
+    "library/core/src/slice/sort/shared/smallsort/verify/trait_contracts.rs": "39103700c2c3ce7ff9a4900c5ff1999766f8cbd76b182cf8134ab79e88f3b2fe",
+    "library/core/src/slice/sort/shared/smallsort/verify/trait_model.rs": "9d8161e59318e7d349ecfcd3fd0256e75c19c30cefbf321b281e3a02a3d48214",
+    "rust-toolchain.toml": "748400d92a67954f56f2c519177be2ff16c3894816ed5b17401359df6517124c",
+    "tool_config/kani-version.toml": "68d9715859935c4b1be186f33de1823bb59e2983e9ffd85dac740d38aa52e6d2"
+  },
+  "concurrency": {
+    "cancel_in_progress": false,
+    "group": "ch8-s2-fork"
+  },
+  "control_parent": "6518a69cbe3cd70c03cea07ae64305aeba5104fb",
+  "control_payload_sha256": {
+    ".github/workflows/ch8-q-pilot.yml": "620d382bb6057114db07464e85912ea6bb25c5460e42715cf147c623a12f6c18",
+    "ch8-kani5196-control/campaign.py": "f099521fb74dc659f4845177adb5a115d4bbbc414a8b71b8d277de2f544d4594",
+    "ch8-kani5196-control/evidence.py": "89bfb8f75aea62d041a3615bca9e11b6f2ce85247255069e24f0ed34ae2b483c",
+    "ch8-kani5196-control/observations.py": "0429233b2f94451b2832799b86a740cae377b9d9746377c5a1d52e096da7ec54",
+    "ch8-kani5196-control/request.py": "49eb480463b1c59713d9484e5fc5a977ddd21e72d94141e9e35241ca04f8cbd6",
+    "ch8-kani5196-control/test_campaign.py": "a2f9a698025bb607d6d1a456eff95bb8c19b6a15c431e7f870dd10dc4fa2c80f",
+    "ch8-kani5196-control/test_evidence.py": "5767098cdb52aa34b43e9e466e9a25f02a82a080c9c9ceffe9327d9df9b8a4e6",
+    "ch8-kani5196-control/test_tool_attestation.py": "2c9207e23ddd93ce4eccb63ec22e5f45f350cfd3cd7a845e975d3a949c6c5b7a",
+    "ch8-kani5196-control/tool_attestation.py": "2897f2d808e12347c9dfbda5d518ff19c6675430359e3f0f638142a1f5d8aea2",
+    "ch8-q-pilot-control/run.py": "e7ddb0bbd54a17b8cfa42c5816400db786761d69ee3b0712db59d318ee45fd2a",
+    "ch8-q-pilot-control/test_run.py": "7a4f7cfd7435f64942c8af1c065f79f0c767e506e1b110405cc3796b0caddd4a",
+    "ch8-s1-control/binding_metadata.py": "8af48498fe256283dcbe7a1f7bd766e213c2ab83e28008e23bd6bb9811c57030",
+    "ch8-s1-control/cfg_pfc.py": "e72ba0cff247613a3db7f4a5bd237cfeab64cb49d2410c61e85b3f80e91ecb11",
+    "ch8-s1-control/contract_stacks.py": "c4b0f92fe2ede42399f2743071e58380806e61339bfbc0d1beccbf6b2a11ea0d",
+    "ch8-s1-control/lexical_bindings.py": "31abcb93bdb52bb1205e59ce6f4c8fe2206c2c63c9b2f82142492c8752f3e484",
+    "ch8-s1-control/negative_oracle.py": "fabd41fb31e37ea79239e4798f38aa81cd068abad0d00281d1d93d936f59681c",
+    "ch8-s1-control/ordinary_contracts.py": "bdbdbe13fa2da6dae8d6dfb7a57a66caed1e52b6d93c1586e8effecaa16cb78e",
+    "ch8-s1-control/r5_runtime.py": "e796129e9da910879026cbe9a2037cf4834793f97032b2ff21bdf128268c697f",
+    "ch8-s1-control/rich_evidence.py": "1c778852fd6c7d4542634424af7801e49e2f7074574b411f6c34a9fb86ab5139",
+    "ch8-s1-control/runner.py": "c7516a52c15ef53755af15fb7a6c91f648d4becacb87ceab2cddef919aff2c92",
+    "ch8-s1-control/rustc_diagnostics.py": "0c94acd85a9f2f7a241958a2c5b9dffce09517bd8d08ddf30bfbdd81ef839b32",
+    "ch8-s1-control/s2_correspondence.py": "46f2cd69373b4ebd3a3395d455338aadff3d473df5df2734e1bd5d4d2432dd4f",
+    "ch8-s1-control/s2_policy.py": "d87ce00811570c0ad7ea999fec3062166af542e576b188682308301519cb319c",
+    "ch8-s1-control/s3_runtime.py": "2de7a74b746efcde1dd47ad6f5a5686889665481274ae6555ea53f274ef9ef70"
+  },
+  "dependency_versions": {
+    "cbmc": "6.11.0",
+    "kissat": "4.0.1"
+  },
+  "environment_unset": [
+    "RUSTFLAGS",
+    "CARGO_ENCODED_RUSTFLAGS",
+    "RUSTUP_TOOLCHAIN"
+  ],
+  "event": "push",
+  "event_ref": "refs/heads/uninit-ci/ch8-q-pilot-v1",
+  "evidence": {
+    "access": "COORDINATOR_AND_REVIEWERS",
+    "availability_before_go": "ACCESS_CONFIRMATION_PENDING",
+    "channel": "github-actions-artifact",
+    "index": "index.json",
+    "name": "ch8-kani5196-{run_id}-{attempt}",
+    "pair_manifest": "pairs/{pair}.json",
+    "retention_days": 7,
+    "root_members": {
+      "diagnostics": "observations.json",
+      "regular": "regular.json",
+      "stock": "stock-export.json"
+    }
+  },
+  "fixture": "tests/expected/uninit/nested-unions/main.rs",
+  "go": "NOT_GRANTED",
+  "limits": {
+    "artifact_bytes": 134217728,
+    "child_cleanup_seconds": 6,
+    "child_wall_sum_seconds": 7920,
+    "export_bytes_per_root": 8388608,
+    "job_cleanup_upload_seconds": 540,
+    "job_margin_seconds": 540,
+    "job_minutes": 180,
+    "local_rss_kib": 8388608,
+    "memory_reserve_kib": 2097152,
+    "outer_rss_kib": 12582912,
+    "projection_bytes_per_root": 4194304,
+    "root_launch_headroom_seconds": 30,
+    "root_reap_reserve_seconds": 8,
+    "setup_and_build_seconds": 1800,
+    "setup_receipt_bytes": 1048576,
+    "stderr_bytes_per_root": 1048576,
+    "stdout_bytes_per_root": 16777216,
+    "tool_build_seconds": 900
+  },
+  "pins": {
+    "candidate": {
+      "declared_nightly": "nightly-2026-11-19",
+      "repository": "Tiramisu-Cake/verify-rust-std",
+      "sha": "152f11556ab19c6dcfa21b5a0f1096603530ce67",
+      "tree": "08c6c08235035dbca44715c4b4822f5c34c041f6"
+    },
+    "pr752": {
+      "declared_nightly": "nightly-2026-10-22",
+      "repository": "Tiramisu-Cake/verify-rust-std",
+      "sha": "872d5a43380752786415bc00d2a12ce0e930cb37",
+      "tree": "384023c2f80a04d0618aa7ce971b1419494b062b"
+    },
+    "tool": {
+      "declared_nightly": "nightly-2026-11-19",
+      "repository": "feliperodri/kani",
+      "sha": "bcdc1a0f8dc566654da1f18b4e502f0f4e7ad40a",
+      "tree": "15816aaf3b6dfa4855452e34825073db8ca6760f"
+    }
+  },
+  "pr752_files": {
+    ".gitmodules": "93f8aef14130e19df0a76f15159e96aa033e7b80be9662a3c52a02a2d2307c66",
+    "library/Cargo.lock": "6a92e1d4e7e023b9b89401f3943c4eca69e889c8f778a63627d147e94f2abd1c",
+    "library/Cargo.toml": "b346ae33bd9648949894510a2bcc1d1f8b78c7301c3110e4a98b68bacd3b4584",
+    "library/core/src/slice/sort/shared/smallsort.rs": "982449b95d4449807b55f6997f83c8cce6bb167e52a95b6e4342ab816d04ba84",
+    "library/core/src/slice/sort/shared/smallsort/verify.rs": "221226eeb818b0120a23a24ab66c20c98aae1907252d4e57a4e1048fea3e6c25",
+    "library/core/src/slice/sort/shared/smallsort/verify/helper_contracts_wide.rs": "85bdd131f3a7e62106e69e98e4b1b85d2f68c91a4bfff4df629955539493748c",
+    "library/core/src/slice/sort/shared/smallsort/verify/merge.rs": "e37e6971e6458a17d858de9a6a6ea38265d7584934ef71c8243c97a487505e54",
+    "library/core/src/slice/sort/shared/smallsort/verify/network.rs": "d59ceb99741990afcfe3f312119053a520f16c071f200953fc517a33729527bf",
+    "library/core/src/slice/sort/shared/smallsort/verify/scratch_geometry.rs": "905045ba504b5391af44a575dd7e616b0bebb124623490d24343f759eb7f7d16",
+    "rust-toolchain.toml": "63e70c588c8f743bd96f3d48477ec06b59c81dd19898d3bda0007727e9647d14",
+    "tool_config/kani-version.toml": "40ee88392e3e1b0af82611394f9a30df259e22cad6a623bded49ba1a0adb954c"
+  },
+  "proof_credit": "NONE",
+  "repository": "Tiramisu-Cake/kani",
+  "result_schema": "ch8-kani5196-index-v1",
+  "roots": [
+    {
+      "expected_verdict": "SUCCESS",
+      "harness_seconds": 90,
+      "id": "positive",
+      "mode": "plain",
+      "pin": "tool",
+      "read_line": 43,
+      "selector": "buffer_written_then_read_ok",
+      "uninit": true,
+      "unwind": 8,
+      "wall_seconds": 120
+    },
+    {
+      "expected_verdict": "FAILURE",
+      "harness_seconds": 90,
+      "id": "negative",
+      "mode": "plain",
+      "pin": "tool",
+      "read_line": 52,
+      "selector": "buffer_partly_written_ub",
+      "uninit": true,
+      "unwind": 8,
+      "wall_seconds": 120
+    },
+    {
+      "contract_target": null,
+      "harness_seconds": 240,
+      "id": "candidate-S2-off",
+      "mode": "plain",
+      "pair": "candidate-S2",
+      "pin": "candidate",
+      "required_covers": [
+        "Stable Freeze selects small_sort_general_with_scratch beyond its early return",
+        "scratch geometry returns normally and preserves full values"
+      ],
+      "selector": "slice::sort::shared::smallsort::verify::scratch_geometry::stable_u64_min_scratch_n2",
+      "uninit": false,
+      "unwind": 34,
+      "wall_seconds": 300
+    },
+    {
+      "contract_target": null,
+      "harness_seconds": 240,
+      "id": "candidate-S2-on",
+      "mode": "plain",
+      "pair": "candidate-S2",
+      "pin": "candidate",
+      "required_covers": [
+        "Stable Freeze selects small_sort_general_with_scratch beyond its early return",
+        "scratch geometry returns normally and preserves full values"
+      ],
+      "selector": "slice::sort::shared::smallsort::verify::scratch_geometry::stable_u64_min_scratch_n2",
+      "uninit": true,
+      "unwind": 34,
+      "wall_seconds": 300
+    },
+    {
+      "contract_target": null,
+      "harness_seconds": 240,
+      "id": "candidate-UF2-off",
+      "mode": "plain",
+      "pair": "candidate-UF2",
+      "pin": "candidate",
+      "required_covers": [
+        "general u64 safety: normal return reachable",
+        "non-Copy u64 route safety: normal return reachable",
+        "stable u64 route safety: normal return reachable"
+      ],
+      "selector": "slice::sort::shared::smallsort::verify::merge::route_safety_all_routes_n2",
+      "uninit": false,
+      "unwind": 34,
+      "wall_seconds": 300
+    },
+    {
+      "contract_target": null,
+      "harness_seconds": 240,
+      "id": "candidate-UF2-on",
+      "mode": "plain",
+      "pair": "candidate-UF2",
+      "pin": "candidate",
+      "required_covers": [
+        "general u64 safety: normal return reachable",
+        "non-Copy u64 route safety: normal return reachable",
+        "stable u64 route safety: normal return reachable"
+      ],
+      "selector": "slice::sort::shared::smallsort::verify::merge::route_safety_all_routes_n2",
+      "uninit": true,
+      "unwind": 34,
+      "wall_seconds": 300
+    },
+    {
+      "contract_target": null,
+      "harness_seconds": 360,
+      "id": "candidate-N18-off",
+      "mode": "plain",
+      "pair": "candidate-N18",
+      "pin": "candidate",
+      "required_covers": [
+        "dispatch route normal return is reachable"
+      ],
+      "selector": "slice::sort::shared::smallsort::verify::network::dispatch_reachability_network_u8_n18",
+      "uninit": false,
+      "unwind": 65,
+      "wall_seconds": 420
+    },
+    {
+      "contract_target": null,
+      "harness_seconds": 360,
+      "id": "candidate-N18-on",
+      "mode": "plain",
+      "pair": "candidate-N18",
+      "pin": "candidate",
+      "required_covers": [
+        "dispatch route normal return is reachable"
+      ],
+      "selector": "slice::sort::shared::smallsort::verify::network::dispatch_reachability_network_u8_n18",
+      "uninit": true,
+      "unwind": 65,
+      "wall_seconds": 420
+    },
+    {
+      "contract_target": "bidirectional_merge",
+      "harness_seconds": 240,
+      "id": "candidate-M8-C-off",
+      "mode": "check",
+      "pair": "candidate-M8-C",
+      "pin": "candidate",
+      "required_covers": [
+        "merge length8 entered",
+        "merge length8 returns"
+      ],
+      "selector": "slice::sort::shared::smallsort::verify::helper_contracts_wide::merge_safety_u64_len8_scratch48_src32_dst0",
+      "uninit": false,
+      "unwind": 34,
+      "wall_seconds": 300
+    },
+    {
+      "contract_target": "bidirectional_merge",
+      "harness_seconds": 240,
+      "id": "candidate-M8-C-on",
+      "mode": "check",
+      "pair": "candidate-M8-C",
+      "pin": "candidate",
+      "required_covers": [
+        "merge length8 entered",
+        "merge length8 returns"
+      ],
+      "selector": "slice::sort::shared::smallsort::verify::helper_contracts_wide::merge_safety_u64_len8_scratch48_src32_dst0",
+      "uninit": true,
+      "unwind": 34,
+      "wall_seconds": 300
+    },
+    {
+      "contract_target": "bidirectional_merge",
+      "harness_seconds": 240,
+      "id": "candidate-M8-R-off",
+      "mode": "replace",
+      "pair": "candidate-M8-R",
+      "pin": "candidate",
+      "required_covers": [
+        "sort8 scratch48 entered",
+        "sort8 merge consumer returns"
+      ],
+      "selector": "slice::sort::shared::smallsort::verify::helper_contracts_wide::sort8_safety_u64_scratch48_src32_dst0_merge_stubbed",
+      "uninit": false,
+      "unwind": 34,
+      "wall_seconds": 300
+    },
+    {
+      "contract_target": "bidirectional_merge",
+      "harness_seconds": 240,
+      "id": "candidate-M8-R-on",
+      "mode": "replace",
+      "pair": "candidate-M8-R",
+      "pin": "candidate",
+      "required_covers": [
+        "sort8 scratch48 entered",
+        "sort8 merge consumer returns"
+      ],
+      "selector": "slice::sort::shared::smallsort::verify::helper_contracts_wide::sort8_safety_u64_scratch48_src32_dst0_merge_stubbed",
+      "uninit": true,
+      "unwind": 34,
+      "wall_seconds": 300
+    },
+    {
+      "contract_target": "<u64 as StableSmallSortTypeImpl>::small_sort",
+      "harness_seconds": 240,
+      "id": "candidate-S2-C-off",
+      "mode": "check",
+      "pair": "candidate-S2-C",
+      "pin": "candidate",
+      "required_covers": [
+        "sort model enabled before call",
+        "ascending input returns",
+        "descending input returns",
+        "duplicate input returns",
+        "trait small_sort returns"
+      ],
+      "selector": "slice::sort::shared::smallsort::verify::trait_contracts::stable_sorts_permutation_u64_len2",
+      "uninit": false,
+      "unwind": 32,
+      "wall_seconds": 300
+    },
+    {
+      "contract_target": "<u64 as StableSmallSortTypeImpl>::small_sort",
+      "harness_seconds": 240,
+      "id": "candidate-S2-C-on",
+      "mode": "check",
+      "pair": "candidate-S2-C",
+      "pin": "candidate",
+      "required_covers": [
+        "sort model enabled before call",
+        "ascending input returns",
+        "descending input returns",
+        "duplicate input returns",
+        "trait small_sort returns"
+      ],
+      "selector": "slice::sort::shared::smallsort::verify::trait_contracts::stable_sorts_permutation_u64_len2",
+      "uninit": true,
+      "unwind": 32,
+      "wall_seconds": 300
+    },
+    {
+      "contract_target": "<NonCopyKey as UnstableSmallSortFreezeTypeImpl>::small_sort",
+      "harness_seconds": 240,
+      "id": "candidate-F2-C-off",
+      "mode": "check",
+      "pair": "candidate-F2-C",
+      "pin": "candidate",
+      "required_covers": [
+        "sort model enabled before call",
+        "ascending input returns",
+        "descending input returns",
+        "duplicate input returns",
+        "trait small_sort returns"
+      ],
+      "selector": "slice::sort::shared::smallsort::verify::trait_contracts::freeze_default_sorts_permutation_noncopy_u8_backing4",
+      "uninit": false,
+      "unwind": 32,
+      "wall_seconds": 300
+    },
+    {
+      "contract_target": "<NonCopyKey as UnstableSmallSortFreezeTypeImpl>::small_sort",
+      "harness_seconds": 240,
+      "id": "candidate-F2-C-on",
+      "mode": "check",
+      "pair": "candidate-F2-C",
+      "pin": "candidate",
+      "required_covers": [
+        "sort model enabled before call",
+        "ascending input returns",
+        "descending input returns",
+        "duplicate input returns",
+        "trait small_sort returns"
+      ],
+      "selector": "slice::sort::shared::smallsort::verify::trait_contracts::freeze_default_sorts_permutation_noncopy_u8_backing4",
+      "uninit": true,
+      "unwind": 32,
+      "wall_seconds": 300
+    },
+    {
+      "contract_target": null,
+      "harness_seconds": 240,
+      "id": "pr752-S2-off",
+      "mode": "plain",
+      "pair": "pr752-S2",
+      "pin": "pr752",
+      "required_covers": [
+        "Stable Freeze selects small_sort_general_with_scratch beyond its early return",
+        "scratch geometry returns normally and preserves full values"
+      ],
+      "selector": "slice::sort::shared::smallsort::verify::scratch_geometry::stable_u64_min_scratch_n2",
+      "uninit": false,
+      "unwind": 34,
+      "wall_seconds": 300
+    },
+    {
+      "contract_target": null,
+      "harness_seconds": 240,
+      "id": "pr752-S2-on",
+      "mode": "plain",
+      "pair": "pr752-S2",
+      "pin": "pr752",
+      "required_covers": [
+        "Stable Freeze selects small_sort_general_with_scratch beyond its early return",
+        "scratch geometry returns normally and preserves full values"
+      ],
+      "selector": "slice::sort::shared::smallsort::verify::scratch_geometry::stable_u64_min_scratch_n2",
+      "uninit": true,
+      "unwind": 34,
+      "wall_seconds": 300
+    },
+    {
+      "contract_target": null,
+      "harness_seconds": 240,
+      "id": "pr752-UF2-off",
+      "mode": "plain",
+      "pair": "pr752-UF2",
+      "pin": "pr752",
+      "required_covers": [
+        "general u64 safety: normal return reachable",
+        "non-Copy u64 route safety: normal return reachable",
+        "stable u64 route safety: normal return reachable"
+      ],
+      "selector": "slice::sort::shared::smallsort::verify::merge::route_safety_all_routes_n2",
+      "uninit": false,
+      "unwind": 34,
+      "wall_seconds": 300
+    },
+    {
+      "contract_target": null,
+      "harness_seconds": 240,
+      "id": "pr752-UF2-on",
+      "mode": "plain",
+      "pair": "pr752-UF2",
+      "pin": "pr752",
+      "required_covers": [
+        "general u64 safety: normal return reachable",
+        "non-Copy u64 route safety: normal return reachable",
+        "stable u64 route safety: normal return reachable"
+      ],
+      "selector": "slice::sort::shared::smallsort::verify::merge::route_safety_all_routes_n2",
+      "uninit": true,
+      "unwind": 34,
+      "wall_seconds": 300
+    },
+    {
+      "contract_target": null,
+      "harness_seconds": 360,
+      "id": "pr752-N18-off",
+      "mode": "plain",
+      "pair": "pr752-N18",
+      "pin": "pr752",
+      "required_covers": [
+        "dispatch route normal return is reachable"
+      ],
+      "selector": "slice::sort::shared::smallsort::verify::network::dispatch_reachability_network_u8_n18",
+      "uninit": false,
+      "unwind": 65,
+      "wall_seconds": 420
+    },
+    {
+      "contract_target": null,
+      "harness_seconds": 360,
+      "id": "pr752-N18-on",
+      "mode": "plain",
+      "pair": "pr752-N18",
+      "pin": "pr752",
+      "required_covers": [
+        "dispatch route normal return is reachable"
+      ],
+      "selector": "slice::sort::shared::smallsort::verify::network::dispatch_reachability_network_u8_n18",
+      "uninit": true,
+      "unwind": 65,
+      "wall_seconds": 420
+    },
+    {
+      "contract_target": "bidirectional_merge",
+      "harness_seconds": 240,
+      "id": "pr752-M8-C-off",
+      "mode": "check",
+      "pair": "pr752-M8-C",
+      "pin": "pr752",
+      "required_covers": [
+        "merge length8 entered",
+        "merge length8 returns"
+      ],
+      "selector": "slice::sort::shared::smallsort::verify::helper_contracts_wide::merge_safety_u64_len8_scratch48_src32_dst0",
+      "uninit": false,
+      "unwind": 34,
+      "wall_seconds": 300
+    },
+    {
+      "contract_target": "bidirectional_merge",
+      "harness_seconds": 240,
+      "id": "pr752-M8-C-on",
+      "mode": "check",
+      "pair": "pr752-M8-C",
+      "pin": "pr752",
+      "required_covers": [
+        "merge length8 entered",
+        "merge length8 returns"
+      ],
+      "selector": "slice::sort::shared::smallsort::verify::helper_contracts_wide::merge_safety_u64_len8_scratch48_src32_dst0",
+      "uninit": true,
+      "unwind": 34,
+      "wall_seconds": 300
+    },
+    {
+      "contract_target": "bidirectional_merge",
+      "harness_seconds": 240,
+      "id": "pr752-M8-R-off",
+      "mode": "replace",
+      "pair": "pr752-M8-R",
+      "pin": "pr752",
+      "required_covers": [
+        "sort8 scratch48 entered",
+        "sort8 merge consumer returns"
+      ],
+      "selector": "slice::sort::shared::smallsort::verify::helper_contracts_wide::sort8_safety_u64_scratch48_src32_dst0_merge_stubbed",
+      "uninit": false,
+      "unwind": 34,
+      "wall_seconds": 300
+    },
+    {
+      "contract_target": "bidirectional_merge",
+      "harness_seconds": 240,
+      "id": "pr752-M8-R-on",
+      "mode": "replace",
+      "pair": "pr752-M8-R",
+      "pin": "pr752",
+      "required_covers": [
+        "sort8 scratch48 entered",
+        "sort8 merge consumer returns"
+      ],
+      "selector": "slice::sort::shared::smallsort::verify::helper_contracts_wide::sort8_safety_u64_scratch48_src32_dst0_merge_stubbed",
+      "uninit": true,
+      "unwind": 34,
+      "wall_seconds": 300
+    }
+  ],
+  "runner": "ubuntu-24.04",
+  "schema": "ch8-kani5196-request-v1",
+  "solver": "cadical",
+  "standalone_argv": [
+    "{tool_script}",
+    "main.rs",
+    "-Z",
+    "unstable-options",
+    "-Z",
+    "uninit-checks",
+    "-Z",
+    "export-json",
+    "--harness",
+    "{selector}",
+    "--exact",
+    "--jobs=1",
+    "--default-unwind",
+    "8",
+    "--harness-timeout",
+    "90s",
+    "--output-format=regular",
+    "--verbose",
+    "--export-json",
+    "{export}",
+    "--cbmc-args",
+    "--object-bits",
+    "12"
+  ],
+  "status": "READY",
+  "std_argv": [
+    "{tool_script}",
+    "verify-std",
+    "-Z",
+    "unstable-options",
+    "-Z",
+    "function-contracts",
+    "-Z",
+    "mem-predicates",
+    "-Z",
+    "float-lib",
+    "-Z",
+    "c-ffi",
+    "-Z",
+    "loop-contracts",
+    "-Z",
+    "quantifiers",
+    "-Z",
+    "stubbing",
+    "--no-assert-contracts",
+    "{uninit}",
+    "--harness",
+    "{selector}",
+    "--exact",
+    "--jobs=1",
+    "--output-format=regular",
+    "--harness-timeout",
+    "{harness_seconds}s",
+    "-Z",
+    "export-json",
+    "--export-json",
+    "{export}",
+    "--verbose",
+    "--target-dir",
+    "{target}",
+    "{std_library}",
+    "--cbmc-args",
+    "--object-bits",
+    "12"
+  ],
+  "tool_files": {
+    ".cargo/config.toml": "8a7317c9b5e38ee2e842086a154e99f9bae4e2bc1118cae9e5b7cd5ee7c3547c",
+    ".github/actions/setup/action.yml": "6ee9af29eb091ce92cb819deb205f1f07895e8bbdb02d0c5e510de85025dc307",
+    ".gitmodules": "bed047cc36087a49620c1d0035dc09895b33c66b8364c561e349cc5e090c8863",
+    "Cargo.lock": "6bc6e62197ba47db5349d3c94603027aac66182c4b860bb7da1d87691590c7b3",
+    "Cargo.toml": "3ca30656fe9d20c4e777e9bc7b9d0b16414e1e41d4ff465fac1faf2a64e41914",
+    "kani-compiler/src/kani_middle/transform/check_uninit/mod.rs": "cae56516984bddfa339ba7104736d6cbd8fce2828f8fa62604c06301fc264f8c",
+    "kani-dependencies": "6d6a66509732d5f1d859021a95524bd1e6e804edf037e9af9a096d7b5a4eed37",
+    "kani-driver/src/call_cargo.rs": "6801ea256ab3464b72487c8aacc17e5e79920903304aa82d5f02e23d129c6129",
+    "kani-driver/src/call_cbmc.rs": "e4d0bdba8aee24208ab5b62f54fd15ca795ca918c891f7e8b2038dcff4e97099",
+    "kani-driver/src/call_single_file.rs": "6386cd312b8582c76502b1f2a213b97a3e2c8e91b9325aea88eaafe970b7f858",
+    "kani-driver/src/cbmc_output_parser.rs": "efdc704e083c0a9b357e6258ef6312669091dca4fbbe102852c94c5e1fd7bfc1",
+    "kani-driver/src/cbmc_property_renderer.rs": "f2f6be1b2a2e29e340e17c5859fa5a0f5c7d90bacb9287d082af23d442737c42",
+    "kani-driver/src/frontend/schema_utils.rs": "eedf7b46cb0dba307561edd823090f89a8119fa2a6ef58fa37f4d594f92a3d23",
+    "kani-driver/src/project.rs": "d420d0163e49f9acc2ce49674ad5deaf6a423537eecaa14497d735a6ee0d3878",
+    "kani-driver/src/session.rs": "8957dedfdb0658ee69fa2398f8de17cc9f132910423136093c8ff65fa3f47b26",
+    "library/kani/kani_lib.c": "4a3c653c5cf540de061dc6044b85cad196b1321119f936621e692e13a88cd6b6",
+    "rust-toolchain.toml": "af8b9f99146b41c7ddaaed448900d6476f059f7cc7a6c2c3039d9504615c5f31",
+    "scripts/kani": "28a81c48fd72627ed2449993730636bc830abeffeaea4d85d9297b2ec4393af2",
+    "scripts/setup/install_kissat.sh": "d7f6fb4d3cae5a94144a54bf0bf07db9f174fad6db6a1ba70ad62f9fc86f1dd9",
+    "scripts/setup/install_rustup.sh": "ce02a8a4042b4f6d2b8ffc0905f50284e77d7772b2ed3a2760cdb17db728adb5",
+    "scripts/setup/ubuntu/install_cbmc.sh": "378294d7c13cc0d3c90403cf31a5c577d5292d2f5aee3274977a4446060eda54",
+    "scripts/setup/ubuntu/install_deps.sh": "820a436228d735c1231d09a791de1cb56958d9be42778bb422735183c749bc50",
+    "tests/expected/uninit/nested-unions/expected": "7c4b4bd80f002d4dc0c8c0180f8c01dbfcee18da9dc1a6ac967cac24282d5bcd",
+    "tests/expected/uninit/nested-unions/main.rs": "3e71829b6ee39601ad29546aefb71ae861505bd9b4b555c36ea9d595468d63bb",
+    "tools/build-kani/src/sysroot.rs": "b1d7631408629db2d6230c2d8081ed2f8e3524369ea114a9ff3f0d2819c1be8a"
+  },
+  "workflow": ".github/workflows/ch8-q-pilot.yml"
+}
