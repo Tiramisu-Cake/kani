@@ -1,0 +1,238 @@
+#[cfg(kani_smallsort_rev2_gen_stable_n32_closure)]
+mod n32_closure {
+    use super::super::super::{StableSmallSortTypeImpl, UnstableSmallSortTypeImpl};
+    use super::*;
+
+    #[kani::proof]
+    #[kani::unwind(36)]
+    fn gen_n32_u64_s8_l48_full() {
+        let mut v: [u64; 34] = kani::any();
+        let before = v;
+        let probe: u64 = kani::any();
+        let mut scratch = [MaybeUninit::<u64>::uninit(); 48];
+        for i in 8..32 {
+            scratch[i].write(kani::any());
+        }
+        for i in 40..48 {
+            scratch[i].write(kani::any());
+        }
+        let scratch_before = scratch;
+        let s = v[1..33].as_mut_ptr();
+        let d = scratch.as_mut_ptr().cast::<u64>();
+        let mut less = u64_less;
+        // SAFETY: The eight initialized source words S[0..8] are in the separate V34.
+        // The writable D[0..8] and D[32..40] are disjoint intervals of scratch48.
+        unsafe { sort8_stable(s, d, d.add(32), &mut less) };
+
+        let mut ordered = true;
+        let mut tmp_left_ordered = true;
+        let mut tmp_right_ordered = true;
+        let mut input_count = 0;
+        let mut output_count = 0;
+        let mut adjacent_equal = false;
+        let mut inversion = false;
+        for i in 0..8 {
+            input_count += usize::from(before[1 + i] == probe);
+            // SAFETY: A normal return writes each output word.
+            output_count += usize::from(unsafe { scratch[i].assume_init() } == probe);
+        }
+        for i in 0..7 {
+            adjacent_equal |= before[1 + i] == before[2 + i];
+            inversion |= before[1 + i] > before[2 + i];
+            // SAFETY: Both words are in the initialized output interval.
+            ordered &= unsafe { scratch[i].assume_init() <= scratch[1 + i].assume_init() };
+        }
+        for i in 0..3 {
+            // SAFETY: The two inner sort4 calls initialize both temporary blocks.
+            unsafe {
+                tmp_left_ordered &= scratch[32 + i].assume_init() <= scratch[33 + i].assume_init();
+                tmp_right_ordered &= scratch[36 + i].assume_init() <= scratch[37 + i].assume_init();
+            }
+        }
+        let mut v_frame = true;
+        for i in 0..17 {
+            v_frame &= v[i] == before[i];
+        }
+        for i in 17..34 {
+            v_frame &= v[i] == before[i];
+        }
+        let mut scratch_frame = true;
+        for i in 8..32 {
+            // SAFETY: This frame interval was initialized before the call.
+            scratch_frame &= unsafe { scratch[i].assume_init() == scratch_before[i].assume_init() };
+        }
+        for i in 40..48 {
+            // SAFETY: This frame interval was initialized before the call.
+            scratch_frame &= unsafe { scratch[i].assume_init() == scratch_before[i].assume_init() };
+        }
+        kani::assert(ordered, "GEN_N32_U64_S8_L48_SORTED");
+        kani::assert(input_count == output_count, "GEN_N32_U64_S8_L48_PROBE_MULTIPLICITY");
+        kani::assert(tmp_left_ordered, "GEN_N32_U64_S8_L48_TMP_LEFT_SORTED");
+        kani::assert(tmp_right_ordered, "GEN_N32_U64_S8_L48_TMP_RIGHT_SORTED");
+        kani::assert(v_frame, "GEN_N32_U64_S8_L48_V_FRAME");
+        kani::assert(scratch_frame, "GEN_N32_U64_S8_L48_SCRATCH_FRAME");
+        kani::cover(inversion, "GEN_N32_U64_S8_L48_MIXED_INVERSION");
+        kani::cover(adjacent_equal, "GEN_N32_U64_S8_L48_EQUAL_INPUT");
+        kani::cover(true, "GEN_N32_U64_S8_L48_RETURNED");
+    }
+
+    const U64_LEFT: u64 = 0x1111_2222_3333_4444;
+    const U64_RIGHT: u64 = 0xaaaa_bbbb_cccc_dddd;
+
+    // Literal V34: S[0..8] and S[16..24] are 1,0,1,0,1,0,1,0, every other S word is 1.
+    const U64_INPUT: [u64; 34] = [
+        U64_LEFT, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1,
+        1, 1, 1, 1, 1, U64_RIGHT,
+    ];
+
+    fn stable_u64_mask(v: &[u64; 34]) -> (u32, bool, bool) {
+        let mut mask = 0;
+        let mut canonical = true;
+        let mut ordered = true;
+        for i in 0..32 {
+            mask |= u32::from(v[1 + i] == 1) << i;
+            canonical &= v[1 + i] == 0 || v[1 + i] == 1;
+        }
+        for i in 1..32 {
+            ordered &= v[i] <= v[i + 1];
+        }
+        (mask, canonical, ordered)
+    }
+
+    #[kani::proof]
+    #[kani::unwind(36)]
+    fn gen_n32_stable_u64_witness_literal_corrupt() {
+        let mut v = U64_INPUT;
+        let mut ones = 0;
+        for i in 0..32 {
+            ones += u32::from(U64_INPUT[1 + i] == 1);
+        }
+        let mut scratch = [MaybeUninit::<u64>::uninit(); 48];
+        let mut less = u64_less;
+        <u64 as StableSmallSortTypeImpl>::small_sort(&mut v[1..33], &mut scratch, &mut less);
+        kani::cover(true, "AFTER_STABLE_N32_RETURN");
+
+        let (mask, canonical, ordered) = stable_u64_mask(&v);
+        kani::assert(canonical, "GEN_N32_STABLE_U64_BEFORE_CANONICAL");
+        kani::assert(ordered, "GEN_N32_STABLE_U64_BEFORE_ORDER");
+        kani::assert(
+            ones == 24 && mask.count_ones() == ones,
+            "GEN_N32_STABLE_U64_BEFORE_MULTIPLICITY",
+        );
+        kani::assert(mask == 0xffff_ff00, "GEN_N32_STABLE_U64_BEFORE_MASK");
+        kani::assert(v[0] == U64_LEFT && v[33] == U64_RIGHT, "GEN_N32_STABLE_U64_BEFORE_FRAME");
+
+        v[8] ^= 1u64;
+        let (mask, canonical, ordered) = stable_u64_mask(&v);
+        kani::assert(canonical, "GEN_N32_STABLE_U64_AFTER_CANONICAL");
+        kani::assert(ordered, "GEN_N32_STABLE_U64_AFTER_ORDER");
+        kani::assert(mask == 0xffff_ff80, "GEN_N32_STABLE_U64_AFTER_MASK");
+        kani::assert(v[0] == U64_LEFT && v[33] == U64_RIGHT, "GEN_N32_STABLE_U64_AFTER_FRAME");
+        kani::assert(mask.count_ones() == ones, "GEN_N32_STABLE_U64_MULTIPLICITY");
+    }
+
+    // N32 literal witness on the actual unstable Wide entry. The rest of the module ends here.
+    const LEFT: Wide = Wide { key: 2, tag: 32, payload: 0x1111_2222_3333_4444 };
+    const RIGHT: Wide = Wide { key: 3, tag: 33, payload: 0xaaaa_bbbb_cccc_dddd };
+
+    const fn input_record(key: u64, tag: u64) -> Wide {
+        Wide { key, tag, payload: 0x8000_0000_0000_0100 + tag }
+    }
+
+    const INPUT: [Wide; 34] = [
+        LEFT,
+        input_record(1, 0),
+        input_record(0, 1),
+        input_record(1, 2),
+        input_record(0, 3),
+        input_record(1, 4),
+        input_record(1, 5),
+        input_record(1, 6),
+        input_record(1, 7),
+        input_record(1, 8),
+        input_record(1, 9),
+        input_record(1, 10),
+        input_record(1, 11),
+        input_record(1, 12),
+        input_record(1, 13),
+        input_record(1, 14),
+        input_record(1, 15),
+        input_record(1, 16),
+        input_record(0, 17),
+        input_record(1, 18),
+        input_record(0, 19),
+        input_record(1, 20),
+        input_record(1, 21),
+        input_record(1, 22),
+        input_record(1, 23),
+        input_record(1, 24),
+        input_record(1, 25),
+        input_record(1, 26),
+        input_record(1, 27),
+        input_record(1, 28),
+        input_record(1, 29),
+        input_record(1, 30),
+        input_record(1, 31),
+        RIGHT,
+    ];
+
+    // Indices in INPUT, including its left canary at index zero.
+    const EXPECTED: [Wide; 32] = [
+        INPUT[2], INPUT[4], INPUT[18], INPUT[20], INPUT[1], INPUT[3], INPUT[5], INPUT[6], INPUT[7],
+        INPUT[8], INPUT[9], INPUT[10], INPUT[11], INPUT[12], INPUT[13], INPUT[14], INPUT[15],
+        INPUT[16], INPUT[17], INPUT[19], INPUT[21], INPUT[22], INPUT[23], INPUT[24], INPUT[25],
+        INPUT[26], INPUT[27], INPUT[28], INPUT[29], INPUT[30], INPUT[31], INPUT[32],
+    ];
+
+    const CORRUPTED: [Wide; 32] = [
+        INPUT[2], INPUT[18], INPUT[4], INPUT[20], INPUT[1], INPUT[3], INPUT[5], INPUT[6], INPUT[7],
+        INPUT[8], INPUT[9], INPUT[10], INPUT[11], INPUT[12], INPUT[13], INPUT[14], INPUT[15],
+        INPUT[16], INPUT[17], INPUT[19], INPUT[21], INPUT[22], INPUT[23], INPUT[24], INPUT[25],
+        INPUT[26], INPUT[27], INPUT[28], INPUT[29], INPUT[30], INPUT[31], INPUT[32],
+    ];
+
+    fn observe(v: &[Wide; 34], expected: &[Wide; 32]) -> (bool, bool, bool) {
+        let mut exact = same_wide(v[1], expected[0]);
+        let mut ordered = true;
+        let mut stable = true;
+        for i in 1..32 {
+            let (a, b) = (v[i], v[i + 1]);
+            exact &= same_wide(b, expected[i]);
+            ordered &= a.key <= b.key;
+            stable &= a.key != b.key || a.tag < b.tag;
+        }
+        (ordered, exact, stable)
+    }
+
+    #[kani::proof]
+    #[kani::unwind(36)]
+    fn gen_n32_wide_witness_literal_corrupt() {
+        let mut v = INPUT;
+        let mut less = wide_less;
+        <Wide as UnstableSmallSortTypeImpl>::small_sort(&mut v[1..33], &mut less);
+        kani::cover(true, "AFTER_WIDE_N32_RETURN");
+
+        let (ordered, exact, stable) = observe(&v, &EXPECTED);
+        kani::assert(ordered, "GEN_N32_WIDE_BEFORE_ORDER");
+        kani::assert(exact, "GEN_N32_WIDE_BEFORE_RECORDS_BY_TAG");
+        kani::assert(stable, "GEN_N32_WIDE_BEFORE_STABLE_EQUAL_KEYS");
+        kani::assert(
+            v[2].key == 0 && v[3].key == 0 && v[2].tag == 3 && v[3].tag == 17,
+            "GEN_N32_WIDE_BEFORE_SWAP_PAIR",
+        );
+        kani::assert(same_wide(v[0], LEFT) && same_wide(v[33], RIGHT), "GEN_N32_WIDE_BEFORE_FRAME");
+        kani::cover(
+            v[2].key == v[3].key && v[2].tag < 16 && v[3].tag >= 16,
+            "GEN_N32_WIDE_WITNESS_CROSS_HALF_TIE",
+        );
+
+        let left = v[2];
+        v[2] = v[3];
+        v[3] = left;
+        let (ordered, exact, stable) = observe(&v, &CORRUPTED);
+        kani::assert(ordered, "GEN_N32_WIDE_AFTER_ORDER");
+        kani::assert(exact, "GEN_N32_WIDE_AFTER_RECORDS_BY_TAG");
+        kani::assert(same_wide(v[0], LEFT) && same_wide(v[33], RIGHT), "GEN_N32_WIDE_AFTER_FRAME");
+        kani::assert(stable, "GEN_N32_WIDE_STABLE_EQUAL_KEYS");
+    }
+}

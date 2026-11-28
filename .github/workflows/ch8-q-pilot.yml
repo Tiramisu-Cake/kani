@@ -1,142 +1,126 @@
-name: CH8 Kani 5196 SmallSort uninit observations
+name: CH8 SmallSort REV2 N32 closure for general Wide and stable u64
 'on':
   push:
     branches:
-    - uninit-ci/ch8-q-pilot-v1
+      - uninit-ci/ch8-q-pilot-v1
 permissions:
   contents: read
 concurrency:
-  group: ch8-s2-fork
+  group: ch8-rev2-gen-stable-n32-closure-${{ github.run_id }}
   cancel-in-progress: false
+defaults:
+  run:
+    shell: bash
 jobs:
-  uninit:
+  ubuntu:
     if: ${{ github.repository == 'Tiramisu-Cake/kani' && github.event_name == 'push' && github.ref == 'refs/heads/uninit-ci/ch8-q-pilot-v1' && github.run_attempt == '1' }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 180
+    timeout-minutes: 100
     env:
-      PYTHONDONTWRITEBYTECODE: '1'
+      CH8_REV2_GEN_STABLE_N32_CLOSURE_TRIGGER_TREE: ${{ vars.CH8_REV2_GEN_STABLE_N32_CLOSURE_TRIGGER_TREE }}
     steps:
-    - name: Start job clock and define private paths
-      timeout-minutes: 1
-      run: |
-        export JOB_EPOCH="$RUNNER_TEMP/ch8-kani5196-job-epoch"
-        python3 -c 'import os, time; from pathlib import Path; Path(os.environ["JOB_EPOCH"]).write_text(str(time.monotonic()))'
-        {
-          echo "JOB_EPOCH=$JOB_EPOCH"
-          echo "TOOL_ROOT=$RUNNER_TEMP/ch8-kani5196-tool"
-          echo "RECEIPT_ROOT=$RUNNER_TEMP/ch8-kani5196"
-          echo "SETUP_ROOT=$RUNNER_TEMP/ch8-kani5196-setup"
-        } >> "$GITHUB_ENV"
-    - name: Checkout control
-      timeout-minutes: 2
-      uses: actions/checkout@v6
-      with:
-        ref: ${{ github.sha }}
-        path: control
-        fetch-depth: 3
-        persist-credentials: false
-    - name: Validate frozen control and run synthetic tests
-      id: control
-      timeout-minutes: 2
-      run: |
-        python3 control/ch8-kani5196-control/campaign.py validate
-        python3 -m unittest discover -s control/ch8-kani5196-control
-    - name: Read frozen input pins
-      timeout-minutes: 1
-      id: pins
-      run: |
-        python3 - <<'PYCODE'
-        import json, os
-        from pathlib import Path
-        pins = json.loads(Path("control/ch8-kani5196-control/CI-REQUEST.json").read_bytes())["pins"]
-        with open(os.environ["GITHUB_OUTPUT"], "a") as output:
-            for label, pin in pins.items():
-                print(f"{label}={pin['sha']}", f"{label}_repo={pin['repository']}", sep="\n", file=output)
-        PYCODE
-    - name: Checkout exact candidate std
-      timeout-minutes: 5
-      uses: actions/checkout@v6
-      with:
-        repository: ${{ steps.pins.outputs.candidate_repo }}
-        ref: ${{ steps.pins.outputs.candidate }}
-        path: candidate
-        fetch-depth: 2
-        persist-credentials: false
-        submodules: true
-    - name: Checkout exact older PR head
-      timeout-minutes: 5
-      uses: actions/checkout@v6
-      with:
-        repository: ${{ steps.pins.outputs.pr752_repo }}
-        ref: ${{ steps.pins.outputs.pr752 }}
-        path: pr752
-        fetch-depth: 2
-        persist-credentials: false
-        submodules: true
-    - name: Checkout exact experimental Kani
-      timeout-minutes: 2
-      uses: actions/checkout@v6
-      with:
-        repository: ${{ steps.pins.outputs.tool_repo }}
-        ref: ${{ steps.pins.outputs.tool }}
-        path: tool
-        fetch-depth: 2
-        persist-credentials: false
-    - name: Validate exact trees and source harness attributes
-      id: source
-      timeout-minutes: 1
-      run: >-
-        python3 control/ch8-kani5196-control/campaign.py check-source
-        --candidate candidate --pr752 pr752 --tool tool
-    - name: Install pinned tool dependencies
-      id: setup
-      timeout-minutes: 15
-      uses: ./tool/.github/actions/setup
-      with:
-        os: ubuntu-24.04
-        kani_dir: tool
-    - name: Build and attest the pinned tool once in runner temp
-      id: build
-      timeout-minutes: 16
-      run: |
-        mv --no-target-directory tool "$TOOL_ROOT"
-        ln -s "$TOOL_ROOT" tool
-        python3 control/ch8-kani5196-control/campaign.py build-and-attest \
-          --tool "$TOOL_ROOT" --out "$SETUP_ROOT" --job-epoch "$JOB_EPOCH"
-    - name: Run two canaries and twelve OFF then ON pairs serially
-      id: collection
-      run: >-
-        python3 control/ch8-kani5196-control/campaign.py run
-        --candidate candidate --pr752 pr752 --tool "$TOOL_ROOT"
-        --out "$RECEIPT_ROOT" --setup-receipt "$SETUP_ROOT/receipt.json"
-        --attestation "$SETUP_ROOT/attestation.json" --job-epoch "$JOB_EPOCH"
-    - name: Finalize the bounded index and projections
-      id: finalize
-      if: always()
-      timeout-minutes: 2
-      env:
-        JOB_STATUS: ${{ job.status }}
-        CONTROL_OUTCOME: ${{ steps.control.outcome }}
-        SOURCE_OUTCOME: ${{ steps.source.outcome }}
-        SETUP_OUTCOME: ${{ steps.setup.outcome }}
-        BUILD_OUTCOME: ${{ steps.build.outcome }}
-        COLLECTION_OUTCOME: ${{ steps.collection.outcome }}
-      run: |
-        export TOOL_ROOT="${TOOL_ROOT:-$RUNNER_TEMP/ch8-kani5196-tool}"
-        if [ ! -d "$TOOL_ROOT" ]; then TOOL_ROOT="$GITHUB_WORKSPACE/tool"; fi
-        export RECEIPT_ROOT="${RECEIPT_ROOT:-$RUNNER_TEMP/ch8-kani5196}"
-        export SETUP_ROOT="${SETUP_ROOT:-$RUNNER_TEMP/ch8-kani5196-setup}"
-        export JOB_EPOCH="${JOB_EPOCH:-$RUNNER_TEMP/ch8-kani5196-job-epoch}"
-        python3 control/ch8-kani5196-control/campaign.py finish \
-          --candidate candidate --pr752 pr752 --tool "$TOOL_ROOT" \
-          --out "$RECEIPT_ROOT" --setup-receipt "$SETUP_ROOT/receipt.json" \
-          --attestation "$SETUP_ROOT/attestation.json" --job-epoch "$JOB_EPOCH"
-    - name: Upload scoped structured evidence
-      if: always() && steps.finalize.outcome == 'success'
-      timeout-minutes: 6
-      uses: actions/upload-artifact@v4
-      with:
-        name: ch8-kani5196-${{ github.run_id }}-${{ github.run_attempt }}
-        path: ${{ env.RECEIPT_ROOT }}/artifact/
-        if-no-files-found: error
-        retention-days: 7
+      - name: Start the monotonic job clock
+        timeout-minutes: 1
+        run: |
+          python3 - <<'PY'
+          import time
+          epoch = time.monotonic()
+          import os
+          from pathlib import Path
+          state = Path(os.environ["RUNNER_TEMP"]) / "ch8-rev2-gen-stable-n32-closure"
+          state.mkdir()
+          (state / "epoch").write_text(f"{epoch}\n")
+          with open(os.environ["GITHUB_ENV"], "a") as output:
+              print(f"REV2_STATE={state}", file=output)
+          PY
+      - name: Checkout exact control
+        timeout-minutes: 2
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
+          path: control
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Validate control and frozen request
+        id: pins
+        timeout-minutes: 10
+        working-directory: control/ch8-cal1
+        run: |
+          export PYTHONDONTWRITEBYTECODE=1
+          python3 run.py pins
+          timeout --kill-after=5s 150s python3 -m unittest discover -v
+          for start_seconds in 1 5 60; do
+            printf 'Self-test with monotonic starting at %s s\n' "$start_seconds"
+            timeout --kill-after=5s 150s python3 - "$start_seconds" <<'PY'
+          import sys
+          import time
+          import unittest
+
+          initial_seconds = int(sys.argv[1])
+          native_clock = time.monotonic
+          started = native_clock()
+          time.monotonic = lambda: initial_seconds + (native_clock() - started)
+          unittest.main(module=None, argv=["unittest", "discover", "-v"])
+          PY
+          done
+      - name: Checkout std base
+        timeout-minutes: 5
+        uses: actions/checkout@v6
+        with:
+          repository: Tiramisu-Cake/verify-rust-std
+          ref: ${{ steps.pins.outputs.std }}
+          path: std
+          fetch-depth: 2
+          persist-credentials: false
+          submodules: recursive
+      - name: Checkout stock Kani
+        timeout-minutes: 4
+        uses: actions/checkout@v6
+        with:
+          repository: model-checking/kani
+          ref: ${{ steps.pins.outputs.tool }}
+          path: tool
+          fetch-depth: 2
+          persist-credentials: false
+          submodules: recursive
+      - name: Check source pins and materialize the overlay object
+        timeout-minutes: 3
+        run: python3 -B control/ch8-cal1/run.py sources
+      - name: Install pinned Kani dependencies
+        timeout-minutes: 15
+        uses: ./tool/.github/actions/setup
+        with:
+          os: ubuntu-24.04
+          kani_dir: tool
+      - name: Build Kani, preflight the overlay and compare exact discovery
+        timeout-minutes: 56
+        run: python3 -B control/ch8-cal1/run.py prepare
+      - name: Run the stock-pipe left S8 and u64 control, then the Wide control behind the relay
+        timeout-minutes: 16
+        run: python3 -B control/ch8-cal1/run.py measure
+      - name: Finalize bounded receipts
+        id: finish
+        if: always() && steps.pins.outcome == 'success' && steps.pins.outputs.trigger_admitted == 'true'
+        timeout-minutes: 6
+        env:
+          REV2_JOB_STATUS: ${{ job.status }}
+        run: python3 -B control/ch8-cal1/run.py finish
+      - name: Admit upload within the absolute publication window
+        id: upload_gate
+        if: always() && steps.pins.outcome == 'success' && steps.pins.outputs.trigger_admitted == 'true' && steps.finish.outcome == 'success'
+        timeout-minutes: 1
+        run: python3 -B control/ch8-cal1/run.py upload-gate
+      - name: Upload bounded structured receipts
+        id: upload
+        if: always() && steps.pins.outcome == 'success' && steps.pins.outputs.trigger_admitted == 'true' && steps.finish.outcome == 'success' && steps.upload_gate.outcome == 'success'
+        timeout-minutes: 7
+        uses: actions/upload-artifact@v4
+        with:
+          name: ch8-rev2-gen-stable-n32-closure-${{ runner.os }}-${{ runner.arch }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ env.REV2_STATE }}/artifact/
+          if-no-files-found: error
+          retention-days: 7
+      - name: Check upload completed within the publication window
+        if: always() && steps.upload.outcome == 'success'
+        timeout-minutes: 1
+        run: python3 -B control/ch8-cal1/run.py upload-check

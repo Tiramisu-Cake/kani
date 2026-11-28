@@ -1,0 +1,445 @@
+#[cfg(kani_smallsort_rev2_gen_stable_wide_n12_n14)]
+mod wide_n12_n14 {
+    use super::super::super::UnstableSmallSortTypeImpl;
+    use super::*;
+
+    fn wide_array<const L: usize>() -> [Wide; L] {
+        let mut v = [Wide { key: 0, tag: 0, payload: 0 }; L];
+        for i in 0..L {
+            v[i] = any_wide();
+        }
+        v
+    }
+
+    fn wide_scratch48() -> [MaybeUninit<Wide>; 48] {
+        let mut scratch = [MaybeUninit::<Wide>::uninit(); 48];
+        for i in 0..32 {
+            scratch[i].write(any_wide());
+        }
+        for i in 32..48 {
+            scratch[i].write(any_wide());
+        }
+        scratch
+    }
+
+    fn scratch48_frame(
+        scratch: &[MaybeUninit<Wide>; 48],
+        before: &[MaybeUninit<Wide>; 48],
+    ) -> bool {
+        let mut frame = true;
+        for i in 0..32 {
+            // SAFETY: Both snapshots of this interval were initialized.
+            frame &= unsafe { same_wide(scratch[i].assume_init(), before[i].assume_init()) };
+        }
+        for i in 32..48 {
+            // SAFETY: Both snapshots of this interval were initialized.
+            frame &= unsafe { same_wide(scratch[i].assume_init(), before[i].assume_init()) };
+        }
+        frame
+    }
+
+    #[cfg_attr(
+        kani,
+        kani::requires(k < 6 && a <= k),
+        kani::requires(ub_checks::can_dereference(ptr::slice_from_raw_parts(d, 12))),
+        kani::requires(ub_checks::can_write(ptr::slice_from_raw_parts_mut(s, 12))),
+        kani::requires(!ub_checks::same_allocation(d, s)),
+        kani::modifies(s.wrapping_add(k))
+    )]
+    unsafe fn actual_merge_up_wide_n12(d: *const Wide, s: *mut Wide, k: usize, a: usize) {
+        let b = k - a;
+        let mut less = wide_less;
+        // SAFETY: The count bounds put both reads in initialized D halves and
+        // the destination in the separate writable S allocation.
+        unsafe {
+            let up_left = d.add(a);
+            let up_right = d.add(6 + b);
+            let up_dst = s.add(k);
+            kani::assert(
+                ub_checks::can_dereference(up_left) && ub_checks::can_dereference(up_right),
+                "GEN_N12_WIDE_UP_READ",
+            );
+            kani::assert(ub_checks::can_write(up_dst), "GEN_N12_WIDE_UP_WRITE");
+            kani::assert(
+                !ub_checks::same_allocation(up_left, up_dst)
+                    && !ub_checks::same_allocation(up_right, up_dst),
+                "GEN_N12_WIDE_UP_DISJOINT",
+            );
+            let (left, right, dst) = merge_up(up_left, up_right, up_dst, &mut less);
+            let takes_left = (*up_left).key <= (*up_right).key;
+            kani::assert(
+                left == up_left.add(takes_left as usize)
+                    && right == up_right.add((!takes_left) as usize)
+                    && dst == s.add(k + 1),
+                "GEN_N12_WIDE_UP_CURSORS",
+            );
+        }
+    }
+
+    #[kani::proof_for_contract(actual_merge_up_wide_n12)]
+    #[kani::unwind(36)]
+    fn gen_n12_wide_merge_up() {
+        let mut v = wide_array::<14>();
+        let v_before = v;
+        let mut scratch = wide_scratch48();
+        let scratch_before = scratch;
+        let k = usize::from(kani::any::<u8>());
+        let a = usize::from(kani::any::<u8>());
+        kani::assume(k < 6 && a <= k);
+        // SAFETY: The constrained source positions and all 12 destination
+        // records satisfy the wrapper contract; V and D are separate arrays.
+        let (up_left, up_right) =
+            unsafe { (scratch_before[a].assume_init(), scratch_before[6 + (k - a)].assume_init()) };
+        let takes_left = up_left.key <= up_right.key;
+        let expected = if takes_left { up_left } else { up_right };
+        let s = v[1..13].as_mut_ptr();
+        let d = scratch.as_mut_ptr().cast::<Wide>();
+        // SAFETY: D[0..12] is initialized and S[0..12] is writable in
+        // distinct allocations, with the counter assumptions above.
+        unsafe { actual_merge_up_wide_n12(d, s, k, a) };
+
+        kani::assert(same_wide(v[1 + k], expected), "GEN_N12_WIDE_UP_VALUE");
+        let mut v_frame = true;
+        for i in 0..14 {
+            if i != 1 + k {
+                v_frame &= same_wide(v[i], v_before[i]);
+            }
+        }
+        kani::assert(v_frame, "GEN_N12_WIDE_UP_V_FRAME");
+        kani::assert(scratch48_frame(&scratch, &scratch_before), "GEN_N12_WIDE_UP_SCRATCH_FRAME");
+        kani::cover(takes_left, "GEN_N12_WIDE_UP_TAKES_LEFT");
+        kani::cover(!takes_left, "GEN_N12_WIDE_UP_TAKES_RIGHT");
+        kani::cover(
+            up_left.key == up_right.key && up_left.tag != up_right.tag,
+            "GEN_N12_WIDE_UP_TIE",
+        );
+        kani::cover(k == 0, "GEN_N12_WIDE_UP_K_ZERO");
+        kani::cover(k == 5, "GEN_N12_WIDE_UP_K_LAST");
+        kani::cover(true, "GEN_N12_WIDE_UP_RETURNED");
+    }
+
+    #[cfg_attr(
+        kani,
+        kani::requires(k < 6 && c <= k),
+        kani::requires(ub_checks::can_dereference(ptr::slice_from_raw_parts(d, 12))),
+        kani::requires(ub_checks::can_write(ptr::slice_from_raw_parts_mut(s, 12))),
+        kani::requires(!ub_checks::same_allocation(d, s)),
+        kani::modifies(s.wrapping_add(11 - k))
+    )]
+    unsafe fn actual_merge_down_wide_n12(d: *const Wide, s: *mut Wide, k: usize, c: usize) {
+        let d_count = k - c;
+        let mut less = wide_less;
+        // SAFETY: The count bounds put both reads in initialized D halves and
+        // the destination in the separate writable S allocation.
+        unsafe {
+            let down_left = d.add(5 - c);
+            let down_right = d.add(11 - d_count);
+            let down_dst = s.add(11 - k);
+            kani::assert(
+                ub_checks::can_dereference(down_left) && ub_checks::can_dereference(down_right),
+                "GEN_N12_WIDE_DOWN_READ",
+            );
+            kani::assert(ub_checks::can_write(down_dst), "GEN_N12_WIDE_DOWN_WRITE");
+            kani::assert(
+                !ub_checks::same_allocation(down_left, down_dst)
+                    && !ub_checks::same_allocation(down_right, down_dst),
+                "GEN_N12_WIDE_DOWN_DISJOINT",
+            );
+            let (left, right, dst) = merge_down(down_left, down_right, down_dst, &mut less);
+            let takes_left = (*down_left).key > (*down_right).key;
+            kani::assert(
+                left == down_left.wrapping_sub(takes_left as usize)
+                    && right == down_right.wrapping_sub((!takes_left) as usize)
+                    && dst == s.add(10 - k),
+                "GEN_N12_WIDE_DOWN_CURSORS",
+            );
+        }
+    }
+
+    #[kani::proof_for_contract(actual_merge_down_wide_n12)]
+    #[kani::unwind(36)]
+    fn gen_n12_wide_merge_down() {
+        let mut v = wide_array::<14>();
+        let v_before = v;
+        let mut scratch = wide_scratch48();
+        let scratch_before = scratch;
+        let k = usize::from(kani::any::<u8>());
+        let c = usize::from(kani::any::<u8>());
+        kani::assume(k < 6 && c <= k);
+        // SAFETY: The constrained source positions and all 12 destination
+        // records satisfy the wrapper contract; V and D are separate arrays.
+        let (down_left, down_right) = unsafe {
+            (scratch_before[5 - c].assume_init(), scratch_before[11 - (k - c)].assume_init())
+        };
+        let takes_left = down_left.key > down_right.key;
+        let expected = if takes_left { down_left } else { down_right };
+        let s = v[1..13].as_mut_ptr();
+        let d = scratch.as_mut_ptr().cast::<Wide>();
+        // SAFETY: D[0..12] is initialized and S[0..12] is writable in
+        // distinct allocations, with the counter assumptions above.
+        unsafe { actual_merge_down_wide_n12(d, s, k, c) };
+
+        kani::assert(same_wide(v[12 - k], expected), "GEN_N12_WIDE_DOWN_VALUE");
+        let mut v_frame = true;
+        for i in 0..14 {
+            if i != 12 - k {
+                v_frame &= same_wide(v[i], v_before[i]);
+            }
+        }
+        kani::assert(v_frame, "GEN_N12_WIDE_DOWN_V_FRAME");
+        kani::assert(scratch48_frame(&scratch, &scratch_before), "GEN_N12_WIDE_DOWN_SCRATCH_FRAME");
+        kani::cover(takes_left, "GEN_N12_WIDE_DOWN_TAKES_LEFT");
+        kani::cover(!takes_left, "GEN_N12_WIDE_DOWN_TAKES_RIGHT");
+        kani::cover(
+            down_left.key == down_right.key && down_left.tag != down_right.tag,
+            "GEN_N12_WIDE_DOWN_TIE",
+        );
+        kani::cover(k == 0, "GEN_N12_WIDE_DOWN_K_ZERO");
+        kani::cover(k == 5, "GEN_N12_WIDE_DOWN_K_LAST");
+        kani::cover(true, "GEN_N12_WIDE_DOWN_RETURNED");
+    }
+
+    #[cfg_attr(
+        kani,
+        kani::requires(k < 7 && a <= k),
+        kani::requires(ub_checks::can_dereference(ptr::slice_from_raw_parts(d, 14))),
+        kani::requires(ub_checks::can_write(ptr::slice_from_raw_parts_mut(s, 14))),
+        kani::requires(!ub_checks::same_allocation(d, s)),
+        kani::modifies(s.wrapping_add(k))
+    )]
+    unsafe fn actual_merge_up_wide_n14(d: *const Wide, s: *mut Wide, k: usize, a: usize) {
+        let b = k - a;
+        let mut less = wide_less;
+        // SAFETY: The count bounds put both reads in initialized D halves and
+        // the destination in the separate writable S allocation.
+        unsafe {
+            let up_left = d.add(a);
+            let up_right = d.add(7 + b);
+            let up_dst = s.add(k);
+            kani::assert(
+                ub_checks::can_dereference(up_left) && ub_checks::can_dereference(up_right),
+                "GEN_N14_WIDE_UP_READ",
+            );
+            kani::assert(ub_checks::can_write(up_dst), "GEN_N14_WIDE_UP_WRITE");
+            kani::assert(
+                !ub_checks::same_allocation(up_left, up_dst)
+                    && !ub_checks::same_allocation(up_right, up_dst),
+                "GEN_N14_WIDE_UP_DISJOINT",
+            );
+            let (left, right, dst) = merge_up(up_left, up_right, up_dst, &mut less);
+            let takes_left = (*up_left).key <= (*up_right).key;
+            kani::assert(
+                left == up_left.add(takes_left as usize)
+                    && right == up_right.add((!takes_left) as usize)
+                    && dst == s.add(k + 1),
+                "GEN_N14_WIDE_UP_CURSORS",
+            );
+        }
+    }
+
+    #[kani::proof_for_contract(actual_merge_up_wide_n14)]
+    #[kani::unwind(36)]
+    fn gen_n14_wide_merge_up() {
+        let mut v = wide_array::<16>();
+        let v_before = v;
+        let mut scratch = wide_scratch48();
+        let scratch_before = scratch;
+        let k = usize::from(kani::any::<u8>());
+        let a = usize::from(kani::any::<u8>());
+        kani::assume(k < 7 && a <= k);
+        // SAFETY: The constrained source positions and all 14 destination
+        // records satisfy the wrapper contract; V and D are separate arrays.
+        let (up_left, up_right) =
+            unsafe { (scratch_before[a].assume_init(), scratch_before[7 + (k - a)].assume_init()) };
+        let takes_left = up_left.key <= up_right.key;
+        let expected = if takes_left { up_left } else { up_right };
+        let s = v[1..15].as_mut_ptr();
+        let d = scratch.as_mut_ptr().cast::<Wide>();
+        // SAFETY: D[0..14] is initialized and S[0..14] is writable in
+        // distinct allocations, with the counter assumptions above.
+        unsafe { actual_merge_up_wide_n14(d, s, k, a) };
+
+        kani::assert(same_wide(v[1 + k], expected), "GEN_N14_WIDE_UP_VALUE");
+        let mut v_frame = true;
+        for i in 0..16 {
+            if i != 1 + k {
+                v_frame &= same_wide(v[i], v_before[i]);
+            }
+        }
+        kani::assert(v_frame, "GEN_N14_WIDE_UP_V_FRAME");
+        kani::assert(scratch48_frame(&scratch, &scratch_before), "GEN_N14_WIDE_UP_SCRATCH_FRAME");
+        kani::cover(takes_left, "GEN_N14_WIDE_UP_TAKES_LEFT");
+        kani::cover(!takes_left, "GEN_N14_WIDE_UP_TAKES_RIGHT");
+        kani::cover(
+            up_left.key == up_right.key && up_left.tag != up_right.tag,
+            "GEN_N14_WIDE_UP_TIE",
+        );
+        kani::cover(k == 0, "GEN_N14_WIDE_UP_K_ZERO");
+        kani::cover(k == 6, "GEN_N14_WIDE_UP_K_LAST");
+        kani::cover(true, "GEN_N14_WIDE_UP_RETURNED");
+    }
+
+    #[cfg_attr(
+        kani,
+        kani::requires(k < 7 && c <= k),
+        kani::requires(ub_checks::can_dereference(ptr::slice_from_raw_parts(d, 14))),
+        kani::requires(ub_checks::can_write(ptr::slice_from_raw_parts_mut(s, 14))),
+        kani::requires(!ub_checks::same_allocation(d, s)),
+        kani::modifies(s.wrapping_add(13 - k))
+    )]
+    unsafe fn actual_merge_down_wide_n14(d: *const Wide, s: *mut Wide, k: usize, c: usize) {
+        let d_count = k - c;
+        let mut less = wide_less;
+        // SAFETY: The count bounds put both reads in initialized D halves and
+        // the destination in the separate writable S allocation.
+        unsafe {
+            let down_left = d.add(6 - c);
+            let down_right = d.add(13 - d_count);
+            let down_dst = s.add(13 - k);
+            kani::assert(
+                ub_checks::can_dereference(down_left) && ub_checks::can_dereference(down_right),
+                "GEN_N14_WIDE_DOWN_READ",
+            );
+            kani::assert(ub_checks::can_write(down_dst), "GEN_N14_WIDE_DOWN_WRITE");
+            kani::assert(
+                !ub_checks::same_allocation(down_left, down_dst)
+                    && !ub_checks::same_allocation(down_right, down_dst),
+                "GEN_N14_WIDE_DOWN_DISJOINT",
+            );
+            let (left, right, dst) = merge_down(down_left, down_right, down_dst, &mut less);
+            let takes_left = (*down_left).key > (*down_right).key;
+            kani::assert(
+                left == down_left.wrapping_sub(takes_left as usize)
+                    && right == down_right.wrapping_sub((!takes_left) as usize)
+                    && dst == s.add(12 - k),
+                "GEN_N14_WIDE_DOWN_CURSORS",
+            );
+        }
+    }
+
+    #[kani::proof_for_contract(actual_merge_down_wide_n14)]
+    #[kani::unwind(36)]
+    fn gen_n14_wide_merge_down() {
+        let mut v = wide_array::<16>();
+        let v_before = v;
+        let mut scratch = wide_scratch48();
+        let scratch_before = scratch;
+        let k = usize::from(kani::any::<u8>());
+        let c = usize::from(kani::any::<u8>());
+        kani::assume(k < 7 && c <= k);
+        // SAFETY: The constrained source positions and all 14 destination
+        // records satisfy the wrapper contract; V and D are separate arrays.
+        let (down_left, down_right) = unsafe {
+            (scratch_before[6 - c].assume_init(), scratch_before[13 - (k - c)].assume_init())
+        };
+        let takes_left = down_left.key > down_right.key;
+        let expected = if takes_left { down_left } else { down_right };
+        let s = v[1..15].as_mut_ptr();
+        let d = scratch.as_mut_ptr().cast::<Wide>();
+        // SAFETY: D[0..14] is initialized and S[0..14] is writable in
+        // distinct allocations, with the counter assumptions above.
+        unsafe { actual_merge_down_wide_n14(d, s, k, c) };
+
+        kani::assert(same_wide(v[14 - k], expected), "GEN_N14_WIDE_DOWN_VALUE");
+        let mut v_frame = true;
+        for i in 0..16 {
+            if i != 14 - k {
+                v_frame &= same_wide(v[i], v_before[i]);
+            }
+        }
+        kani::assert(v_frame, "GEN_N14_WIDE_DOWN_V_FRAME");
+        kani::assert(scratch48_frame(&scratch, &scratch_before), "GEN_N14_WIDE_DOWN_SCRATCH_FRAME");
+        kani::cover(takes_left, "GEN_N14_WIDE_DOWN_TAKES_LEFT");
+        kani::cover(!takes_left, "GEN_N14_WIDE_DOWN_TAKES_RIGHT");
+        kani::cover(
+            down_left.key == down_right.key && down_left.tag != down_right.tag,
+            "GEN_N14_WIDE_DOWN_TIE",
+        );
+        kani::cover(k == 0, "GEN_N14_WIDE_DOWN_K_ZERO");
+        kani::cover(k == 6, "GEN_N14_WIDE_DOWN_K_LAST");
+        kani::cover(true, "GEN_N14_WIDE_DOWN_RETURNED");
+    }
+
+    // N14 literal witness on the actual unstable Wide entry. The rest of the module ends here.
+    const LEFT: Wide = Wide { key: 2, tag: 16, payload: 0x1111_2222_3333_4444 };
+    const RIGHT: Wide = Wide { key: 3, tag: 17, payload: 0xaaaa_bbbb_cccc_dddd };
+
+    const fn input_record(key: u64, tag: u64) -> Wide {
+        Wide { key, tag, payload: 0x8000_0000_0000_0100 + tag }
+    }
+
+    const INPUT: [Wide; 16] = [
+        LEFT,
+        input_record(1, 0),
+        input_record(0, 1),
+        input_record(1, 2),
+        input_record(0, 3),
+        input_record(0, 4),
+        input_record(0, 5),
+        input_record(0, 6),
+        input_record(1, 7),
+        input_record(0, 8),
+        input_record(1, 9),
+        input_record(0, 10),
+        input_record(0, 11),
+        input_record(0, 12),
+        input_record(0, 13),
+        RIGHT,
+    ];
+
+    // Indices in INPUT, including its left canary at index zero.
+    const EXPECTED: [Wide; 14] = [
+        INPUT[2], INPUT[4], INPUT[5], INPUT[6], INPUT[7], INPUT[9], INPUT[11], INPUT[12],
+        INPUT[13], INPUT[14], INPUT[1], INPUT[3], INPUT[8], INPUT[10],
+    ];
+
+    const CORRUPTED: [Wide; 14] = [
+        INPUT[2], INPUT[4], INPUT[5], INPUT[6], INPUT[9], INPUT[7], INPUT[11], INPUT[12],
+        INPUT[13], INPUT[14], INPUT[1], INPUT[3], INPUT[8], INPUT[10],
+    ];
+
+    fn observe(v: &[Wide; 16], expected: &[Wide; 14]) -> (bool, bool, bool) {
+        let mut exact = same_wide(v[1], expected[0]);
+        let mut ordered = true;
+        let mut stable = true;
+        for i in 1..14 {
+            let (a, b) = (v[i], v[i + 1]);
+            exact &= same_wide(b, expected[i]);
+            ordered &= a.key <= b.key;
+            stable &= a.key != b.key || a.tag < b.tag;
+        }
+        (ordered, exact, stable)
+    }
+
+    #[kani::proof]
+    #[kani::unwind(36)]
+    fn gen_n14_wide_witness_literal_corrupt() {
+        let mut v = INPUT;
+        let mut less = wide_less;
+        <Wide as UnstableSmallSortTypeImpl>::small_sort(&mut v[1..15], &mut less);
+        kani::cover(true, "AFTER_WIDE_N14_RETURN");
+
+        let (ordered, exact, stable) = observe(&v, &EXPECTED);
+        kani::assert(ordered, "GEN_N14_WIDE_BEFORE_ORDER");
+        kani::assert(exact, "GEN_N14_WIDE_BEFORE_RECORDS_BY_TAG");
+        kani::assert(stable, "GEN_N14_WIDE_BEFORE_STABLE_EQUAL_KEYS");
+        kani::assert(
+            v[5].key == 0 && v[6].key == 0 && v[5].tag == 6 && v[6].tag == 8,
+            "GEN_N14_WIDE_BEFORE_SWAP_PAIR",
+        );
+        kani::assert(same_wide(v[0], LEFT) && same_wide(v[15], RIGHT), "GEN_N14_WIDE_BEFORE_FRAME");
+        kani::cover(
+            v[5].key == v[6].key && v[5].tag < 7 && v[6].tag >= 7,
+            "GEN_N14_WIDE_WITNESS_CROSS_HALF_TIE",
+        );
+
+        let left = v[5];
+        v[5] = v[6];
+        v[6] = left;
+        let (ordered, exact, stable) = observe(&v, &CORRUPTED);
+        kani::assert(ordered, "GEN_N14_WIDE_AFTER_ORDER");
+        kani::assert(exact, "GEN_N14_WIDE_AFTER_RECORDS_BY_TAG");
+        kani::assert(same_wide(v[0], LEFT) && same_wide(v[15], RIGHT), "GEN_N14_WIDE_AFTER_FRAME");
+        kani::assert(stable, "GEN_N14_WIDE_STABLE_EQUAL_KEYS");
+    }
+}

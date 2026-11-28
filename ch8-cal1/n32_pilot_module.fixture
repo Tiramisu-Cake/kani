@@ -1,0 +1,650 @@
+#[cfg(kani_smallsort_rev2_gen_stable_n32_pilot)]
+mod n32_pilot {
+    use super::*;
+
+    fn wide_v34() -> [Wide; 34] {
+        let mut v = [Wide { key: 0, tag: 0, payload: 0 }; 34];
+        for i in 0..17 {
+            v[i] = any_wide();
+        }
+        for i in 17..34 {
+            v[i] = any_wide();
+        }
+        v
+    }
+
+    fn u64_scratch48() -> [MaybeUninit<u64>; 48] {
+        let mut scratch = [MaybeUninit::<u64>::uninit(); 48];
+        for i in 0..32 {
+            scratch[i].write(kani::any());
+        }
+        for i in 32..48 {
+            scratch[i].write(kani::any());
+        }
+        scratch
+    }
+
+    fn wide_scratch48() -> [MaybeUninit<Wide>; 48] {
+        let mut scratch = [MaybeUninit::<Wide>::uninit(); 48];
+        for i in 0..32 {
+            scratch[i].write(any_wide());
+        }
+        for i in 32..48 {
+            scratch[i].write(any_wide());
+        }
+        scratch
+    }
+
+    fn u64_scratch48_frame(
+        scratch: &[MaybeUninit<u64>; 48],
+        before: &[MaybeUninit<u64>; 48],
+    ) -> bool {
+        let mut frame = true;
+        for i in 0..32 {
+            // SAFETY: Both snapshots of this interval were initialized.
+            frame &= unsafe { scratch[i].assume_init() == before[i].assume_init() };
+        }
+        for i in 32..48 {
+            // SAFETY: Both snapshots of this interval were initialized.
+            frame &= unsafe { scratch[i].assume_init() == before[i].assume_init() };
+        }
+        frame
+    }
+
+    fn wide_scratch48_frame(
+        scratch: &[MaybeUninit<Wide>; 48],
+        before: &[MaybeUninit<Wide>; 48],
+    ) -> bool {
+        let mut frame = true;
+        for i in 0..32 {
+            // SAFETY: Both snapshots of this interval were initialized.
+            frame &= unsafe { same_wide(scratch[i].assume_init(), before[i].assume_init()) };
+        }
+        for i in 32..48 {
+            // SAFETY: Both snapshots of this interval were initialized.
+            frame &= unsafe { same_wide(scratch[i].assume_init(), before[i].assume_init()) };
+        }
+        frame
+    }
+
+    #[kani::proof]
+    #[kani::unwind(36)]
+    fn gen_n32_u64_s8_r48_full() {
+        let mut v: [u64; 34] = kani::any();
+        let before = v;
+        let probe: u64 = kani::any();
+        let mut scratch = [MaybeUninit::<u64>::uninit(); 48];
+        for i in 0..16 {
+            scratch[i].write(kani::any());
+        }
+        for i in 24..40 {
+            scratch[i].write(kani::any());
+        }
+        let scratch_before = scratch;
+        let s = v[1..33].as_mut_ptr();
+        let d = scratch.as_mut_ptr().cast::<u64>();
+        let mut less = u64_less;
+        // SAFETY: The eight initialized source words S[16..24] are in the separate V34.
+        // The writable D[16..24] and D[40..48] are disjoint intervals of scratch48.
+        unsafe { sort8_stable(s.add(16), d.add(16), d.add(40), &mut less) };
+
+        let mut ordered = true;
+        let mut tmp_left_ordered = true;
+        let mut tmp_right_ordered = true;
+        let mut input_count = 0;
+        let mut output_count = 0;
+        let mut adjacent_equal = false;
+        let mut inversion = false;
+        for i in 0..8 {
+            input_count += usize::from(before[17 + i] == probe);
+            // SAFETY: A normal return writes each output word.
+            output_count += usize::from(unsafe { scratch[16 + i].assume_init() } == probe);
+        }
+        for i in 0..7 {
+            adjacent_equal |= before[17 + i] == before[18 + i];
+            inversion |= before[17 + i] > before[18 + i];
+            // SAFETY: Both words are in the initialized output interval.
+            ordered &= unsafe { scratch[16 + i].assume_init() <= scratch[17 + i].assume_init() };
+        }
+        for i in 0..3 {
+            // SAFETY: The two inner sort4 calls initialize both temporary blocks.
+            unsafe {
+                tmp_left_ordered &= scratch[40 + i].assume_init() <= scratch[41 + i].assume_init();
+                tmp_right_ordered &= scratch[44 + i].assume_init() <= scratch[45 + i].assume_init();
+            }
+        }
+        let mut v_frame = true;
+        for i in 0..17 {
+            v_frame &= v[i] == before[i];
+        }
+        for i in 17..34 {
+            v_frame &= v[i] == before[i];
+        }
+        let mut scratch_frame = true;
+        for i in 0..16 {
+            // SAFETY: Both frame intervals were initialized before the call.
+            unsafe {
+                scratch_frame &= scratch[i].assume_init() == scratch_before[i].assume_init();
+                scratch_frame &=
+                    scratch[24 + i].assume_init() == scratch_before[24 + i].assume_init();
+            }
+        }
+        kani::assert(ordered, "GEN_N32_U64_S8_R48_SORTED");
+        kani::assert(input_count == output_count, "GEN_N32_U64_S8_R48_PROBE_MULTIPLICITY");
+        kani::assert(tmp_left_ordered, "GEN_N32_U64_S8_R48_TMP_LEFT_SORTED");
+        kani::assert(tmp_right_ordered, "GEN_N32_U64_S8_R48_TMP_RIGHT_SORTED");
+        kani::assert(v_frame, "GEN_N32_U64_S8_R48_V_FRAME");
+        kani::assert(scratch_frame, "GEN_N32_U64_S8_R48_SCRATCH_FRAME");
+        kani::cover(inversion, "GEN_N32_U64_S8_R48_MIXED_INVERSION");
+        kani::cover(adjacent_equal, "GEN_N32_U64_S8_R48_EQUAL_INPUT");
+        kani::cover(true, "GEN_N32_U64_S8_R48_RETURNED");
+    }
+
+    #[kani::proof]
+    #[kani::unwind(36)]
+    fn gen_n32_u64_fill_r48_rel15() {
+        let mut v: [u64; 34] = kani::any();
+        let before = v;
+        let x = before[32];
+        let mut scratch = [MaybeUninit::<u64>::uninit(); 48];
+        for i in 0..31 {
+            scratch[i].write(kani::any());
+        }
+        for i in 32..48 {
+            scratch[i].write(kani::any());
+        }
+        let scratch_before = scratch;
+        let mut old = [0u64; 15];
+        for i in 0..15 {
+            // SAFETY: D[16..31] was initialized above. D[31] is not read here.
+            old[i] = unsafe { scratch[16 + i].assume_init() };
+        }
+        let mut sorted_prefix = true;
+        for i in 1..15 {
+            sorted_prefix &= old[i - 1] <= old[i];
+        }
+        kani::assume(sorted_prefix);
+        let mut pos = 0;
+        let mut equal = false;
+        for i in 0..15 {
+            pos += usize::from(old[i] <= x);
+            equal |= old[i] == x;
+        }
+        let s = v[1..33].as_mut_ptr();
+        let d = scratch.as_mut_ptr().cast::<u64>();
+        let mut less = u64_less;
+        // SAFETY: V34 and D48 are disjoint. The sorted prefix and the source
+        // record are initialized, and D[31] is writable before initialization.
+        unsafe {
+            // Transcription of smallsort.rs:329 at offset=16, i=15.
+            ptr::copy_nonoverlapping(s.add(31), d.add(31), 1);
+            insert_tail(d.add(16), d.add(31), &mut less);
+        }
+
+        let mut exact = true;
+        for j in 0..16 {
+            let expected = if j < pos {
+                old[j]
+            } else if j == pos {
+                x
+            } else {
+                old[j - 1]
+            };
+            // SAFETY: The prefix and the copied record of D[16..32] are initialized.
+            exact &= unsafe { scratch[16 + j].assume_init() } == expected;
+        }
+        let mut v_frame = true;
+        for i in 0..17 {
+            v_frame &= v[i] == before[i];
+        }
+        for i in 17..34 {
+            v_frame &= v[i] == before[i];
+        }
+        let mut scratch_frame = true;
+        for i in 0..16 {
+            // SAFETY: This interval was initialized before both snapshots.
+            scratch_frame &= unsafe { scratch[i].assume_init() == scratch_before[i].assume_init() };
+        }
+        for i in 32..48 {
+            // SAFETY: This interval was initialized before both snapshots.
+            scratch_frame &= unsafe { scratch[i].assume_init() == scratch_before[i].assume_init() };
+        }
+        kani::assert(exact, "GEN_N32_U64_FILL_REL15_EXACT_UPPER_BOUND");
+        kani::assert(v_frame, "GEN_N32_U64_FILL_REL15_V_FRAME");
+        kani::assert(scratch_frame, "GEN_N32_U64_FILL_REL15_SCRATCH_FRAME");
+        kani::cover(pos == 15, "GEN_N32_U64_FILL_REL15_NO_SHIFT");
+        kani::cover(pos < 15, "GEN_N32_U64_FILL_REL15_SHIFT");
+        kani::cover(equal, "GEN_N32_U64_FILL_REL15_EQUAL_KEY");
+        kani::cover(true, "GEN_N32_U64_FILL_REL15_RETURNED");
+    }
+
+    #[kani::proof]
+    #[kani::unwind(36)]
+    fn gen_n32_wide_fill_r48_rel15() {
+        let mut v = wide_v34();
+        let before = v;
+        let x = before[32];
+        let mut scratch = [MaybeUninit::<Wide>::uninit(); 48];
+        for i in 0..31 {
+            scratch[i].write(any_wide());
+        }
+        for i in 32..48 {
+            scratch[i].write(any_wide());
+        }
+        let scratch_before = scratch;
+        let mut old = [Wide { key: 0, tag: 0, payload: 0 }; 15];
+        for i in 0..15 {
+            // SAFETY: D[16..31] was initialized above. D[31] is not read here.
+            old[i] = unsafe { scratch[16 + i].assume_init() };
+        }
+        let mut sorted_prefix = true;
+        for i in 1..15 {
+            sorted_prefix &= old[i - 1].key <= old[i].key;
+        }
+        kani::assume(sorted_prefix);
+        let mut pos = 0;
+        let mut equal_distinct = false;
+        for i in 0..15 {
+            pos += usize::from(old[i].key <= x.key);
+            equal_distinct |= old[i].key == x.key && old[i].tag != x.tag;
+        }
+        let s = v[1..33].as_mut_ptr();
+        let d = scratch.as_mut_ptr().cast::<Wide>();
+        let mut less = wide_less;
+        // SAFETY: V34 and D48 are disjoint. The sorted prefix and the source
+        // record are initialized, and D[31] is writable before initialization.
+        unsafe {
+            // Transcription of smallsort.rs:329 at offset=16, i=15.
+            ptr::copy_nonoverlapping(s.add(31), d.add(31), 1);
+            insert_tail(d.add(16), d.add(31), &mut less);
+        }
+
+        let mut exact = true;
+        for j in 0..16 {
+            let expected = if j < pos {
+                old[j]
+            } else if j == pos {
+                x
+            } else {
+                old[j - 1]
+            };
+            // SAFETY: The prefix and the copied record of D[16..32] are initialized.
+            exact &= same_wide(unsafe { scratch[16 + j].assume_init() }, expected);
+        }
+        let mut v_frame = true;
+        for i in 0..17 {
+            v_frame &= same_wide(v[i], before[i]);
+        }
+        for i in 17..34 {
+            v_frame &= same_wide(v[i], before[i]);
+        }
+        let mut scratch_frame = true;
+        for i in 0..16 {
+            // SAFETY: This interval was initialized before both snapshots.
+            scratch_frame &=
+                unsafe { same_wide(scratch[i].assume_init(), scratch_before[i].assume_init()) };
+        }
+        for i in 32..48 {
+            // SAFETY: This interval was initialized before both snapshots.
+            scratch_frame &=
+                unsafe { same_wide(scratch[i].assume_init(), scratch_before[i].assume_init()) };
+        }
+        kani::assert(exact, "GEN_N32_WIDE_FILL_REL15_EXACT_UPPER_BOUND");
+        kani::assert(v_frame, "GEN_N32_WIDE_FILL_REL15_V_FRAME");
+        kani::assert(scratch_frame, "GEN_N32_WIDE_FILL_REL15_SCRATCH_FRAME");
+        kani::cover(pos == 15, "GEN_N32_WIDE_FILL_REL15_NO_SHIFT");
+        kani::cover(pos < 15, "GEN_N32_WIDE_FILL_REL15_SHIFT");
+        kani::cover(equal_distinct, "GEN_N32_WIDE_FILL_REL15_EQUAL_DISTINCT");
+        kani::cover(true, "GEN_N32_WIDE_FILL_REL15_RETURNED");
+    }
+
+    #[cfg_attr(
+        kani,
+        kani::requires(k < 16 && a <= k),
+        kani::requires(ub_checks::can_dereference(ptr::slice_from_raw_parts(d, 32))),
+        kani::requires(ub_checks::can_write(ptr::slice_from_raw_parts_mut(s, 32))),
+        kani::requires(!ub_checks::same_allocation(d, s)),
+        kani::modifies(s.wrapping_add(k))
+    )]
+    unsafe fn actual_merge_up_u64_n32(d: *const u64, s: *mut u64, k: usize, a: usize) {
+        let b = k - a;
+        let mut less = u64_less;
+        // SAFETY: The count bounds put both reads in initialized D halves and
+        // the destination in the separate writable S allocation.
+        unsafe {
+            let up_left = d.add(a);
+            let up_right = d.add(16 + b);
+            let up_dst = s.add(k);
+            kani::assert(
+                ub_checks::can_dereference(up_left) && ub_checks::can_dereference(up_right),
+                "GEN_N32_U64_UP_READ",
+            );
+            kani::assert(ub_checks::can_write(up_dst), "GEN_N32_U64_UP_WRITE");
+            kani::assert(
+                !ub_checks::same_allocation(up_left, up_dst)
+                    && !ub_checks::same_allocation(up_right, up_dst),
+                "GEN_N32_U64_UP_DISJOINT",
+            );
+            let (left, right, dst) = merge_up(up_left, up_right, up_dst, &mut less);
+            let takes_left = (*up_left) <= (*up_right);
+            kani::assert(
+                left == up_left.add(takes_left as usize)
+                    && right == up_right.add((!takes_left) as usize)
+                    && dst == s.add(k + 1),
+                "GEN_N32_U64_UP_CURSORS",
+            );
+        }
+    }
+
+    #[kani::proof_for_contract(actual_merge_up_u64_n32)]
+    #[kani::unwind(36)]
+    fn gen_n32_u64_merge_up() {
+        let mut v: [u64; 34] = kani::any();
+        let v_before = v;
+        let mut scratch = u64_scratch48();
+        let scratch_before = scratch;
+        let k = usize::from(kani::any::<u8>());
+        let a = usize::from(kani::any::<u8>());
+        kani::assume(k < 16 && a <= k);
+        // SAFETY: The constrained source positions and all 32 destination
+        // records satisfy the wrapper contract; V and D are separate arrays.
+        let (up_left, up_right) = unsafe {
+            (scratch_before[a].assume_init(), scratch_before[16 + (k - a)].assume_init())
+        };
+        let takes_left = up_left <= up_right;
+        let expected = if takes_left { up_left } else { up_right };
+        let s = v[1..33].as_mut_ptr();
+        let d = scratch.as_mut_ptr().cast::<u64>();
+        // SAFETY: D[0..32] is initialized and S[0..32] is writable in
+        // distinct allocations, with the counter assumptions above.
+        unsafe { actual_merge_up_u64_n32(d, s, k, a) };
+
+        kani::assert(v[1 + k] == expected, "GEN_N32_U64_UP_VALUE");
+        let mut v_frame = true;
+        for i in 0..17 {
+            if i != 1 + k {
+                v_frame &= v[i] == v_before[i];
+            }
+        }
+        for i in 17..34 {
+            if i != 1 + k {
+                v_frame &= v[i] == v_before[i];
+            }
+        }
+        kani::assert(v_frame, "GEN_N32_U64_UP_V_FRAME");
+        kani::assert(
+            u64_scratch48_frame(&scratch, &scratch_before),
+            "GEN_N32_U64_UP_SCRATCH_FRAME",
+        );
+        kani::cover(takes_left, "GEN_N32_U64_UP_TAKES_LEFT");
+        kani::cover(!takes_left, "GEN_N32_U64_UP_TAKES_RIGHT");
+        kani::cover(up_left == up_right, "GEN_N32_U64_UP_TIE");
+        kani::cover(k == 0, "GEN_N32_U64_UP_K_ZERO");
+        kani::cover(k == 15, "GEN_N32_U64_UP_K_LAST");
+        kani::cover(true, "GEN_N32_U64_UP_RETURNED");
+    }
+
+    #[cfg_attr(
+        kani,
+        kani::requires(k < 16 && c <= k),
+        kani::requires(ub_checks::can_dereference(ptr::slice_from_raw_parts(d, 32))),
+        kani::requires(ub_checks::can_write(ptr::slice_from_raw_parts_mut(s, 32))),
+        kani::requires(!ub_checks::same_allocation(d, s)),
+        kani::modifies(s.wrapping_add(31 - k))
+    )]
+    unsafe fn actual_merge_down_u64_n32(d: *const u64, s: *mut u64, k: usize, c: usize) {
+        let d_count = k - c;
+        let mut less = u64_less;
+        // SAFETY: The count bounds put both reads in initialized D halves and
+        // the destination in the separate writable S allocation.
+        unsafe {
+            let down_left = d.add(15 - c);
+            let down_right = d.add(31 - d_count);
+            let down_dst = s.add(31 - k);
+            kani::assert(
+                ub_checks::can_dereference(down_left) && ub_checks::can_dereference(down_right),
+                "GEN_N32_U64_DOWN_READ",
+            );
+            kani::assert(ub_checks::can_write(down_dst), "GEN_N32_U64_DOWN_WRITE");
+            kani::assert(
+                !ub_checks::same_allocation(down_left, down_dst)
+                    && !ub_checks::same_allocation(down_right, down_dst),
+                "GEN_N32_U64_DOWN_DISJOINT",
+            );
+            let (left, right, dst) = merge_down(down_left, down_right, down_dst, &mut less);
+            let takes_left = (*down_left) > (*down_right);
+            kani::assert(
+                left == down_left.wrapping_sub(takes_left as usize)
+                    && right == down_right.wrapping_sub((!takes_left) as usize)
+                    && dst == s.add(30 - k),
+                "GEN_N32_U64_DOWN_CURSORS",
+            );
+        }
+    }
+
+    #[kani::proof_for_contract(actual_merge_down_u64_n32)]
+    #[kani::unwind(36)]
+    fn gen_n32_u64_merge_down() {
+        let mut v: [u64; 34] = kani::any();
+        let v_before = v;
+        let mut scratch = u64_scratch48();
+        let scratch_before = scratch;
+        let k = usize::from(kani::any::<u8>());
+        let c = usize::from(kani::any::<u8>());
+        kani::assume(k < 16 && c <= k);
+        // SAFETY: The constrained source positions and all 32 destination
+        // records satisfy the wrapper contract; V and D are separate arrays.
+        let (down_left, down_right) = unsafe {
+            (scratch_before[15 - c].assume_init(), scratch_before[31 - (k - c)].assume_init())
+        };
+        let takes_left = down_left > down_right;
+        let expected = if takes_left { down_left } else { down_right };
+        let s = v[1..33].as_mut_ptr();
+        let d = scratch.as_mut_ptr().cast::<u64>();
+        // SAFETY: D[0..32] is initialized and S[0..32] is writable in
+        // distinct allocations, with the counter assumptions above.
+        unsafe { actual_merge_down_u64_n32(d, s, k, c) };
+
+        kani::assert(v[32 - k] == expected, "GEN_N32_U64_DOWN_VALUE");
+        let mut v_frame = true;
+        for i in 0..17 {
+            if i != 32 - k {
+                v_frame &= v[i] == v_before[i];
+            }
+        }
+        for i in 17..34 {
+            if i != 32 - k {
+                v_frame &= v[i] == v_before[i];
+            }
+        }
+        kani::assert(v_frame, "GEN_N32_U64_DOWN_V_FRAME");
+        kani::assert(
+            u64_scratch48_frame(&scratch, &scratch_before),
+            "GEN_N32_U64_DOWN_SCRATCH_FRAME",
+        );
+        kani::cover(takes_left, "GEN_N32_U64_DOWN_TAKES_LEFT");
+        kani::cover(!takes_left, "GEN_N32_U64_DOWN_TAKES_RIGHT");
+        kani::cover(down_left == down_right, "GEN_N32_U64_DOWN_TIE");
+        kani::cover(k == 0, "GEN_N32_U64_DOWN_K_ZERO");
+        kani::cover(k == 15, "GEN_N32_U64_DOWN_K_LAST");
+        kani::cover(true, "GEN_N32_U64_DOWN_RETURNED");
+    }
+
+    #[cfg_attr(
+        kani,
+        kani::requires(k < 16 && a <= k),
+        kani::requires(ub_checks::can_dereference(ptr::slice_from_raw_parts(d, 32))),
+        kani::requires(ub_checks::can_write(ptr::slice_from_raw_parts_mut(s, 32))),
+        kani::requires(!ub_checks::same_allocation(d, s)),
+        kani::modifies(s.wrapping_add(k))
+    )]
+    unsafe fn actual_merge_up_wide_n32(d: *const Wide, s: *mut Wide, k: usize, a: usize) {
+        let b = k - a;
+        let mut less = wide_less;
+        // SAFETY: The count bounds put both reads in initialized D halves and
+        // the destination in the separate writable S allocation.
+        unsafe {
+            let up_left = d.add(a);
+            let up_right = d.add(16 + b);
+            let up_dst = s.add(k);
+            kani::assert(
+                ub_checks::can_dereference(up_left) && ub_checks::can_dereference(up_right),
+                "GEN_N32_WIDE_UP_READ",
+            );
+            kani::assert(ub_checks::can_write(up_dst), "GEN_N32_WIDE_UP_WRITE");
+            kani::assert(
+                !ub_checks::same_allocation(up_left, up_dst)
+                    && !ub_checks::same_allocation(up_right, up_dst),
+                "GEN_N32_WIDE_UP_DISJOINT",
+            );
+            let (left, right, dst) = merge_up(up_left, up_right, up_dst, &mut less);
+            let takes_left = (*up_left).key <= (*up_right).key;
+            kani::assert(
+                left == up_left.add(takes_left as usize)
+                    && right == up_right.add((!takes_left) as usize)
+                    && dst == s.add(k + 1),
+                "GEN_N32_WIDE_UP_CURSORS",
+            );
+        }
+    }
+
+    #[kani::proof_for_contract(actual_merge_up_wide_n32)]
+    #[kani::unwind(36)]
+    fn gen_n32_wide_merge_up() {
+        let mut v = wide_v34();
+        let v_before = v;
+        let mut scratch = wide_scratch48();
+        let scratch_before = scratch;
+        let k = usize::from(kani::any::<u8>());
+        let a = usize::from(kani::any::<u8>());
+        kani::assume(k < 16 && a <= k);
+        // SAFETY: The constrained source positions and all 32 destination
+        // records satisfy the wrapper contract; V and D are separate arrays.
+        let (up_left, up_right) = unsafe {
+            (scratch_before[a].assume_init(), scratch_before[16 + (k - a)].assume_init())
+        };
+        let takes_left = up_left.key <= up_right.key;
+        let expected = if takes_left { up_left } else { up_right };
+        let s = v[1..33].as_mut_ptr();
+        let d = scratch.as_mut_ptr().cast::<Wide>();
+        // SAFETY: D[0..32] is initialized and S[0..32] is writable in
+        // distinct allocations, with the counter assumptions above.
+        unsafe { actual_merge_up_wide_n32(d, s, k, a) };
+
+        kani::assert(same_wide(v[1 + k], expected), "GEN_N32_WIDE_UP_VALUE");
+        let mut v_frame = true;
+        for i in 0..17 {
+            if i != 1 + k {
+                v_frame &= same_wide(v[i], v_before[i]);
+            }
+        }
+        for i in 17..34 {
+            if i != 1 + k {
+                v_frame &= same_wide(v[i], v_before[i]);
+            }
+        }
+        kani::assert(v_frame, "GEN_N32_WIDE_UP_V_FRAME");
+        kani::assert(
+            wide_scratch48_frame(&scratch, &scratch_before),
+            "GEN_N32_WIDE_UP_SCRATCH_FRAME",
+        );
+        kani::cover(takes_left, "GEN_N32_WIDE_UP_TAKES_LEFT");
+        kani::cover(!takes_left, "GEN_N32_WIDE_UP_TAKES_RIGHT");
+        kani::cover(
+            up_left.key == up_right.key && up_left.tag != up_right.tag,
+            "GEN_N32_WIDE_UP_TIE",
+        );
+        kani::cover(k == 0, "GEN_N32_WIDE_UP_K_ZERO");
+        kani::cover(k == 15, "GEN_N32_WIDE_UP_K_LAST");
+        kani::cover(true, "GEN_N32_WIDE_UP_RETURNED");
+    }
+
+    #[cfg_attr(
+        kani,
+        kani::requires(k < 16 && c <= k),
+        kani::requires(ub_checks::can_dereference(ptr::slice_from_raw_parts(d, 32))),
+        kani::requires(ub_checks::can_write(ptr::slice_from_raw_parts_mut(s, 32))),
+        kani::requires(!ub_checks::same_allocation(d, s)),
+        kani::modifies(s.wrapping_add(31 - k))
+    )]
+    unsafe fn actual_merge_down_wide_n32(d: *const Wide, s: *mut Wide, k: usize, c: usize) {
+        let d_count = k - c;
+        let mut less = wide_less;
+        // SAFETY: The count bounds put both reads in initialized D halves and
+        // the destination in the separate writable S allocation.
+        unsafe {
+            let down_left = d.add(15 - c);
+            let down_right = d.add(31 - d_count);
+            let down_dst = s.add(31 - k);
+            kani::assert(
+                ub_checks::can_dereference(down_left) && ub_checks::can_dereference(down_right),
+                "GEN_N32_WIDE_DOWN_READ",
+            );
+            kani::assert(ub_checks::can_write(down_dst), "GEN_N32_WIDE_DOWN_WRITE");
+            kani::assert(
+                !ub_checks::same_allocation(down_left, down_dst)
+                    && !ub_checks::same_allocation(down_right, down_dst),
+                "GEN_N32_WIDE_DOWN_DISJOINT",
+            );
+            let (left, right, dst) = merge_down(down_left, down_right, down_dst, &mut less);
+            let takes_left = (*down_left).key > (*down_right).key;
+            kani::assert(
+                left == down_left.wrapping_sub(takes_left as usize)
+                    && right == down_right.wrapping_sub((!takes_left) as usize)
+                    && dst == s.add(30 - k),
+                "GEN_N32_WIDE_DOWN_CURSORS",
+            );
+        }
+    }
+
+    #[kani::proof_for_contract(actual_merge_down_wide_n32)]
+    #[kani::unwind(36)]
+    fn gen_n32_wide_merge_down() {
+        let mut v = wide_v34();
+        let v_before = v;
+        let mut scratch = wide_scratch48();
+        let scratch_before = scratch;
+        let k = usize::from(kani::any::<u8>());
+        let c = usize::from(kani::any::<u8>());
+        kani::assume(k < 16 && c <= k);
+        // SAFETY: The constrained source positions and all 32 destination
+        // records satisfy the wrapper contract; V and D are separate arrays.
+        let (down_left, down_right) = unsafe {
+            (scratch_before[15 - c].assume_init(), scratch_before[31 - (k - c)].assume_init())
+        };
+        let takes_left = down_left.key > down_right.key;
+        let expected = if takes_left { down_left } else { down_right };
+        let s = v[1..33].as_mut_ptr();
+        let d = scratch.as_mut_ptr().cast::<Wide>();
+        // SAFETY: D[0..32] is initialized and S[0..32] is writable in
+        // distinct allocations, with the counter assumptions above.
+        unsafe { actual_merge_down_wide_n32(d, s, k, c) };
+
+        kani::assert(same_wide(v[32 - k], expected), "GEN_N32_WIDE_DOWN_VALUE");
+        let mut v_frame = true;
+        for i in 0..17 {
+            if i != 32 - k {
+                v_frame &= same_wide(v[i], v_before[i]);
+            }
+        }
+        for i in 17..34 {
+            if i != 32 - k {
+                v_frame &= same_wide(v[i], v_before[i]);
+            }
+        }
+        kani::assert(v_frame, "GEN_N32_WIDE_DOWN_V_FRAME");
+        kani::assert(
+            wide_scratch48_frame(&scratch, &scratch_before),
+            "GEN_N32_WIDE_DOWN_SCRATCH_FRAME",
+        );
+        kani::cover(takes_left, "GEN_N32_WIDE_DOWN_TAKES_LEFT");
+        kani::cover(!takes_left, "GEN_N32_WIDE_DOWN_TAKES_RIGHT");
+        kani::cover(
+            down_left.key == down_right.key && down_left.tag != down_right.tag,
+            "GEN_N32_WIDE_DOWN_TIE",
+        );
+        kani::cover(k == 0, "GEN_N32_WIDE_DOWN_K_ZERO");
+        kani::cover(k == 15, "GEN_N32_WIDE_DOWN_K_LAST");
+        kani::cover(true, "GEN_N32_WIDE_DOWN_RETURNED");
+    }
+}
